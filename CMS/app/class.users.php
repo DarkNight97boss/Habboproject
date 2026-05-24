@@ -36,9 +36,9 @@
 
 namespace Revolution;
 
-    if (isset($_SERVER['HTTP_CF_CONNECTING_IP']))
+    if (isset($_SERVER['HTTP_CF_CONNECTING_IP']) && filter_var($_SERVER['HTTP_CF_CONNECTING_IP'], FILTER_VALIDATE_IP))
         $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_CF_CONNECTING_IP'];
-    else if (isset($_SERVER['HTTP_X_FORWARDED_FOR']))
+    else if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && filter_var($_SERVER['HTTP_X_FORWARDED_FOR'], FILTER_VALIDATE_IP))
         $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_X_FORWARDED_FOR'];
 
    if(!defined('IN_INDEX')) { die('Sorry, you cannot access this file.'); }
@@ -146,7 +146,7 @@ namespace Revolution;
 		
 		$md5Pass = md5($password);
 		
-		if($md5Pass == $dbPass){
+		if(hash_equals((string)$dbPass, $md5Pass)){
 			$dbPass = password_hash($password, PASSWORD_DEFAULT);
 			$engine->query("UPDATE `users` SET `password` = '".$dbPass."' WHERE `username` = '".$username."' LIMIT 1");
 		}
@@ -165,7 +165,7 @@ namespace Revolution;
 		
 		$md5Pass = md5($password);
 		
-		if($md5Pass == $dbPass){
+		if(hash_equals((string)$dbPass, $md5Pass)){
 			$dbPass = password_hash($password, PASSWORD_DEFAULT);
 			$engine->query("UPDATE `users` SET `password` = '".$dbPass."' WHERE `username` = '".$username."' LIMIT 1");
 		}
@@ -453,7 +453,7 @@ namespace Revolution;
 					{*/
 						if($this->userValidation($template->form->log_username, $template->form->log_password))
 						{
-							$this->turnOn($template->form->log_username);
+							session_regenerate_id(true); $this->turnOn($template->form->log_username);
 							$this->updateUser($_SESSION['user']['id'], 'ip_current', $_SERVER['REMOTE_ADDR']);
 							$engine->query("INSERT INTO users_logins (user_id, verified_ip, timestamp) VALUES ('" . $_SESSION['user']['id'] . "', '" . $_SERVER['REMOTE_ADDR'] . "', '" . time() . "')");
 							
@@ -794,7 +794,7 @@ namespace Revolution;
 			
 			$url = $_GET['url'];
 			//$ip = $core->GetCurrentIP();
-			if(isset($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+			if(isset($_SERVER['HTTP_CF_CONNECTING_IP']) && filter_var($_SERVER['HTTP_CF_CONNECTING_IP'], FILTER_VALIDATE_IP)) {
 						$_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_CF_CONNECTING_IP'];
 					}
 			$ip = $_SERVER['REMOTE_ADDR'];
@@ -814,7 +814,7 @@ namespace Revolution;
 						sendMUS("vpn", ["user_id" => "".$_SESSION['user']['id']."", "ipaddress" =>  $ip, "location" =>  $result[$ip]['country']]);
 				}
 			}else{
-				$key = '94n724-5h3679-87p003-f636i1';
+				$key = 'YOUR_PROXYCHECK_API_KEY';
 				$postfield = "tag=" . $_SERVER['SERVER_NAME'] . $_SERVER['REQUEST_URI'];
 				$jsonIn = file_get_contents('https://proxycheck.io/v2/'.$ip.'?key='.$key.'&vpn=3');
 				$result = json_decode($jsonIn, true);

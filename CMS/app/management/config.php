@@ -100,15 +100,15 @@ $_CONFIG['api']['link'] = 'https://ext.habzone.lol'; /*/ Your Hotel API Link 'ht
 
 ## Cloudflare Turnstile Captcha Site Key Management ##
 ## https://www.cloudflare.com/en-gb/application-services/products/turnstile/
-$_CONFIG['cloudflare']['sitekey'] = '0x4AAAAAAAOU_rtN4t2yzpeg'; /*/ Cloudflare Turnstile Captcha Site Key Example '0x4AAAAAAAOU_rtN4t2yzpeg' /*/
-$_CONFIG['cloudflare']['secretkey'] = '0x4AAAAAAAOU_k5oqfqhT9zpEgtKCWaCtCc'; /*/ Cloudflare Turnstile Captcha Secret Key Example '0x4AAAAAAAOU_k5oqfqhT9zpEgtKCWaCtCc' /*/
+$_CONFIG['cloudflare']['sitekey'] = 'YOUR_TURNSTILE_SITE_KEY'; /*/ Cloudflare Turnstile Captcha Site Key /*/
+$_CONFIG['cloudflare']['secretkey'] = 'YOUR_TURNSTILE_SECRET_KEY'; /*/ Cloudflare Turnstile Captcha Secret Key - set your own, never commit /*/
 
 ## TinyCloud HK News Post API Key Management ##
 ## Make an account on https://www.tiny.cloud/auth/signup/ or if you already have one go to https://www.tiny.cloud/auth/login/ and then 
 ## You'll see something on https://www.tiny.cloud/my-account/integrate/#html that sats "get your API Key" click that button top right of the page
 ## You will see an API key like 'pj356i5qwby1cgxgt37457sffa3mvgdilx8aez110lbn2cb9' copy it and paste below
 ## Go to "Approved Domains" on https://www.tiny.cloud/my-account/domains/and add new domain as yours
-$_CONFIG['tinycloud']['tinykey'] = 'pj356i5qwby1cgxgt37457sffa3mvgdilx8aez110lbn2cb9'; /*/ Paste your Tiny Cloud API Key Example 'pj356i5qwby1cgxgt37457sffa3mvgdilx8aez110lbn2cb9' /*/
+$_CONFIG['tinycloud']['tinykey'] = 'YOUR_TINYMCE_API_KEY'; /*/ Paste your Tiny Cloud API Key here - set your own, never commit /*/
 
 ## Skin/Template Management ##
 /*/ Your Hotel Skin /*/

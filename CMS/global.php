@@ -47,7 +47,7 @@
 	}
 
 	if(!defined('IN_INDEX')) { die('Sorry, you cannot access this file.'); }
-	 if (isset($_SERVER['HTTP_CF_CONNECTING_IP'])) { $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_CF_CONNECTING_IP']; } else if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_X_FORWARDED_FOR'];
+	 if (isset($_SERVER['HTTP_CF_CONNECTING_IP']) && filter_var($_SERVER['HTTP_CF_CONNECTING_IP'], FILTER_VALIDATE_IP)) { $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_CF_CONNECTING_IP']; } else if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && filter_var($_SERVER['HTTP_X_FORWARDED_FOR'], FILTER_VALIDATE_IP)) $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_X_FORWARDED_FOR'];
 
 	define('A', 'app/');
 	define('I', 'interfaces/');
@@ -299,6 +299,15 @@ $template->css = new Rev\css();
 $template->js = new Rev\js();
 
 //START
+if (session_status() === PHP_SESSION_NONE) {
+	session_set_cookie_params([
+		'lifetime' => 0,
+		'path' => '/',
+		'httponly' => true,
+		'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https'),
+		'samesite' => 'Lax'
+	]);
+}
 session_start();
 
 /*

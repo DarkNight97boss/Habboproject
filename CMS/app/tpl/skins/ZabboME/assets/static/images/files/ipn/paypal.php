@@ -41,7 +41,7 @@
 			echo '';
 			die;
 		}
-		$p->add_field('business', 'thomassurji@gmail.com');
+		$p->add_field('business', 'YOUR_PAYPAL_EMAIL@example.com');
 		$p->add_field('return', '%www%'); //The success URL
 		$p->add_field('custom', $swag);
 		$p->add_field('tokens', $dBox);

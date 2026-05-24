@@ -14,7 +14,8 @@ if(!isset($_GET["username"]) || empty($_GET["username"])) {
         exit;
     }
 
-	$fig =  mysql_query("SELECT look FROM users WHERE username = '".$_GET["username"]."' LIMIT 1");
+	if(!preg_match('/^[a-zA-Z0-9_.\-]{1,40}$/', $_GET["username"])) { echo "Invalid username"; exit; }
+	$fig =  mysql_query("SELECT look FROM users WHERE username = '".mysql_real_escape_string($_GET["username"])."' LIMIT 1");
 	if (mysql_num_rows($fig) == 0) {
 	echo 'This user does not exist!';
 	exit;
@@ -39,7 +40,7 @@ if(!isset($_GET["username"]) || empty($_GET["username"])) {
         CURLOPT_ENCODING       => "",
         CURLOPT_USERAGENT      => "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36",
         CURLOPT_AUTOREFERER    => true,
-        CURLOPT_SSL_VERIFYPEER => false
+        CURLOPT_SSL_VERIFYPEER => true
     ));
 
     $content = curl_exec($ch);

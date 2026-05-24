@@ -1,5 +1,6 @@
 <?php                                                                
-$fig		= strtolower($_GET["figure"]);
+$fig		= isset($_GET["figure"]) ? strtolower($_GET["figure"]) : '';
+if(!preg_match('/^[a-z0-9.\-]{0,200}$/', $fig)) { http_response_code(400); exit('Invalid figure'); }
 $action		= isset($_GET["action"]) ? strtolower($_GET["action"]) : 'std';
 $direction		= isset($_GET["direction"]) ? (int)$_GET["direction"] : 2;
 $head_direction	= isset($_GET["head_direction"]) ? (int)$_GET["head_direction"] : 3;
@@ -18,7 +19,7 @@ $ch = curl_init("https://www.habbo.com/habbo-imaging/avatarimage?figure=" . $fig
         CURLOPT_ENCODING       => "",
         CURLOPT_USERAGENT      => "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36",
         CURLOPT_AUTOREFERER    => true,
-        CURLOPT_SSL_VERIFYPEER => false
+        CURLOPT_SSL_VERIFYPEER => true
     ));
 
     $content = curl_exec($ch);

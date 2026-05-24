@@ -1,2 +1,14 @@
 .DS_Store
 **/.DS_Store
+
+# Logs (may contain PII / payment data)
+*.log
+**/.ipn_results.log
+
+# Runtime user uploads
+API/audios/
+
+# Editor / OS junk
+Thumbs.db
+*.swp
+*~

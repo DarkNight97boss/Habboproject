@@ -17,6 +17,23 @@ db.pool.maxsize=100
 game.host=0.0.0.0
 game.port=3000
 
+#Networking / anti-flood (tutti opzionali; i default sono prudenti).
+#Dimensione massima di un pacchetto in ingresso. Default 417792 (limite foto camera).
+#Se NON usi la camera in-client puoi abbassarlo (es. 16384) per ridurre la superficie di abuso.
+networking.packet.max.length=417792
+#Rate limit per connessione: finestra (s), max pacchetti con lo stesso ID, max pacchetti TOTALI.
+networking.ratelimit.reset.seconds=1
+networking.ratelimit.max.per.id=10
+networking.ratelimit.max.total=200
+#Dopo quante finestre consecutive oltre il limite totale si disconnette il client (0 = mai).
+networking.ratelimit.max.violations=10
+#Anti-flood pre-login: max pacchetti e secondi concessi prima di autenticarsi (0 = disattivato).
+networking.auth.max.packets=50
+networking.auth.timeout.seconds=30
+#Max connessioni per IP (0 = illimitato). LASCIA 0 se sei dietro proxy/Cloudflare
+#(l'IP del socket sarebbe quello del proxy): in quel caso limita per-IP sul proxy.
+networking.max.connections.per.ip=0
+
 #RCON Configuration.
 #RCON Host IP. Leave this at 127.0.0.1 if you're running your website on the same server as the emulator.
 #SECURITY: RCON has NO authentication beyond this IP allow-list. Never expose rcon.port to the

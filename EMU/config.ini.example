@@ -1,11 +1,13 @@
-#Arcturus Morningstar 3.5.3
+#Arcturus Morningstar 3.5.5
 
 #Database Configuration.
+#SECURITY: Do NOT use the MySQL 'root' account. Create a dedicated user whose privileges are
+#limited to this database, and set a strong, unique password before going to production.
 db.hostname=localhost
 db.port=3306
 db.database=ms
-db.username=root
-db.password=root
+db.username=CHANGE_ME
+db.password=CHANGE_ME
 db.params=
 db.pool.minsize=25
 db.pool.maxsize=100
@@ -17,10 +19,16 @@ game.port=3000
 
 #RCON Configuration.
 #RCON Host IP. Leave this at 127.0.0.1 if you're running your website on the same server as the emulator.
+#SECURITY: RCON has NO authentication beyond this IP allow-list. Never expose rcon.port to the
+#public internet. Keep rcon.host bound to 127.0.0.1 and restrict access with a firewall.
 rcon.host=127.0.0.1
 rcon.port=3001
 rcon.allowed=127.0.0.1;127.0.0.2
 
+#Encryption (RSA used in the client<->server Diffie-Hellman handshake).
+#SECURITY: with enc.enabled=false the handshake is unencrypted. The keypair below is the DEFAULT
+#Arcturus keypair shipped with every install and is therefore PUBLIC - it provides no real secrecy.
+#For production, generate your own RSA keypair and update the matching public key in your client.
 enc.enabled=false
 enc.e=3
 enc.n=86851dd364d5c5cece3c883171cc6ddc5760779b992482bd1e20dd296888df91b33b936a7b93f06d29e8870f703a216257dec7c81de0058fea4cc5116f75e6efc4e9113513e45357dc3fd43d4efab5963ef178b78bd61e81a14c603b24c8bcce0a12230b320045498edc29282ff0603bc7b7dae8fc1b05b52b2f301a9dc783b7

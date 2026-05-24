@@ -6,12 +6,14 @@ import com.eu.habbo.util.HexUtils;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.ThreadLocalRandom;
+import java.security.SecureRandom;
 
 public class HabboDiffieHellman {
 
     private static final int DH_PRIMES_BIT_SIZE = 128;
     private static final int DH_KEY_BIT_SIZE = 128;
+
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     private final HabboRSACrypto crypto;
 
@@ -35,8 +37,8 @@ public class HabboDiffieHellman {
     }
 
     private void generateDHPrimes() {
-        this.DHPrime = BigInteger.probablePrime(DH_PRIMES_BIT_SIZE, ThreadLocalRandom.current());
-        this.DHGenerator = BigInteger.probablePrime(DH_PRIMES_BIT_SIZE, ThreadLocalRandom.current());
+        this.DHPrime = BigInteger.probablePrime(DH_PRIMES_BIT_SIZE, RANDOM);
+        this.DHGenerator = BigInteger.probablePrime(DH_PRIMES_BIT_SIZE, RANDOM);
 
         if (this.DHGenerator.compareTo(this.DHPrime) > 0) {
             BigInteger temp = this.DHPrime;
@@ -47,7 +49,7 @@ public class HabboDiffieHellman {
     }
 
     private void generateDHKeys() {
-        this.DHPrivate = BigInteger.probablePrime(DH_KEY_BIT_SIZE, ThreadLocalRandom.current());
+        this.DHPrivate = BigInteger.probablePrime(DH_KEY_BIT_SIZE, RANDOM);
         this.DHPublic = this.DHGenerator.modPow(this.DHPrivate, this.DHPrime);
     }
 

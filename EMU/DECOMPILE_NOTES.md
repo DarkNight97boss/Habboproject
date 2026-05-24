@@ -1,28 +1,24 @@
-# EMU source — decompiled & patched to compile
+# EMU source — decompiled, made compilable, key files restored from upstream
 
 `src/main/java` is the **Arcturus Morningstar 3.5.3** source recovered from
-`Habbo-3.5.3.jar` with **Vineflower**, then hand-patched (~26 small fixes) so it
-compiles cleanly. The security audit found this build is vanilla Arcturus
-(only cosmetic "Zabbo MS" branding) — no backdoors.
+`Habbo-3.5.3.jar` with **Vineflower**, then made to compile. The security audit
+found this build is vanilla Arcturus (only cosmetic "Zabbo MS" branding) — no backdoors.
 
 ## Build
 ```
 cd EMU
 mvn -B package        # -> target/Habbo-3.5.3-jar-with-dependencies.jar
 ```
-Requires JDK 8+ and Maven (the pom targets Java 8). Verified: `mvn package` = BUILD SUCCESS.
+Requires JDK 8+ and Maven (the pom targets Java 8). Verified: `mvn package` = **BUILD SUCCESS**.
 
-## Patches applied (decompiler artifacts)
-Vineflower lost some type info; the fixes were mechanical except where noted:
-- Re-added generics on raw casts (AchievementManager, PacketManager,
-  RequestDeleteRoomEvent, PetBreedingResultComposer).
-- Fixed catch-variable names (EffectsComponent, YoutubeManager).
-- `PreparedStatement` cast in CleanerThread; raw `TObjectHashIterator` in PluginManager.
-- `boolean`/`int` fixes (CatalogBuyItemAsGiftEvent), final capture in a lambda
-  (WiredEffectChangeFurniDirection), `invalidTriggersx` typo in 4 wired effects.
-- **WiredHandler.java** had a heavily-mangled DB method: the 5 `return (boolean)randomNumber`
-  were replaced with `return randomNumber != 0;` to compile. **Review this method
-  against upstream if wired conditions misbehave at runtime.**
+## How the source was produced
+1. Decompiled `Habbo-3.5.3.jar` with Vineflower (much more recompilable than jadx).
+2. The decompiler still mangled ~26 spots; the worst was `WiredHandler` (a DB method
+   where the probability logic `randomNumber = nextInt(101)` was lost).
+3. **The 15 files that needed semantic fixes were then REPLACED with the authentic
+   upstream Arcturus 3.5.3 source** (git tag `3-5-3` from
+   https://git.krews.org/morningstar/Arcturus-Community), which builds 100% cleanly.
+   So `WiredHandler` and the other touched files are now the real upstream code, not guesses.
 
-## For a guaranteed-clean source
-Use the official upstream and build it: https://git.krews.org/morningstar/Arcturus-Community
+The remaining files are Vineflower-decompiled (readable, compile cleanly). For a
+fully-authentic, commented, maintainable tree, build directly from the upstream repo above.

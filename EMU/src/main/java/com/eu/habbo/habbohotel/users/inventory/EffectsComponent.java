@@ -6,366 +6,220 @@ import com.eu.habbo.messages.outgoing.inventory.EffectsListAddComposer;
 import com.eu.habbo.messages.outgoing.inventory.EffectsListEffectEnableComposer;
 import com.eu.habbo.messages.outgoing.inventory.EffectsListRemoveComposer;
 import gnu.trove.map.hash.THashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class EffectsComponent {
-   private static final Logger LOGGER = LoggerFactory.getLogger(EffectsComponent.class);
-   public final THashMap<Integer, EffectsComponent.HabboEffect> effects = new THashMap();
-   public final Habbo habbo;
-   public int activatedEffect = 0;
+    private static final Logger LOGGER = LoggerFactory.getLogger(EffectsComponent.class);
 
-   public EffectsComponent(Habbo habbo) {
-      this.habbo = habbo;
+    public final THashMap<Integer, HabboEffect> effects = new THashMap<>();
+    public final Habbo habbo;
+    public int activatedEffect = 0;
 
-      try {
-         Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-
-         try {
-            PreparedStatement statement = connection.prepareStatement("SELECT * FROM users_effects WHERE user_id = ?");
-
-            try {
-               statement.setInt(1, habbo.getHabboInfo().getId());
-               ResultSet set = statement.executeQuery();
-
-               try {
-                  while (set.next()) {
-                     this.effects.put(set.getInt("effect"), new EffectsComponent.HabboEffect(set));
-                  }
-               } catch (Throwable var10) {
-                  if (set != null) {
-                     try {
-                        set.close();
-                     } catch (Throwable var9) {
-                        var10.addSuppressed(var9);
-                     }
-                  }
-
-                  throw var10;
-               }
-
-               if (set != null) {
-                  set.close();
-               }
-            } catch (Throwable var11) {
-               if (statement != null) {
-                  try {
-                     statement.close();
-                  } catch (Throwable var8) {
-                     var11.addSuppressed(var8);
-                  }
-               }
-
-               throw var11;
+    public EffectsComponent(Habbo habbo) {
+        this.habbo = habbo;
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM users_effects WHERE user_id = ?")) {
+            statement.setInt(1, habbo.getHabboInfo().getId());
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    this.effects.put(set.getInt("effect"), new HabboEffect(set));
+                }
             }
-
-            if (statement != null) {
-               statement.close();
-            }
-         } catch (Throwable var12) {
-            if (connection != null) {
-               try {
-                  connection.close();
-               } catch (Throwable var7) {
-                  var12.addSuppressed(var7);
-               }
-            }
-
-            throw var12;
-         }
-
-         if (connection != null) {
-            connection.close();
-         }
-      } catch (SQLException e) {
-         LOGGER.error("Caught SQL exception", e);
-      }
-
-      if (habbo.getHabboInfo().getRank().getRoomEffect() > 0) {
-         this.createRankEffect(habbo.getHabboInfo().getRank().getRoomEffect());
-      }
-   }
-
-   public EffectsComponent.HabboEffect createEffect(int effectId) {
-      return this.createEffect(effectId, 86400);
-   }
-
-   public EffectsComponent.HabboEffect createEffect(int effectId, int duration) {
-      synchronized (this.effects) {
-         EffectsComponent.HabboEffect effect;
-         if (this.effects.containsKey(effectId)) {
-            effect = (EffectsComponent.HabboEffect)this.effects.get(effectId);
-            if (effect.total <= 99) {
-               effect.total++;
-            }
-         } else {
-            effect = new EffectsComponent.HabboEffect(effectId, this.habbo.getHabboInfo().getId());
-            effect.duration = duration;
-            effect.insert();
-         }
-
-         this.addEffect(effect);
-         return effect;
-      }
-   }
-
-   public EffectsComponent.HabboEffect createRankEffect(int effectId) {
-      EffectsComponent.HabboEffect rankEffect = new EffectsComponent.HabboEffect(effectId, this.habbo.getHabboInfo().getId());
-      rankEffect.duration = 0;
-      rankEffect.isRankEnable = true;
-      rankEffect.activationTimestamp = Emulator.getIntUnixTimestamp();
-      rankEffect.enabled = true;
-      this.effects.put(effectId, rankEffect);
-      this.activatedEffect = effectId;
-      return rankEffect;
-   }
-
-   public void addEffect(EffectsComponent.HabboEffect effect) {
-      this.effects.put(effect.effect, effect);
-      this.habbo.getClient().sendResponse(new EffectsListAddComposer(effect));
-   }
-
-   public void dispose() {
-      synchronized (this.effects) {
-         try {
-            Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-
-            try {
-               PreparedStatement statement = connection.prepareStatement(
-                  "UPDATE users_effects SET duration = ?, activation_timestamp = ?, total = ? WHERE user_id = ? AND effect = ?"
-               );
-
-               try {
-                  this.effects.forEachValue(effect -> {
-                     if (!effect.isRankEnable) {
-                        try {
-                           statement.setInt(1, effect.duration);
-                           statement.setInt(2, effect.activationTimestamp);
-                           statement.setInt(3, effect.total);
-                           statement.setInt(4, effect.userId);
-                           statement.setInt(5, effect.effect);
-                           statement.addBatch();
-                        } catch (SQLException e) {
-                           LOGGER.error("Caught SQL exception", e);
-                        }
-                     }
-
-                     return true;
-                  });
-                  statement.executeBatch();
-               } catch (Throwable var9) {
-                  if (statement != null) {
-                     try {
-                        statement.close();
-                     } catch (Throwable var8) {
-                        var9.addSuppressed(var8);
-                     }
-                  }
-
-                  throw var9;
-               }
-
-               if (statement != null) {
-                  statement.close();
-               }
-            } catch (Throwable var10) {
-               if (connection != null) {
-                  try {
-                     connection.close();
-                  } catch (Throwable var7) {
-                     var10.addSuppressed(var7);
-                  }
-               }
-
-               throw var10;
-            }
-
-            if (connection != null) {
-               connection.close();
-            }
-         } catch (SQLException e) {
+        } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
-         }
+        }
+        if(habbo.getHabboInfo().getRank().getRoomEffect() > 0)
+            this.createRankEffect(habbo.getHabboInfo().getRank().getRoomEffect());
+    }
 
-         this.effects.clear();
-      }
-   }
+    public HabboEffect createEffect(int effectId) {
+        return createEffect(effectId, 86400);
+    }
 
-   public boolean ownsEffect(int effectId) {
-      return this.effects.containsKey(effectId);
-   }
+    public HabboEffect createEffect(int effectId, int duration) {
+        HabboEffect effect;
+        synchronized (this.effects) {
+            if (this.effects.containsKey(effectId)) {
+                effect = this.effects.get(effectId);
 
-   public void activateEffect(int effectId) {
-      EffectsComponent.HabboEffect effect = (EffectsComponent.HabboEffect)this.effects.get(effectId);
-      if (effect != null) {
-         if (effect.isRemaining()) {
-            effect.activationTimestamp = Emulator.getIntUnixTimestamp();
-         } else {
-            this.habbo.getClient().sendResponse(new EffectsListRemoveComposer(effect));
-         }
-      }
-   }
-
-   public void enableEffect(int effectId) {
-      EffectsComponent.HabboEffect effect = (EffectsComponent.HabboEffect)this.effects.get(effectId);
-      if (effect != null) {
-         if (!effect.isActivated()) {
-            this.activateEffect(effect.effect);
-         }
-
-         this.activatedEffect = effectId;
-         if (this.habbo.getHabboInfo().getCurrentRoom() != null) {
-            this.habbo.getHabboInfo().getCurrentRoom().giveEffect(this.habbo, effectId, effect.remainingTime());
-         }
-
-         this.habbo.getClient().sendResponse(new EffectsListEffectEnableComposer(effect));
-      }
-   }
-
-   public boolean hasActivatedEffect(int effectId) {
-      EffectsComponent.HabboEffect effect = (EffectsComponent.HabboEffect)this.effects.get(effectId);
-      return effect != null ? effect.isActivated() : false;
-   }
-
-   public static class HabboEffect {
-      public int effect;
-      public int userId;
-      public int duration = 86400;
-      public int activationTimestamp = -1;
-      public int total = 1;
-      public boolean enabled = false;
-      public boolean isRankEnable = false;
-
-      public HabboEffect(ResultSet set) throws SQLException {
-         this.effect = set.getInt("effect");
-         this.userId = set.getInt("user_id");
-         this.duration = set.getInt("duration");
-         this.activationTimestamp = set.getInt("activation_timestamp");
-         this.total = set.getInt("total");
-      }
-
-      public HabboEffect(int effect, int userId) {
-         this.effect = effect;
-         this.userId = userId;
-      }
-
-      public boolean isActivated() {
-         return this.activationTimestamp >= 0;
-      }
-
-      public boolean isRemaining() {
-         if (this.duration <= 0) {
-            return true;
-         }
-
-         if (this.total > 0 && this.activationTimestamp >= 0 && Emulator.getIntUnixTimestamp() - this.activationTimestamp >= this.duration) {
-            this.activationTimestamp = -1;
-            this.total--;
-         }
-
-         return this.total > 0;
-      }
-
-      public int remainingTime() {
-         return this.duration <= 0 ? Integer.MAX_VALUE : Emulator.getIntUnixTimestamp() - this.activationTimestamp + this.duration;
-      }
-
-      public void insert() {
-         try {
-            Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-
-            try {
-               PreparedStatement statement = connection.prepareStatement("INSERT INTO users_effects (user_id, effect, total, duration) VALUES (?, ?, ?, ?)");
-
-               try {
-                  statement.setInt(1, this.userId);
-                  statement.setInt(2, this.effect);
-                  statement.setInt(3, this.total);
-                  statement.setInt(4, this.duration);
-                  statement.execute();
-               } catch (Throwable var7) {
-                  if (statement != null) {
-                     try {
-                        statement.close();
-                     } catch (Throwable var6) {
-                        var7.addSuppressed(var6);
-                     }
-                  }
-
-                  throw var7;
-               }
-
-               if (statement != null) {
-                  statement.close();
-               }
-            } catch (Throwable var8) {
-               if (connection != null) {
-                  try {
-                     connection.close();
-                  } catch (Throwable var5) {
-                     var8.addSuppressed(var5);
-                  }
-               }
-
-               throw var8;
+                if (effect.total <= 99) {
+                    effect.total++;
+                }
+            } else {
+                effect = new HabboEffect(effectId, this.habbo.getHabboInfo().getId());
+                effect.duration = duration;
+                effect.insert();
             }
 
-            if (connection != null) {
-               connection.close();
+            this.addEffect(effect);
+        }
+
+        return effect;
+    }
+
+    public HabboEffect createRankEffect(int effectId) {
+        HabboEffect rankEffect = new HabboEffect(effectId, habbo.getHabboInfo().getId());
+        rankEffect.duration = 0;
+        rankEffect.isRankEnable = true;
+        rankEffect.activationTimestamp = Emulator.getIntUnixTimestamp();
+        rankEffect.enabled = true;
+        this.effects.put(effectId, rankEffect);
+        this.activatedEffect = effectId; // enabled by default
+        return rankEffect;
+    }
+
+    public void addEffect(HabboEffect effect) {
+        this.effects.put(effect.effect, effect);
+
+        this.habbo.getClient().sendResponse(new EffectsListAddComposer(effect));
+    }
+
+    public void dispose() {
+        synchronized (this.effects) {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE users_effects SET duration = ?, activation_timestamp = ?, total = ? WHERE user_id = ? AND effect = ?")) {
+                this.effects.forEachValue(effect -> {
+                    if(!effect.isRankEnable) {
+                        try {
+                            statement.setInt(1, effect.duration);
+                            statement.setInt(2, effect.activationTimestamp);
+                            statement.setInt(3, effect.total);
+                            statement.setInt(4, effect.userId);
+                            statement.setInt(5, effect.effect);
+                            statement.addBatch();
+                        } catch (SQLException e) {
+                            LOGGER.error("Caught SQL exception", e);
+                        }
+                    }
+                    return true;
+                });
+
+                statement.executeBatch();
+            } catch (SQLException e) {
+                LOGGER.error("Caught SQL exception", e);
             }
-         } catch (SQLException e) {
-            EffectsComponent.LOGGER.error("Caught SQL exception", e);
-         }
-      }
 
-      public void delete() {
-         try {
-            Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+            this.effects.clear();
+        }
+    }
 
-            try {
-               PreparedStatement statement = connection.prepareStatement("DELETE FROM users_effects WHERE user_id = ? AND effect = ?");
+    public boolean ownsEffect(int effectId) {
+        return this.effects.containsKey(effectId);
+    }
 
-               try {
-                  statement.setInt(1, this.userId);
-                  statement.setInt(2, this.effect);
-                  statement.execute();
-               } catch (Throwable var7) {
-                  if (statement != null) {
-                     try {
-                        statement.close();
-                     } catch (Throwable var6) {
-                        var7.addSuppressed(var6);
-                     }
-                  }
+    public void activateEffect(int effectId) {
+        HabboEffect effect = this.effects.get(effectId);
 
-                  throw var7;
-               }
+        if (effect != null) {
+            if (effect.isRemaining()) {
+                effect.activationTimestamp = Emulator.getIntUnixTimestamp();
+            } else {
+                this.habbo.getClient().sendResponse(new EffectsListRemoveComposer(effect));
+            }
+        }
+    }
 
-               if (statement != null) {
-                  statement.close();
-               }
-            } catch (Throwable var8) {
-               if (connection != null) {
-                  try {
-                     connection.close();
-                  } catch (Throwable var5) {
-                     var8.addSuppressed(var5);
-                  }
-               }
+    public void enableEffect(int effectId) {
+        HabboEffect effect = this.effects.get(effectId);
 
-               throw var8;
+        if (effect != null) {
+            if (!effect.isActivated()) {
+                this.activateEffect(effect.effect);
             }
 
-            if (connection != null) {
-               connection.close();
+            this.activatedEffect = effectId;
+
+            if (this.habbo.getHabboInfo().getCurrentRoom() != null) {
+                this.habbo.getHabboInfo().getCurrentRoom().giveEffect(this.habbo, effectId, effect.remainingTime());
             }
-         } catch (SQLException e) {
-            EffectsComponent.LOGGER.error("Caught SQL exception", e);
-         }
-      }
-   }
+
+            this.habbo.getClient().sendResponse(new EffectsListEffectEnableComposer(effect));
+        }
+    }
+
+    public boolean hasActivatedEffect(int effectId) {
+        HabboEffect effect = this.effects.get(effectId);
+
+        if (effect != null) {
+            return effect.isActivated();
+        }
+
+        return false;
+    }
+
+    public static class HabboEffect {
+        public int effect;
+        public int userId;
+        public int duration = 86400;
+        public int activationTimestamp = -1;
+        public int total = 1;
+        public boolean enabled = false;
+        public boolean isRankEnable = false;
+
+        public HabboEffect(ResultSet set) throws SQLException {
+            this.effect = set.getInt("effect");
+            this.userId = set.getInt("user_id");
+            this.duration = set.getInt("duration");
+            this.activationTimestamp = set.getInt("activation_timestamp");
+            this.total = set.getInt("total");
+        }
+
+        public HabboEffect(int effect, int userId) {
+            this.effect = effect;
+            this.userId = userId;
+        }
+
+        public boolean isActivated() {
+            return this.activationTimestamp >= 0;
+        }
+
+        public boolean isRemaining() {
+            if(this.duration <= 0)
+                return true;
+
+            if (this.total > 0) {
+                if (this.activationTimestamp >= 0) {
+                    if (Emulator.getIntUnixTimestamp() - this.activationTimestamp >= this.duration) {
+                        this.activationTimestamp = -1;
+                        this.total--;
+                    }
+                }
+            }
+
+            return this.total > 0;
+        }
+
+        public int remainingTime() {
+            if(this.duration <= 0) //permanant
+                return Integer.MAX_VALUE;
+
+            return Emulator.getIntUnixTimestamp() - this.activationTimestamp + this.duration;
+        }
+
+        public void insert() {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO users_effects (user_id, effect, total, duration) VALUES (?, ?, ?, ?)")) {
+                statement.setInt(1, this.userId);
+                statement.setInt(2, this.effect);
+                statement.setInt(3, this.total);
+                statement.setInt(4, this.duration);
+                statement.execute();
+            } catch (SQLException e) {
+                LOGGER.error("Caught SQL exception", e);
+            }
+        }
+
+        public void delete() {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("DELETE FROM users_effects WHERE user_id = ? AND effect = ?")) {
+                statement.setInt(1, this.userId);
+                statement.setInt(2, this.effect);
+                statement.execute();
+            } catch (SQLException e) {
+                LOGGER.error("Caught SQL exception", e);
+            }
+        }
+    }
 }

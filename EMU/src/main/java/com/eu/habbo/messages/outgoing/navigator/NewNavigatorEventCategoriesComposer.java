@@ -3,21 +3,24 @@ package com.eu.habbo.messages.outgoing.navigator;
 import com.eu.habbo.habbohotel.navigation.EventCategory;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
+import com.eu.habbo.messages.outgoing.Outgoing;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class NewNavigatorEventCategoriesComposer extends MessageComposer {
-   public static List<EventCategory> CATEGORIES = new ArrayList<>();
+    public static List<EventCategory> CATEGORIES = new ArrayList<>();
 
-   @Override
-   protected ServerMessage composeInternal() {
-      this.response.init(3244);
-      this.response.appendInt(CATEGORIES.size());
+    @Override
+    protected ServerMessage composeInternal() {
+        this.response.init(Outgoing.NewNavigatorEventCategoriesComposer);
 
-      for (EventCategory category : CATEGORIES) {
-         category.serialize(this.response);
-      }
+        this.response.appendInt(NewNavigatorEventCategoriesComposer.CATEGORIES.size());
 
-      return this.response;
-   }
+        for (EventCategory category : NewNavigatorEventCategoriesComposer.CATEGORIES) {
+            category.serialize(this.response);
+        }
+
+        return this.response;
+    }
 }

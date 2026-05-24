@@ -5,10 +5,10 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import gnu.trove.set.hash.THashSet;
 
 public class InventoryItemsAddedEvent extends InventoryEvent {
-   public final THashSet<HabboItem> items;
+    public final THashSet<HabboItem> items;
 
-   public InventoryItemsAddedEvent(HabboInventory inventory, THashSet<HabboItem> items) {
-      super(inventory);
-      this.items = items;
-   }
+    public InventoryItemsAddedEvent(HabboInventory inventory, THashSet<HabboItem> items) {
+        super(inventory);
+        this.items = items;
+    }
 }

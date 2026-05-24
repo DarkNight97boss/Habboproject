@@ -9,20 +9,22 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.threading.runnables.PetFollowHabbo;
 
 public class ActionFollowLeft extends PetAction {
-   public ActionFollowLeft() {
-      super(PetTasks.FOLLOW, true);
-   }
+    public ActionFollowLeft() {
+        super(PetTasks.FOLLOW, true);
+    }
 
-   @Override
-   public boolean apply(Pet pet, Habbo habbo, String[] data) {
-      pet.clearPosture();
-      Emulator.getThreading().run(new PetFollowHabbo(pet, habbo, -2));
-      if (pet.getHappyness() > 75) {
-         pet.say(pet.getPetData().randomVocal(PetVocalsType.PLAYFUL));
-      } else {
-         pet.say(pet.getPetData().randomVocal(PetVocalsType.GENERIC_NEUTRAL));
-      }
+    @Override
+    public boolean apply(Pet pet, Habbo habbo, String[] data) {
+        //Follow left.
+        pet.clearPosture();
 
-      return true;
-   }
+        Emulator.getThreading().run(new PetFollowHabbo(pet, habbo, -2));
+
+        if (pet.getHappiness() > 75)
+            pet.say(pet.getPetData().randomVocal(PetVocalsType.PLAYFUL));
+        else
+            pet.say(pet.getPetData().randomVocal(PetVocalsType.GENERIC_NEUTRAL));
+
+        return true;
+    }
 }

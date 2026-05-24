@@ -1,24 +1,24 @@
 package com.eu.habbo.habbohotel.items.interactions.totems;
 
 public enum TotemType {
-   NONE(0),
-   TROLL(1),
-   SNAKE(2),
-   BIRD(3);
 
-   public final int type;
+    NONE(0),
+    TROLL(1),
+    SNAKE(2),
+    BIRD(3);
 
-   TotemType(int type) {
-      this.type = type;
-   }
+    public final int type;
 
-   public static TotemType fromInt(int type) {
-      for (TotemType totemType : values()) {
-         if (totemType.type == type) {
-            return totemType;
-         }
-      }
+    TotemType(int type) {
+        this.type = type;
+    }
 
-      return NONE;
-   }
+    public static TotemType fromInt(int type) {
+        for(TotemType totemType : TotemType.values()) {
+            if(totemType.type == type)
+                return totemType;
+        }
+
+        return NONE;
+    }
 }

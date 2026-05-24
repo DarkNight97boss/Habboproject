@@ -8,16 +8,18 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 
 public class CameraRoomThumbnailGeneratedEvent extends CameraIncomingMessage {
-   public CameraRoomThumbnailGeneratedEvent(Short header, ByteBuf body) {
-      super(header, body);
-   }
+    public CameraRoomThumbnailGeneratedEvent(Short header, ByteBuf body) {
+        super(header, body);
+    }
 
-   @Override
-   public void handle(Channel client) throws Exception {
-      int userId = this.readInt();
-      Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
-      if (habbo != null) {
-         habbo.getClient().sendResponse(new CameraRoomThumbnailSavedComposer());
-      }
-   }
+    @Override
+    public void handle(Channel client) throws Exception {
+        int userId = this.readInt();
+
+        Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
+
+        if (habbo != null) {
+            habbo.getClient().sendResponse(new CameraRoomThumbnailSavedComposer());
+        }
+    }
 }

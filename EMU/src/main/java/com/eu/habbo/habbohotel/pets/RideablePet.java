@@ -1,52 +1,56 @@
 package com.eu.habbo.habbohotel.pets;
 
 import com.eu.habbo.habbohotel.users.Habbo;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class RideablePet extends Pet {
-   private Habbo rider = null;
-   private boolean hasSaddle;
-   private boolean anyoneCanRide;
-   private int saddleItemId;
 
-   public RideablePet(ResultSet set) throws SQLException {
-      super(set);
-   }
+    private Habbo rider;
+    private boolean hasSaddle;
+    private boolean anyoneCanRide;
+    private int saddleItemId;
 
-   public RideablePet(int type, int race, String color, String name, int userId) {
-      super(type, race, color, name, userId);
-   }
+    public RideablePet(ResultSet set) throws SQLException {
+        super(set);
+        this.rider = null;
+    }
 
-   public boolean hasSaddle() {
-      return this.hasSaddle;
-   }
+    public RideablePet(int type, int race, String color, String name, int userId) {
+        super(type, race, color, name, userId);
+        this.rider = null;
+    }
 
-   public void hasSaddle(boolean hasSaddle) {
-      this.hasSaddle = hasSaddle;
-   }
+    public boolean hasSaddle() {
+        return this.hasSaddle;
+    }
 
-   public boolean anyoneCanRide() {
-      return this.anyoneCanRide;
-   }
+    public void hasSaddle(boolean hasSaddle) {
+        this.hasSaddle = hasSaddle;
+    }
 
-   public void setAnyoneCanRide(boolean anyoneCanRide) {
-      this.anyoneCanRide = anyoneCanRide;
-   }
+    public boolean anyoneCanRide() {
+        return this.anyoneCanRide;
+    }
 
-   public Habbo getRider() {
-      return this.rider;
-   }
+    public void setAnyoneCanRide(boolean anyoneCanRide) {
+        this.anyoneCanRide = anyoneCanRide;
+    }
 
-   public void setRider(Habbo rider) {
-      this.rider = rider;
-   }
+    public Habbo getRider() {
+        return this.rider;
+    }
 
-   public int getSaddleItemId() {
-      return this.saddleItemId;
-   }
+    public void setRider(Habbo rider) {
+        this.rider = rider;
+    }
 
-   public void setSaddleItemId(int saddleItemId) {
-      this.saddleItemId = saddleItemId;
-   }
+    public int getSaddleItemId() {
+        return saddleItemId;
+    }
+
+    public void setSaddleItemId(int saddleItemId) {
+        this.saddleItemId = saddleItemId;
+    }
 }

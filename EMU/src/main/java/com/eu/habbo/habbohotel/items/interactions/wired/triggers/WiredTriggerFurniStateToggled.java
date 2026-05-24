@@ -11,153 +11,153 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.WiredHandler;
 import com.eu.habbo.habbohotel.wired.WiredTriggerType;
+import com.eu.habbo.messages.ClientMessage;
 import com.eu.habbo.messages.ServerMessage;
-import gnu.trove.iterator.hash.TObjectHashIterator;
 import gnu.trove.set.hash.THashSet;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class WiredTriggerFurniStateToggled extends InteractionWiredTrigger {
-   private static final WiredTriggerType type = WiredTriggerType.STATE_CHANGED;
-   private THashSet<HabboItem> items = new THashSet();
+    private static final WiredTriggerType type = WiredTriggerType.STATE_CHANGED;
 
-   public WiredTriggerFurniStateToggled(ResultSet set, Item baseItem) throws SQLException {
-      super(set, baseItem);
-   }
+    private THashSet<HabboItem> items;
 
-   public WiredTriggerFurniStateToggled(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
-      super(id, userId, item, extradata, limitedStack, limitedSells);
-   }
+    public WiredTriggerFurniStateToggled(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+        this.items = new THashSet<>();
+    }
 
-   @Override
-   public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
-      if (stuff.length >= 1) {
-         Habbo habbo = room.getHabbo(roomUnit);
-         if (habbo != null) {
-            for (Object object : stuff) {
-               if (object instanceof WiredEffectType) {
-                  return false;
-               }
+    public WiredTriggerFurniStateToggled(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+        this.items = new THashSet<>();
+    }
+
+    @Override
+    public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
+        if (stuff.length >= 1) {
+            Habbo habbo = room.getHabbo(roomUnit);
+
+            if (habbo != null) {
+                for (Object object : stuff) {
+                    if (object instanceof WiredEffectType) {
+                        return false;
+                    }
+                }
+
+                if (stuff[0] instanceof HabboItem) {
+                    return this.items.contains(stuff[0]);
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public String getWiredData() {
+        return WiredHandler.getGsonBuilder().create().toJson(new JsonData(
+            this.items.stream().map(HabboItem::getId).collect(Collectors.toList())
+        ));
+    }
+
+    @Override
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        this.items = new THashSet<>();
+        String wiredData = set.getString("wired_data");
+
+        if (wiredData.startsWith("{")) {
+            JsonData data = WiredHandler.getGsonBuilder().create().fromJson(wiredData, JsonData.class);
+            for (Integer id: data.itemIds) {
+                HabboItem item = room.getHabboItem(id);
+                if (item != null) {
+                    this.items.add(item);
+                }
+            }
+        } else {
+            if (wiredData.split(":").length >= 3) {
+                super.setDelay(Integer.parseInt(wiredData.split(":")[0]));
+
+                if (!wiredData.split(":")[2].equals("\t")) {
+                    for (String s : wiredData.split(":")[2].split(";")) {
+                        HabboItem item = room.getHabboItem(Integer.parseInt(s));
+
+                        if (item != null)
+                            this.items.add(item);
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onPickUp() {
+        this.items.clear();
+    }
+
+    @Override
+    public WiredTriggerType getType() {
+        return type;
+    }
+
+    @Override
+    public void serializeWiredData(ServerMessage message, Room room) {
+        THashSet<HabboItem> items = new THashSet<>();
+
+        for (HabboItem item : this.items) {
+            if (item.getRoomId() != this.getRoomId()) {
+                items.add(item);
+                continue;
             }
 
-            if (stuff[0] instanceof HabboItem) {
-               return this.items.contains(stuff[0]);
+            if (room.getHabboItem(item.getId()) == null) {
+                items.add(item);
             }
-         }
-      }
+        }
 
-      return false;
-   }
+        for (HabboItem item : items) {
+            this.items.remove(item);
+        }
 
-   @Override
-   public String getWiredData() {
-      return WiredHandler.getGsonBuilder()
-         .create()
-         .toJson(new WiredTriggerFurniStateToggled.JsonData(this.items.stream().map(HabboItem::getId).collect(Collectors.toList())));
-   }
+        message.appendBoolean(false);
+        message.appendInt(WiredHandler.MAXIMUM_FURNI_SELECTION);
+        message.appendInt(this.items.size());
+        for (HabboItem item : this.items) {
+            message.appendInt(item.getId());
+        }
+        message.appendInt(this.getBaseItem().getSpriteId());
+        message.appendInt(this.getId());
+        message.appendString("");
+        message.appendInt(0);
+        message.appendInt(0);
+        message.appendInt(this.getType().code);
+        message.appendInt(0);
+    }
 
-   @Override
-   public void loadWiredData(ResultSet set, Room room) throws SQLException {
-      this.items = new THashSet();
-      String wiredData = set.getString("wired_data");
-      if (wiredData.startsWith("{")) {
-         WiredTriggerFurniStateToggled.JsonData data = (WiredTriggerFurniStateToggled.JsonData)WiredHandler.getGsonBuilder()
-            .create()
-            .fromJson(wiredData, WiredTriggerFurniStateToggled.JsonData.class);
+    @Override
+    public boolean saveData(WiredSettings settings) {
+        this.items.clear();
 
-         for (Integer id : data.itemIds) {
-            HabboItem item = room.getHabboItem(id);
-            if (item != null) {
-               this.items.add(item);
-            }
-         }
-      } else if (wiredData.split(":").length >= 3) {
-         super.setDelay(Integer.parseInt(wiredData.split(":")[0]));
-         if (!wiredData.split(":")[2].equals("\t")) {
-            for (String s : wiredData.split(":")[2].split(";")) {
-               HabboItem item = room.getHabboItem(Integer.parseInt(s));
-               if (item != null) {
-                  this.items.add(item);
-               }
-            }
-         }
-      }
-   }
+        int count = settings.getFurniIds().length;
 
-   @Override
-   public void onPickUp() {
-      this.items.clear();
-   }
+        for (int i = 0; i < count; i++) {
+            this.items.add(Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId()).getHabboItem(settings.getFurniIds()[i]));
+        }
 
-   @Override
-   public WiredTriggerType getType() {
-      return type;
-   }
+        return true;
+    }
 
-   @Override
-   public void serializeWiredData(ServerMessage message, Room room) {
-      THashSet<HabboItem> items = new THashSet();
-      TObjectHashIterator var4 = this.items.iterator();
+    @Override
+    public boolean isTriggeredByRoomUnit() {
+        return true;
+    }
 
-      while (var4.hasNext()) {
-         HabboItem item = (HabboItem)var4.next();
-         if (item.getRoomId() != this.getRoomId()) {
-            items.add(item);
-         } else if (room.getHabboItem(item.getId()) == null) {
-            items.add(item);
-         }
-      }
+    static class JsonData {
+        List<Integer> itemIds;
 
-      var4 = items.iterator();
-
-      while (var4.hasNext()) {
-         HabboItem item = (HabboItem)var4.next();
-         this.items.remove(item);
-      }
-
-      message.appendBoolean(false);
-      message.appendInt(WiredHandler.MAXIMUM_FURNI_SELECTION);
-      message.appendInt(this.items.size());
-      var4 = this.items.iterator();
-
-      while (var4.hasNext()) {
-         HabboItem item = (HabboItem)var4.next();
-         message.appendInt(item.getId());
-      }
-
-      message.appendInt(this.getBaseItem().getSpriteId());
-      message.appendInt(this.getId());
-      message.appendString("");
-      message.appendInt(0);
-      message.appendInt(0);
-      message.appendInt(this.getType().code);
-      message.appendInt(0);
-   }
-
-   @Override
-   public boolean saveData(WiredSettings settings) {
-      this.items.clear();
-      int count = settings.getFurniIds().length;
-
-      for (int i = 0; i < count; i++) {
-         this.items.add(Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId()).getHabboItem(settings.getFurniIds()[i]));
-      }
-
-      return true;
-   }
-
-   @Override
-   public boolean isTriggeredByRoomUnit() {
-      return true;
-   }
-
-   static class JsonData {
-      List<Integer> itemIds;
-
-      public JsonData(List<Integer> itemIds) {
-         this.itemIds = itemIds;
-      }
-   }
+        public JsonData(List<Integer> itemIds) {
+            this.itemIds = itemIds;
+        }
+    }
 }

@@ -8,29 +8,36 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ExecuteCommand extends RCONMessage<ExecuteCommand.JSONExecuteCommand> {
-   private static final Logger LOGGER = LoggerFactory.getLogger(ExecuteCommand.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExecuteCommand.class);
 
-   public ExecuteCommand() {
-      super(ExecuteCommand.JSONExecuteCommand.class);
-   }
 
-   public void handle(Gson gson, ExecuteCommand.JSONExecuteCommand json) {
-      try {
-         Habbo habbo = Emulator.getGameServer().getGameClientManager().getHabbo(json.user_id);
-         if (habbo == null) {
-            this.status = 2;
-            return;
-         }
+    public ExecuteCommand() {
+        super(JSONExecuteCommand.class);
+    }
 
-         CommandHandler.handleCommand(habbo.getClient(), json.command);
-      } catch (Exception e) {
-         this.status = 1;
-         LOGGER.error("Caught exception", e);
-      }
-   }
+    @Override
+    public void handle(Gson gson, JSONExecuteCommand json) {
+        try {
+            Habbo habbo = Emulator.getGameServer().getGameClientManager().getHabbo(json.user_id);
 
-   static class JSONExecuteCommand {
-      public int user_id;
-      public String command;
-   }
+            if (habbo == null) {
+                this.status = HABBO_NOT_FOUND;
+                return;
+            }
+
+
+            CommandHandler.handleCommand(habbo.getClient(), json.command);
+        } catch (Exception e) {
+            this.status = STATUS_ERROR;
+            LOGGER.error("Caught exception", e);
+        }
+    }
+
+    static class JSONExecuteCommand {
+
+        public int user_id;
+
+
+        public String command;
+    }
 }

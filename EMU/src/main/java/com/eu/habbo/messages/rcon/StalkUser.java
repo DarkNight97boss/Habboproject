@@ -6,46 +6,52 @@ import com.eu.habbo.messages.outgoing.rooms.ForwardToRoomComposer;
 import com.google.gson.Gson;
 
 public class StalkUser extends RCONMessage<StalkUser.StalkUserJSON> {
-   public StalkUser() {
-      super(StalkUser.StalkUserJSON.class);
-   }
+    public StalkUser() {
+        super(StalkUserJSON.class);
+    }
 
-   public void handle(Gson gson, StalkUser.StalkUserJSON json) {
-      Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(json.user_id);
-      if (habbo != null) {
-         Habbo target = Emulator.getGameEnvironment().getHabboManager().getHabbo(json.follow_id);
-         if (target == null) {
-            this.message = Emulator.getTexts().getValue("commands.error.cmd_stalk.not_found").replace("%user%", json.user_id + "");
-            this.status = 1;
-            return;
-         }
+    @Override
+    public void handle(Gson gson, StalkUserJSON json) {
+        Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(json.user_id);
 
-         if (target.getHabboInfo().getCurrentRoom() == null) {
-            this.message = Emulator.getTexts().getValue("commands.error.cmd_stalk.not_room").replace("%user%", json.user_id + "");
-            this.status = 1;
-            return;
-         }
+        if (habbo != null) {
+            Habbo target = Emulator.getGameEnvironment().getHabboManager().getHabbo(json.follow_id);
 
-         if (target.getHabboInfo().getUsername().equals(habbo.getHabboInfo().getUsername())) {
-            this.message = Emulator.getTexts().getValue("commands.generic.cmd_stalk.self").replace("%user%", json.user_id + "");
-            this.status = 1;
-            return;
-         }
+            if (target == null) {
+                this.message = Emulator.getTexts().getValue("commands.error.cmd_stalk.not_found").replace("%user%", json.user_id + "");
+                this.status = STATUS_ERROR;
+                return;
+            }
 
-         if (target.getHabboInfo().getCurrentRoom() == habbo.getHabboInfo().getCurrentRoom()) {
-            this.message = Emulator.getTexts().getValue("commands.generic.cmd_stalk.same_room").replace("%user%", json.user_id + "");
-            this.status = 1;
-            return;
-         }
+            if (target.getHabboInfo().getCurrentRoom() == null) {
+                this.message = Emulator.getTexts().getValue("commands.error.cmd_stalk.not_room").replace("%user%", json.user_id + "");
+                this.status = STATUS_ERROR;
+                return;
+            }
 
-         if (this.status == 0) {
-            habbo.getClient().sendResponse(new ForwardToRoomComposer(target.getHabboInfo().getCurrentRoom().getId()));
-         }
-      }
-   }
+            if (target.getHabboInfo().getUsername().equals(habbo.getHabboInfo().getUsername())) {
+                this.message = Emulator.getTexts().getValue("commands.generic.cmd_stalk.self").replace("%user%", json.user_id + "");
+                this.status = STATUS_ERROR;
+                return;
+            }
 
-   static class StalkUserJSON {
-      public int user_id;
-      public int follow_id;
-   }
+            if (target.getHabboInfo().getCurrentRoom() == habbo.getHabboInfo().getCurrentRoom()) {
+                this.message = Emulator.getTexts().getValue("commands.generic.cmd_stalk.same_room").replace("%user%", json.user_id + "");
+                this.status = STATUS_ERROR;
+                return;
+            }
+
+            if (this.status == 0) {
+                habbo.getClient().sendResponse(new ForwardToRoomComposer(target.getHabboInfo().getCurrentRoom().getId()));
+            }
+        }
+    }
+
+    static class StalkUserJSON {
+
+        public int user_id;
+
+
+        public int follow_id;
+    }
 }

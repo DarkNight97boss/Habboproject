@@ -1,34 +1,34 @@
 package com.eu.habbo.habbohotel.navigation;
 
 public class NavigatorSavedSearch {
-   private String searchCode;
-   private String filter;
-   private int id;
+    private String searchCode;
+    private String filter;
+    private int id;
 
-   public NavigatorSavedSearch(String searchCode, String filter) {
-      this.searchCode = searchCode;
-      this.filter = filter;
-   }
+    public NavigatorSavedSearch(String searchCode, String filter) {
+        this.searchCode = searchCode;
+        this.filter = filter;
+    }
 
-   public NavigatorSavedSearch(String searchCode, String filter, int id) {
-      this.searchCode = searchCode;
-      this.filter = filter;
-      this.id = id;
-   }
+    public NavigatorSavedSearch(String searchCode, String filter, int id) {
+        this.searchCode = searchCode;
+        this.filter = filter;
+        this.id = id;
+    }
 
-   public String getSearchCode() {
-      return this.searchCode;
-   }
+    public String getSearchCode() {
+        return searchCode;
+    }
 
-   public String getFilter() {
-      return this.filter;
-   }
+    public String getFilter() {
+        return filter;
+    }
 
-   public int getId() {
-      return this.id;
-   }
+    public int getId() {
+        return id;
+    }
 
-   public void setId(int id) {
-      this.id = id;
-   }
+    public void setId(int id) {
+        this.id = id;
+    }
 }

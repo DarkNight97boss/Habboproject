@@ -7,18 +7,22 @@ import com.eu.habbo.util.HexUtils;
 
 @NoAuthMessage
 public class MachineIDEvent extends MessageHandler {
-   private static final int HASH_LENGTH = 64;
 
-   @Override
-   public void handle() throws Exception {
-      String storedMachineId = this.packet.readString();
-      String clientFingerprint = this.packet.readString();
-      String capabilities = this.packet.readString();
-      if (storedMachineId.startsWith("~") || storedMachineId.length() != 64) {
-         storedMachineId = HexUtils.getRandom(64);
-         this.client.sendResponse(new MachineIDComposer(storedMachineId));
-      }
+    private static final int HASH_LENGTH = 64;
 
-      this.client.setMachineId(storedMachineId);
-   }
+    @Override
+    public void handle() throws Exception {
+        String storedMachineId = this.packet.readString();
+        String clientFingerprint = this.packet.readString();
+        String capabilities = this.packet.readString();
+
+        // Update stored machine id if it doesn't match our requirements.
+        if (storedMachineId.startsWith("~") || storedMachineId.length() != HASH_LENGTH) {
+            storedMachineId = HexUtils.getRandom(HASH_LENGTH);
+            this.client.sendResponse(new MachineIDComposer(storedMachineId));
+        }
+
+        this.client.setMachineId(storedMachineId);
+    }
+
 }

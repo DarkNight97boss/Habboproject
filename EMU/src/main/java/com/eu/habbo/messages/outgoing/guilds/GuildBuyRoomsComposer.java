@@ -4,46 +4,53 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
-import gnu.trove.iterator.hash.TObjectHashIterator;
+import com.eu.habbo.messages.outgoing.Outgoing;
 import gnu.trove.set.hash.THashSet;
 
 public class GuildBuyRoomsComposer extends MessageComposer {
-   private final THashSet<Room> rooms;
+    private final THashSet<Room> rooms;
 
-   public GuildBuyRoomsComposer(THashSet<Room> rooms) {
-      this.rooms = rooms;
-   }
+    public GuildBuyRoomsComposer(THashSet<Room> rooms) {
+        this.rooms = rooms;
+    }
 
-   @Override
-   protected ServerMessage composeInternal() {
-      this.response.init(2159);
-      this.response.appendInt(Emulator.getConfig().getInt("catalog.guild.price"));
-      this.response.appendInt(this.rooms.size());
-      TObjectHashIterator var1 = this.rooms.iterator();
+    @Override
+    protected ServerMessage composeInternal() {
+        this.response.init(Outgoing.GuildBuyRoomsComposer);
+        this.response.appendInt(Emulator.getConfig().getInt("catalog.guild.price"));
+        this.response.appendInt(this.rooms.size());
 
-      while (var1.hasNext()) {
-         Room room = (Room)var1.next();
-         this.response.appendInt(room.getId());
-         this.response.appendString(room.getName());
-         this.response.appendBoolean(false);
-      }
+        for (Room room : this.rooms) {
+            this.response.appendInt(room.getId());
+            this.response.appendString(room.getName());
+            this.response.appendBoolean(false);
+        }
 
-      this.response.appendInt(5);
-      this.response.appendInt(10);
-      this.response.appendInt(3);
-      this.response.appendInt(4);
-      this.response.appendInt(25);
-      this.response.appendInt(17);
-      this.response.appendInt(5);
-      this.response.appendInt(25);
-      this.response.appendInt(17);
-      this.response.appendInt(3);
-      this.response.appendInt(29);
-      this.response.appendInt(11);
-      this.response.appendInt(4);
-      this.response.appendInt(0);
-      this.response.appendInt(0);
-      this.response.appendInt(0);
-      return this.response;
-   }
+        this.response.appendInt(5);
+
+        this.response.appendInt(10);
+        this.response.appendInt(3);
+        this.response.appendInt(4);
+
+        this.response.appendInt(25);
+        this.response.appendInt(17);
+        this.response.appendInt(5);
+
+        this.response.appendInt(25);
+        this.response.appendInt(17);
+        this.response.appendInt(3);
+
+        this.response.appendInt(29);
+        this.response.appendInt(11);
+        this.response.appendInt(4);
+
+        this.response.appendInt(0);
+        this.response.appendInt(0);
+        this.response.appendInt(0);
+        return this.response;
+    }
+
+    public THashSet<Room> getRooms() {
+        return rooms;
+    }
 }

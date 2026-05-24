@@ -6,22 +6,23 @@ import com.eu.habbo.habbohotel.pets.PetVocalsType;
 import com.eu.habbo.habbohotel.users.Habbo;
 
 public class ActionNest extends PetAction {
-   public ActionNest() {
-      super(null, false);
-   }
+    public ActionNest() {
+        super(null, false);
+    }
 
-   @Override
-   public boolean apply(Pet pet, Habbo habbo, String[] data) {
-      if (pet.getEnergy() < 65) {
-         pet.findNest();
-         if (pet.getEnergy() < 30) {
-            pet.say(pet.getPetData().randomVocal(PetVocalsType.TIRED));
-         }
+    @Override
+    public boolean apply(Pet pet, Habbo habbo, String[] data) {
+        if (pet.getEnergy() < 65) {
+            pet.findNest();
 
-         return true;
-      } else {
-         pet.say(pet.getPetData().randomVocal(PetVocalsType.DISOBEY));
-         return false;
-      }
-   }
+            if (pet.getEnergy() < 30)
+                pet.say(pet.getPetData().randomVocal(PetVocalsType.TIRED));
+
+            return true;
+        } else {
+            pet.say(pet.getPetData().randomVocal(PetVocalsType.DISOBEY));
+        }
+
+        return false;
+    }
 }

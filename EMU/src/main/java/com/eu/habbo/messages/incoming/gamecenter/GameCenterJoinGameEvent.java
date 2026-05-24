@@ -7,16 +7,18 @@ import com.eu.habbo.messages.outgoing.gamecenter.basejump.BaseJumpLoadGameCompos
 import com.eu.habbo.messages.outgoing.gamecenter.basejump.BaseJumpLoadGameURLComposer;
 
 public class GameCenterJoinGameEvent extends MessageHandler {
-   @Override
-   public void handle() throws Exception {
-      int gameId = this.packet.readInt();
-      if (gameId == 3) {
-         this.client.sendResponse(new GameCenterAchievementsConfigurationComposer());
-         this.client.sendResponse(new BaseJumpLoadGameURLComposer());
-         this.client.sendResponse(new BaseJumpLoadGameComposer(this.client, 3));
-      } else if (gameId == 4) {
-         this.client.sendResponse(new BaseJumpJoinQueueComposer(4));
-         this.client.sendResponse(new BaseJumpLoadGameURLComposer());
-      }
-   }
+    @Override
+    public void handle() throws Exception {
+        int gameId = this.packet.readInt();
+
+        if (gameId == 3) //BaseJump
+        {
+            this.client.sendResponse(new GameCenterAchievementsConfigurationComposer());
+            this.client.sendResponse(new BaseJumpLoadGameURLComposer());
+            this.client.sendResponse(new BaseJumpLoadGameComposer(this.client, 3));
+        } else if (gameId == 4) {
+            this.client.sendResponse(new BaseJumpJoinQueueComposer(4));
+            this.client.sendResponse(new BaseJumpLoadGameURLComposer());
+        }
+    }
 }

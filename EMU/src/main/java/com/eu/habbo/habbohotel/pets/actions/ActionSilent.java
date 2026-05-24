@@ -7,15 +7,17 @@ import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
 import com.eu.habbo.habbohotel.users.Habbo;
 
 public class ActionSilent extends PetAction {
-   public ActionSilent() {
-      super(null, false);
-      this.statusToRemove.add(RoomUnitStatus.SPEAK);
-   }
+    public ActionSilent() {
+        super(null, false);
 
-   @Override
-   public boolean apply(Pet pet, Habbo habbo, String[] data) {
-      pet.setMuted(true);
-      pet.say(pet.getPetData().randomVocal(PetVocalsType.MUTED));
-      return false;
-   }
+        this.statusToRemove.add(RoomUnitStatus.SPEAK);
+    }
+
+    @Override
+    public boolean apply(Pet pet, Habbo habbo, String[] data) {
+        pet.setMuted(true);
+        pet.say(pet.getPetData().randomVocal(PetVocalsType.MUTED));
+
+        return false;
+    }
 }

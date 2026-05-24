@@ -5,77 +5,108 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
-import gnu.trove.iterator.hash.TObjectHashIterator;
+import com.eu.habbo.messages.outgoing.Outgoing;
 import gnu.trove.set.hash.THashSet;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 public class UpdateStackHeightComposer extends MessageComposer {
-   private int x;
-   private int y;
-   private short z;
-   private double height;
-   private THashSet<RoomTile> updateTiles;
-   private Room room;
+    private int x;
+    private int y;
+    private short z;
+    private double height;
 
-   public UpdateStackHeightComposer(int x, int y, short z, double height) {
-      this.x = x;
-      this.y = y;
-      this.z = z;
-      this.height = height;
-   }
+    private THashSet<RoomTile> updateTiles;
+    private Room room;
 
-   public UpdateStackHeightComposer(Room room, THashSet<RoomTile> updateTiles) {
-      this.updateTiles = updateTiles;
-      this.room = room;
-   }
+    public UpdateStackHeightComposer(int x, int y, short z, double height) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.height = height;
+    }
 
-   @Override
-   protected ServerMessage composeInternal() {
-      this.response.init(558);
-      if (this.updateTiles != null) {
-         if (this.updateTiles.size() > 127) {
-            RoomTile[] tiles = (RoomTile[])this.updateTiles.toArray(new RoomTile[this.updateTiles.size()]);
-            this.response.appendByte(127);
+    public UpdateStackHeightComposer(Room room, THashSet<RoomTile> updateTiles) {
+        this.updateTiles = updateTiles;
+        this.room = room;
+    }
 
-            for (int i = 0; i < 127; i++) {
-               RoomTile t = tiles[i];
-               this.updateTiles.remove(t);
-               this.response.appendByte(Integer.valueOf(t.x));
-               this.response.appendByte(Integer.valueOf(t.y));
-               if (Emulator.getConfig().getBoolean("custom.stacking.enabled")) {
-                  this.response.appendShort((short)(t.z * 256.0));
-               } else {
-                  this.response.appendShort(t.relativeHeight());
-               }
+    @Override
+    protected ServerMessage composeInternal() {
+        this.response.init(Outgoing.UpdateStackHeightComposer);
+
+        if (this.updateTiles != null) {
+            List<RoomTile> tilesCopy = new ArrayList<>(this.updateTiles);
+            tilesCopy.removeIf(Objects::isNull);
+
+            if (tilesCopy.size() > 127) {
+                this.response.appendByte(127);
+                for (int i = 0; i < 127; i++) {
+                    RoomTile t = tilesCopy.get(i);
+                    this.response.appendByte((int) t.x);
+                    this.response.appendByte((int) t.y);
+                    if (Emulator.getConfig().getBoolean("custom.stacking.enabled")) {
+                        this.response.appendShort((short) (t.z * 256.0));
+                    } else {
+                        this.response.appendShort(t.relativeHeight());
+                    }
+                }
+
+                List<RoomTile> remainingTiles = tilesCopy.subList(127, tilesCopy.size());
+                if (!remainingTiles.isEmpty()) {
+                    this.room.sendComposer(new UpdateStackHeightComposer(this.room, new THashSet<>(remainingTiles)).compose());
+                }
+
+                return this.response;
             }
 
-            this.room.sendComposer(new UpdateStackHeightComposer(this.room, this.updateTiles).compose());
-            return this.response;
-         }
-
-         this.response.appendByte(this.updateTiles.size());
-         TObjectHashIterator tiles = this.updateTiles.iterator();
-
-         while (tiles.hasNext()) {
-            RoomTile t = (RoomTile)tiles.next();
-            this.response.appendByte(Integer.valueOf(t.x));
-            this.response.appendByte(Integer.valueOf(t.y));
+            this.response.appendByte(tilesCopy.size());
+            for (RoomTile t : tilesCopy) {
+                this.response.appendByte((int) t.x);
+                this.response.appendByte((int) t.y);
+                if (Emulator.getConfig().getBoolean("custom.stacking.enabled")) {
+                    this.response.appendShort((short) (t.z * 256.0));
+                } else {
+                    this.response.appendShort(t.relativeHeight());
+                }
+            }
+        } else {
+            this.response.appendByte(1);
+            this.response.appendByte(this.x);
+            this.response.appendByte(this.y);
             if (Emulator.getConfig().getBoolean("custom.stacking.enabled")) {
-               this.response.appendShort((short)(t.z * 256.0));
+                this.response.appendShort((short) (this.z * 256.0));
             } else {
-               this.response.appendShort(t.relativeHeight());
+                this.response.appendShort((int) (this.height));
             }
-         }
-      } else {
-         this.response.appendByte(1);
-         this.response.appendByte(this.x);
-         this.response.appendByte(this.y);
-         if (Emulator.getConfig().getBoolean("custom.stacking.enabled")) {
-            this.response.appendShort((short)(this.z * 256.0));
-         } else {
-            this.response.appendShort((int)this.height);
-         }
-      }
+        }
 
-      return this.response;
-   }
+        return this.response;
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
+    }
+
+    public short getZ() {
+        return z;
+    }
+
+    public double getHeight() {
+        return height;
+    }
+
+    public THashSet<RoomTile> getUpdateTiles() {
+        return updateTiles;
+    }
+
+    public Room getRoom() {
+        return room;
+    }
 }

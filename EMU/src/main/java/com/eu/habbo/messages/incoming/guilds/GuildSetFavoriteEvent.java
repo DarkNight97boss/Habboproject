@@ -9,28 +9,34 @@ import com.eu.habbo.messages.outgoing.users.UserProfileComposer;
 import com.eu.habbo.plugin.events.guilds.GuildFavoriteSetEvent;
 
 public class GuildSetFavoriteEvent extends MessageHandler {
-   @Override
-   public void handle() throws Exception {
-      int guildId = this.packet.readInt();
-      Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
-      if (this.client.getHabbo().getHabboStats().hasGuild(guildId)) {
-         GuildFavoriteSetEvent favoriteSetEvent = new GuildFavoriteSetEvent(guild, this.client.getHabbo());
-         Emulator.getPluginManager().fireEvent(favoriteSetEvent);
-         if (favoriteSetEvent.isCancelled()) {
-            return;
-         }
+    @Override
+    public int getRatelimit() {
+        return 500;
+    }
 
-         this.client.getHabbo().getHabboStats().guild = guildId;
-         if (this.client.getHabbo().getHabboInfo().getCurrentRoom() != null && guild != null) {
-            this.client.getHabbo().getHabboInfo().getCurrentRoom().sendComposer(new RoomUsersAddGuildBadgeComposer(guild).compose());
-            this.client
-               .getHabbo()
-               .getHabboInfo()
-               .getCurrentRoom()
-               .sendComposer(new GuildFavoriteRoomUserUpdateComposer(this.client.getHabbo().getRoomUnit(), guild).compose());
-         }
+    @Override
+    public void handle() throws Exception {
+        int guildId = this.packet.readInt();
 
-         this.client.sendResponse(new UserProfileComposer(this.client.getHabbo(), this.client));
-      }
-   }
+        Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
+
+        if (this.client.getHabbo().getHabboStats().hasGuild(guildId)) {
+            GuildFavoriteSetEvent favoriteSetEvent = new GuildFavoriteSetEvent(guild, this.client.getHabbo());
+            Emulator.getPluginManager().fireEvent(favoriteSetEvent);
+
+            if (favoriteSetEvent.isCancelled())
+                return;
+
+            this.client.getHabbo().getHabboStats().guild = guildId;
+
+            if (this.client.getHabbo().getHabboInfo().getCurrentRoom() != null) {
+                if (guild != null) {
+                    this.client.getHabbo().getHabboInfo().getCurrentRoom().sendComposer(new RoomUsersAddGuildBadgeComposer(guild).compose());
+                    this.client.getHabbo().getHabboInfo().getCurrentRoom().sendComposer(new GuildFavoriteRoomUserUpdateComposer(this.client.getHabbo().getRoomUnit(), guild).compose());
+                }
+            }
+
+            this.client.sendResponse(new UserProfileComposer(this.client.getHabbo(), this.client));
+        }
+    }
 }

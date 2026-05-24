@@ -1,125 +1,120 @@
 package com.eu.habbo.habbohotel.games;
 
+import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.Habbo;
-import gnu.trove.iterator.hash.TObjectHashIterator;
+import com.eu.habbo.plugin.Event;
+import com.eu.habbo.plugin.events.games.GameHabboLeaveEvent;
 import gnu.trove.set.hash.THashSet;
 
 public class GameTeam {
-   public final GameTeamColors teamColor;
-   private final THashSet<GamePlayer> members;
-   private int teamScore;
 
-   public GameTeam(GameTeamColors teamColor) {
-      this.teamColor = teamColor;
-      this.members = new THashSet();
-   }
+    public final GameTeamColors teamColor;
+    private final THashSet<GamePlayer> members;
+    private int teamScore;
 
-   public void initialise() {
-      TObjectHashIterator var1 = this.members.iterator();
 
-      while (var1.hasNext()) {
-         GamePlayer player = (GamePlayer)var1.next();
-         player.reset();
-      }
+    public GameTeam(GameTeamColors teamColor) {
+        this.teamColor = teamColor;
 
-      this.teamScore = 0;
-   }
+        this.members = new THashSet<>();
+    }
 
-   public void reset() {
-      this.members.clear();
-   }
 
-   public void addTeamScore(int teamScore) {
-      this.teamScore += teamScore;
-   }
+    public void initialise() {
+        for (GamePlayer player : this.members) {
+            player.reset();
+        }
 
-   public int getTeamScore() {
-      return this.teamScore;
-   }
+        this.teamScore = 0;
+    }
 
-   public synchronized int getTotalScore() {
-      int score = this.teamScore;
-      TObjectHashIterator var2 = this.members.iterator();
 
-      while (var2.hasNext()) {
-         GamePlayer player = (GamePlayer)var2.next();
-         score += player.getScore();
-      }
+    public void reset() {
+        this.members.clear();
+    }
 
-      return score;
-   }
 
-   public void addMember(GamePlayer gamePlayer) {
-      synchronized (this.members) {
-         this.members.add(gamePlayer);
-      }
-   }
+    public void addTeamScore(int teamScore) {
+        this.teamScore += teamScore;
+    }
 
-   public void removeMember(GamePlayer gamePlayer) {
-      synchronized (this.members) {
-         this.members.remove(gamePlayer);
-      }
-   }
 
-   public void clearMembers() {
-      TObjectHashIterator var1 = this.members.iterator();
+    public int getTeamScore() {
+        return this.teamScore;
+    }
 
-      while (var1.hasNext()) {
-         GamePlayer player = (GamePlayer)var1.next();
-         if (player != null && player.getHabbo() != null) {
-            if (player.getHabbo().getHabboInfo().getGamePlayer() != null) {
-               player.getHabbo().getHabboInfo().getGamePlayer().reset();
-            }
 
+    public synchronized int getTotalScore() {
+        int score = this.teamScore;
+
+        for (GamePlayer player : this.members) {
+            score += player.getScore();
+        }
+
+        return score;
+    }
+
+
+    public void addMember(GamePlayer gamePlayer) {
+        synchronized (this.members) {
+            this.members.add(gamePlayer);
+        }
+    }
+
+
+    public void removeMember(GamePlayer gamePlayer) {
+        synchronized (this.members) {
+            this.members.remove(gamePlayer);
+        }
+    }
+
+    public void clearMembers() {
+        for (GamePlayer player : this.members) {
+            if (player == null || player.getHabbo() == null) continue;
+
+            if (player.getHabbo().getHabboInfo().getGamePlayer() != null) player.getHabbo().getHabboInfo().getGamePlayer().reset();
             player.getHabbo().getHabboInfo().setCurrentGame(null);
             player.getHabbo().getHabboInfo().setGamePlayer(null);
-         }
-      }
+        }
 
-      this.members.clear();
-   }
+        this.members.clear();
+    }
 
-   public void resetScores() {
-      TObjectHashIterator var1 = this.members.iterator();
+    public void resetScores() {
+        for (GamePlayer player : this.members) {
+            if (player == null) continue;
 
-      while (var1.hasNext()) {
-         GamePlayer player = (GamePlayer)var1.next();
-         if (player != null) {
             player.reset();
-         }
-      }
+        }
 
-      this.teamScore = 0;
-   }
+        this.teamScore = 0;
+    }
 
-   public THashSet<GamePlayer> getMembers() {
-      return this.members;
-   }
 
-   public boolean isMember(Habbo habbo) {
-      TObjectHashIterator var2 = this.members.iterator();
+    public THashSet<GamePlayer> getMembers() {
+        return this.members;
+    }
 
-      while (var2.hasNext()) {
-         GamePlayer p = (GamePlayer)var2.next();
-         if (p.getHabbo().equals(habbo)) {
-            return true;
-         }
-      }
 
-      return false;
-   }
+    public boolean isMember(Habbo habbo) {
+        for (GamePlayer p : this.members) {
+            if (p.getHabbo().equals(habbo)) {
+                return true;
+            }
+        }
 
-   @Deprecated
-   public GamePlayer getPlayerForHabbo(Habbo habbo) {
-      TObjectHashIterator var2 = this.members.iterator();
+        return false;
+    }
 
-      while (var2.hasNext()) {
-         GamePlayer p = (GamePlayer)var2.next();
-         if (p.getHabbo().equals(habbo)) {
-            return p;
-         }
-      }
 
-      return null;
-   }
+    @Deprecated
+    public GamePlayer getPlayerForHabbo(Habbo habbo) {
+        for (GamePlayer p : this.members) {
+            if (p.getHabbo().equals(habbo)) {
+                return p;
+            }
+        }
+
+        return null;
+    }
 }

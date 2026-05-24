@@ -10,123 +10,128 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.WiredHandler;
 import com.eu.habbo.habbohotel.wired.WiredTriggerType;
+import com.eu.habbo.messages.ClientMessage;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.threading.runnables.WiredExecuteTask;
 import gnu.trove.procedure.TObjectProcedure;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class WiredTriggerAtSetTime extends InteractionWiredTrigger implements WiredTriggerReset {
-   public static final WiredTriggerType type = WiredTriggerType.AT_GIVEN_TIME;
-   public int executeTime;
-   public int taskId;
+    public final static WiredTriggerType type = WiredTriggerType.AT_GIVEN_TIME;
 
-   public WiredTriggerAtSetTime(ResultSet set, Item baseItem) throws SQLException {
-      super(set, baseItem);
-   }
+    public int executeTime;
+    public int taskId;
 
-   public WiredTriggerAtSetTime(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
-      super(id, userId, item, extradata, limitedStack, limitedSells);
-   }
+    public WiredTriggerAtSetTime(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+    }
 
-   @Override
-   public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
-      return true;
-   }
+    public WiredTriggerAtSetTime(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
 
-   @Override
-   public String getWiredData() {
-      return WiredHandler.getGsonBuilder().create().toJson(new WiredTriggerAtSetTime.JsonData(this.executeTime));
-   }
+    @Override
+    public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
+        return true;
+    }
 
-   @Override
-   public void loadWiredData(ResultSet set, Room room) throws SQLException {
-      String wiredData = set.getString("wired_data");
-      if (wiredData.startsWith("{")) {
-         WiredTriggerAtSetTime.JsonData data = (WiredTriggerAtSetTime.JsonData)WiredHandler.getGsonBuilder()
-            .create()
-            .fromJson(wiredData, WiredTriggerAtSetTime.JsonData.class);
-         this.executeTime = data.executeTime;
-      } else if (wiredData.length() >= 1) {
-         this.executeTime = Integer.parseInt(wiredData);
-      }
+    @Override
+    public String getWiredData() {
+        return WiredHandler.getGsonBuilder().create().toJson(new JsonData(
+            this.executeTime
+        ));
+    }
 
-      if (this.executeTime < 500) {
-         this.executeTime = 10000;
-      }
+    @Override
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        String wiredData = set.getString("wired_data");
 
-      this.taskId = 1;
-      Emulator.getThreading().run(new WiredExecuteTask(this, Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId())), this.executeTime);
-   }
-
-   @Override
-   public void onPickUp() {
-      this.executeTime = 0;
-      this.taskId = 0;
-   }
-
-   @Override
-   public WiredTriggerType getType() {
-      return type;
-   }
-
-   @Override
-   public void serializeWiredData(ServerMessage message, Room room) {
-      message.appendBoolean(false);
-      message.appendInt(5);
-      message.appendInt(0);
-      message.appendInt(this.getBaseItem().getSpriteId());
-      message.appendInt(this.getId());
-      message.appendString("");
-      message.appendInt(1);
-      message.appendInt(this.executeTime / 500);
-      message.appendInt(1);
-      message.appendInt(this.getType().code);
-      if (!this.isTriggeredByRoomUnit()) {
-         final List<Integer> invalidTriggers = new ArrayList<>();
-         room.getRoomSpecialTypes().getEffects(this.getX(), this.getY()).forEach(new TObjectProcedure<InteractionWiredEffect>() {
-            public boolean execute(InteractionWiredEffect object) {
-               if (object.requiresTriggeringUser()) {
-                  invalidTriggers.add(object.getBaseItem().getSpriteId());
-               }
-
-               return true;
+        if (wiredData.startsWith("{")) {
+            JsonData data = WiredHandler.getGsonBuilder().create().fromJson(wiredData, JsonData.class);
+            this.executeTime = data.executeTime;
+        } else {
+            if (wiredData.length() >= 1) {
+                this.executeTime = (Integer.parseInt(wiredData));
             }
-         });
-         message.appendInt(invalidTriggers.size());
+        }
 
-         for (Integer i : invalidTriggers) {
-            message.appendInt(i);
-         }
-      } else {
-         message.appendInt(0);
-      }
-   }
+        if (this.executeTime < 500) {
+            this.executeTime = 20 * 500;
+        }
+        this.taskId = 1;
+        Emulator.getThreading().run(new WiredExecuteTask(this, Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId())), this.executeTime);
+    }
 
-   @Override
-   public boolean saveData(WiredSettings settings) {
-      if (settings.getIntParams().length < 1) {
-         return false;
-      }
+    @Override
+    public void onPickUp() {
+        this.executeTime = 0;
+        this.taskId = 0;
+    }
 
-      this.executeTime = settings.getIntParams()[0] * 500;
-      this.resetTimer();
-      return true;
-   }
+    @Override
+    public WiredTriggerType getType() {
+        return type;
+    }
 
-   @Override
-   public void resetTimer() {
-      this.taskId++;
-      Emulator.getThreading().run(new WiredExecuteTask(this, Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId())), this.executeTime);
-   }
+    @Override
+    public void serializeWiredData(ServerMessage message, Room room) {
+        message.appendBoolean(false);
+        message.appendInt(5);
+        message.appendInt(0);
+        message.appendInt(this.getBaseItem().getSpriteId());
+        message.appendInt(this.getId());
+        message.appendString("");
+        message.appendInt(1);
+        message.appendInt(this.executeTime / 500);
+        message.appendInt(1);
+        message.appendInt(this.getType().code);
 
-   static class JsonData {
-      int executeTime;
+        if (!this.isTriggeredByRoomUnit()) {
+            List<Integer> invalidTriggers = new ArrayList<>();
+            room.getRoomSpecialTypes().getEffects(this.getX(), this.getY()).forEach(new TObjectProcedure<InteractionWiredEffect>() {
+                @Override
+                public boolean execute(InteractionWiredEffect object) {
+                    if (object.requiresTriggeringUser()) {
+                        invalidTriggers.add(object.getBaseItem().getSpriteId());
+                    }
+                    return true;
+                }
+            });
+            message.appendInt(invalidTriggers.size());
+            for (Integer i : invalidTriggers) {
+                message.appendInt(i);
+            }
+        } else {
+            message.appendInt(0);
+        }
+    }
 
-      public JsonData(int executeTime) {
-         this.executeTime = executeTime;
-      }
-   }
+    @Override
+    public boolean saveData(WiredSettings settings) {
+        if(settings.getIntParams().length < 1) return false;
+        this.executeTime = settings.getIntParams()[0] * 500;
+
+        this.resetTimer();
+
+        return true;
+    }
+
+    @Override
+    public void resetTimer() {
+        this.taskId++;
+
+        Emulator.getThreading().run(new WiredExecuteTask(this, Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId())), this.executeTime);
+    }
+
+    static class JsonData {
+        int executeTime;
+
+        public JsonData(int executeTime) {
+            this.executeTime = executeTime;
+        }
+    }
 }

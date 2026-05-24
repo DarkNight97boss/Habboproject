@@ -12,99 +12,98 @@ import com.eu.habbo.messages.outgoing.rooms.items.youtube.YoutubeVideoComposer;
 import com.eu.habbo.threading.runnables.YoutubeAdvanceVideo;
 
 public class YoutubeRequestStateChange extends MessageHandler {
-   @Override
-   public void handle() throws Exception {
-      int itemId = this.packet.readInt();
-      YoutubeRequestStateChange.YoutubeState state = YoutubeRequestStateChange.YoutubeState.getByState(this.packet.readInt());
-      if (state != null) {
-         Habbo habbo = this.client.getHabbo();
-         if (habbo != null) {
-            Room room = habbo.getHabboInfo().getCurrentRoom();
-            if (room != null) {
-               if (room.isOwner(habbo) || habbo.hasPermission(Permission.ACC_ANYROOMOWNER)) {
-                  HabboItem item = this.client.getHabbo().getHabboInfo().getCurrentRoom().getHabboItem(itemId);
-                  if (item instanceof InteractionYoutubeTV) {
-                     InteractionYoutubeTV tv = (InteractionYoutubeTV)item;
-                     if (tv.currentPlaylist != null && !tv.currentPlaylist.getVideos().isEmpty()) {
-                        switch (state) {
-                           case PAUSE:
-                              tv.playing = false;
-                              tv.offset = tv.offset + (Emulator.getIntUnixTimestamp() - tv.startedWatchingAt);
-                              if (tv.autoAdvance != null) {
-                                 tv.autoAdvance.cancel(true);
-                              }
+    public enum YoutubeState {
+        PREVIOUS(0),
+        NEXT(1),
+        PAUSE(2),
+        RESUME(3);
 
-                              room.sendComposer(new YoutubeStateChangeComposer(tv.getId(), 2).compose());
-                              break;
-                           case RESUME:
-                              tv.playing = true;
-                              tv.startedWatchingAt = Emulator.getIntUnixTimestamp();
-                              tv.autoAdvance = Emulator.getThreading().run(new YoutubeAdvanceVideo(tv), (tv.currentVideo.getDuration() - tv.offset) * 1000);
-                              room.sendComposer(new YoutubeStateChangeComposer(tv.getId(), 1).compose());
-                              break;
-                           case PREVIOUS:
-                              int previousIndex = tv.currentPlaylist.getVideos().indexOf(tv.currentVideo) - 1;
-                              if (previousIndex < 0) {
-                                 previousIndex = tv.currentPlaylist.getVideos().size() - 1;
-                              }
+        private int state;
 
-                              tv.currentVideo = tv.currentPlaylist.getVideos().get(previousIndex);
-                              break;
-                           case NEXT:
-                              int nextIndex = tv.currentPlaylist.getVideos().indexOf(tv.currentVideo) + 1;
-                              if (nextIndex >= tv.currentPlaylist.getVideos().size()) {
-                                 nextIndex = 0;
-                              }
+        YoutubeState(int state) {
+            this.state = state;
+        }
 
-                              tv.currentVideo = tv.currentPlaylist.getVideos().get(nextIndex);
-                        }
+        public int getState() {
+            return state;
+        }
 
-                        if (state == YoutubeRequestStateChange.YoutubeState.PREVIOUS || state == YoutubeRequestStateChange.YoutubeState.NEXT) {
-                           room.sendComposer(new YoutubeVideoComposer(tv.getId(), tv.currentVideo, true, 0).compose());
-                           tv.cancelAdvancement();
-                           tv.autoAdvance = Emulator.getThreading().run(new YoutubeAdvanceVideo(tv), tv.currentVideo.getDuration() * 1000);
-                           tv.startedWatchingAt = Emulator.getIntUnixTimestamp();
-                           tv.offset = 0;
-                           tv.playing = true;
-                           room.updateItem(tv);
-                        }
-                     }
-                  }
-               }
+        public static YoutubeState getByState(int state) {
+            switch (state) {
+                case 0:
+                    return PREVIOUS;
+                case 1:
+                    return NEXT;
+                case 2:
+                    return PAUSE;
+                case 3:
+                    return RESUME;
+                default:
+                    return null;
             }
-         }
-      }
-   }
+        }
+    }
 
-   public enum YoutubeState {
-      PREVIOUS(0),
-      NEXT(1),
-      PAUSE(2),
-      RESUME(3);
+    @Override
+    public void handle() throws Exception {
+        int itemId = this.packet.readInt();
+        YoutubeState state = YoutubeState.getByState(this.packet.readInt());
 
-      private int state;
+        if (state == null) return;
 
-      YoutubeState(int state) {
-         this.state = state;
-      }
+        Habbo habbo = this.client.getHabbo();
 
-      public int getState() {
-         return this.state;
-      }
+        if (habbo == null) return;
 
-      public static YoutubeRequestStateChange.YoutubeState getByState(int state) {
-         switch (state) {
-            case 0:
-               return PREVIOUS;
-            case 1:
-               return NEXT;
-            case 2:
-               return PAUSE;
-            case 3:
-               return RESUME;
-            default:
-               return null;
-         }
-      }
-   }
+
+        Room room = habbo.getHabboInfo().getCurrentRoom();
+
+        if (room == null) return;
+        if (!room.isOwner(habbo) && !habbo.hasPermission(Permission.ACC_ANYROOMOWNER)) return;
+
+
+        HabboItem item = this.client.getHabbo().getHabboInfo().getCurrentRoom().getHabboItem(itemId);
+
+        if (!(item instanceof InteractionYoutubeTV)) return;
+
+        InteractionYoutubeTV tv = (InteractionYoutubeTV) item;
+
+        if(tv.currentPlaylist == null || tv.currentPlaylist.getVideos().isEmpty()) return;
+
+        switch (state) {
+            case PAUSE:
+                tv.playing = false;
+                tv.offset += Emulator.getIntUnixTimestamp() - tv.startedWatchingAt;
+                if (tv.autoAdvance != null) tv.autoAdvance.cancel(true);
+                room.sendComposer(new YoutubeStateChangeComposer(tv.getId(), 2).compose());
+                break;
+            case RESUME:
+                tv.playing = true;
+                tv.startedWatchingAt = Emulator.getIntUnixTimestamp();
+                tv.autoAdvance = Emulator.getThreading().run(new YoutubeAdvanceVideo(tv), (tv.currentVideo.getDuration() - tv.offset) * 1000L);
+                room.sendComposer(new YoutubeStateChangeComposer(tv.getId(), 1).compose());
+                break;
+            case PREVIOUS:
+                int previousIndex = tv.currentPlaylist.getVideos().indexOf(tv.currentVideo) - 1;
+                if (previousIndex < 0) previousIndex = tv.currentPlaylist.getVideos().size() - 1;
+                tv.currentVideo = tv.currentPlaylist.getVideos().get(previousIndex);
+                break;
+            case NEXT:
+                int nextIndex = tv.currentPlaylist.getVideos().indexOf(tv.currentVideo) + 1;
+                if (nextIndex >= tv.currentPlaylist.getVideos().size()) nextIndex = 0;
+                tv.currentVideo = tv.currentPlaylist.getVideos().get(nextIndex);
+                break;
+        }
+
+        if (state == YoutubeState.PREVIOUS || state == YoutubeState.NEXT) {
+            room.sendComposer(new YoutubeVideoComposer(tv.getId(), tv.currentVideo, true, 0).compose());
+
+            tv.cancelAdvancement();
+            tv.autoAdvance = Emulator.getThreading().run(new YoutubeAdvanceVideo(tv), tv.currentVideo.getDuration() * 1000L);
+            tv.startedWatchingAt = Emulator.getIntUnixTimestamp();
+            tv.offset = 0;
+            tv.playing = true;
+            room.updateItem(tv);
+        }
+    }
 }

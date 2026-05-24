@@ -5,8 +5,8 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.navigator.PrivateRoomsComposer;
 
 public class SearchRoomsMyFavouriteEvent extends MessageHandler {
-   @Override
-   public void handle() throws Exception {
-      this.client.sendResponse(new PrivateRoomsComposer(Emulator.getGameEnvironment().getRoomManager().getRoomsFavourite(this.client.getHabbo())));
-   }
+    @Override
+    public void handle() throws Exception {
+        this.client.sendResponse(new PrivateRoomsComposer(Emulator.getGameEnvironment().getRoomManager().getRoomsFavourite(this.client.getHabbo())));
+    }
 }

@@ -9,16 +9,21 @@ import com.eu.habbo.plugin.events.roomunit.RoomUnitEvent;
 import gnu.trove.set.hash.THashSet;
 
 public class WiredStackExecutedEvent extends RoomUnitEvent {
-   public final InteractionWiredTrigger trigger;
-   public final THashSet<InteractionWiredEffect> effects;
-   public final THashSet<InteractionWiredCondition> conditions;
 
-   public WiredStackExecutedEvent(
-      Room room, RoomUnit roomUnit, InteractionWiredTrigger trigger, THashSet<InteractionWiredEffect> effects, THashSet<InteractionWiredCondition> conditions
-   ) {
-      super(room, roomUnit);
-      this.trigger = trigger;
-      this.effects = effects;
-      this.conditions = conditions;
-   }
+    public final InteractionWiredTrigger trigger;
+
+
+    public final THashSet<InteractionWiredEffect> effects;
+
+
+    public final THashSet<InteractionWiredCondition> conditions;
+
+
+    public WiredStackExecutedEvent(Room room, RoomUnit roomUnit, InteractionWiredTrigger trigger, THashSet<InteractionWiredEffect> effects, THashSet<InteractionWiredCondition> conditions) {
+        super(room, roomUnit);
+
+        this.trigger = trigger;
+        this.effects = effects;
+        this.conditions = conditions;
+    }
 }

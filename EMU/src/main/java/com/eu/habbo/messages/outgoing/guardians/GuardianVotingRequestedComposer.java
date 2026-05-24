@@ -4,40 +4,51 @@ import com.eu.habbo.habbohotel.guides.GuardianTicket;
 import com.eu.habbo.habbohotel.modtool.ModToolChatLog;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
+import com.eu.habbo.messages.outgoing.Outgoing;
 import gnu.trove.map.hash.TIntIntHashMap;
+
 import java.util.Calendar;
 
 public class GuardianVotingRequestedComposer extends MessageComposer {
-   private final GuardianTicket ticket;
+    private final GuardianTicket ticket;
 
-   public GuardianVotingRequestedComposer(GuardianTicket ticket) {
-      this.ticket = ticket;
-   }
+    public GuardianVotingRequestedComposer(GuardianTicket ticket) {
+        this.ticket = ticket;
+    }
 
-   @Override
-   protected ServerMessage composeInternal() {
-      TIntIntHashMap mappedUsers = new TIntIntHashMap();
-      mappedUsers.put(this.ticket.getReported().getHabboInfo().getId(), 0);
-      Calendar c = Calendar.getInstance();
-      c.setTime(this.ticket.getDate());
-      StringBuilder fullMessage = new StringBuilder(c.get(1) + " ");
-      fullMessage.append(c.get(2)).append(" ");
-      fullMessage.append(c.get(5)).append(" ");
-      fullMessage.append(c.get(12)).append(" ");
-      fullMessage.append(c.get(13)).append(";");
-      fullMessage.append("\r");
+    @Override
+    protected ServerMessage composeInternal() {
+        TIntIntHashMap mappedUsers = new TIntIntHashMap();
+        mappedUsers.put(this.ticket.getReported().getHabboInfo().getId(), 0);
 
-      for (ModToolChatLog chatLog : this.ticket.getChatLogs()) {
-         if (!mappedUsers.containsKey(chatLog.habboId)) {
-            mappedUsers.put(chatLog.habboId, mappedUsers.size());
-         }
+        Calendar c = Calendar.getInstance();
+        c.setTime(this.ticket.getDate());
 
-         fullMessage.append("unused;").append(mappedUsers.get(chatLog.habboId)).append(";").append(chatLog.message).append("\r");
-      }
+        StringBuilder fullMessage = new StringBuilder(c.get(Calendar.YEAR) + " ");
+        fullMessage.append(c.get(Calendar.MONTH)).append(" ");
+        fullMessage.append(c.get(Calendar.DAY_OF_MONTH)).append(" ");
+        fullMessage.append(c.get(Calendar.MINUTE)).append(" ");
+        fullMessage.append(c.get(Calendar.SECOND)).append(";");
 
-      this.response.init(143);
-      this.response.appendInt(this.ticket.getTimeLeft());
-      this.response.appendString(fullMessage.toString());
-      return this.response;
-   }
+        fullMessage.append("\r");
+
+        for (ModToolChatLog chatLog : this.ticket.getChatLogs()) {
+            if (!mappedUsers.containsKey(chatLog.habboId)) {
+                mappedUsers.put(chatLog.habboId, mappedUsers.size());
+            }
+
+            fullMessage.append("unused;").append(mappedUsers.get(chatLog.habboId)).append(";").append(chatLog.message).append("\r");
+        }
+
+        this.response.init(Outgoing.GuardianVotingRequestedComposer);
+        this.response.appendInt(this.ticket.getTimeLeft());
+        this.response.appendString(fullMessage.toString());
+
+        //2015 10 17 14 24 30
+        return this.response;
+    }
+
+    public GuardianTicket getTicket() {
+        return ticket;
+    }
 }

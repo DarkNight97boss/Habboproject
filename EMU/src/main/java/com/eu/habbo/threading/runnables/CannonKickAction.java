@@ -9,44 +9,42 @@ import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
-import gnu.trove.iterator.hash.TObjectHashIterator;
 import gnu.trove.map.hash.THashMap;
+
 import java.util.List;
 
 public class CannonKickAction implements Runnable {
-   private final InteractionCannon cannon;
-   private final Room room;
-   private final GameClient client;
+    private final InteractionCannon cannon;
+    private final Room room;
+    private final GameClient client;
 
-   public CannonKickAction(InteractionCannon cannon, Room room, GameClient client) {
-      this.cannon = cannon;
-      this.room = room;
-      this.client = client;
-   }
+    public CannonKickAction(InteractionCannon cannon, Room room, GameClient client) {
+        this.cannon = cannon;
+        this.room = room;
+        this.client = client;
+    }
 
-   @Override
-   public void run() {
-      if (this.client != null) {
-         this.client.getHabbo().getRoomUnit().setCanWalk(true);
-      }
+    @Override
+    public void run() {
+        if (this.client != null) {
+            this.client.getHabbo().getRoomUnit().setCanWalk(true);
+        }
+        THashMap<String, String> dater = new THashMap<>();
+        dater.put("title", "${notification.room.kick.cannonball.title}");
+        dater.put("message", "${notification.room.kick.cannonball.message}");
 
-      THashMap<String, String> dater = new THashMap();
-      dater.put("title", "${notification.room.kick.cannonball.title}");
-      dater.put("message", "${notification.room.kick.cannonball.message}");
-      int rotation = this.cannon.getRotation();
-      List<RoomTile> tiles = this.room.getLayout().getTilesInFront(this.room.getLayout().getTile(this.cannon.getX(), this.cannon.getY()), rotation + 6, 3);
-      ServerMessage message = new BubbleAlertComposer("cannon.png", dater).compose();
+        int rotation = this.cannon.getRotation();
+        List<RoomTile> tiles = this.room.getLayout().getTilesInFront(this.room.getLayout().getTile(this.cannon.getX(), this.cannon.getY()), rotation + 6, 3);
 
-      for (RoomTile t : tiles) {
-         TObjectHashIterator var7 = this.room.getHabbosAt(t.x, t.y).iterator();
+        ServerMessage message = new BubbleAlertComposer("cannon.png", dater).compose();
 
-         while (var7.hasNext()) {
-            Habbo habbo = (Habbo)var7.next();
-            if (!habbo.hasPermission(Permission.ACC_UNKICKABLE) && !this.room.isOwner(habbo)) {
-               Emulator.getGameEnvironment().getRoomManager().leaveRoom(habbo, this.room);
-               habbo.getClient().sendResponse(message);
+        for (RoomTile t : tiles) {
+            for (Habbo habbo : this.room.getHabbosAt(t.x, t.y)) {
+                if (!habbo.hasPermission(Permission.ACC_UNKICKABLE) && !this.room.isOwner(habbo)) {
+                    Emulator.getGameEnvironment().getRoomManager().leaveRoom(habbo, this.room);
+                    habbo.getClient().sendResponse(message); //kicked composer
+                }
             }
-         }
-      }
-   }
+        }
+    }
 }

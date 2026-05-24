@@ -10,27 +10,42 @@ import com.eu.habbo.messages.outgoing.guilds.forums.GuildForumDataComposer;
 import com.eu.habbo.messages.outgoing.handshake.ConnectionErrorComposer;
 
 public class GuildForumUpdateSettingsEvent extends MessageHandler {
-   @Override
-   public void handle() throws Exception {
-      int guildId = this.packet.readInt();
-      int canRead = this.packet.readInt();
-      int postMessages = this.packet.readInt();
-      int postThreads = this.packet.readInt();
-      int modForum = this.packet.readInt();
-      Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
-      if (guild == null) {
-         this.client.sendResponse(new ConnectionErrorComposer(404));
-      } else if (guild.getOwnerId() != this.client.getHabbo().getHabboInfo().getId()) {
-         this.client.sendResponse(new ConnectionErrorComposer(403));
-      } else {
-         guild.setReadForum(SettingsState.fromValue(canRead));
-         guild.setPostMessages(SettingsState.fromValue(postMessages));
-         guild.setPostThreads(SettingsState.fromValue(postThreads));
-         guild.setModForum(SettingsState.fromValue(modForum));
-         guild.needsUpdate = true;
-         Emulator.getThreading().run(guild);
-         this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FORUMS_FORUM_SETTINGS_UPDATED.key).compose());
-         this.client.sendResponse(new GuildForumDataComposer(guild, this.client.getHabbo()));
-      }
-   }
+    @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
+    @Override
+    public void handle() throws Exception {
+        int guildId = packet.readInt();
+        int canRead = packet.readInt();
+        int postMessages = packet.readInt();
+        int postThreads = packet.readInt();
+        int modForum = packet.readInt();
+
+        Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
+
+        if (guild == null) {
+            this.client.sendResponse(new ConnectionErrorComposer(404));
+            return;
+        }
+
+        if (guild.getOwnerId() != this.client.getHabbo().getHabboInfo().getId()) {
+            this.client.sendResponse(new ConnectionErrorComposer(403));
+            return;
+        }
+
+        guild.setReadForum(SettingsState.fromValue(canRead));
+        guild.setPostMessages(SettingsState.fromValue(postMessages));
+        guild.setPostThreads(SettingsState.fromValue(postThreads));
+        guild.setModForum(SettingsState.fromValue(modForum));
+
+        guild.needsUpdate = true;
+
+        Emulator.getThreading().run(guild);
+
+        this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FORUMS_FORUM_SETTINGS_UPDATED.key).compose());
+
+        this.client.sendResponse(new GuildForumDataComposer(guild, this.client.getHabbo()));
+    }
 }

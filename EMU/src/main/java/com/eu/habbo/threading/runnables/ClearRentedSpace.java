@@ -7,57 +7,41 @@ import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
-import gnu.trove.iterator.hash.TObjectHashIterator;
 import gnu.trove.set.hash.THashSet;
 
 public class ClearRentedSpace implements Runnable {
-   private final InteractionRentableSpace item;
-   private final Room room;
+    private final InteractionRentableSpace item;
+    private final Room room;
 
-   public ClearRentedSpace(InteractionRentableSpace item, Room room) {
-      this.item = item;
-      this.room = room;
-   }
+    public ClearRentedSpace(InteractionRentableSpace item, Room room) {
+        this.item = item;
+        this.room = room;
+    }
 
-   @Override
-   public void run() {
-      THashSet<HabboItem> items = new THashSet();
-      TObjectHashIterator owner = this.room
-         .getLayout()
-         .getTilesAt(
-            this.room.getLayout().getTile(this.item.getX(), this.item.getY()),
-            this.item.getBaseItem().getWidth(),
-            this.item.getBaseItem().getLength(),
-            this.item.getRotation()
-         )
-         .iterator();
+    @Override
+    public void run() {
+        THashSet<HabboItem> items = new THashSet<>();
 
-      while (owner.hasNext()) {
-         RoomTile t = (RoomTile)owner.next();
-         TObjectHashIterator i = this.room.getItemsAt(t).iterator();
-
-         while (i.hasNext()) {
-            HabboItem ix = (HabboItem)i.next();
-            if (ix.getUserId() == this.item.getRenterId()) {
-               items.add(ix);
-               ix.setRoomId(0);
-               ix.needsUpdate(true);
+        for (RoomTile t : this.room.getLayout().getTilesAt(this.room.getLayout().getTile(this.item.getX(), this.item.getY()), this.item.getBaseItem().getWidth(), this.item.getBaseItem().getLength(), this.item.getRotation())) {
+            for (HabboItem i : this.room.getItemsAt(t)) {
+                if (i.getUserId() == this.item.getRenterId()) {
+                    items.add(i);
+                    i.setRoomId(0);
+                    i.needsUpdate(true);
+                }
             }
-         }
-      }
+        }
 
-      Habbo ownerx = Emulator.getGameEnvironment().getHabboManager().getHabbo(this.item.getRenterId());
-      if (ownerx != null) {
-         ownerx.getClient().sendResponse(new AddHabboItemComposer(items));
-         ownerx.getHabboStats().rentedItemId = 0;
-         ownerx.getHabboStats().rentedTimeEnd = 0;
-      } else {
-         TObjectHashIterator var7 = items.iterator();
+        Habbo owner = Emulator.getGameEnvironment().getHabboManager().getHabbo(this.item.getRenterId());
 
-         while (var7.hasNext()) {
-            HabboItem i = (HabboItem)var7.next();
-            i.run();
-         }
-      }
-   }
+        if (owner != null) {
+            owner.getClient().sendResponse(new AddHabboItemComposer(items));
+            owner.getHabboStats().rentedItemId = 0;
+            owner.getHabboStats().rentedTimeEnd = 0;
+        } else {
+            for (HabboItem i : items) {
+                i.run();
+            }
+        }
+    }
 }

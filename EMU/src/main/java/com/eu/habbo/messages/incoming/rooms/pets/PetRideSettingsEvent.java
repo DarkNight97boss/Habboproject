@@ -7,25 +7,29 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.rooms.pets.RoomPetHorseFigureComposer;
 
 public class PetRideSettingsEvent extends MessageHandler {
-   @Override
-   public void handle() throws Exception {
-      int petId = this.packet.readInt();
-      if (this.client.getHabbo().getHabboInfo().getCurrentRoom() != null) {
-         Pet pet = this.client.getHabbo().getHabboInfo().getCurrentRoom().getPet(petId);
-         if (pet != null && pet.getUserId() == this.client.getHabbo().getHabboInfo().getId() && pet instanceof RideablePet) {
-            RideablePet rideablePet = (RideablePet)pet;
-            rideablePet.setAnyoneCanRide(!rideablePet.anyoneCanRide());
-            rideablePet.needsUpdate = true;
-            if (!rideablePet.anyoneCanRide()
-               && rideablePet.getRider() != null
-               && rideablePet.getRider().getHabboInfo().getId() != this.client.getHabbo().getHabboInfo().getId()) {
-               rideablePet.getRider().getHabboInfo().dismountPet();
-            }
+    @Override
+    public void handle() throws Exception {
+        int petId = this.packet.readInt();
 
-            if (pet instanceof HorsePet) {
-               this.client.sendResponse(new RoomPetHorseFigureComposer((HorsePet)pet));
-            }
-         }
-      }
-   }
+        if (this.client.getHabbo().getHabboInfo().getCurrentRoom() == null)
+            return;
+
+        Pet pet = this.client.getHabbo().getHabboInfo().getCurrentRoom().getPet(petId);
+
+        if (pet == null || pet.getUserId() != this.client.getHabbo().getHabboInfo().getId() || !(pet instanceof RideablePet))
+            return;
+
+        RideablePet rideablePet = ((RideablePet) pet);
+
+        rideablePet.setAnyoneCanRide(!rideablePet.anyoneCanRide());
+        rideablePet.needsUpdate = true;
+
+        if (!rideablePet.anyoneCanRide() && rideablePet.getRider() != null && rideablePet.getRider().getHabboInfo().getId() != this.client.getHabbo().getHabboInfo().getId()) {
+            rideablePet.getRider().getHabboInfo().dismountPet();
+        }
+
+        if (pet instanceof HorsePet) {
+            this.client.sendResponse(new RoomPetHorseFigureComposer((HorsePet) pet));
+        }
+    }
 }

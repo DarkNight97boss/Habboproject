@@ -6,99 +6,108 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
-import gnu.trove.iterator.hash.TObjectHashIterator;
+import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.messages.outgoing.rooms.items.ItemStateComposer;
 import gnu.trove.set.hash.THashSet;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class InteractionPressurePlate extends InteractionDefault {
-   public InteractionPressurePlate(ResultSet set, Item baseItem) throws SQLException {
-      super(set, baseItem);
-      this.setExtradata("0");
-   }
+    public InteractionPressurePlate(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+        this.setExtradata("0");
+    }
 
-   public InteractionPressurePlate(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
-      super(id, userId, item, extradata, limitedStack, limitedSells);
-      this.setExtradata("0");
-   }
+    public InteractionPressurePlate(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+        this.setExtradata("0");
+    }
 
-   @Override
-   public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
-      return true;
-   }
+    @Override
+    public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
+        return true;
+    }
 
-   @Override
-   public boolean isWalkable() {
-      return true;
-   }
+    @Override
+    public boolean isWalkable() {
+        return true;
+    }
 
-   @Override
-   public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
-   }
+    @Override
+    public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
 
-   @Override
-   public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-   }
+    }
 
-   @Override
-   public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-      super.onWalkOn(roomUnit, room, objects);
-      Emulator.getThreading().run(() -> this.updateState(room), 100L);
-   }
+    @Override
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
 
-   @Override
-   public void onWalkOff(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-      super.onWalkOff(roomUnit, room, objects);
-      Emulator.getThreading().run(() -> this.updateState(room), 100L);
-   }
+    }
 
-   @Override
-   public void onMove(Room room, RoomTile oldLocation, RoomTile newLocation) {
-      super.onMove(room, oldLocation, newLocation);
-      this.updateState(room);
-   }
+    @Override
+    public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+        super.onWalkOn(roomUnit, room, objects);
 
-   @Override
-   public void onPickUp(Room room) {
-      this.setExtradata("0");
-   }
+        Emulator.getThreading().run(() -> updateState(room), 100);
+    }
 
-   public void updateState(Room room) {
-      boolean occupied = false;
-      if (room != null && room.getLayout() != null && this.getBaseItem() != null) {
-         RoomTile tileAtItem = room.getLayout().getTile(this.getX(), this.getY());
-         if (tileAtItem != null) {
-            THashSet<RoomTile> tiles = room.getLayout()
-               .getTilesAt(tileAtItem, this.getBaseItem().getWidth(), this.getBaseItem().getLength(), this.getRotation());
-            if (tiles != null) {
-               TObjectHashIterator var5 = tiles.iterator();
+    @Override
+    public void onWalkOff(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+        super.onWalkOff(roomUnit, room, objects);
 
-               while (var5.hasNext()) {
-                  RoomTile tile = (RoomTile)var5.next();
-                  boolean hasHabbos = room.hasHabbosAt(tile.x, tile.y);
-                  if (!hasHabbos && this.requiresAllTilesOccupied()) {
-                     occupied = false;
-                     break;
-                  }
+        Emulator.getThreading().run(() -> updateState(room), 100);
+    }
 
-                  if (hasHabbos) {
-                     occupied = true;
-                  }
-               }
+    @Override
+    public void onMove(Room room, RoomTile oldLocation, RoomTile newLocation) {
+        super.onMove(room, oldLocation, newLocation);
 
-               this.setExtradata(occupied ? "1" : "0");
-               room.updateItemState(this);
+        updateState(room);
+    }
+
+    @Override
+    public void onPickUp(Room room) {
+        this.setExtradata("0");
+    }
+
+    public void updateState(Room room) {
+        boolean occupied = false;
+
+        if (room == null || room.getLayout() == null || this.getBaseItem() == null) return;
+
+        RoomTile tileAtItem = room.getLayout().getTile(this.getX(), this.getY());
+
+        if (tileAtItem == null) return;
+
+        THashSet<RoomTile> tiles = room.getLayout().getTilesAt(tileAtItem, this.getBaseItem().getWidth(), this.getBaseItem().getLength(), this.getRotation());
+
+        if (tiles == null) return;
+
+        for (RoomTile tile : tiles) {
+            THashSet<RoomUnit> tileHasHabboOrBot = room.getHabbosAndBotsAt(tile.x, tile.y);
+            if (tileHasHabboOrBot.isEmpty() && this.requiresAllTilesOccupied()) {
+                occupied = false;
+                break;
             }
-         }
-      }
-   }
 
-   @Override
-   public boolean allowWiredResetState() {
-      return true;
-   }
+            if (!tileHasHabboOrBot.isEmpty()) {
+                occupied = true;
+            }
 
-   public boolean requiresAllTilesOccupied() {
-      return false;
-   }
+        }
+
+        this.setExtradata(occupied ? "1" : "0");
+        room.updateItemState(this);
+    }
+
+    @Override
+    public boolean allowWiredResetState() {
+        return true;
+    }
+
+    public boolean requiresAllTilesOccupied() {
+        return false;
+    }
+
 }

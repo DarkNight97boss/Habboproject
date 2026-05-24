@@ -4,5 +4,5 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 
 public interface ConditionalGate {
-   void onRejected(RoomUnit var1, Room var2, Object[] var3);
+    public void onRejected(RoomUnit roomUnit, Room room, Object[] objects);
 }

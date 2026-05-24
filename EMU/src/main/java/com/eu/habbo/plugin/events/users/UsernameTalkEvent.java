@@ -6,25 +6,26 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 
 public class UsernameTalkEvent extends UserEvent {
-   public final RoomChatMessage chatMessage;
-   public final RoomChatType chatType;
-   private ServerMessage customComposer = null;
+    public final RoomChatMessage chatMessage;
+    public final RoomChatType chatType;
 
-   public UsernameTalkEvent(Habbo habbo, RoomChatMessage chatMessage, RoomChatType chatType) {
-      super(habbo);
-      this.chatMessage = chatMessage;
-      this.chatType = chatType;
-   }
+    private ServerMessage customComposer = null;
 
-   public void setCustomComposer(ServerMessage customComposer) {
-      this.customComposer = customComposer;
-   }
+    public UsernameTalkEvent(Habbo habbo, RoomChatMessage chatMessage, RoomChatType chatType) {
+        super(habbo);
+        this.chatMessage = chatMessage;
+        this.chatType = chatType;
+    }
 
-   public boolean hasCustomComposer() {
-      return this.customComposer != null;
-   }
+    public void setCustomComposer(ServerMessage customComposer) {
+        this.customComposer = customComposer;
+    }
 
-   public ServerMessage getCustomComposer() {
-      return this.customComposer;
-   }
+    public boolean hasCustomComposer() {
+        return this.customComposer != null;
+    }
+
+    public ServerMessage getCustomComposer() {
+        return this.customComposer;
+    }
 }

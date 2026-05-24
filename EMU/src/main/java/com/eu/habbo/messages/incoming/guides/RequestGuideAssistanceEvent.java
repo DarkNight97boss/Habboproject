@@ -6,17 +6,21 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.guides.GuideSessionErrorComposer;
 
 public class RequestGuideAssistanceEvent extends MessageHandler {
-   @Override
-   public void handle() throws Exception {
-      int type = this.packet.readInt();
-      String message = this.packet.readString();
-      GuideTour activeTour = Emulator.getGameEnvironment().getGuideManager().getGuideTourByHabbo(this.client.getHabbo());
-      if (activeTour != null) {
-         this.client.sendResponse(new GuideSessionErrorComposer(0));
-      } else {
-         GuideTour tour = new GuideTour(this.client.getHabbo(), message);
-         tour.setStartTime(Emulator.getIntUnixTimestamp());
-         Emulator.getGameEnvironment().getGuideManager().findHelper(tour);
-      }
-   }
+    @Override
+    public void handle() throws Exception {
+        int type = this.packet.readInt();
+        String message = this.packet.readString();
+
+        GuideTour activeTour = Emulator.getGameEnvironment().getGuideManager().getGuideTourByHabbo(this.client.getHabbo());
+
+        if (activeTour != null) {
+            this.client.sendResponse(new GuideSessionErrorComposer(GuideSessionErrorComposer.SOMETHING_WRONG_REQUEST));
+            return;
+        }
+
+        GuideTour tour = new GuideTour(this.client.getHabbo(), message);
+        tour.setStartTime(Emulator.getIntUnixTimestamp());
+
+        Emulator.getGameEnvironment().getGuideManager().findHelper(tour);
+    }
 }

@@ -7,41 +7,38 @@ import com.eu.habbo.habbohotel.pets.PetVocalsType;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import gnu.trove.iterator.hash.TObjectHashIterator;
 
 public class ActionPlayFootball extends PetAction {
-   public ActionPlayFootball() {
-      super(null, false);
-   }
+    public ActionPlayFootball() {
+        super(null, false);
+    }
 
-   @Override
-   public boolean apply(Pet pet, Habbo habbo, String[] data) {
-      Room room = pet.getRoom();
-      if (room != null && room.getLayout() != null) {
-         HabboItem foundBall = null;
-         TObjectHashIterator var6 = room.getFloorItems().iterator();
+    @Override
+    public boolean apply(Pet pet, Habbo habbo, String[] data) {
 
-         while (var6.hasNext()) {
-            HabboItem item = (HabboItem)var6.next();
-            if (item instanceof InteractionPushable) {
-               foundBall = item;
-            }
-         }
+        Room room = pet.getRoom();
 
-         if (foundBall == null) {
+        if(room == null || room.getLayout() == null)
             return false;
-         }
 
-         pet.getRoomUnit().setGoalLocation(room.getLayout().getTile(foundBall.getX(), foundBall.getY()));
-         if (pet.getHappyness() > 75) {
+        HabboItem foundBall = null;
+
+        for(HabboItem item : room.getFloorItems()) {
+            if(item instanceof InteractionPushable) {
+                foundBall = item;
+            }
+        }
+
+        if(foundBall == null)
+            return false;
+
+        pet.getRoomUnit().setGoalLocation(room.getLayout().getTile(foundBall.getX(), foundBall.getY()));
+
+        if (pet.getHappiness() > 75)
             pet.say(pet.getPetData().randomVocal(PetVocalsType.PLAYFUL));
-         } else {
+        else
             pet.say(pet.getPetData().randomVocal(PetVocalsType.GENERIC_NEUTRAL));
-         }
 
-         return true;
-      } else {
-         return false;
-      }
-   }
+        return true;
+    }
 }

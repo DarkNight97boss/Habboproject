@@ -6,10 +6,13 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import gnu.trove.set.hash.THashSet;
 
 public class UserCatalogFurnitureBoughtEvent extends UserCatalogEvent {
-   public final THashSet<HabboItem> furniture;
 
-   public UserCatalogFurnitureBoughtEvent(Habbo habbo, CatalogItem catalogItem, THashSet<HabboItem> furniture) {
-      super(habbo, catalogItem);
-      this.furniture = furniture;
-   }
+    public final THashSet<HabboItem> furniture;
+
+
+    public UserCatalogFurnitureBoughtEvent(Habbo habbo, CatalogItem catalogItem, THashSet<HabboItem> furniture) {
+        super(habbo, catalogItem);
+
+        this.furniture = furniture;
+    }
 }

@@ -1,73 +1,75 @@
 package com.eu.habbo.habbohotel.rooms;
 
 public class RoomMoodlightData {
-   private int id;
-   private boolean enabled;
-   private boolean backgroundOnly;
-   private String color;
-   private int intensity;
+    private int id;
+    private boolean enabled;
+    private boolean backgroundOnly;
+    private String color;
+    private int intensity;
 
-   public RoomMoodlightData(int id, boolean enabled, boolean backgroundOnly, String color, int intensity) {
-      this.id = id;
-      this.enabled = enabled;
-      this.backgroundOnly = backgroundOnly;
-      this.color = color;
-      this.intensity = intensity;
-   }
+    public RoomMoodlightData(int id, boolean enabled, boolean backgroundOnly, String color, int intensity) {
+        this.id = id;
+        this.enabled = enabled;
+        this.backgroundOnly = backgroundOnly;
+        this.color = color;
+        this.intensity = intensity;
+    }
 
-   public static RoomMoodlightData fromString(String s) {
-      String[] data = s.split(",");
-      return data.length == 5
-         ? new RoomMoodlightData(Integer.valueOf(data[1]), data[0].equalsIgnoreCase("2"), data[2].equalsIgnoreCase("2"), data[3], Integer.valueOf(data[4]))
-         : new RoomMoodlightData(1, true, true, "#000000", 255);
-   }
+    public static RoomMoodlightData fromString(String s) {
+        String[] data = s.split(",");
 
-   public int getId() {
-      return this.id;
-   }
+        if (data.length == 5) {
+            return new RoomMoodlightData(Integer.parseInt(data[1]), data[0].equalsIgnoreCase("2"), data[2].equalsIgnoreCase("2"), data[3], Integer.parseInt(data[4]));
+        } else {
+            return new RoomMoodlightData(1, true, true, "#000000", 255);
+        }
+    }
 
-   public void setId(int id) {
-      this.id = id;
-   }
+    public int getId() {
+        return this.id;
+    }
 
-   public boolean isEnabled() {
-      return this.enabled;
-   }
+    public void setId(int id) {
+        this.id = id;
+    }
 
-   public void enable() {
-      this.enabled = true;
-   }
+    public boolean isEnabled() {
+        return this.enabled;
+    }
 
-   public void disable() {
-      this.enabled = false;
-   }
+    public void enable() {
+        this.enabled = true;
+    }
 
-   public boolean isBackgroundOnly() {
-      return this.backgroundOnly;
-   }
+    public void disable() {
+        this.enabled = false;
+    }
 
-   public void setBackgroundOnly(boolean backgroundOnly) {
-      this.backgroundOnly = backgroundOnly;
-   }
+    public boolean isBackgroundOnly() {
+        return this.backgroundOnly;
+    }
 
-   public String getColor() {
-      return this.color;
-   }
+    public void setBackgroundOnly(boolean backgroundOnly) {
+        this.backgroundOnly = backgroundOnly;
+    }
 
-   public void setColor(String color) {
-      this.color = color;
-   }
+    public String getColor() {
+        return this.color;
+    }
 
-   public int getIntensity() {
-      return this.intensity;
-   }
+    public void setColor(String color) {
+        this.color = color;
+    }
 
-   public void setIntensity(int intensity) {
-      this.intensity = intensity;
-   }
+    public int getIntensity() {
+        return this.intensity;
+    }
 
-   @Override
-   public String toString() {
-      return (this.enabled ? 2 : 1) + "," + this.id + "," + (this.backgroundOnly ? 2 : 1) + "," + this.color + "," + this.intensity;
-   }
+    public void setIntensity(int intensity) {
+        this.intensity = intensity;
+    }
+
+    public String toString() {
+        return (this.enabled ? 2 : 1) + "," + this.id + "," + (this.backgroundOnly ? 2 : 1) + "," + this.color + "," + this.intensity;
+    }
 }

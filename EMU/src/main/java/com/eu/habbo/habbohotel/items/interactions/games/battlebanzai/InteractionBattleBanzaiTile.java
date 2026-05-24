@@ -10,100 +10,112 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import gnu.trove.set.hash.THashSet;
+import org.apache.commons.math3.util.Pair;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import org.apache.commons.math3.util.Pair;
 
 public class InteractionBattleBanzaiTile extends HabboItem {
-   public InteractionBattleBanzaiTile(ResultSet set, Item baseItem) throws SQLException {
-      super(set, baseItem);
-      this.setExtradata("0");
-   }
+    public InteractionBattleBanzaiTile(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+        this.setExtradata("0");
+    }
 
-   public InteractionBattleBanzaiTile(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
-      super(id, userId, item, extradata, limitedStack, limitedSells);
-      this.setExtradata("0");
-   }
+    public InteractionBattleBanzaiTile(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+        this.setExtradata("0");
+    }
 
-   @Override
-   public void serializeExtradata(ServerMessage serverMessage) {
-      serverMessage.appendInt(this.isLimited() ? 256 : 0);
-      serverMessage.appendString(this.getExtradata());
-      super.serializeExtradata(serverMessage);
-   }
+    @Override
+    public void serializeExtradata(ServerMessage serverMessage) {
+        serverMessage.appendInt((this.isLimited() ? 256 : 0));
+        serverMessage.appendString(this.getExtradata());
 
-   @Override
-   public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
-      return true;
-   }
+        super.serializeExtradata(serverMessage);
+    }
 
-   @Override
-   public boolean isWalkable() {
-      return true;
-   }
+    @Override
+    public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
+        return true;
+    }
 
-   @Override
-   public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-   }
+    @Override
+    public boolean isWalkable() {
+        return true;
+    }
 
-   @Override
-   public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-      super.onWalkOn(roomUnit, room, objects);
-      if (this.getExtradata().isEmpty()) {
-         this.setExtradata("0");
-      }
+    @Override
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
 
-      int state = Integer.valueOf(this.getExtradata());
-      if (state % 3 != 2) {
-         Habbo habbo = room.getHabbo(roomUnit);
-         if (habbo != null) {
-            if (!this.isLocked()) {
-               if (habbo.getHabboInfo().getCurrentGame() != null && habbo.getHabboInfo().getCurrentGame().equals(BattleBanzaiGame.class)) {
-                  BattleBanzaiGame game = (BattleBanzaiGame)room.getGame(BattleBanzaiGame.class);
-                  if (game == null) {
-                     return;
-                  }
+    }
 
-                  if (!game.state.equals(GameState.RUNNING)) {
-                     return;
-                  }
+    @Override
+    public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+        super.onWalkOn(roomUnit, room, objects);
 
-                  game.markTile(habbo, this, state);
-               }
-            }
-         }
-      }
-   }
+        if (this.getExtradata().isEmpty())
+            this.setExtradata("0");
 
-   public boolean isLocked() {
-      return this.getExtradata().isEmpty() ? false : Integer.valueOf(this.getExtradata()) % 3 == 2;
-   }
+        int state = Integer.parseInt(this.getExtradata());
 
-   @Override
-   public boolean canStackAt(Room room, List<Pair<RoomTile, THashSet<HabboItem>>> itemsAtLocation) {
-      for (Pair<RoomTile, THashSet<HabboItem>> set : itemsAtLocation) {
-         if (set.getValue() != null && !((THashSet)set.getValue()).isEmpty()) {
+        if (state % 3 == 2)
+            return;
+
+        Habbo habbo = room.getHabbo(roomUnit);
+
+        if (habbo == null)
+            return;
+
+        if (this.isLocked())
+            return;
+
+        if (habbo.getHabboInfo().getCurrentGame() != null && habbo.getHabboInfo().getCurrentGame().equals(BattleBanzaiGame.class)) {
+            BattleBanzaiGame game = ((BattleBanzaiGame) room.getGame(BattleBanzaiGame.class));
+
+            if (game == null)
+                return;
+
+            if (!game.state.equals(GameState.RUNNING))
+                return;
+
+            game.markTile(habbo, this, state);
+        }
+
+    }
+
+    public boolean isLocked() {
+        if (this.getExtradata().isEmpty())
             return false;
-         }
-      }
 
-      return super.canStackAt(room, itemsAtLocation);
-   }
+        return Integer.parseInt(this.getExtradata()) % 3 == 2;
+    }
 
-   @Override
-   public void onPickUp(Room room) {
-      super.onPickUp(room);
-      this.setExtradata("0");
-      room.updateItem(this);
-   }
+    @Override
+    public boolean canStackAt(Room room, List<Pair<RoomTile, THashSet<HabboItem>>> itemsAtLocation) {
+        for (Pair<RoomTile, THashSet<HabboItem>> set : itemsAtLocation) {
+            if (set.getValue() != null && !set.getValue().isEmpty()) return false;
+        }
 
-   @Override
-   public void onPlace(Room room) {
-      super.onPlace(room);
-      BattleBanzaiGame game = (BattleBanzaiGame)room.getGame(BattleBanzaiGame.class);
-      if (game != null && game.getState() != GameState.IDLE) {
-         this.setExtradata("1");
-      }
-   }
+        return super.canStackAt(room, itemsAtLocation);
+    }
+
+    @Override
+    public void onPickUp(Room room) {
+        super.onPickUp(room);
+
+        this.setExtradata("0");
+        room.updateItem(this);
+    }
+
+    @Override
+    public void onPlace(Room room) {
+        super.onPlace(room);
+
+        BattleBanzaiGame game = (BattleBanzaiGame) room.getGame(BattleBanzaiGame.class);
+
+        if (game != null && game.getState() != GameState.IDLE) {
+            this.setExtradata("1");
+        }
+    }
 }

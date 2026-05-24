@@ -5,9 +5,9 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 
 public interface IEventTriggers {
-   void onClick(GameClient var1, Room var2, Object[] var3) throws Exception;
+    void onClick(GameClient client, Room room, Object[] objects) throws Exception;
 
-   void onWalkOn(RoomUnit var1, Room var2, Object[] var3) throws Exception;
+    void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception;
 
-   void onWalkOff(RoomUnit var1, Room var2, Object[] var3) throws Exception;
+    void onWalkOff(RoomUnit roomUnit, Room room, Object[] objects) throws Exception;
 }

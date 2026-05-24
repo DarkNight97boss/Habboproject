@@ -7,74 +7,79 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.messages.ServerMessage;
 import gnu.trove.set.hash.THashSet;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class InteractionGuildFurni extends InteractionDefault {
-   private int guildId;
-   private static final THashSet<String> ROTATION_8_ITEMS = new THashSet<String>() {
-      {
-         this.add("gld_wall_tall");
-      }
-   };
+    private int guildId;
+    private static final THashSet<String> ROTATION_8_ITEMS = new THashSet<String>() {
+        {
+            this.add("gld_wall_tall");
+        }
+    };
 
-   public InteractionGuildFurni(ResultSet set, Item baseItem) throws SQLException {
-      super(set, baseItem);
-      this.guildId = set.getInt("guild_id");
-   }
+    public InteractionGuildFurni(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+        this.guildId = set.getInt("guild_id");
+    }
 
-   public InteractionGuildFurni(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
-      super(id, userId, item, extradata, limitedStack, limitedSells);
-      this.guildId = 0;
-   }
+    public InteractionGuildFurni(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+        this.guildId = 0;
+    }
 
-   @Override
-   public int getMaximumRotations() {
-      return ROTATION_8_ITEMS.stream().anyMatch(x -> x.equalsIgnoreCase(this.getBaseItem().getName())) ? 8 : this.getBaseItem().getRotations();
-   }
+    @Override
+    public int getMaximumRotations() {
+        if(ROTATION_8_ITEMS.stream().anyMatch(x -> x.equalsIgnoreCase(this.getBaseItem().getName()))) {
+            return 8;
+        }
+        return this.getBaseItem().getRotations();
+    }
 
-   @Override
-   public void serializeExtradata(ServerMessage serverMessage) {
-      Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(this.guildId);
-      if (guild != null) {
-         serverMessage.appendInt(2 + (this.isLimited() ? 256 : 0));
-         serverMessage.appendInt(5);
-         serverMessage.appendString(this.getExtradata());
-         serverMessage.appendString(guild.getId() + "");
-         serverMessage.appendString(guild.getBadge());
-         serverMessage.appendString(Emulator.getGameEnvironment().getGuildManager().getSymbolColor(guild.getColorOne()).valueA);
-         serverMessage.appendString(Emulator.getGameEnvironment().getGuildManager().getBackgroundColor(guild.getColorTwo()).valueA);
-      } else {
-         serverMessage.appendInt(this.isLimited() ? 256 : 0);
-         serverMessage.appendString(this.getExtradata());
-      }
+    @Override
+    public void serializeExtradata(ServerMessage serverMessage) {
+        Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(this.guildId);
 
-      if (this.isLimited()) {
-         serverMessage.appendInt(this.getLimitedSells());
-         serverMessage.appendInt(this.getLimitedStack());
-      }
-   }
+        if (guild != null) {
+            serverMessage.appendInt(2 + (this.isLimited() ? 256 : 0));
+            serverMessage.appendInt(5);
+            serverMessage.appendString(this.getExtradata());
+            serverMessage.appendString(guild.getId() + "");
+            serverMessage.appendString(guild.getBadge());
+            serverMessage.appendString(Emulator.getGameEnvironment().getGuildManager().getSymbolColor(guild.getColorOne()).valueA);
+            serverMessage.appendString(Emulator.getGameEnvironment().getGuildManager().getBackgroundColor(guild.getColorTwo()).valueA);
+        } else {
+            serverMessage.appendInt((this.isLimited() ? 256 : 0));
+            serverMessage.appendString(this.getExtradata());
+        }
 
-   @Override
-   public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
-      return true;
-   }
+        if (this.isLimited()) {
+            serverMessage.appendInt(this.getLimitedSells());
+            serverMessage.appendInt(this.getLimitedStack());
+        }
+    }
 
-   @Override
-   public boolean isWalkable() {
-      return this.getBaseItem().allowWalk();
-   }
+    @Override
+    public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
+        return true;
+    }
 
-   public int getGuildId() {
-      return this.guildId;
-   }
+    @Override
+    public boolean isWalkable() {
+        return this.getBaseItem().allowWalk();
+    }
 
-   public void setGuildId(int guildId) {
-      this.guildId = guildId;
-   }
+    public int getGuildId() {
+        return this.guildId;
+    }
 
-   @Override
-   public boolean allowWiredResetState() {
-      return true;
-   }
+    public void setGuildId(int guildId) {
+        this.guildId = guildId;
+    }
+
+    @Override
+    public boolean allowWiredResetState() {
+        return true;
+    }
 }

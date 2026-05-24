@@ -9,141 +9,144 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
-import com.eu.habbo.habbohotel.users.HabboStats;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.WiredHandler;
+import com.eu.habbo.messages.ClientMessage;
 import com.eu.habbo.messages.ServerMessage;
 import gnu.trove.procedure.TObjectProcedure;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class WiredEffectGiveHotelviewHofPoints extends InteractionWiredEffect {
-   public static final WiredEffectType type = WiredEffectType.SHOW_MESSAGE;
-   private int amount = 0;
+    public static final WiredEffectType type = WiredEffectType.SHOW_MESSAGE;
 
-   public WiredEffectGiveHotelviewHofPoints(ResultSet set, Item baseItem) throws SQLException {
-      super(set, baseItem);
-   }
+    private int amount = 0;
 
-   public WiredEffectGiveHotelviewHofPoints(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
-      super(id, userId, item, extradata, limitedStack, limitedSells);
-   }
+    public WiredEffectGiveHotelviewHofPoints(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+    }
 
-   @Override
-   public void serializeWiredData(ServerMessage message, Room room) {
-      message.appendBoolean(false);
-      message.appendInt(0);
-      message.appendInt(0);
-      message.appendInt(this.getBaseItem().getSpriteId());
-      message.appendInt(this.getId());
-      message.appendString(this.amount + "");
-      message.appendInt(0);
-      message.appendInt(0);
-      message.appendInt(type.code);
-      message.appendInt(this.getDelay());
-      if (this.requiresTriggeringUser()) {
-         final List<Integer> invalidTriggers = new ArrayList<>();
-         room.getRoomSpecialTypes().getTriggers(this.getX(), this.getY()).forEach(new TObjectProcedure<InteractionWiredTrigger>() {
-            public boolean execute(InteractionWiredTrigger object) {
-               if (!object.isTriggeredByRoomUnit()) {
-                  invalidTriggers.add(object.getBaseItem().getSpriteId());
-               }
+    public WiredEffectGiveHotelviewHofPoints(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
 
-               return true;
+    @Override
+    public void serializeWiredData(ServerMessage message, Room room) {
+        message.appendBoolean(false);
+        message.appendInt(0);
+        message.appendInt(0);
+        message.appendInt(this.getBaseItem().getSpriteId());
+        message.appendInt(this.getId());
+        message.appendString(this.amount + "");
+        message.appendInt(0);
+        message.appendInt(0);
+        message.appendInt(type.code);
+        message.appendInt(this.getDelay());
+
+        if (this.requiresTriggeringUser()) {
+            List<Integer> invalidTriggers = new ArrayList<>();
+            room.getRoomSpecialTypes().getTriggers(this.getX(), this.getY()).forEach(new TObjectProcedure<InteractionWiredTrigger>() {
+                @Override
+                public boolean execute(InteractionWiredTrigger object) {
+                    if (!object.isTriggeredByRoomUnit()) {
+                        invalidTriggers.add(object.getBaseItem().getSpriteId());
+                    }
+                    return true;
+                }
+            });
+            message.appendInt(invalidTriggers.size());
+            for (Integer i : invalidTriggers) {
+                message.appendInt(i);
             }
-         });
-         message.appendInt(invalidTriggers.size());
+        } else {
+            message.appendInt(0);
+        }
+    }
 
-         for (Integer i : invalidTriggers) {
-            message.appendInt(i);
-         }
-      } else {
-         message.appendInt(0);
-      }
-   }
+    @Override
+    public boolean saveData(WiredSettings settings, GameClient gameClient) {
+        try {
+            this.amount = Integer.parseInt(settings.getStringParam());
+        } catch (Exception e) {
+            return false;
+        }
 
-   @Override
-   public boolean saveData(WiredSettings settings, GameClient gameClient) {
-      try {
-         this.amount = Integer.parseInt(settings.getStringParam());
-      } catch (Exception e) {
-         return false;
-      }
+        this.setDelay(settings.getDelay());
 
-      this.setDelay(settings.getDelay());
-      return true;
-   }
+        return true;
+    }
 
-   @Override
-   public WiredEffectType getType() {
-      return type;
-   }
+    @Override
+    public WiredEffectType getType() {
+        return type;
+    }
 
-   @Override
-   public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
-      Habbo habbo = room.getHabbo(roomUnit);
-      if (habbo == null) {
-         return false;
-      }
+    @Override
+    public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
+        Habbo habbo = room.getHabbo(roomUnit);
 
-      if (this.amount > 0) {
-         HabboStats var10000 = habbo.getHabboStats();
-         var10000.hofPoints = var10000.hofPoints + this.amount;
-         Emulator.getThreading().run(habbo.getHabboStats());
-      }
+        if (habbo == null)
+            return false;
 
-      return true;
-   }
+        if (this.amount > 0) {
+            habbo.getHabboStats().hofPoints += this.amount;
+            Emulator.getThreading().run(habbo.getHabboStats());
+        }
 
-   @Override
-   public String getWiredData() {
-      return WiredHandler.getGsonBuilder().create().toJson(new WiredEffectGiveHotelviewHofPoints.JsonData(this.amount, this.getDelay()));
-   }
+        return true;
+    }
 
-   @Override
-   public void loadWiredData(ResultSet set, Room room) throws SQLException {
-      String wiredData = set.getString("wired_data");
-      if (wiredData.startsWith("{")) {
-         WiredEffectGiveHotelviewHofPoints.JsonData data = (WiredEffectGiveHotelviewHofPoints.JsonData)WiredHandler.getGsonBuilder()
-            .create()
-            .fromJson(wiredData, WiredEffectGiveHotelviewHofPoints.JsonData.class);
-         this.amount = data.amount;
-         this.setDelay(data.delay);
-      } else {
-         this.amount = 0;
-         if (wiredData.split("\t").length >= 2) {
-            super.setDelay(Integer.valueOf(wiredData.split("\t")[0]));
+    @Override
+    public String getWiredData() {
+        return WiredHandler.getGsonBuilder().create().toJson(new JsonData(this.amount, this.getDelay()));
+    }
 
-            try {
-               this.amount = Integer.valueOf(this.getWiredData().split("\t")[1]);
-            } catch (Exception var5) {
+    @Override
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        String wiredData = set.getString("wired_data");
+
+        if(wiredData.startsWith("{")) {
+            JsonData data = WiredHandler.getGsonBuilder().create().fromJson(wiredData, JsonData.class);
+            this.amount = data.amount;
+            this.setDelay(data.delay);
+        }
+        else {
+            this.amount = 0;
+
+            if (wiredData.split("\t").length >= 2) {
+                super.setDelay(Integer.parseInt(wiredData.split("\t")[0]));
+
+                try {
+                    this.amount = Integer.parseInt(this.getWiredData().split("\t")[1]);
+                } catch (Exception e) {
+                }
             }
-         }
 
-         this.needsUpdate(true);
-      }
-   }
+            this.needsUpdate(true);
+        }
+    }
 
-   @Override
-   public void onPickUp() {
-      this.amount = 0;
-      this.setDelay(0);
-   }
+    @Override
+    public void onPickUp() {
+        this.amount = 0;
+        this.setDelay(0);
+    }
 
-   @Override
-   public boolean requiresTriggeringUser() {
-      return true;
-   }
+    @Override
+    public boolean requiresTriggeringUser() {
+        return true;
+    }
 
-   static class JsonData {
-      int amount;
-      int delay;
+    static class JsonData {
+        int amount;
+        int delay;
 
-      public JsonData(int amount, int delay) {
-         this.amount = amount;
-         this.delay = delay;
-      }
-   }
+        public JsonData(int amount, int delay) {
+            this.amount = amount;
+            this.delay = delay;
+        }
+    }
 }

@@ -5,36 +5,40 @@ import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
-import gnu.trove.iterator.hash.TObjectHashIterator;
+import com.eu.habbo.messages.outgoing.Outgoing;
 import gnu.trove.set.hash.THashSet;
 
 public class GuildListComposer extends MessageComposer {
-   private final THashSet<Guild> guilds;
-   private final Habbo habbo;
+    private final THashSet<Guild> guilds;
+    private final Habbo habbo;
 
-   public GuildListComposer(THashSet<Guild> guilds, Habbo habbo) {
-      this.guilds = guilds;
-      this.habbo = habbo;
-   }
+    public GuildListComposer(THashSet<Guild> guilds, Habbo habbo) {
+        this.guilds = guilds;
+        this.habbo = habbo;
+    }
 
-   @Override
-   protected ServerMessage composeInternal() {
-      this.response.init(420);
-      this.response.appendInt(this.guilds.size());
-      TObjectHashIterator var1 = this.guilds.iterator();
+    @Override
+    protected ServerMessage composeInternal() {
+        this.response.init(Outgoing.GuildListComposer);
+        this.response.appendInt(this.guilds.size());
+        for (Guild guild : this.guilds) {
+            this.response.appendInt(guild.getId());
+            this.response.appendString(guild.getName());
+            this.response.appendString(guild.getBadge());
+            this.response.appendString(Emulator.getGameEnvironment().getGuildManager().getSymbolColor(guild.getColorOne()).valueA);
+            this.response.appendString(Emulator.getGameEnvironment().getGuildManager().getBackgroundColor(guild.getColorTwo()).valueA);
+            this.response.appendBoolean(this.habbo.getHabboStats().guild == guild.getId());
+            this.response.appendInt(guild.getOwnerId());
+            this.response.appendBoolean(guild.hasForum());
+        }
+        return this.response;
+    }
 
-      while (var1.hasNext()) {
-         Guild guild = (Guild)var1.next();
-         this.response.appendInt(guild.getId());
-         this.response.appendString(guild.getName());
-         this.response.appendString(guild.getBadge());
-         this.response.appendString(Emulator.getGameEnvironment().getGuildManager().getSymbolColor(guild.getColorOne()).valueA);
-         this.response.appendString(Emulator.getGameEnvironment().getGuildManager().getBackgroundColor(guild.getColorTwo()).valueA);
-         this.response.appendBoolean(this.habbo.getHabboStats().guild == guild.getId());
-         this.response.appendInt(guild.getOwnerId());
-         this.response.appendBoolean(guild.hasForum());
-      }
+    public THashSet<Guild> getGuilds() {
+        return guilds;
+    }
 
-      return this.response;
-   }
+    public Habbo getHabbo() {
+        return habbo;
+    }
 }

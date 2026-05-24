@@ -7,114 +7,90 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.friends.FriendRequestComposer;
 import com.eu.habbo.messages.outgoing.friends.FriendRequestErrorComposer;
 import com.eu.habbo.plugin.events.users.friends.UserRequestFriendshipEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 public class FriendRequestEvent extends MessageHandler {
-   private static final Logger LOGGER = LoggerFactory.getLogger(FriendRequestEvent.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FriendRequestEvent.class);
 
-   @Override
-   public void handle() throws Exception {
-      String username = this.packet.readString();
-      if (this.client != null && username != null && !username.isEmpty()) {
-         Habbo targetHabbo = Emulator.getGameServer().getGameClientManager().getHabbo(username);
-         if (targetHabbo == null) {
-            try {
-               Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+    @Override
+    public int getRatelimit() {
+        return 500;
+    }
 
-               try {
-                  PreparedStatement statement = connection.prepareStatement(
-                     "SELECT users.*, users_settings.block_friendrequests FROM users INNER JOIN users_settings ON users.id = users_settings.user_id WHERE username = ? LIMIT 1"
-                  );
+    @Override
+    public void handle() throws Exception {
+        String username = this.packet.readString();
 
-                  try {
-                     statement.setString(1, username);
-                     ResultSet set = statement.executeQuery();
+        if (this.client == null || username == null || username.isEmpty())
+            return;
 
-                     try {
-                        while (set.next()) {
-                           targetHabbo = new Habbo(set);
-                        }
-                     } catch (Throwable var11) {
-                        if (set != null) {
-                           try {
-                              set.close();
-                           } catch (Throwable var10) {
-                              var11.addSuppressed(var10);
-                           }
-                        }
+        // TargetHabbo can be null if the Habbo is not online or when the Habbo doesn't exist
+        Habbo targetHabbo = Emulator.getGameServer().getGameClientManager().getHabbo(username);
 
-                        throw var11;
-                     }
-
-                     if (set != null) {
-                        set.close();
-                     }
-                  } catch (Throwable var12) {
-                     if (statement != null) {
-                        try {
-                           statement.close();
-                        } catch (Throwable var9) {
-                           var12.addSuppressed(var9);
-                        }
-                     }
-
-                     throw var12;
-                  }
-
-                  if (statement != null) {
-                     statement.close();
-                  }
-               } catch (Throwable var13) {
-                  if (connection != null) {
-                     try {
-                        connection.close();
-                     } catch (Throwable var8) {
-                        var13.addSuppressed(var8);
-                     }
-                  }
-
-                  throw var13;
-               }
-
-               if (connection != null) {
-                  connection.close();
-               }
+        // If the Habbo is null, we try to get the Habbo from the database.
+        // If the Habbo is still null, the Habbo doesn't exist.
+        if (targetHabbo == null) {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT users.*, users_settings.block_friendrequests FROM users INNER JOIN users_settings ON users.id = users_settings.user_id WHERE username = ? LIMIT 1")) {
+                statement.setString(1, username);
+                try (ResultSet set = statement.executeQuery()) {
+                    while (set.next()) {
+                        targetHabbo = new Habbo(set);
+                    }
+                }
             } catch (SQLException e) {
-               LOGGER.error("Caught SQL exception", e);
-               return;
+                LOGGER.error("Caught SQL exception", e);
+                return;
             }
-         }
+        }
 
-         if (targetHabbo == null) {
-            this.client.sendResponse(new FriendRequestErrorComposer(4));
-         } else {
-            int targetId = targetHabbo.getHabboInfo().getId();
-            boolean targetBlocksFriendRequests = targetHabbo.getHabboStats().blockFriendRequests;
-            if (targetId != this.client.getHabbo().getHabboInfo().getId()) {
-               if (targetBlocksFriendRequests) {
-                  this.client.sendResponse(new FriendRequestErrorComposer(3));
-               } else if (this.client.getHabbo().getMessenger().getFriends().values().size() >= this.client.getHabbo().getHabboStats().maxFriends
-                  && !this.client.getHabbo().hasPermission("acc_infinite_friends")) {
-                  this.client.sendResponse(new FriendRequestErrorComposer(1));
-               } else if (targetHabbo.getMessenger().getFriends().values().size() >= targetHabbo.getHabboStats().maxFriends
-                  && !targetHabbo.hasPermission("acc_infinite_friends")) {
-                  this.client.sendResponse(new FriendRequestErrorComposer(2));
-               } else if (Emulator.getPluginManager().fireEvent(new UserRequestFriendshipEvent(this.client.getHabbo(), username, targetHabbo)).isCancelled()) {
-                  this.client.sendResponse(new FriendRequestErrorComposer(2));
-               } else {
-                  if (targetHabbo.isOnline()) {
-                     targetHabbo.getClient().sendResponse(new FriendRequestComposer(this.client.getHabbo()));
-                  }
+        if (targetHabbo == null) {
+            this.client.sendResponse(new FriendRequestErrorComposer(FriendRequestErrorComposer.TARGET_NOT_FOUND));
+            return;
+        }
 
-                  Messenger.makeFriendRequest(this.client.getHabbo().getHabboInfo().getId(), targetId);
-               }
-            }
-         }
-      }
-   }
+        int targetId = targetHabbo.getHabboInfo().getId();
+        boolean targetBlocksFriendRequests = targetHabbo.getHabboStats().blockFriendRequests;
+
+        // Making friends with yourself would be very pathetic, we try to avoid that
+        if (targetId == this.client.getHabbo().getHabboInfo().getId())
+            return;
+
+        // Target Habbo exists
+        // Check if Habbo is accepting friend requests
+        if (targetBlocksFriendRequests) {
+            this.client.sendResponse(new FriendRequestErrorComposer(FriendRequestErrorComposer.TARGET_NOT_ACCEPTING_REQUESTS));
+            return;
+        }
+
+        // You can only have x friends
+        if (this.client.getHabbo().getMessenger().getFriends().size() >= this.client.getHabbo().getHabboStats().maxFriends && !this.client.getHabbo().hasPermission("acc_infinite_friends")) {
+            this.client.sendResponse(new FriendRequestErrorComposer(FriendRequestErrorComposer.FRIEND_LIST_OWN_FULL));
+            return;
+        }
+
+        // Check if targets friendlist is full
+        if (targetHabbo.getMessenger().getFriends().size() >= targetHabbo.getHabboStats().maxFriends && !targetHabbo.hasPermission("acc_infinite_friends")) {
+            this.client.sendResponse(new FriendRequestErrorComposer(FriendRequestErrorComposer.FRIEND_LIST_TARGET_FULL));
+            return;
+        }
+
+        // Allow plugins to cancel the request
+        if (Emulator.getPluginManager().fireEvent(new UserRequestFriendshipEvent(this.client.getHabbo(), username, targetHabbo)).isCancelled()) {
+            this.client.sendResponse(new FriendRequestErrorComposer(2));
+            return;
+        }
+
+        if(targetHabbo.isOnline()) {
+            targetHabbo.getClient().sendResponse(new FriendRequestComposer(this.client.getHabbo()));
+        }
+
+        Messenger.makeFriendRequest(this.client.getHabbo().getHabboInfo().getId(), targetId);
+    }
 }

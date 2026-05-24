@@ -2,18 +2,23 @@ package com.eu.habbo.messages.outgoing.handshake;
 
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
+import com.eu.habbo.messages.outgoing.Outgoing;
 
 public class PongComposer extends MessageComposer {
-   private final int id;
+    private final int id;
 
-   public PongComposer(int id) {
-      this.id = id;
-   }
+    public PongComposer(int id) {
+        this.id = id;
+    }
 
-   @Override
-   protected ServerMessage composeInternal() {
-      this.response.init(10);
-      this.response.appendInt(this.id);
-      return this.response;
-   }
+    @Override
+    protected ServerMessage composeInternal() {
+        this.response.init(Outgoing.PongComposer);
+        this.response.appendInt(this.id);
+        return this.response;
+    }
+
+    public int getId() {
+        return id;
+    }
 }

@@ -7,38 +7,40 @@ import com.eu.habbo.habbohotel.wired.WiredHandler;
 import com.eu.habbo.habbohotel.wired.WiredTriggerType;
 
 public class GameTimer implements Runnable {
-   private final InteractionGameTimer timer;
 
-   public GameTimer(InteractionGameTimer timer) {
-      this.timer = timer;
-   }
+    private final InteractionGameTimer timer;
 
-   @Override
-   public void run() {
-      if (this.timer.getRoomId() == 0) {
-         this.timer.setRunning(false);
-      } else {
-         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.timer.getRoomId());
-         if (room != null && this.timer.isRunning() && !this.timer.isPaused()) {
-            this.timer.reduceTime();
-            if (this.timer.getTimeNow() < 0) {
-               this.timer.setTimeNow(0);
-            }
+    public GameTimer(InteractionGameTimer timer) {
+        this.timer = timer;
+    }
 
-            if (this.timer.getTimeNow() > 0) {
-               this.timer.setThreadActive(true);
-               Emulator.getThreading().run(this, 1000L);
-            } else {
-               this.timer.setThreadActive(false);
-               this.timer.setTimeNow(0);
-               this.timer.endGame(room);
-               WiredHandler.handle(WiredTriggerType.GAME_ENDS, null, room, new Object[0]);
-            }
+    @Override
+    public void run() {
+        if (timer.getRoomId() == 0) {
+            timer.setRunning(false);
+            return;
+        }
 
-            room.updateItem(this.timer);
-         } else {
-            this.timer.setThreadActive(false);
-         }
-      }
-   }
+        Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(timer.getRoomId());
+
+        if (room == null || !timer.isRunning() || timer.isPaused()) {
+            timer.setThreadActive(false);
+            return;
+        }
+
+        timer.reduceTime();
+        if (timer.getTimeNow() < 0) timer.setTimeNow(0);
+
+        if (timer.getTimeNow() > 0) {
+            timer.setThreadActive(true);
+            Emulator.getThreading().run(this, 1000);
+        } else {
+            timer.setThreadActive(false);
+            timer.setTimeNow(0);
+            timer.endGame(room);
+            WiredHandler.handle(WiredTriggerType.GAME_ENDS, null, room, new Object[]{});
+        }
+
+        room.updateItem(timer);
+    }
 }

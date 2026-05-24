@@ -7,57 +7,60 @@ import com.eu.habbo.habbohotel.rooms.RoomMoodlightData;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class InteractionMoodLight extends HabboItem {
-   public InteractionMoodLight(ResultSet set, Item baseItem) throws SQLException {
-      super(set, baseItem);
-   }
+    public InteractionMoodLight(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+    }
 
-   public InteractionMoodLight(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
-      super(id, userId, item, extradata, limitedStack, limitedSells);
-   }
+    public InteractionMoodLight(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
 
-   @Override
-   public void serializeExtradata(ServerMessage serverMessage) {
-      serverMessage.appendInt(this.isLimited() ? 256 : 0);
-      serverMessage.appendString(this.getExtradata());
-      super.serializeExtradata(serverMessage);
-   }
+    @Override
+    public void serializeExtradata(ServerMessage serverMessage) {
+        serverMessage.appendInt((this.isLimited() ? 256 : 0));
+        serverMessage.appendString(this.getExtradata());
 
-   @Override
-   public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
-      return false;
-   }
+        super.serializeExtradata(serverMessage);
+    }
 
-   @Override
-   public boolean isWalkable() {
-      return false;
-   }
+    @Override
+    public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
+        return false;
+    }
 
-   @Override
-   public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-   }
+    @Override
+    public boolean isWalkable() {
+        return false;
+    }
 
-   @Override
-   public void onPlace(Room room) {
-      if (room != null) {
-         for (RoomMoodlightData data : room.getMoodlightData().valueCollection()) {
-            if (data.isEnabled()) {
-               this.setExtradata(data.toString());
-               this.needsUpdate(true);
-               room.updateItem(this);
-               Emulator.getThreading().run(this);
+    @Override
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+
+    }
+
+    @Override
+    public void onPlace(Room room) {
+        if (room != null) {
+            for (RoomMoodlightData data : room.getMoodlightData().valueCollection()) {
+                if (data.isEnabled()) {
+                    this.setExtradata(data.toString());
+                    this.needsUpdate(true);
+                    room.updateItem(this);
+                    Emulator.getThreading().run(this);
+                }
             }
-         }
-      }
+        }
 
-      super.onPlace(room);
-   }
+        super.onPlace(room);
+    }
 
-   @Override
-   public boolean isUsable() {
-      return true;
-   }
+    @Override
+    public boolean isUsable() {
+        return true;
+    }
 }

@@ -4,25 +4,30 @@ import com.eu.habbo.habbohotel.crafting.CraftingRecipe;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
-import java.util.Map.Entry;
+import com.eu.habbo.messages.outgoing.Outgoing;
+
+import java.util.Map;
 
 public class CraftingRecipeComposer extends MessageComposer {
-   private final CraftingRecipe recipe;
+    private final CraftingRecipe recipe;
 
-   public CraftingRecipeComposer(CraftingRecipe recipe) {
-      this.recipe = recipe;
-   }
+    public CraftingRecipeComposer(CraftingRecipe recipe) {
+        this.recipe = recipe;
+    }
 
-   @Override
-   protected ServerMessage composeInternal() {
-      this.response.init(2774);
-      this.response.appendInt(this.recipe.getIngredients().size());
+    @Override
+    protected ServerMessage composeInternal() {
+        this.response.init(Outgoing.CraftingRecipeComposer);
+        this.response.appendInt(this.recipe.getIngredients().size());
 
-      for (Entry<Item, Integer> ingredient : this.recipe.getIngredients().entrySet()) {
-         this.response.appendInt(ingredient.getValue());
-         this.response.appendString(ingredient.getKey().getName());
-      }
+        for (Map.Entry<Item, Integer> ingredient : this.recipe.getIngredients().entrySet()) {
+            this.response.appendInt(ingredient.getValue());
+            this.response.appendString(ingredient.getKey().getName());
+        }
+        return this.response;
+    }
 
-      return this.response;
-   }
+    public CraftingRecipe getRecipe() {
+        return recipe;
+    }
 }

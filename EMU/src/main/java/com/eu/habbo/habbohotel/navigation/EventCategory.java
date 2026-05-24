@@ -3,42 +3,41 @@ package com.eu.habbo.habbohotel.navigation;
 import com.eu.habbo.messages.ServerMessage;
 
 public class EventCategory {
-   private int id;
-   private String caption;
-   private boolean visible;
+    private int id;
+    private String caption;
+    private boolean visible;
 
-   public EventCategory(int id, String caption, boolean visible) {
-      this.id = id;
-      this.caption = caption;
-      this.visible = visible;
-   }
+    public EventCategory(int id, String caption, boolean visible) {
+        this.id = id;
+        this.caption = caption;
+        this.visible = visible;
+    }
 
-   public EventCategory(String serialized) throws Exception {
-      String[] parts = serialized.split(",");
-      if (parts.length != 3) {
-         throw new Exception("A serialized event category should contain 3 fields");
-      }
+    public EventCategory(String serialized) throws Exception {
+        String[] parts = serialized.split(",");
 
-      this.id = Integer.valueOf(parts[0]);
-      this.caption = parts[1];
-      this.visible = parts[2].equalsIgnoreCase("true");
-   }
+        if (parts.length != 3) throw new Exception("A serialized event category should contain 3 fields");
 
-   public int getId() {
-      return this.id;
-   }
+        this.id = Integer.parseInt(parts[0]);
+        this.caption = parts[1];
+        this.visible = parts[2].equalsIgnoreCase("true");
+    }
 
-   public String getCaption() {
-      return this.caption;
-   }
+    public int getId() {
+        return id;
+    }
 
-   public boolean isVisible() {
-      return this.visible;
-   }
+    public String getCaption() {
+        return caption;
+    }
 
-   public void serialize(ServerMessage message) {
-      message.appendInt(this.id);
-      message.appendString(this.caption);
-      message.appendBoolean(this.visible);
-   }
+    public boolean isVisible() {
+        return visible;
+    }
+
+    public void serialize(ServerMessage message) {
+        message.appendInt(this.id);
+        message.appendString(this.caption);
+        message.appendBoolean(this.visible);
+    }
 }

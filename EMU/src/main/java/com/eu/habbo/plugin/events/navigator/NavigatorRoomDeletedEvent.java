@@ -5,10 +5,11 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.plugin.events.users.UserEvent;
 
 public class NavigatorRoomDeletedEvent extends UserEvent {
-   public final Room room;
+    public final Room room;
 
-   public NavigatorRoomDeletedEvent(Habbo habbo, Room room) {
-      super(habbo);
-      this.room = room;
-   }
+    public NavigatorRoomDeletedEvent(Habbo habbo, Room room) {
+        super(habbo);
+
+        this.room = room;
+    }
 }

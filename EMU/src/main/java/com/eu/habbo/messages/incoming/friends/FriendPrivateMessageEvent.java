@@ -6,26 +6,31 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.plugin.events.users.friends.UserFriendChatEvent;
 
 public class FriendPrivateMessageEvent extends MessageHandler {
-   @Override
-   public void handle() throws Exception {
-      int userId = this.packet.readInt();
-      String message = this.packet.readString();
-      if (this.client.getHabbo().getHabboStats().allowTalk()) {
-         long millis = System.currentTimeMillis();
-         if (millis - this.client.getHabbo().getHabboStats().lastChat >= 750L) {
-            this.client.getHabbo().getHabboStats().lastChat = millis;
-            MessengerBuddy buddy = this.client.getHabbo().getMessenger().getFriend(userId);
-            if (buddy != null) {
-               if (message.length() > 255) {
-                  message = message.substring(0, 255);
-               }
+    @Override
+    public void handle() throws Exception {
+        int userId = this.packet.readInt();
+        String message = this.packet.readString();
 
-               UserFriendChatEvent event = new UserFriendChatEvent(this.client.getHabbo(), buddy, message);
-               if (!Emulator.getPluginManager().fireEvent(event).isCancelled()) {
-                  buddy.onMessageReceived(this.client.getHabbo(), message);
-               }
-            }
-         }
-      }
-   }
+        if (!this.client.getHabbo().getHabboStats().allowTalk()) {
+            return;
+        }
+
+        long millis = System.currentTimeMillis();
+        if (millis - this.client.getHabbo().getHabboStats().lastChat < 750) {
+            return;
+        }
+        this.client.getHabbo().getHabboStats().lastChat = millis;
+
+        MessengerBuddy buddy = this.client.getHabbo().getMessenger().getFriend(userId);
+        if (buddy == null)
+            return;
+
+        if (message.length() > 255) message = message.substring(0, 255);
+
+        UserFriendChatEvent event = new UserFriendChatEvent(this.client.getHabbo(), buddy, message);
+        if (Emulator.getPluginManager().fireEvent(event).isCancelled())
+            return;
+
+        buddy.onMessageReceived(this.client.getHabbo(), message);
+    }
 }

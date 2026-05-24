@@ -1,7 +1,7 @@
 package com.eu.habbo.core;
 
 public interface Disposable {
-   void dispose();
+    void dispose();
 
-   boolean disposed();
+    boolean disposed();
 }

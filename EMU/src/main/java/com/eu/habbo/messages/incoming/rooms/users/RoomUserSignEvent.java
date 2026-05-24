@@ -7,30 +7,31 @@ import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.plugin.events.users.UserSignEvent;
-import gnu.trove.iterator.hash.TObjectHashIterator;
 
 public class RoomUserSignEvent extends MessageHandler {
-   @Override
-   public void handle() throws Exception {
-      int signId = this.packet.readInt();
-      Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
-      if (room != null) {
-         UserSignEvent event = new UserSignEvent(this.client.getHabbo(), signId);
-         if (!Emulator.getPluginManager().fireEvent(event).isCancelled()) {
+    @Override
+    public void handle() throws Exception {
+        int signId = this.packet.readInt();
+
+        Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+
+        if (room == null)
+            return;
+
+        UserSignEvent event = new UserSignEvent(this.client.getHabbo(), signId);
+        if (!Emulator.getPluginManager().fireEvent(event).isCancelled()) {
             this.client.getHabbo().getRoomUnit().setStatus(RoomUnitStatus.SIGN, event.sign + "");
             this.client.getHabbo().getHabboInfo().getCurrentRoom().unIdle(this.client.getHabbo());
-            if (signId <= 10) {
-               int userId = this.client.getHabbo().getHabboInfo().getId();
-               TObjectHashIterator var5 = room.getFloorItems().iterator();
 
-               while (var5.hasNext()) {
-                  HabboItem item = (HabboItem)var5.next();
-                  if (item instanceof InteractionVoteCounter) {
-                     ((InteractionVoteCounter)item).vote(room, userId, signId);
-                  }
-               }
+            if(signId <= 10) {
+
+                int userId = this.client.getHabbo().getHabboInfo().getId();
+                for (HabboItem item : room.getFloorItems()) {
+                    if (item instanceof InteractionVoteCounter) {
+                        ((InteractionVoteCounter)item).vote(room, userId, signId);
+                    }
+                }
             }
-         }
-      }
-   }
+        }
+    }
 }

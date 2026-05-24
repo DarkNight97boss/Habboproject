@@ -6,24 +6,34 @@ import com.eu.habbo.habbohotel.modtool.ModToolTicketType;
 import com.google.gson.Gson;
 
 public class CreateModToolTicket extends RCONMessage<CreateModToolTicket.JSON> {
-   public CreateModToolTicket() {
-      super(CreateModToolTicket.JSON.class);
-   }
+    public CreateModToolTicket() {
+        super(JSON.class);
+    }
 
-   public void handle(Gson gson, CreateModToolTicket.JSON json) {
-      ModToolIssue issue = new ModToolIssue(
-         json.sender_id, json.sender_username, json.reported_id, json.reported_username, json.reported_room_id, json.message, ModToolTicketType.NORMAL
-      );
-      Emulator.getGameEnvironment().getModToolManager().addTicket(issue);
-      Emulator.getGameEnvironment().getModToolManager().updateTicketToMods(issue);
-   }
+    @Override
+    public void handle(Gson gson, JSON json) {
+        ModToolIssue issue = new ModToolIssue(json.sender_id, json.sender_username, json.reported_id, json.reported_username, json.reported_room_id, json.message, ModToolTicketType.NORMAL);
+        Emulator.getGameEnvironment().getModToolManager().addTicket(issue);
+        Emulator.getGameEnvironment().getModToolManager().updateTicketToMods(issue);
+    }
 
-   static class JSON {
-      public int sender_id;
-      public String sender_username;
-      public int reported_id;
-      public String reported_username;
-      public int reported_room_id = 0;
-      public String message;
-   }
+    static class JSON {
+
+        public int sender_id;
+
+
+        public String sender_username;
+
+
+        public int reported_id;
+
+
+        public String reported_username;
+
+
+        public int reported_room_id = 0;
+
+
+        public String message;
+    }
 }

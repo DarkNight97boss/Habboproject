@@ -6,108 +6,143 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.MessageComposer;
+import com.eu.habbo.plugin.events.emulator.OutgoingPacketEvent;
 import io.netty.channel.Channel;
-import java.util.ArrayList;
-import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
+
 public class GameClient {
-   private static final Logger LOGGER = LoggerFactory.getLogger(GameClient.class);
-   private final Channel channel;
-   private final HabboEncryption encryption;
-   private Habbo habbo;
-   private boolean handshakeFinished;
-   private String machineId = "";
-   public final ConcurrentHashMap<Integer, Integer> incomingPacketCounter = new ConcurrentHashMap<>(25);
-   public final ConcurrentHashMap<Class<? extends MessageHandler>, Long> messageTimestamps = new ConcurrentHashMap<>();
-   public long lastPacketCounterCleared = Emulator.getIntUnixTimestamp();
 
-   public GameClient(Channel channel) {
-      this.channel = channel;
-      this.encryption = Emulator.getCrypto().isEnabled()
-         ? new HabboEncryption(Emulator.getCrypto().getExponent(), Emulator.getCrypto().getModulus(), Emulator.getCrypto().getPrivateExponent())
-         : null;
-   }
+    private static final Logger LOGGER = LoggerFactory.getLogger(GameClient.class);
 
-   public Channel getChannel() {
-      return this.channel;
-   }
+    private final Channel channel;
+    private final HabboEncryption encryption;
 
-   public HabboEncryption getEncryption() {
-      return this.encryption;
-   }
+    private Habbo habbo;
+    private boolean handshakeFinished;
+    private String machineId = "";
 
-   public Habbo getHabbo() {
-      return this.habbo;
-   }
+    public final ConcurrentHashMap<Integer, Integer> incomingPacketCounter = new ConcurrentHashMap<>(25);
+    public final ConcurrentHashMap<Class<? extends MessageHandler>, Long> messageTimestamps = new ConcurrentHashMap<>();
+    public long lastPacketCounterCleared = Emulator.getIntUnixTimestamp();
 
-   public void setHabbo(Habbo habbo) {
-      this.habbo = habbo;
-   }
+    public GameClient(Channel channel) {
+        this.channel = channel;
+        this.encryption = Emulator.getCrypto().isEnabled()
+                ? new HabboEncryption(
+                    Emulator.getCrypto().getExponent(),
+                    Emulator.getCrypto().getModulus(),
+                    Emulator.getCrypto().getPrivateExponent())
+                : null;
+    }
 
-   public boolean isHandshakeFinished() {
-      return this.handshakeFinished;
-   }
+    public Channel getChannel() {
+        return this.channel;
+    }
 
-   public void setHandshakeFinished(boolean handshakeFinished) {
-      this.handshakeFinished = handshakeFinished;
-   }
+    public HabboEncryption getEncryption() {
+        return encryption;
+    }
 
-   public String getMachineId() {
-      return this.machineId;
-   }
+    public Habbo getHabbo() {
+        return this.habbo;
+    }
 
-   public void setMachineId(String machineId) {
-      if (machineId == null) {
-         throw new RuntimeException("Cannot set machineID to NULL");
-      }
+    public void setHabbo(Habbo habbo) {
+        this.habbo = habbo;
+    }
 
-      this.machineId = machineId;
-   }
+    public boolean isHandshakeFinished() {
+        return handshakeFinished;
+    }
 
-   public void sendResponse(MessageComposer composer) {
-      this.sendResponse(composer.compose());
-   }
+    public void setHandshakeFinished(boolean handshakeFinished) {
+        this.handshakeFinished = handshakeFinished;
+    }
 
-   public void sendResponse(ServerMessage response) {
-      if (this.channel.isOpen()) {
-         if (response == null || response.getHeader() <= 0) {
-            return;
-         }
+    public String getMachineId() {
+        return this.machineId;
+    }
 
-         this.channel.write(response, this.channel.voidPromise());
-         this.channel.flush();
-      }
-   }
+    public void setMachineId(String machineId) {
+        if (machineId == null) {
+            throw new RuntimeException("Cannot set machineID to NULL");
+        }
 
-   public void sendResponses(ArrayList<ServerMessage> responses) {
-      if (this.channel.isOpen()) {
-         for (ServerMessage response : responses) {
+        this.machineId = machineId;
+    }
+
+    public void sendResponse(MessageComposer composer) {
+        this.sendResponse(composer.compose());
+    }
+
+    public void sendResponse(ServerMessage response) {
+        if (this.channel.isOpen()) {
             if (response == null || response.getHeader() <= 0) {
-               return;
+                return;
             }
 
-            this.channel.write(response);
-         }
+            OutgoingPacketEvent event = new OutgoingPacketEvent(this.habbo, response.getComposer(), response);
+            Emulator.getPluginManager().fireEvent(event);
 
-         this.channel.flush();
-      }
-   }
-
-   public void dispose() {
-      try {
-         this.channel.close();
-         if (this.habbo != null) {
-            if (this.habbo.isOnline()) {
-               this.habbo.getHabboInfo().setOnline(false);
-               this.habbo.disconnect();
+            if (event.isCancelled()) {
+                return;
             }
 
-            this.habbo = null;
-         }
-      } catch (Exception e) {
-         LOGGER.error("Caught exception", e);
-      }
-   }
+            if (event.hasCustomMessage()) {
+                response = event.getCustomMessage();
+            }
+
+            this.channel.write(response, this.channel.voidPromise());
+            this.channel.flush();
+        }
+    }
+
+    public void sendResponses(ArrayList<ServerMessage> responses) {
+        if (this.channel.isOpen()) {
+            for (ServerMessage response : responses) {
+                if (response == null || response.getHeader() <= 0) {
+                    return;
+                }
+
+                OutgoingPacketEvent event = new OutgoingPacketEvent(this.habbo, response.getComposer(), response);
+                Emulator.getPluginManager().fireEvent(event);
+
+                if (event.isCancelled()) {
+                    continue;
+                }
+
+                if (event.hasCustomMessage()) {
+                    response = event.getCustomMessage();
+                }
+
+                this.channel.write(response);
+            }
+
+            this.channel.flush();
+        }
+    }
+
+    public void dispose() {
+        try {
+            this.channel.close();
+
+            if (this.habbo != null) {
+                if (this.habbo.isOnline()) {
+                    this.habbo.getHabboInfo().setOnline(false);
+                    this.habbo.disconnect();
+                }
+
+                this.habbo = null;
+            }
+        } catch (Exception e) {
+            LOGGER.error("Caught exception", e);
+        }
+    }
 }

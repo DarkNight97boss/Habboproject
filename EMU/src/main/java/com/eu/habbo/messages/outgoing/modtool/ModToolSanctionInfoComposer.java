@@ -7,85 +7,103 @@ import com.eu.habbo.habbohotel.modtool.ModToolSanctions;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
+import com.eu.habbo.messages.outgoing.Outgoing;
 import gnu.trove.map.hash.THashMap;
-import java.util.ArrayList;
-import java.util.Date;
 import org.joda.time.DateTime;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+
 public class ModToolSanctionInfoComposer extends MessageComposer {
-   private final Habbo habbo;
 
-   public ModToolSanctionInfoComposer(Habbo habbo) {
-      this.habbo = habbo;
-   }
+    private final Habbo habbo;
 
-   @Override
-   protected ServerMessage composeInternal() {
-      ModToolSanctions modToolSanctions = Emulator.getGameEnvironment().getModToolSanctions();
-      if (Emulator.getConfig().getBoolean("hotel.sanctions.enabled")) {
-         THashMap<Integer, ArrayList<ModToolSanctionItem>> modToolSanctionItemsHashMap = Emulator.getGameEnvironment()
-            .getModToolSanctions()
-            .getSanctions(this.habbo.getHabboInfo().getId());
-         ArrayList<ModToolSanctionItem> modToolSanctionItems = (ArrayList<ModToolSanctionItem>)modToolSanctionItemsHashMap.get(
-            this.habbo.getHabboInfo().getId()
-         );
-         if (modToolSanctionItems == null || modToolSanctionItems.size() <= 0) {
-            return this.cleanResponse();
-         }
+    public ModToolSanctionInfoComposer(Habbo habbo) {
+        this.habbo = habbo;
+    }
 
-         ModToolSanctionItem item = modToolSanctionItems.get(modToolSanctionItems.size() - 1);
-         ModToolSanctionItem prevItem = null;
-         if (modToolSanctionItems.size() > 1 && modToolSanctionItems.get(modToolSanctionItems.size() - 2) != null) {
-            prevItem = modToolSanctionItems.get(modToolSanctionItems.size() - 2);
-         }
+    @Override
+    protected ServerMessage composeInternal() {
+        ModToolSanctions modToolSanctions = Emulator.getGameEnvironment().getModToolSanctions();
 
-         ModToolSanctionLevelItem modToolSanctionLevelItem = modToolSanctions.getSanctionLevelItem(item.sanctionLevel);
-         ModToolSanctionLevelItem nextModToolSanctionLevelItem = modToolSanctions.getSanctionLevelItem(item.sanctionLevel + 1);
-         if (item.probationTimestamp <= 0) {
-            return this.cleanResponse();
-         }
+        Date probationEndTime;
+        Date probationStartTime;
 
-         Date probationEndTime = new Date(item.probationTimestamp * 1000L);
-         Date probationStartTime = new DateTime(probationEndTime).minusDays(modToolSanctions.getProbationDays(modToolSanctionLevelItem)).toDate();
-         Date tradeLockedUntil = null;
-         if (item.tradeLockedUntil > 0) {
-            tradeLockedUntil = new Date(item.tradeLockedUntil * 1000L);
-         }
+        if (Emulator.getConfig().getBoolean("hotel.sanctions.enabled")) {
+            THashMap<Integer, ArrayList<ModToolSanctionItem>> modToolSanctionItemsHashMap = Emulator.getGameEnvironment().getModToolSanctions().getSanctions(habbo.getHabboInfo().getId());
+            ArrayList<ModToolSanctionItem> modToolSanctionItems = modToolSanctionItemsHashMap.get(habbo.getHabboInfo().getId());
 
-         this.response.init(2221);
-         this.response.appendBoolean(prevItem != null && prevItem.probationTimestamp > 0);
-         this.response.appendBoolean(item.probationTimestamp >= Emulator.getIntUnixTimestamp());
-         this.response.appendString(modToolSanctions.getSanctionType(modToolSanctionLevelItem));
-         this.response.appendInt(modToolSanctions.getTimeOfSanction(modToolSanctionLevelItem));
-         this.response.appendInt(30);
-         this.response.appendString(item.reason.equals("") ? "cfh.reason.EMPTY" : item.reason);
-         this.response.appendString(probationStartTime == null ? Emulator.getDate().toString() : probationStartTime.toString());
-         this.response.appendInt(0);
-         this.response.appendString(modToolSanctions.getSanctionType(nextModToolSanctionLevelItem));
-         this.response.appendInt(modToolSanctions.getTimeOfSanction(nextModToolSanctionLevelItem));
-         this.response.appendInt(30);
-         this.response.appendBoolean(item.isMuted);
-         this.response.appendString(tradeLockedUntil == null ? "" : tradeLockedUntil.toString());
-      }
+            if (modToolSanctionItems != null && modToolSanctionItems.size() > 0) {
+                ModToolSanctionItem item = modToolSanctionItems.get(modToolSanctionItems.size() - 1);
 
-      return this.response;
-   }
+                ModToolSanctionItem prevItem = null;
+                if (modToolSanctionItems.size() > 1 && modToolSanctionItems.get(modToolSanctionItems.size() - 2) != null) {
+                    prevItem = modToolSanctionItems.get(modToolSanctionItems.size() - 2);
+                }
 
-   private ServerMessage cleanResponse() {
-      this.response.init(2221);
-      this.response.appendBoolean(false);
-      this.response.appendBoolean(false);
-      this.response.appendString("ALERT");
-      this.response.appendInt(0);
-      this.response.appendInt(30);
-      this.response.appendString("cfh.reason.EMPTY");
-      this.response.appendString(Emulator.getDate().toString());
-      this.response.appendInt(0);
-      this.response.appendString("ALERT");
-      this.response.appendInt(0);
-      this.response.appendInt(30);
-      this.response.appendBoolean(false);
-      this.response.appendString("");
-      return this.response;
-   }
+                ModToolSanctionLevelItem modToolSanctionLevelItem = modToolSanctions.getSanctionLevelItem(item.sanctionLevel);
+                ModToolSanctionLevelItem nextModToolSanctionLevelItem = modToolSanctions.getSanctionLevelItem(item.sanctionLevel + 1);
+
+                if (item.probationTimestamp > 0) {
+                    probationEndTime = new Date((long) item.probationTimestamp * 1000);
+
+                    probationStartTime = new DateTime(probationEndTime).minusDays(modToolSanctions.getProbationDays(modToolSanctionLevelItem)).toDate();
+
+                    Date tradeLockedUntil = null;
+
+                    if (item.tradeLockedUntil > 0) {
+                        tradeLockedUntil = new Date((long) item.tradeLockedUntil * 1000);
+                    }
+
+                    this.response.init(Outgoing.ModToolSanctionInfoComposer);
+
+                    this.response.appendBoolean(prevItem != null && prevItem.probationTimestamp > 0); // has prev sanction
+                    this.response.appendBoolean(item.probationTimestamp >= Emulator.getIntUnixTimestamp()); // is on probation
+                    this.response.appendString(modToolSanctions.getSanctionType(modToolSanctionLevelItem)); // current sanction type
+                    this.response.appendInt(modToolSanctions.getTimeOfSanction(modToolSanctionLevelItem)); // time of current sanction
+                    this.response.appendInt(30); // TODO: unused?
+                    this.response.appendString(item.reason.equals("") ? "cfh.reason.EMPTY" : item.reason); // reason
+                    this.response.appendString(probationStartTime == null ? Emulator.getDate().toString() : probationStartTime.toString()); // probation start time
+                    this.response.appendInt(0); // TODO: unused?
+                    this.response.appendString(modToolSanctions.getSanctionType(nextModToolSanctionLevelItem)); // next sanction type
+                    this.response.appendInt(modToolSanctions.getTimeOfSanction(nextModToolSanctionLevelItem)); // time to be applied in next sanction (in hours)
+                    this.response.appendInt(30); // TODO: unused?
+                    this.response.appendBoolean(item.isMuted); // muted
+                    this.response.appendString(tradeLockedUntil == null ? "" : tradeLockedUntil.toString()); // trade locked until
+                } else {
+                    return cleanResponse();
+                }
+
+            } else {
+                return cleanResponse();
+            }
+        }
+
+        return this.response;
+    }
+
+    private ServerMessage cleanResponse() {
+        this.response.init(Outgoing.ModToolSanctionInfoComposer);
+
+        this.response.appendBoolean(false); // has prev sanction
+        this.response.appendBoolean(false); // is on probation
+        this.response.appendString("ALERT"); // last sanction type
+        this.response.appendInt(0); // time of current sanction
+        this.response.appendInt(30); // TODO: unused?
+        this.response.appendString("cfh.reason.EMPTY"); // reason
+        this.response.appendString(Emulator.getDate().toString()); // probation start time
+        this.response.appendInt(0); // TODO: unused?
+        this.response.appendString("ALERT"); // next sanction type
+        this.response.appendInt(0); // time to be applied in next sanction (in hours)
+        this.response.appendInt(30); // TODO: unused?
+        this.response.appendBoolean(false); // muted
+        this.response.appendString(""); // trade locked until
+
+        return this.response;
+    }
+
+    public Habbo getHabbo() {
+        return habbo;
+    }
 }

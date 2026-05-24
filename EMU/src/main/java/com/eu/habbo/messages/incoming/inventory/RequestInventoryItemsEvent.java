@@ -6,56 +6,65 @@ import com.eu.habbo.messages.outgoing.inventory.InventoryItemsComposer;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
-import java.util.NoSuchElementException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.NoSuchElementException;
+
 public class RequestInventoryItemsEvent extends MessageHandler {
-   private static final Logger LOGGER = LoggerFactory.getLogger(RequestInventoryItemsEvent.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RequestInventoryItemsEvent.class);
 
-   @Override
-   public void handle() throws Exception {
-      int totalItems = this.client.getHabbo().getInventory().getItemsComponent().getItems().size();
-      if (totalItems == 0) {
-         this.client.sendResponse(new InventoryItemsComposer(0, 1, new TIntObjectHashMap()));
-      } else {
-         int totalFragments = (int)Math.ceil(totalItems / 1000.0);
-         if (totalFragments == 0) {
+    @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
+    @Override
+    public void handle() throws Exception {
+        int totalItems = this.client.getHabbo().getInventory().getItemsComponent().getItems().size();
+
+        if (totalItems == 0) {
+                this.client.sendResponse(new InventoryItemsComposer(0, 1, new TIntObjectHashMap<>()));
+                return;
+            }
+            
+        int totalFragments = (int) Math.ceil((double) totalItems / 1000.0);
+
+        if (totalFragments == 0) {
             totalFragments = 1;
-         }
+        }
 
-         synchronized (this.client.getHabbo().getInventory().getItemsComponent().getItems()) {
-            TIntObjectMap<HabboItem> items = new TIntObjectHashMap();
+        synchronized (this.client.getHabbo().getInventory().getItemsComponent().getItems()) {
+            TIntObjectMap<HabboItem> items = new TIntObjectHashMap<>();
+
             TIntObjectIterator<HabboItem> iterator = this.client.getHabbo().getInventory().getItemsComponent().getItems().iterator();
+
             int count = 0;
             int fragmentNumber = 0;
-            int i = this.client.getHabbo().getInventory().getItemsComponent().getItems().size();
 
-            while (i-- > 0) {
-               if (count == 0) {
-                  fragmentNumber++;
-               }
+            for (int i = this.client.getHabbo().getInventory().getItemsComponent().getItems().size(); i-- > 0; ) {
 
-               try {
-                  iterator.advance();
-                  items.put(iterator.key(), (HabboItem)iterator.value());
-                  count++;
-               } catch (NoSuchElementException e) {
-                  LOGGER.error("Caught exception", e);
-                  break;
-               }
+                if (count == 0) {
+                    fragmentNumber++;
+                }
 
-               if (count == 1000) {
-                  this.client.sendResponse(new InventoryItemsComposer(fragmentNumber, totalFragments, items));
-                  count = 0;
-                  items.clear();
-               }
+                try {
+                    iterator.advance();
+                    items.put(iterator.key(), iterator.value());
+                    count++;
+                } catch (NoSuchElementException e) {
+                    LOGGER.error("Caught exception", e);
+                    break;
+                }
+
+                if (count == 1000) {
+                    this.client.sendResponse(new InventoryItemsComposer(fragmentNumber, totalFragments, items));
+                    count = 0;
+                    items.clear();
+                }
             }
 
-            if (count > 0 && items.size() > 0) {
-               this.client.sendResponse(new InventoryItemsComposer(fragmentNumber, totalFragments, items));
-            }
-         }
-      }
-   }
+            if(count > 0 && !items.isEmpty()) this.client.sendResponse(new InventoryItemsComposer(fragmentNumber, totalFragments, items));
+        }
+    }
 }

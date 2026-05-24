@@ -9,49 +9,51 @@ import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboManager;
 
 public class SuperbanCommand extends Command {
-   public SuperbanCommand() {
-      super("cmd_super_ban", Emulator.getTexts().getValue("commands.keys.cmd_super_ban").split(";"));
-   }
+    public SuperbanCommand() {
+        super("cmd_super_ban", Emulator.getTexts().getValue("commands.keys.cmd_super_ban").split(";"));
+    }
 
-   @Override
-   public boolean handle(GameClient gameClient, String[] params) throws Exception {
-      HabboInfo habbo = null;
-      StringBuilder reason = new StringBuilder();
-      if (params.length >= 2) {
-         Habbo h = Emulator.getGameEnvironment().getHabboManager().getHabbo(params[1]);
-         if (h != null) {
-            habbo = h.getHabboInfo();
-         } else {
-            habbo = HabboManager.getOfflineHabboInfo(params[1]);
-         }
-      }
+    @Override
+    public boolean handle(GameClient gameClient, String[] params) throws Exception {
+        HabboInfo habbo = null;
+        StringBuilder reason = new StringBuilder();
+        if (params.length >= 2) {
+            Habbo h = Emulator.getGameEnvironment().getHabboManager().getHabbo(params[1]);
 
-      if (params.length > 2) {
-         for (int i = 2; i < params.length; i++) {
-            reason.append(params[i]);
-            reason.append(" ");
-         }
-      }
+            if (h != null) {
+                habbo = h.getHabboInfo();
+            } else {
+                habbo = HabboManager.getOfflineHabboInfo(params[1]);
+            }
+        }
 
-      if (habbo != null) {
-         if (habbo == gameClient.getHabbo().getHabboInfo()) {
-            gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_super_ban.ban_self"), RoomChatMessageBubbles.ALERT);
+        if (params.length > 2) {
+            for (int i = 2; i < params.length; i++) {
+                reason.append(params[i]);
+                reason.append(" ");
+            }
+        }
+
+        int count;
+        if (habbo != null) {
+            if (habbo == gameClient.getHabbo().getHabboInfo()) {
+                gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_super_ban.ban_self"), RoomChatMessageBubbles.ALERT);
+                return true;
+            }
+
+            if (habbo.getRank().getId() >= gameClient.getHabbo().getHabboInfo().getRank().getId()) {
+                gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_ban.target_rank_higher"), RoomChatMessageBubbles.ALERT);
+                return true;
+            }
+
+            count = Emulator.getGameEnvironment().getModToolManager().ban(habbo.getId(), gameClient.getHabbo(), reason.toString(), IPBanCommand.TEN_YEARS, ModToolBanType.SUPER, -1).size();
+        } else {
+            gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_ban.user_offline"), RoomChatMessageBubbles.ALERT);
             return true;
-         } else if (habbo.getRank().getId() >= gameClient.getHabbo().getHabboInfo().getRank().getId()) {
-            gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_ban.target_rank_higher"), RoomChatMessageBubbles.ALERT);
-            return true;
-         } else {
-            int count = Emulator.getGameEnvironment()
-               .getModToolManager()
-               .ban(habbo.getId(), gameClient.getHabbo(), reason.toString(), 315569260, ModToolBanType.SUPER, -1)
-               .size();
-            gameClient.getHabbo()
-               .whisper(Emulator.getTexts().getValue("commands.succes.cmd_super_ban").replace("%count%", count + ""), RoomChatMessageBubbles.ALERT);
-            return true;
-         }
-      } else {
-         gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_ban.user_offline"), RoomChatMessageBubbles.ALERT);
-         return true;
-      }
-   }
+        }
+
+        gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.succes.cmd_super_ban").replace("%count%", count + ""), RoomChatMessageBubbles.ALERT);
+
+        return true;
+    }
 }

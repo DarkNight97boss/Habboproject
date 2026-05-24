@@ -8,34 +8,35 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.WiredHandler;
 
 public class WiredExecuteTask implements Runnable {
-   private final InteractionWiredTrigger task;
-   private final Room room;
-   private int taskId;
+    private final InteractionWiredTrigger task;
+    private final Room room;
+    private int taskId;
 
-   public WiredExecuteTask(InteractionWiredTrigger trigger, Room room) {
-      this.task = trigger;
-      this.room = room;
-      if (this.task instanceof WiredTriggerAtSetTime) {
-         this.taskId = ((WiredTriggerAtSetTime)this.task).taskId;
-      }
+    public WiredExecuteTask(InteractionWiredTrigger trigger, Room room) {
+        this.task = trigger;
+        this.room = room;
 
-      if (this.task instanceof WiredTriggerAtTimeLong) {
-         this.taskId = ((WiredTriggerAtTimeLong)this.task).taskId;
-      }
-   }
+        if (this.task instanceof WiredTriggerAtSetTime)
+            this.taskId = ((WiredTriggerAtSetTime) this.task).taskId;
 
-   @Override
-   public void run() {
-      if (!Emulator.isShuttingDown && Emulator.isReady && this.room != null && this.room.getId() == this.task.getRoomId()) {
-         if (this.task instanceof WiredTriggerAtSetTime && ((WiredTriggerAtSetTime)this.task).taskId != this.taskId) {
-            return;
-         }
+        if (this.task instanceof WiredTriggerAtTimeLong)
+            this.taskId = ((WiredTriggerAtTimeLong) this.task).taskId;
+    }
 
-         if (this.task instanceof WiredTriggerAtTimeLong && ((WiredTriggerAtTimeLong)this.task).taskId != this.taskId) {
-            return;
-         }
-
-         WiredHandler.handle(this.task, null, this.room, null);
-      }
-   }
+    @Override
+    public void run() {
+        if (!Emulator.isShuttingDown && Emulator.isReady) {
+            if (this.room != null && this.room.getId() == this.task.getRoomId()) {
+                if (this.task instanceof WiredTriggerAtSetTime) {
+                    if (((WiredTriggerAtSetTime) this.task).taskId != this.taskId)
+                        return;
+                }
+                if (this.task instanceof WiredTriggerAtTimeLong) {
+                    if (((WiredTriggerAtTimeLong) this.task).taskId != this.taskId)
+                        return;
+                }
+                WiredHandler.handle(this.task, null, this.room, null);
+            }
+        }
+    }
 }

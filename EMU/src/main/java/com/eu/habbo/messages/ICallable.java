@@ -3,5 +3,5 @@ package com.eu.habbo.messages;
 import com.eu.habbo.messages.incoming.MessageHandler;
 
 public interface ICallable {
-   void call(MessageHandler var1);
+    void call(MessageHandler handler);
 }

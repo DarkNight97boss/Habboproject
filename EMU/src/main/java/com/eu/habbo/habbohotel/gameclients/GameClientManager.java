@@ -18,6 +18,12 @@ public class GameClientManager {
 
     private final ConcurrentMap<ChannelId, GameClient> clients;
 
+    // O(1) accelerator indexes for the hot lookups. Self-healing: every hit is validated and every
+    // miss falls back to a scan that repopulates them, so a stale/missing entry can never return a
+    // wrong result (covers logout, username rename and clone re-login without extra lifecycle hooks).
+    private final ConcurrentMap<Integer, GameClient> clientsByHabboId = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, GameClient> clientsByUsername = new ConcurrentHashMap<>();
+
     public GameClientManager() {
         this.clients = new ConcurrentHashMap<>();
     }
@@ -93,6 +99,13 @@ public class GameClientManager {
         GameClient client = channel.attr(GameServerAttributes.CLIENT).get();
 
         if (client != null) {
+            Habbo habbo = client.getHabbo();
+            if (habbo != null && habbo.getHabboInfo() != null) {
+                this.clientsByHabboId.remove(habbo.getHabboInfo().getId(), client);
+                if (habbo.getHabboInfo().getUsername() != null) {
+                    this.clientsByUsername.remove(habbo.getHabboInfo().getUsername().toLowerCase(), client);
+                }
+            }
             client.dispose();
         }
         channel.deregister();
@@ -104,27 +117,26 @@ public class GameClientManager {
 
 
     public boolean containsHabbo(Integer id) {
-        if (!this.clients.isEmpty()) {
-            for (GameClient client : this.clients.values()) {
-                if (client.getHabbo() != null) {
-                    if (client.getHabbo().getHabboInfo() != null) {
-                        if (client.getHabbo().getHabboInfo().getId() == id)
-                            return true;
-                    }
-                }
-            }
-        }
-        return false;
+        return id != null && this.getHabbo(id.intValue()) != null;
     }
 
 
     public Habbo getHabbo(int id) {
-        for (GameClient client : this.clients.values()) {
-            if (client.getHabbo() == null)
-                continue;
+        GameClient cached = this.clientsByHabboId.get(id);
+        if (cached != null) {
+            Habbo habbo = cached.getHabbo();
+            if (habbo != null && habbo.getHabboInfo() != null && habbo.getHabboInfo().getId() == id) {
+                return habbo;
+            }
+            this.clientsByHabboId.remove(id, cached);
+        }
 
-            if (client.getHabbo().getHabboInfo().getId() == id)
-                return client.getHabbo();
+        for (GameClient client : this.clients.values()) {
+            Habbo habbo = client.getHabbo();
+            if (habbo != null && habbo.getHabboInfo() != null && habbo.getHabboInfo().getId() == id) {
+                this.clientsByHabboId.put(id, client);
+                return habbo;
+            }
         }
 
         return null;
@@ -132,12 +144,22 @@ public class GameClientManager {
 
 
     public Habbo getHabbo(String username) {
-        for (GameClient client : this.clients.values()) {
-            if (client.getHabbo() == null)
-                continue;
+        String key = username.toLowerCase();
+        GameClient cached = this.clientsByUsername.get(key);
+        if (cached != null) {
+            Habbo habbo = cached.getHabbo();
+            if (habbo != null && habbo.getHabboInfo() != null && username.equalsIgnoreCase(habbo.getHabboInfo().getUsername())) {
+                return habbo;
+            }
+            this.clientsByUsername.remove(key, cached);
+        }
 
-            if (client.getHabbo().getHabboInfo().getUsername().equalsIgnoreCase(username))
-                return client.getHabbo();
+        for (GameClient client : this.clients.values()) {
+            Habbo habbo = client.getHabbo();
+            if (habbo != null && habbo.getHabboInfo() != null && username.equalsIgnoreCase(habbo.getHabboInfo().getUsername())) {
+                this.clientsByUsername.put(key, client);
+                return habbo;
+            }
         }
 
         return null;

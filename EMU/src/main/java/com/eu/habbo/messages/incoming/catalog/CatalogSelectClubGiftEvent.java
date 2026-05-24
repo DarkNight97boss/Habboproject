@@ -1,0 +1,73 @@
+package com.eu.habbo.messages.incoming.catalog;
+
+import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.catalog.CatalogItem;
+import com.eu.habbo.habbohotel.catalog.CatalogPage;
+import com.eu.habbo.habbohotel.catalog.CatalogPageLayouts;
+import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.outgoing.catalog.AlertPurchaseFailedComposer;
+import com.eu.habbo.messages.outgoing.users.ClubGiftReceivedComposer;
+import gnu.trove.iterator.hash.TObjectHashIterator;
+import gnu.trove.set.hash.THashSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class CatalogSelectClubGiftEvent extends MessageHandler {
+   private static final Logger LOGGER = LoggerFactory.getLogger(CatalogSelectClubGiftEvent.class);
+
+   @Override
+   public void handle() throws Exception {
+      String itemName = this.packet.readString();
+      if (itemName.isEmpty()) {
+         LOGGER.error("itemName is empty");
+         this.client.sendResponse(new AlertPurchaseFailedComposer(0));
+      } else if (this.client.getHabbo().getHabboStats().getRemainingClubGifts() < 1) {
+         LOGGER.error("User has no remaining club gifts");
+         this.client.sendResponse(new AlertPurchaseFailedComposer(0));
+      } else {
+         CatalogPage page = Emulator.getGameEnvironment().getCatalogManager().getCatalogPageByLayout(CatalogPageLayouts.club_gift.name().toLowerCase());
+         if (page == null) {
+            LOGGER.error("Catalog page not found");
+            this.client.sendResponse(new AlertPurchaseFailedComposer(0));
+         } else {
+            CatalogItem catalogItem = page.getCatalogItems()
+               .valueCollection()
+               .stream()
+               .filter(x -> x.getName().equalsIgnoreCase(itemName))
+               .findAny()
+               .orElse(null);
+            if (catalogItem == null) {
+               LOGGER.error("Catalog item not found");
+               this.client.sendResponse(new AlertPurchaseFailedComposer(0));
+            } else {
+               int daysRequired = 0;
+
+               try {
+                  daysRequired = Integer.parseInt(catalogItem.getExtradata());
+               } catch (NumberFormatException var8) {
+               }
+
+               if (daysRequired > (int)Math.floor(this.client.getHabbo().getHabboStats().getPastTimeAsClub() / 86400.0)) {
+                  LOGGER.error("Not been member for long enough");
+                  this.client.sendResponse(new AlertPurchaseFailedComposer(0));
+               } else {
+                  THashSet<Item> itemsGiven = new THashSet();
+                  TObjectHashIterator var6 = catalogItem.getBaseItems().iterator();
+
+                  while (var6.hasNext()) {
+                     Item item = (Item)var6.next();
+                     if (Emulator.getGameEnvironment().getItemManager().createGift(this.client.getHabbo().getHabboInfo().getId(), item, "", 0, 0) != null) {
+                        itemsGiven.add(item);
+                     }
+                  }
+
+                  this.client.getHabbo().getHabboStats().hcGiftsClaimed++;
+                  Emulator.getThreading().run(this.client.getHabbo().getHabboStats());
+                  this.client.sendResponse(new ClubGiftReceivedComposer(itemName, itemsGiven));
+               }
+            }
+         }
+      }
+   }
+}

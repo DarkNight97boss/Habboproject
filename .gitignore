@@ -8,6 +8,9 @@
 # Runtime user uploads
 API/audios/
 
+# Java build output
+target/
+
 # Editor / OS junk
 Thumbs.db
 *.swp

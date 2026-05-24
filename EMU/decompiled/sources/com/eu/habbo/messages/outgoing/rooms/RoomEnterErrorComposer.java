@@ -1,0 +1,38 @@
+package com.eu.habbo.messages.outgoing.rooms;
+
+import com.eu.habbo.Emulator;
+import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.messages.outgoing.MessageComposer;
+import com.eu.habbo.messages.outgoing.Outgoing;
+
+/* JADX INFO: loaded from: Habbo-3.5.3.jar:com/eu/habbo/messages/outgoing/rooms/RoomEnterErrorComposer.class */
+public class RoomEnterErrorComposer extends MessageComposer {
+    public static final int ROOM_ERROR_GUESTROOM_FULL = 1;
+    public static final int ROOM_ERROR_CANT_ENTER = 2;
+    public static final int ROOM_ERROR_QUE = 3;
+    public static final int ROOM_ERROR_BANNED = 4;
+    public static final String ROOM_NEEDS_VIP = "c";
+    public static final String EVENT_USERS_ONLY = "e1";
+    public static final String ROOM_LOCKED = "na";
+    public static final String TO_MANY_SPECTATORS = "spectator_mode_full";
+    private final int errorCode;
+    private final String queError;
+
+    public RoomEnterErrorComposer(int i) {
+        this.errorCode = i;
+        this.queError = Emulator.PREVIEW;
+    }
+
+    public RoomEnterErrorComposer(int i, String str) {
+        this.errorCode = i;
+        this.queError = str;
+    }
+
+    @Override // com.eu.habbo.messages.outgoing.MessageComposer
+    protected ServerMessage composeInternal() {
+        this.response.init(Outgoing.RoomEnterErrorComposer);
+        this.response.appendInt(Integer.valueOf(this.errorCode));
+        this.response.appendString(this.queError);
+        return this.response;
+    }
+}

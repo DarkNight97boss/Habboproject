@@ -1,0 +1,104 @@
+package com.eu.habbo.habbohotel.items.interactions;
+
+import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomTile;
+import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import gnu.trove.iterator.hash.TObjectHashIterator;
+import gnu.trove.set.hash.THashSet;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+public class InteractionPressurePlate extends InteractionDefault {
+   public InteractionPressurePlate(ResultSet set, Item baseItem) throws SQLException {
+      super(set, baseItem);
+      this.setExtradata("0");
+   }
+
+   public InteractionPressurePlate(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+      super(id, userId, item, extradata, limitedStack, limitedSells);
+      this.setExtradata("0");
+   }
+
+   @Override
+   public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
+      return true;
+   }
+
+   @Override
+   public boolean isWalkable() {
+      return true;
+   }
+
+   @Override
+   public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
+   }
+
+   @Override
+   public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+   }
+
+   @Override
+   public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+      super.onWalkOn(roomUnit, room, objects);
+      Emulator.getThreading().run(() -> this.updateState(room), 100L);
+   }
+
+   @Override
+   public void onWalkOff(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+      super.onWalkOff(roomUnit, room, objects);
+      Emulator.getThreading().run(() -> this.updateState(room), 100L);
+   }
+
+   @Override
+   public void onMove(Room room, RoomTile oldLocation, RoomTile newLocation) {
+      super.onMove(room, oldLocation, newLocation);
+      this.updateState(room);
+   }
+
+   @Override
+   public void onPickUp(Room room) {
+      this.setExtradata("0");
+   }
+
+   public void updateState(Room room) {
+      boolean occupied = false;
+      if (room != null && room.getLayout() != null && this.getBaseItem() != null) {
+         RoomTile tileAtItem = room.getLayout().getTile(this.getX(), this.getY());
+         if (tileAtItem != null) {
+            THashSet<RoomTile> tiles = room.getLayout()
+               .getTilesAt(tileAtItem, this.getBaseItem().getWidth(), this.getBaseItem().getLength(), this.getRotation());
+            if (tiles != null) {
+               TObjectHashIterator var5 = tiles.iterator();
+
+               while (var5.hasNext()) {
+                  RoomTile tile = (RoomTile)var5.next();
+                  boolean hasHabbos = room.hasHabbosAt(tile.x, tile.y);
+                  if (!hasHabbos && this.requiresAllTilesOccupied()) {
+                     occupied = false;
+                     break;
+                  }
+
+                  if (hasHabbos) {
+                     occupied = true;
+                  }
+               }
+
+               this.setExtradata(occupied ? "1" : "0");
+               room.updateItemState(this);
+            }
+         }
+      }
+   }
+
+   @Override
+   public boolean allowWiredResetState() {
+      return true;
+   }
+
+   public boolean requiresAllTilesOccupied() {
+      return false;
+   }
+}

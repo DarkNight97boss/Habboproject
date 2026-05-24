@@ -6,99 +6,59 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.camera.CameraPublishWaitMessageComposer;
 import com.eu.habbo.messages.outgoing.catalog.NotEnoughPointsTypeComposer;
 import com.eu.habbo.plugin.events.users.UserPublishPictureEvent;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
 public class CameraPublishToWebEvent extends MessageHandler {
-   private static final Logger LOGGER = LoggerFactory.getLogger(CameraPublishToWebEvent.class);
-   public static int CAMERA_PUBLISH_POINTS = 5;
-   public static int CAMERA_PUBLISH_POINTS_TYPE = 0;
+    private static final Logger LOGGER = LoggerFactory.getLogger(CameraPublishToWebEvent.class);
 
-   @Override
-   public void handle() throws Exception {
-      Habbo habbo = this.client.getHabbo();
-      if (habbo != null) {
-         if (habbo.getHabboInfo().getPhotoTimestamp() != 0) {
-            if (!habbo.getHabboInfo().getPhotoJSON().isEmpty()) {
-               if (habbo.getHabboInfo().getPhotoJSON().contains(habbo.getHabboInfo().getPhotoTimestamp() + "")) {
-                  if (habbo.getHabboInfo().getCurrencyAmount(CAMERA_PUBLISH_POINTS_TYPE) < CAMERA_PUBLISH_POINTS) {
-                     this.client.sendResponse(new NotEnoughPointsTypeComposer(false, true, CAMERA_PUBLISH_POINTS));
-                  } else {
-                     int timestamp = Emulator.getIntUnixTimestamp();
-                     boolean isOk = false;
-                     int cooldownLeft = Math.max(
-                        0, Emulator.getConfig().getInt("camera.publish.delay") - (timestamp - this.client.getHabbo().getHabboInfo().getWebPublishTimestamp())
-                     );
-                     if (cooldownLeft == 0) {
-                        UserPublishPictureEvent publishPictureEvent = new UserPublishPictureEvent(
-                           this.client.getHabbo(),
-                           this.client.getHabbo().getHabboInfo().getPhotoURL(),
-                           timestamp,
-                           this.client.getHabbo().getHabboInfo().getPhotoRoomId()
-                        );
-                        if (!Emulator.getPluginManager().fireEvent(publishPictureEvent).isCancelled()) {
-                           try {
-                              Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+    public static int CAMERA_PUBLISH_POINTS = 5;
+    public static int CAMERA_PUBLISH_POINTS_TYPE = 0;
 
-                              try {
-                                 PreparedStatement statement = connection.prepareStatement(
-                                    "INSERT INTO camera_web (user_id, room_id, timestamp, url) VALUES (?, ?, ?, ?)"
-                                 );
+    @Override
+    public void handle() throws Exception {
+        Habbo habbo = this.client.getHabbo();
 
-                                 try {
-                                    statement.setInt(1, this.client.getHabbo().getHabboInfo().getId());
-                                    statement.setInt(2, publishPictureEvent.roomId);
-                                    statement.setInt(3, publishPictureEvent.timestamp);
-                                    statement.setString(4, publishPictureEvent.URL);
-                                    statement.execute();
-                                    this.client.getHabbo().getHabboInfo().setWebPublishTimestamp(timestamp);
-                                    this.client.getHabbo().givePoints(CAMERA_PUBLISH_POINTS_TYPE, -CAMERA_PUBLISH_POINTS);
-                                    isOk = true;
-                                 } catch (Throwable var12) {
-                                    if (statement != null) {
-                                       try {
-                                          statement.close();
-                                       } catch (Throwable var11) {
-                                          var12.addSuppressed(var11);
-                                       }
-                                    }
+        if (habbo == null) return;
+        if (habbo.getHabboInfo().getPhotoTimestamp() == 0) return;
+        if (habbo.getHabboInfo().getPhotoJSON().isEmpty()) return;
+        if (!habbo.getHabboInfo().getPhotoJSON().contains(habbo.getHabboInfo().getPhotoTimestamp() + "")) return;
 
-                                    throw var12;
-                                 }
+        if (habbo.getHabboInfo().getCurrencyAmount(CameraPublishToWebEvent.CAMERA_PUBLISH_POINTS_TYPE) < CameraPublishToWebEvent.CAMERA_PUBLISH_POINTS) {
+            this.client.sendResponse(new NotEnoughPointsTypeComposer(false, true, CameraPublishToWebEvent.CAMERA_PUBLISH_POINTS));
+            return;
+        }
 
-                                 if (statement != null) {
-                                    statement.close();
-                                 }
-                              } catch (Throwable var13) {
-                                 if (connection != null) {
-                                    try {
-                                       connection.close();
-                                    } catch (Throwable var10) {
-                                       var13.addSuppressed(var10);
-                                    }
-                                 }
+        int timestamp = Emulator.getIntUnixTimestamp();
 
-                                 throw var13;
-                              }
+        boolean isOk = false;
+        int cooldownLeft = Math.max(0, Emulator.getConfig().getInt("camera.publish.delay") - (timestamp - this.client.getHabbo().getHabboInfo().getWebPublishTimestamp()));
 
-                              if (connection != null) {
-                                 connection.close();
-                              }
-                           } catch (SQLException e) {
-                              LOGGER.error("Caught SQL exception", e);
-                           }
-                        }
-                     }
+        if (cooldownLeft == 0) {
+            UserPublishPictureEvent publishPictureEvent = new UserPublishPictureEvent(this.client.getHabbo(), this.client.getHabbo().getHabboInfo().getPhotoURL(), timestamp, this.client.getHabbo().getHabboInfo().getPhotoRoomId());
 
-                     this.client
-                        .sendResponse(new CameraPublishWaitMessageComposer(isOk, cooldownLeft, isOk ? this.client.getHabbo().getHabboInfo().getPhotoURL() : ""));
-                  }
-               }
+            if (!Emulator.getPluginManager().fireEvent(publishPictureEvent).isCancelled()) {
+                try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO camera_web (user_id, room_id, timestamp, url) VALUES (?, ?, ?, ?)")) {
+                    statement.setInt(1, this.client.getHabbo().getHabboInfo().getId());
+                    statement.setInt(2, publishPictureEvent.roomId);
+                    statement.setInt(3, publishPictureEvent.timestamp);
+                    statement.setString(4, publishPictureEvent.URL);
+                    statement.execute();
+
+                    this.client.getHabbo().getHabboInfo().setWebPublishTimestamp(timestamp);
+                    this.client.getHabbo().givePoints(CameraPublishToWebEvent.CAMERA_PUBLISH_POINTS_TYPE, -CameraPublishToWebEvent.CAMERA_PUBLISH_POINTS);
+
+                    isOk = true;
+                } catch (SQLException e) {
+                    LOGGER.error("Caught SQL exception", e);
+                }
             }
-         }
-      }
-   }
+        }
+
+        this.client.sendResponse(new CameraPublishWaitMessageComposer(isOk, cooldownLeft, isOk ? this.client.getHabbo().getHabboInfo().getPhotoURL() : ""));
+    }
 }

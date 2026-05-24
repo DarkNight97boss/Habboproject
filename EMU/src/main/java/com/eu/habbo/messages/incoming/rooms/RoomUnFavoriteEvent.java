@@ -6,16 +6,18 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.rooms.FavoriteRoomChangedComposer;
 
 public class RoomUnFavoriteEvent extends MessageHandler {
-   @Override
-   public void handle() throws Exception {
-      int roomId = this.packet.readInt();
-      Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
-      if (room != null) {
-         if (this.client.getHabbo().getHabboStats().hasFavoriteRoom(roomId)) {
-            this.client.getHabbo().getHabboStats().removeFavoriteRoom(roomId);
-         }
+    @Override
+    public void handle() throws Exception {
+        int roomId = this.packet.readInt();
 
-         this.client.sendResponse(new FavoriteRoomChangedComposer(roomId, false));
-      }
-   }
+        Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
+
+        if (room != null) {
+            if (this.client.getHabbo().getHabboStats().hasFavoriteRoom(roomId)) {
+                this.client.getHabbo().getHabboStats().removeFavoriteRoom(roomId);
+            }
+
+            this.client.sendResponse(new FavoriteRoomChangedComposer(roomId, false));
+        }
+    }
 }

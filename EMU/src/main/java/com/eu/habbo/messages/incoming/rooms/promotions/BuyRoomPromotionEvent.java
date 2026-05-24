@@ -13,54 +13,60 @@ import com.eu.habbo.messages.outgoing.navigator.NewNavigatorEventCategoriesCompo
 import com.eu.habbo.messages.outgoing.rooms.promotions.RoomPromotionMessageComposer;
 
 public class BuyRoomPromotionEvent extends MessageHandler {
-   public static String ROOM_PROMOTION_BADGE = "RADZZ";
+    public static String ROOM_PROMOTION_BADGE = "RADZZ";
 
-   @Override
-   public void handle() throws Exception {
-      int pageId = this.packet.readInt();
-      int itemId = this.packet.readInt();
-      int roomId = this.packet.readInt();
-      String title = this.packet.readString();
-      boolean extendedPromotion = this.packet.readBoolean();
-      String description = this.packet.readString();
-      int categoryId = this.packet.readInt();
-      if (!NewNavigatorEventCategoriesComposer.CATEGORIES.stream().noneMatch(c -> c.getId() == categoryId)) {
-         CatalogPage page = Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(pageId);
-         if (page != null && page.getLayout().equals("roomads")) {
-            CatalogItem item = page.getCatalogItem(itemId);
-            if (item != null && this.client.getHabbo().getHabboInfo().canBuy(item)) {
-               Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
-               if (!room.isOwner(this.client.getHabbo())
-                  && !room.hasRights(this.client.getHabbo())
-                  && !room.getGuildRightLevel(this.client.getHabbo()).equals(RoomRightLevels.GUILD_ADMIN)) {
-                  return;
-               }
+    @Override
+    public void handle() throws Exception {
+        int pageId = this.packet.readInt();
+        int itemId = this.packet.readInt();
+        int roomId = this.packet.readInt();
+        String title = this.packet.readString();
+        boolean extendedPromotion = this.packet.readBoolean();
+        String description = this.packet.readString();
+        int categoryId = this.packet.readInt();
 
-               if (room.isPromoted()) {
-                  room.getPromotion().addEndTimestamp(7200);
-               } else {
-                  room.createPromotion(title, description, categoryId);
-               }
+        if (NewNavigatorEventCategoriesComposer.CATEGORIES.stream().noneMatch(c -> c.getId() == categoryId))
+            return;
 
-               if (room.isPromoted()) {
-                  if (!this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS)) {
-                     this.client.getHabbo().giveCredits(-item.getCredits());
-                  }
+        CatalogPage page = Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(pageId);
 
-                  if (!this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_POINTS)) {
-                     this.client.getHabbo().givePoints(item.getPointsType(), -item.getPoints());
-                  }
+        if (page == null || !page.getLayout().equals("roomads"))
+            return;
 
-                  this.client.sendResponse(new PurchaseOKComposer());
-                  room.sendComposer(new RoomPromotionMessageComposer(room, room.getPromotion()).compose());
-                  if (!this.client.getHabbo().getInventory().getBadgesComponent().hasBadge(ROOM_PROMOTION_BADGE)) {
-                     this.client.getHabbo().addBadge(ROOM_PROMOTION_BADGE);
-                  }
-               } else {
-                  this.client.sendResponse(new AlertPurchaseFailedComposer(0));
-               }
+        CatalogItem item = page.getCatalogItem(itemId);
+        if (item != null) {
+            if (this.client.getHabbo().getHabboInfo().canBuy(item)) {
+                Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
+
+                if (!(room.isOwner(this.client.getHabbo()) || room.hasRights(this.client.getHabbo()) || room.getGuildRightLevel(this.client.getHabbo()).equals(RoomRightLevels.GUILD_ADMIN))) {
+                    return;
+                }
+
+                if (room.isPromoted()) {
+                    room.getPromotion().addEndTimestamp(120 * 60);
+                } else {
+                    room.createPromotion(title, description, categoryId);
+                }
+
+                if (room.isPromoted()) {
+                    if (!this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS)) {
+                        this.client.getHabbo().giveCredits(-item.getCredits());
+                    }
+
+                    if (!this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_POINTS)) {
+                        this.client.getHabbo().givePoints(item.getPointsType(), -item.getPoints());
+                    }
+
+                    this.client.sendResponse(new PurchaseOKComposer());
+                    room.sendComposer(new RoomPromotionMessageComposer(room, room.getPromotion()).compose());
+
+                    if (!this.client.getHabbo().getInventory().getBadgesComponent().hasBadge(BuyRoomPromotionEvent.ROOM_PROMOTION_BADGE)) {
+                        this.client.getHabbo().addBadge(BuyRoomPromotionEvent.ROOM_PROMOTION_BADGE);
+                    }
+                } else {
+                    this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                }
             }
-         }
-      }
-   }
+        }
+    }
 }

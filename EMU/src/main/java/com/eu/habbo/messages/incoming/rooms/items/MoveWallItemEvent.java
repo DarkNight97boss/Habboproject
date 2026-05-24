@@ -10,26 +10,31 @@ import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 
 public class MoveWallItemEvent extends MessageHandler {
-   @Override
-   public void handle() throws Exception {
-      Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
-      if (room != null) {
-         if (room.hasRights(this.client.getHabbo())
-            || this.client.getHabbo().hasPermission(Permission.ACC_PLACEFURNI)
-            || room.getGuildId() > 0 && room.getGuildRightLevel(this.client.getHabbo()).isEqualOrGreaterThan(RoomRightLevels.GUILD_RIGHTS)) {
-            int itemId = this.packet.readInt();
-            String wallPosition = this.packet.readString();
-            if (itemId > 0 && wallPosition.length() > 13) {
-               HabboItem item = room.getHabboItem(itemId);
-               if (item != null) {
-                  item.setWallPosition(wallPosition);
-                  item.needsUpdate(true);
-                  room.updateItem(item);
-               }
-            }
-         } else {
+    @Override
+    public void handle() throws Exception {
+        Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+
+        if (room == null)
+            return;
+
+        if (!room.hasRights(this.client.getHabbo()) && !this.client.getHabbo().hasPermission(Permission.ACC_PLACEFURNI) && !(room.getGuildId() > 0 && room.getGuildRightLevel(this.client.getHabbo()).isEqualOrGreaterThan(RoomRightLevels.GUILD_RIGHTS))) {
             this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.NO_RIGHTS.errorCode));
-         }
-      }
-   }
+            return;
+        }
+
+        int itemId = this.packet.readInt();
+        String wallPosition = this.packet.readString();
+
+        if (itemId <= 0 || wallPosition.length() <= 13)
+            return;
+
+        HabboItem item = room.getHabboItem(itemId);
+
+        if (item == null)
+            return;
+
+        item.setWallPosition(wallPosition);
+        item.needsUpdate(true);
+        room.updateItem(item);
+    }
 }

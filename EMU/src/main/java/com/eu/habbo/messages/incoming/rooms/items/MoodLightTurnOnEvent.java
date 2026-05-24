@@ -7,38 +7,33 @@ import com.eu.habbo.habbohotel.rooms.RoomMoodlightData;
 import com.eu.habbo.habbohotel.rooms.RoomRightLevels;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
-import gnu.trove.iterator.hash.TObjectHashIterator;
 
 public class MoodLightTurnOnEvent extends MessageHandler {
-   @Override
-   public void handle() throws Exception {
-      Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
-      if (room.getGuildId() <= 0
-         || !room.getGuildRightLevel(this.client.getHabbo()).isLessThan(RoomRightLevels.GUILD_RIGHTS)
-         || room.hasRights(this.client.getHabbo())) {
-         TObjectHashIterator var2 = room.getRoomSpecialTypes().getItemsOfType(InteractionMoodLight.class).iterator();
+    @Override
+    public void handle() throws Exception {
+        Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
-         while (var2.hasNext()) {
-            HabboItem moodLight = (HabboItem)var2.next();
+        if ((room.getGuildId() > 0 && room.getGuildRightLevel(this.client.getHabbo()).isLessThan(RoomRightLevels.GUILD_RIGHTS)) && !room.hasRights(this.client.getHabbo()))
+            return;
+
+        for (HabboItem moodLight : room.getRoomSpecialTypes().getItemsOfType(InteractionMoodLight.class)) {
+            // enabled ? 2 : 1, preset id, background only ? 2 : 1, color, intensity
+
             String extradata = "2,1,2,#FF00FF,255";
-
             for (RoomMoodlightData data : room.getMoodlightData().valueCollection()) {
-               if (data.isEnabled()) {
-                  extradata = data.toString();
-                  break;
-               }
+                if (data.isEnabled()) {
+                    extradata = data.toString();
+                    break;
+                }
             }
 
             RoomMoodlightData adjusted = RoomMoodlightData.fromString(extradata);
-            if (RoomMoodlightData.fromString(moodLight.getExtradata()).isEnabled()) {
-               adjusted.disable();
-            }
-
+            if (RoomMoodlightData.fromString(moodLight.getExtradata()).isEnabled()) adjusted.disable();
             moodLight.setExtradata(adjusted.toString());
+
             moodLight.needsUpdate(true);
             room.updateItem(moodLight);
             Emulator.getThreading().run(moodLight);
-         }
-      }
-   }
+        }
+    }
 }

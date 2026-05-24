@@ -2,81 +2,79 @@ package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import gnu.trove.iterator.hash.TObjectHashIterator;
 import gnu.trove.set.hash.THashSet;
 
 public class RoomTradeUser {
-   private final Habbo habbo;
-   private final THashSet<HabboItem> items;
-   private int userId;
-   private boolean accepted;
-   private boolean confirmed;
+    private final Habbo habbo;
+    private final THashSet<HabboItem> items;
+    private int userId;
+    private boolean accepted;
+    private boolean confirmed;
 
-   public RoomTradeUser(Habbo habbo) {
-      this.habbo = habbo;
-      if (this.habbo != null) {
-         this.userId = this.habbo.getHabboInfo().getId();
-      }
+    public RoomTradeUser(Habbo habbo) {
+        this.habbo = habbo;
 
-      this.accepted = false;
-      this.confirmed = false;
-      this.items = new THashSet();
-   }
+        if (this.habbo != null) {
+            this.userId = this.habbo.getHabboInfo().getId();
+        }
 
-   public int getUserId() {
-      return this.userId;
-   }
+        this.accepted = false;
+        this.confirmed = false;
+        this.items = new THashSet<>();
+    }
 
-   public void setUserId(int userId) {
-      this.userId = userId;
-   }
+    public int getUserId() {
+        return this.userId;
+    }
 
-   public Habbo getHabbo() {
-      return this.habbo;
-   }
+    public void setUserId(int userId) {
+        this.userId = userId;
+    }
 
-   public boolean getAccepted() {
-      return this.accepted;
-   }
+    public Habbo getHabbo() {
+        return this.habbo;
+    }
 
-   public void setAccepted(boolean value) {
-      this.accepted = value;
-   }
+    public boolean getAccepted() {
+        return this.accepted;
+    }
 
-   public boolean getConfirmed() {
-      return this.confirmed;
-   }
+    public void setAccepted(boolean value) {
+        this.accepted = value;
+    }
 
-   public void confirm() {
-      this.confirmed = true;
-   }
+    public boolean getConfirmed() {
+        return this.confirmed;
+    }
 
-   public void addItem(HabboItem item) {
-      this.items.add(item);
-   }
+    public void confirm() {
+        this.confirmed = true;
+    }
 
-   public HabboItem getItem(int itemId) {
-      TObjectHashIterator var2 = this.items.iterator();
+    public void addItem(HabboItem item) {
+        this.items.add(item);
+    }
 
-      while (var2.hasNext()) {
-         HabboItem item = (HabboItem)var2.next();
-         if (item.getId() == itemId) {
-            return item;
-         }
-      }
+    public HabboItem getItem(int itemId) {
+        for (HabboItem item : this.items) {
+            if (item.getId() == itemId) {
+                return item;
+            }
+        }
 
-      return null;
-   }
+        return null;
+    }
 
-   public THashSet<HabboItem> getItems() {
-      return this.items;
-   }
+    public THashSet<HabboItem> getItems() {
+        return this.items;
+    }
 
-   public void putItemsIntoInventory() {
-      this.habbo.getInventory().getItemsComponent().addItems(this.items);
-   }
+    public void putItemsIntoInventory() {
+        this.habbo.getInventory().getItemsComponent().addItems(this.items);
+    }
 
-   public void clearItems() {
-      this.items.clear();
-   }
+    public void clearItems() {
+        this.items.clear();
+    }
 }
+

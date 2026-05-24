@@ -6,86 +6,91 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import gnu.trove.set.hash.THashSet;
 
 public class GuideTour {
-   private final Habbo noob;
-   private final String helpRequest;
-   private final THashSet<GuideChatMessage> sendMessages = new THashSet();
-   private final THashSet<Integer> declinedHelpers = new THashSet();
-   public int checkSum = 0;
-   private Habbo helper;
-   private int startTime;
-   private int endTime;
-   private boolean ended;
-   private GuideRecommendStatus wouldRecommend = GuideRecommendStatus.UNKNOWN;
+    private final Habbo noob;
+    private final String helpRequest;
+    private final THashSet<GuideChatMessage> sendMessages = new THashSet<>();
+    private final THashSet<Integer> declinedHelpers = new THashSet<>();
+    public int checkSum = 0;
+    private Habbo helper;
+    private int startTime;
+    private int endTime;
+    private boolean ended;
+    private GuideRecommendStatus wouldRecommend = GuideRecommendStatus.UNKNOWN;
 
-   public GuideTour(Habbo noob, String helpRequest) {
-      this.noob = noob;
-      this.helpRequest = helpRequest;
-      AchievementManager.progressAchievement(this.noob, Emulator.getGameEnvironment().getAchievementManager().getAchievement("GuideAdvertisementReader"));
-   }
+    public GuideTour(Habbo noob, String helpRequest) {
+        this.noob = noob;
+        this.helpRequest = helpRequest;
 
-   public void finish() {
-   }
+        AchievementManager.progressAchievement(this.noob, Emulator.getGameEnvironment().getAchievementManager().getAchievement("GuideAdvertisementReader"));
+    }
 
-   public Habbo getNoob() {
-      return this.noob;
-   }
+    public void finish() {
+        //TODO Insert recommendation.
+        //TODO Query messages.
+    }
 
-   public String getHelpRequest() {
-      return this.helpRequest;
-   }
+    public Habbo getNoob() {
+        return this.noob;
+    }
 
-   public Habbo getHelper() {
-      return this.helper;
-   }
+    public String getHelpRequest() {
+        return this.helpRequest;
+    }
 
-   public void setHelper(Habbo helper) {
-      this.helper = helper;
-   }
+    public Habbo getHelper() {
+        return this.helper;
+    }
 
-   public void addMessage(GuideChatMessage message) {
-      this.sendMessages.add(message);
-   }
+    public void setHelper(Habbo helper) {
+        this.helper = helper;
+    }
 
-   public GuideRecommendStatus getWouldRecommend() {
-      return this.wouldRecommend;
-   }
+    public void addMessage(GuideChatMessage message) {
+        this.sendMessages.add(message);
+    }
 
-   public void setWouldRecommend(GuideRecommendStatus wouldRecommend) {
-      this.wouldRecommend = wouldRecommend;
-      if (this.wouldRecommend == GuideRecommendStatus.YES) {
-         AchievementManager.progressAchievement(this.getHelper(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("GuideRecommendation"));
-      }
-   }
+    public GuideRecommendStatus getWouldRecommend() {
+        return this.wouldRecommend;
+    }
 
-   public void addDeclinedHelper(int userId) {
-      this.declinedHelpers.add(userId);
-   }
+    public void setWouldRecommend(GuideRecommendStatus wouldRecommend) {
+        this.wouldRecommend = wouldRecommend;
 
-   public boolean hasDeclined(int userId) {
-      return this.declinedHelpers.contains(userId);
-   }
+        if (this.wouldRecommend == GuideRecommendStatus.YES) {
+            AchievementManager.progressAchievement(this.getHelper(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("GuideRecommendation"));
+        }
+    }
 
-   public void end() {
-      this.ended = true;
-      this.endTime = Emulator.getIntUnixTimestamp();
-      AchievementManager.progressAchievement(this.helper, Emulator.getGameEnvironment().getAchievementManager().getAchievement("GuideEnrollmentLifetime"));
-      AchievementManager.progressAchievement(this.helper, Emulator.getGameEnvironment().getAchievementManager().getAchievement("GuideRequestHandler"));
-      AchievementManager.progressAchievement(this.noob, Emulator.getGameEnvironment().getAchievementManager().getAchievement("GuideRequester"));
-   }
+    public void addDeclinedHelper(int userId) {
+        this.declinedHelpers.add(userId);
+    }
 
-   public boolean isEnded() {
-      return this.ended;
-   }
+    public boolean hasDeclined(int userId) {
+        return this.declinedHelpers.contains(userId);
+    }
 
-   public int getStartTime() {
-      return this.startTime;
-   }
+    public void end() {
+        this.ended = true;
+        this.endTime = Emulator.getIntUnixTimestamp();
 
-   public void setStartTime(int startTime) {
-      this.startTime = startTime;
-   }
+        AchievementManager.progressAchievement(this.helper, Emulator.getGameEnvironment().getAchievementManager().getAchievement("GuideEnrollmentLifetime"));
+        AchievementManager.progressAchievement(this.helper, Emulator.getGameEnvironment().getAchievementManager().getAchievement("GuideRequestHandler"));
+        AchievementManager.progressAchievement(this.noob, Emulator.getGameEnvironment().getAchievementManager().getAchievement("GuideRequester"));
+    }
 
-   public int getEndTime() {
-      return this.endTime;
-   }
+    public boolean isEnded() {
+        return this.ended;
+    }
+
+    public int getStartTime() {
+        return this.startTime;
+    }
+
+    public void setStartTime(int startTime) {
+        this.startTime = startTime;
+    }
+
+    public int getEndTime() {
+        return this.endTime;
+    }
 }

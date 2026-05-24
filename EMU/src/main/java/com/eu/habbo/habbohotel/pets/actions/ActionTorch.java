@@ -9,20 +9,21 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.threading.runnables.PetClearPosture;
 
 public class ActionTorch extends PetAction {
-   public ActionTorch() {
-      super(null, true);
-      this.minimumActionDuration = 1000;
-      this.statusToSet.add(RoomUnitStatus.EAT);
-   }
+    public ActionTorch() {
+        super(null, true);
 
-   @Override
-   public boolean apply(Pet pet, Habbo habbo, String[] data) {
-      if (pet.getHappyness() < 30) {
-         pet.say(pet.getPetData().randomVocal(PetVocalsType.DISOBEY));
-         return false;
-      } else {
-         Emulator.getThreading().run(new PetClearPosture(pet, RoomUnitStatus.EAT, null, false), this.minimumActionDuration);
-         return true;
-      }
-   }
+        this.minimumActionDuration = 1000;
+        this.statusToSet.add(RoomUnitStatus.EAT);
+    }
+
+    @Override
+    public boolean apply(Pet pet, Habbo habbo, String[] data) {
+        if (pet.getHappiness() < 30) {
+            pet.say(pet.getPetData().randomVocal(PetVocalsType.DISOBEY));
+            return false;
+        }
+
+        Emulator.getThreading().run(new PetClearPosture(pet, RoomUnitStatus.EAT, null, false), this.minimumActionDuration);
+        return true;
+    }
 }

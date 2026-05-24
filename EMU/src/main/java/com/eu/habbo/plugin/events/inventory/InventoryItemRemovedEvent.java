@@ -4,7 +4,7 @@ import com.eu.habbo.habbohotel.users.HabboInventory;
 import com.eu.habbo.habbohotel.users.HabboItem;
 
 public class InventoryItemRemovedEvent extends InventoryItemEvent {
-   public InventoryItemRemovedEvent(HabboInventory inventory, HabboItem item) {
-      super(inventory, item);
-   }
+    public InventoryItemRemovedEvent(HabboInventory inventory, HabboItem item) {
+        super(inventory, item);
+    }
 }

@@ -3,35 +3,42 @@ package com.eu.habbo.messages.outgoing.navigator;
 import com.eu.habbo.habbohotel.rooms.RoomCategory;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
+import com.eu.habbo.messages.outgoing.Outgoing;
+
 import java.util.List;
 
 public class RoomCategoriesComposer extends MessageComposer {
-   private final List<RoomCategory> categories;
+    private final List<RoomCategory> categories;
 
-   public RoomCategoriesComposer(List<RoomCategory> categories) {
-      this.categories = categories;
-   }
+    public RoomCategoriesComposer(List<RoomCategory> categories) {
+        this.categories = categories;
+    }
 
-   @Override
-   protected ServerMessage composeInternal() {
-      this.response.init(1562);
-      this.response.appendInt(this.categories.size());
+    @Override
+    protected ServerMessage composeInternal() {
+        this.response.init(Outgoing.RoomCategoriesComposer);
 
-      for (RoomCategory category : this.categories) {
-         this.response.appendInt(category.getId());
-         this.response.appendString(category.getCaption());
-         this.response.appendBoolean(true);
-         this.response.appendBoolean(false);
-         this.response.appendString(category.getCaption());
-         if (category.getCaption().startsWith("${")) {
-            this.response.appendString("");
-         } else {
+        this.response.appendInt(this.categories.size());
+        for (RoomCategory category : this.categories) {
+            this.response.appendInt(category.getId());
             this.response.appendString(category.getCaption());
-         }
+            this.response.appendBoolean(true); //Visible
+            this.response.appendBoolean(false); //True = Disconnect?
+            this.response.appendString(category.getCaption());
 
-         this.response.appendBoolean(false);
-      }
+            if (category.getCaption().startsWith("${")) {
+                this.response.appendString("");
+            } else {
+                this.response.appendString(category.getCaption());
+            }
 
-      return this.response;
-   }
+            this.response.appendBoolean(false);
+        }
+
+        return this.response;
+    }
+
+    public List<RoomCategory> getCategories() {
+        return categories;
+    }
 }

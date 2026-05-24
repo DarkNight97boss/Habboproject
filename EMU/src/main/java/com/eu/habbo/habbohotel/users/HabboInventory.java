@@ -3,176 +3,165 @@ package com.eu.habbo.habbohotel.users;
 import com.eu.habbo.habbohotel.catalog.marketplace.MarketPlace;
 import com.eu.habbo.habbohotel.catalog.marketplace.MarketPlaceOffer;
 import com.eu.habbo.habbohotel.catalog.marketplace.MarketPlaceState;
-import com.eu.habbo.habbohotel.users.inventory.BadgesComponent;
-import com.eu.habbo.habbohotel.users.inventory.BotsComponent;
-import com.eu.habbo.habbohotel.users.inventory.EffectsComponent;
-import com.eu.habbo.habbohotel.users.inventory.ItemsComponent;
-import com.eu.habbo.habbohotel.users.inventory.PetsComponent;
-import com.eu.habbo.habbohotel.users.inventory.WardrobeComponent;
-import gnu.trove.iterator.hash.TObjectHashIterator;
+import com.eu.habbo.habbohotel.users.inventory.*;
 import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class HabboInventory {
-   private static final Logger LOGGER = LoggerFactory.getLogger(HabboInventory.class);
-   public static int MAXIMUM_ITEMS = 10000;
-   private final THashSet<MarketPlaceOffer> items;
-   private final Habbo habbo;
-   private WardrobeComponent wardrobeComponent;
-   private BadgesComponent badgesComponent;
-   private BotsComponent botsComponent;
-   private EffectsComponent effectsComponent;
-   private ItemsComponent itemsComponent;
-   private PetsComponent petsComponent;
 
-   public HabboInventory(Habbo habbo) {
-      this.habbo = habbo;
+    private static final Logger LOGGER = LoggerFactory.getLogger(HabboInventory.class);
 
-      try {
-         this.badgesComponent = new BadgesComponent(this.habbo);
-      } catch (Exception e) {
-         LOGGER.error("Caught exception", e);
-      }
+    //Configuration. Loaded from database & updated accordingly.
+    public static int MAXIMUM_ITEMS = 10000;
+    private final THashSet<MarketPlaceOffer> items;
+    private final Habbo habbo;
+    private WardrobeComponent wardrobeComponent;
+    private BadgesComponent badgesComponent;
+    private BotsComponent botsComponent;
+    private EffectsComponent effectsComponent;
+    private ItemsComponent itemsComponent;
+    private PetsComponent petsComponent;
 
-      try {
-         this.botsComponent = new BotsComponent(this.habbo);
-      } catch (Exception e) {
-         LOGGER.error("Caught exception", e);
-      }
+    public HabboInventory(Habbo habbo) {
+        this.habbo = habbo;
+        try {
+            this.badgesComponent = new BadgesComponent(this.habbo);
+        } catch (Exception e) {
+            LOGGER.error("Caught exception", e);
+        }
 
-      try {
-         this.effectsComponent = new EffectsComponent(this.habbo);
-      } catch (Exception e) {
-         LOGGER.error("Caught exception", e);
-      }
+        try {
+            this.botsComponent = new BotsComponent(this.habbo);
+        } catch (Exception e) {
+            LOGGER.error("Caught exception", e);
+        }
 
-      try {
-         this.itemsComponent = new ItemsComponent(this, this.habbo);
-      } catch (Exception e) {
-         LOGGER.error("Caught exception", e);
-      }
+        try {
+            this.effectsComponent = new EffectsComponent(this.habbo);
+        } catch (Exception e) {
+            LOGGER.error("Caught exception", e);
+        }
 
-      try {
-         this.petsComponent = new PetsComponent(this.habbo);
-      } catch (Exception e) {
-         LOGGER.error("Caught exception", e);
-      }
+        try {
+            this.itemsComponent = new ItemsComponent(this, this.habbo);
+        } catch (Exception e) {
+            LOGGER.error("Caught exception", e);
+        }
 
-      try {
-         this.wardrobeComponent = new WardrobeComponent(this.habbo);
-      } catch (Exception e) {
-         LOGGER.error("Caught exception", e);
-      }
+        try {
+            this.petsComponent = new PetsComponent(this.habbo);
+        } catch (Exception e) {
+            LOGGER.error("Caught exception", e);
+        }
 
-      this.items = MarketPlace.getOwnOffers(this.habbo);
-   }
+        try {
+            this.wardrobeComponent = new WardrobeComponent(this.habbo);
+        } catch (Exception e) {
+            LOGGER.error("Caught exception", e);
+        }
 
-   public WardrobeComponent getWardrobeComponent() {
-      return this.wardrobeComponent;
-   }
+        this.items = MarketPlace.getOwnOffers(this.habbo);
+    }
 
-   public void setWardrobeComponent(WardrobeComponent wardrobeComponent) {
-      this.wardrobeComponent = wardrobeComponent;
-   }
+    public WardrobeComponent getWardrobeComponent() {
+        return this.wardrobeComponent;
+    }
 
-   public BadgesComponent getBadgesComponent() {
-      return this.badgesComponent;
-   }
+    public void setWardrobeComponent(WardrobeComponent wardrobeComponent) {
+        this.wardrobeComponent = wardrobeComponent;
+    }
 
-   public void setBadgesComponent(BadgesComponent badgesComponent) {
-      this.badgesComponent = badgesComponent;
-   }
+    public BadgesComponent getBadgesComponent() {
+        return this.badgesComponent;
+    }
 
-   public BotsComponent getBotsComponent() {
-      return this.botsComponent;
-   }
+    public void setBadgesComponent(BadgesComponent badgesComponent) {
+        this.badgesComponent = badgesComponent;
+    }
 
-   public void setBotsComponent(BotsComponent botsComponent) {
-      this.botsComponent = botsComponent;
-   }
+    public BotsComponent getBotsComponent() {
+        return this.botsComponent;
+    }
 
-   public EffectsComponent getEffectsComponent() {
-      return this.effectsComponent;
-   }
+    public void setBotsComponent(BotsComponent botsComponent) {
+        this.botsComponent = botsComponent;
+    }
 
-   public void setEffectsComponent(EffectsComponent effectsComponent) {
-      this.effectsComponent = effectsComponent;
-   }
+    public EffectsComponent getEffectsComponent() {
+        return this.effectsComponent;
+    }
 
-   public ItemsComponent getItemsComponent() {
-      return this.itemsComponent;
-   }
+    public void setEffectsComponent(EffectsComponent effectsComponent) {
+        this.effectsComponent = effectsComponent;
+    }
 
-   public void setItemsComponent(ItemsComponent itemsComponent) {
-      this.itemsComponent = itemsComponent;
-   }
+    public ItemsComponent getItemsComponent() {
+        return this.itemsComponent;
+    }
 
-   public PetsComponent getPetsComponent() {
-      return this.petsComponent;
-   }
+    public void setItemsComponent(ItemsComponent itemsComponent) {
+        this.itemsComponent = itemsComponent;
+    }
 
-   public void setPetsComponent(PetsComponent petsComponent) {
-      this.petsComponent = petsComponent;
-   }
+    public PetsComponent getPetsComponent() {
+        return this.petsComponent;
+    }
 
-   public void dispose() {
-      this.badgesComponent.dispose();
-      this.botsComponent.dispose();
-      this.effectsComponent.dispose();
-      this.itemsComponent.dispose();
-      this.petsComponent.dispose();
-      this.wardrobeComponent.dispose();
-      this.badgesComponent = null;
-      this.botsComponent = null;
-      this.effectsComponent = null;
-      this.itemsComponent = null;
-      this.petsComponent = null;
-      this.wardrobeComponent = null;
-   }
+    public void setPetsComponent(PetsComponent petsComponent) {
+        this.petsComponent = petsComponent;
+    }
 
-   public void addMarketplaceOffer(MarketPlaceOffer marketPlaceOffer) {
-      this.items.add(marketPlaceOffer);
-   }
+    public void dispose() {
+        this.badgesComponent.dispose();
+        this.botsComponent.dispose();
+        this.effectsComponent.dispose();
+        this.itemsComponent.dispose();
+        this.petsComponent.dispose();
+        this.wardrobeComponent.dispose();
 
-   public void removeMarketplaceOffer(MarketPlaceOffer marketPlaceOffer) {
-      this.items.remove(marketPlaceOffer);
-   }
+        this.badgesComponent = null;
+        this.botsComponent = null;
+        this.effectsComponent = null;
+        this.itemsComponent = null;
+        this.petsComponent = null;
+        this.wardrobeComponent = null;
+    }
 
-   public THashSet<MarketPlaceOffer> getMarketplaceItems() {
-      return this.items;
-   }
+    public void addMarketplaceOffer(MarketPlaceOffer marketPlaceOffer) {
+        this.items.add(marketPlaceOffer);
+    }
 
-   public int getSoldPriceTotal() {
-      int i = 0;
-      TObjectHashIterator var2 = this.items.iterator();
+    public void removeMarketplaceOffer(MarketPlaceOffer marketPlaceOffer) {
+        this.items.remove(marketPlaceOffer);
+    }
 
-      while (var2.hasNext()) {
-         MarketPlaceOffer offer = (MarketPlaceOffer)var2.next();
-         if (offer.getState().equals(MarketPlaceState.SOLD)) {
-            i += offer.getPrice();
-         }
-      }
+    public THashSet<MarketPlaceOffer> getMarketplaceItems() {
+        return this.items;
+    }
 
-      return i;
-   }
-
-   public MarketPlaceOffer getOffer(int id) {
-      synchronized (this.items) {
-         TObjectHashIterator var3 = this.items.iterator();
-
-         while (var3.hasNext()) {
-            MarketPlaceOffer offer = (MarketPlaceOffer)var3.next();
-            if (offer.getOfferId() == id) {
-               return offer;
+    public int getSoldPriceTotal() {
+        int i = 0;
+        for (MarketPlaceOffer offer : this.items) {
+            if (offer.getState().equals(MarketPlaceState.SOLD)) {
+                i += offer.getPrice();
             }
-         }
+        }
+        return i;
+    }
 
-         return null;
-      }
-   }
+    public MarketPlaceOffer getOffer(int id) {
+        synchronized (this.items) {
+            for (MarketPlaceOffer offer : this.items) {
+                if (offer.getOfferId() == id)
+                    return offer;
+            }
+        }
 
-   public Habbo getHabbo() {
-      return this.habbo;
-   }
+        return null;
+    }
+
+    public Habbo getHabbo() {
+        return this.habbo;
+    }
 }

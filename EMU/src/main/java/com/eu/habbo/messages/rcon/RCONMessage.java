@@ -1,35 +1,43 @@
 package com.eu.habbo.messages.rcon;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
+import com.google.gson.*;
+
 import java.lang.reflect.Type;
 
 public abstract class RCONMessage<T> {
-   public static final int STATUS_OK = 0;
-   public static final int STATUS_ERROR = 1;
-   public static final int HABBO_NOT_FOUND = 2;
-   public static final int ROOM_NOT_FOUND = 3;
-   public static final int SYSTEM_ERROR = 4;
-   public final Class<T> type;
-   public int status = 0;
-   public String message = "";
 
-   public RCONMessage(Class<T> type) {
-      this.type = type;
-   }
+    public final static int STATUS_OK = 0;
 
-   public abstract void handle(Gson var1, T var2);
 
-   public static class RCONMessageSerializer implements JsonSerializer<RCONMessage> {
-      public JsonElement serialize(RCONMessage rconMessage, Type type, JsonSerializationContext context) {
-         JsonObject result = new JsonObject();
-         result.add("status", new JsonPrimitive(rconMessage.status));
-         result.add("message", new JsonPrimitive(rconMessage.message));
-         return result;
-      }
-   }
+    public final static int STATUS_ERROR = 1;
+
+
+    public final static int HABBO_NOT_FOUND = 2;
+
+
+    public final static int ROOM_NOT_FOUND = 3;
+
+
+    public final static int SYSTEM_ERROR = 4;
+
+
+    public final Class<T> type;
+    public int status = STATUS_OK;
+    public String message = "";
+
+    public RCONMessage(Class<T> type) {
+        this.type = type;
+    }
+
+    public abstract void handle(Gson gson, T json);
+
+    public static class RCONMessageSerializer implements JsonSerializer<RCONMessage> {
+        @Override
+        public JsonElement serialize(final RCONMessage rconMessage, final Type type, final JsonSerializationContext context) {
+            JsonObject result = new JsonObject();
+            result.add("status", new JsonPrimitive(rconMessage.status));
+            result.add("message", new JsonPrimitive(rconMessage.message));
+            return result;
+        }
+    }
 }

@@ -6,18 +6,17 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.rooms.RoomDataComposer;
 
 public class RequestRoomDataEvent extends MessageHandler {
-   @Override
-   public void handle() throws Exception {
-      Room room = Emulator.getGameEnvironment().getRoomManager().loadRoom(this.packet.readInt());
-      int something = this.packet.readInt();
-      int something2 = this.packet.readInt();
-      if (room != null) {
-         boolean unknown = true;
-         if (something == 0 && something2 == 1) {
-            unknown = false;
-         }
+    @Override
+    public void handle() throws Exception {
+        Room room = Emulator.getGameEnvironment().getRoomManager().loadRoom(this.packet.readInt());
 
-         this.client.sendResponse(new RoomDataComposer(room, this.client.getHabbo(), true, unknown));
-      }
-   }
+        int something = this.packet.readInt();
+        int something2 = this.packet.readInt();
+        if (room != null) {
+            boolean unknown = something != 0 || something2 != 1;
+
+            //this.client.getHabbo().getHabboInfo().getCurrentRoom() != room
+            this.client.sendResponse(new RoomDataComposer(room, this.client.getHabbo(), true, unknown));
+        }
+    }
 }

@@ -5,41 +5,49 @@ import com.eu.habbo.habbohotel.catalog.ClothItem;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
+import com.eu.habbo.messages.outgoing.Outgoing;
 import gnu.trove.procedure.TIntProcedure;
+
 import java.util.ArrayList;
 
 public class UserClothesComposer extends MessageComposer {
-   private final ArrayList<Integer> idList = new ArrayList<>();
-   private final ArrayList<String> nameList = new ArrayList<>();
+    private final ArrayList<Integer> idList = new ArrayList<>();
+    private final ArrayList<String> nameList = new ArrayList<>();
 
-   public UserClothesComposer(Habbo habbo) {
-      habbo.getInventory().getWardrobeComponent().getClothing().forEach(new TIntProcedure() {
-         public boolean execute(int value) {
-            ClothItem item = (ClothItem)Emulator.getGameEnvironment().getCatalogManager().clothing.get(value);
-            if (item != null) {
-               int[] var3 = item.setId;
-               int var4 = var3.length;
+    public UserClothesComposer(Habbo habbo) {
+        habbo.getInventory().getWardrobeComponent().getClothing().forEach(new TIntProcedure() {
+            @Override
+            public boolean execute(int value) {
+                ClothItem item = Emulator.getGameEnvironment().getCatalogManager().clothing.get(value);
 
-               for (int var5 = 0; var5 < var4; var5++) {
-                  Integer j = var3[var5];
-                  UserClothesComposer.this.idList.add(j);
-               }
+                if (item != null) {
+                    for (Integer j : item.setId) {
+                        UserClothesComposer.this.idList.add(j);
+                    }
 
-               UserClothesComposer.this.nameList.add(item.name);
+                    UserClothesComposer.this.nameList.add(item.name);
+                }
+
+                return true;
             }
+        });
+    }
 
-            return true;
-         }
-      });
-   }
+    @Override
+    protected ServerMessage composeInternal() {
+        this.response.init(Outgoing.UserClothesComposer);
+        this.response.appendInt(this.idList.size());
+        this.idList.forEach(this.response::appendInt);
+        this.response.appendInt(this.nameList.size());
+        this.nameList.forEach(this.response::appendString);
+        return this.response;
+    }
 
-   @Override
-   protected ServerMessage composeInternal() {
-      this.response.init(1450);
-      this.response.appendInt(this.idList.size());
-      this.idList.forEach(this.response::appendInt);
-      this.response.appendInt(this.nameList.size());
-      this.nameList.forEach(this.response::appendString);
-      return this.response;
-   }
+    public ArrayList<Integer> getIdList() {
+        return idList;
+    }
+
+    public ArrayList<String> getNameList() {
+        return nameList;
+    }
 }

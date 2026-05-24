@@ -9,91 +9,101 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.WiredHandler;
+import com.eu.habbo.messages.ClientMessage;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class WiredConditionTeamMember extends InteractionWiredCondition {
-   public static final WiredConditionType type = WiredConditionType.ACTOR_IN_TEAM;
-   private GameTeamColors teamColor = GameTeamColors.RED;
+    public static final WiredConditionType type = WiredConditionType.ACTOR_IN_TEAM;
 
-   public WiredConditionTeamMember(ResultSet set, Item baseItem) throws SQLException {
-      super(set, baseItem);
-   }
+    private GameTeamColors teamColor = GameTeamColors.RED;
 
-   public WiredConditionTeamMember(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
-      super(id, userId, item, extradata, limitedStack, limitedSells);
-   }
+    public WiredConditionTeamMember(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+    }
 
-   @Override
-   public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
-      Habbo habbo = room.getHabbo(roomUnit);
-      return habbo != null && habbo.getHabboInfo().getGamePlayer() != null ? habbo.getHabboInfo().getGamePlayer().getTeamColor().equals(this.teamColor) : false;
-   }
+    public WiredConditionTeamMember(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
 
-   @Override
-   public String getWiredData() {
-      return WiredHandler.getGsonBuilder().create().toJson(new WiredConditionTeamMember.JsonData(this.teamColor));
-   }
+    @Override
+    public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
+        Habbo habbo = room.getHabbo(roomUnit);
 
-   @Override
-   public void loadWiredData(ResultSet set, Room room) throws SQLException {
-      try {
-         String wiredData = set.getString("wired_data");
-         if (wiredData.startsWith("{")) {
-            WiredConditionTeamMember.JsonData data = (WiredConditionTeamMember.JsonData)WiredHandler.getGsonBuilder()
-               .create()
-               .fromJson(wiredData, WiredConditionTeamMember.JsonData.class);
-            this.teamColor = data.teamColor;
-         } else if (!wiredData.equals("")) {
-            this.teamColor = GameTeamColors.values()[Integer.parseInt(wiredData)];
-         }
-      } catch (Exception e) {
-         this.teamColor = GameTeamColors.RED;
-      }
-   }
+        if (habbo != null) {
+            if (habbo.getHabboInfo().getGamePlayer() != null) {
+                return habbo.getHabboInfo().getGamePlayer().getTeamColor().equals(this.teamColor);
+            }
+        }
 
-   @Override
-   public void onPickUp() {
-      this.teamColor = GameTeamColors.RED;
-   }
+        return false;
+    }
 
-   @Override
-   public WiredConditionType getType() {
-      return type;
-   }
+    @Override
+    public String getWiredData() {
+        return WiredHandler.getGsonBuilder().create().toJson(new JsonData(
+                this.teamColor
+        ));
+    }
 
-   @Override
-   public void serializeWiredData(ServerMessage message, Room room) {
-      message.appendBoolean(false);
-      message.appendInt(5);
-      message.appendInt(0);
-      message.appendInt(this.getBaseItem().getSpriteId());
-      message.appendInt(this.getId());
-      message.appendString("");
-      message.appendInt(1);
-      message.appendInt(this.teamColor.type);
-      message.appendInt(0);
-      message.appendInt(this.getType().code);
-      message.appendInt(0);
-      message.appendInt(0);
-   }
+    @Override
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        try {
+            String wiredData = set.getString("wired_data");
 
-   @Override
-   public boolean saveData(WiredSettings settings) {
-      if (settings.getIntParams().length < 1) {
-         return false;
-      }
+            if (wiredData.startsWith("{")) {
+                JsonData data = WiredHandler.getGsonBuilder().create().fromJson(wiredData, JsonData.class);
+                this.teamColor = data.teamColor;
+            } else {
+                if (!wiredData.equals(""))
+                    this.teamColor = GameTeamColors.values()[Integer.parseInt(wiredData)];
+            }
+        } catch (Exception e) {
+            this.teamColor = GameTeamColors.RED;
+        }
+    }
 
-      this.teamColor = GameTeamColors.values()[settings.getIntParams()[0]];
-      return true;
-   }
+    @Override
+    public void onPickUp() {
+        this.teamColor = GameTeamColors.RED;
+    }
 
-   static class JsonData {
-      GameTeamColors teamColor;
+    @Override
+    public WiredConditionType getType() {
+        return type;
+    }
 
-      public JsonData(GameTeamColors teamColor) {
-         this.teamColor = teamColor;
-      }
-   }
+    @Override
+    public void serializeWiredData(ServerMessage message, Room room) {
+        message.appendBoolean(false);
+        message.appendInt(5);
+        message.appendInt(0);
+        message.appendInt(this.getBaseItem().getSpriteId());
+        message.appendInt(this.getId());
+        message.appendString("");
+        message.appendInt(1);
+        message.appendInt(this.teamColor.type);
+        message.appendInt(0);
+        message.appendInt(this.getType().code);
+        message.appendInt(0);
+        message.appendInt(0);
+    }
+
+    @Override
+    public boolean saveData(WiredSettings settings) {
+        if(settings.getIntParams().length < 1) return false;
+        this.teamColor = GameTeamColors.values()[settings.getIntParams()[0]];
+
+        return true;
+    }
+
+    static class JsonData {
+        GameTeamColors teamColor;
+
+        public JsonData(GameTeamColors teamColor) {
+            this.teamColor = teamColor;
+        }
+    }
 }

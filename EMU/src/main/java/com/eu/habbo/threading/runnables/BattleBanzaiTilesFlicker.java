@@ -6,53 +6,51 @@ import com.eu.habbo.habbohotel.items.interactions.games.battlebanzai.Interaction
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.outgoing.rooms.items.ItemsDataUpdateComposer;
-import gnu.trove.iterator.hash.TObjectHashIterator;
 import gnu.trove.set.hash.THashSet;
 
 public class BattleBanzaiTilesFlicker implements Runnable {
-   private final THashSet<HabboItem> items;
-   private final GameTeamColors color;
-   private final Room room;
-   private boolean on = false;
-   private int count = 0;
+    private final THashSet<HabboItem> items;
+    private final GameTeamColors color;
+    private final Room room;
 
-   public BattleBanzaiTilesFlicker(THashSet<HabboItem> items, GameTeamColors color, Room room) {
-      this.items = items;
-      this.color = color;
-      this.room = room;
-   }
+    private boolean on = false;
+    private int count = 0;
 
-   @Override
-   public void run() {
-      if (this.items != null && this.room != null) {
-         int state = 0;
-         if (this.on) {
-            state = this.color.type * 3 + 2;
+    public BattleBanzaiTilesFlicker(THashSet<HabboItem> items, GameTeamColors color, Room room) {
+        this.items = items;
+        this.color = color;
+        this.room = room;
+    }
+
+    @Override
+    public void run() {
+        if (this.items == null || this.room == null)
+            return;
+
+        int state = 0;
+        if (this.on) {
+            state = (this.color.type * 3) + 2;
             this.on = false;
-         } else {
+        } else {
             this.on = true;
-         }
+        }
 
-         TObjectHashIterator var2 = this.items.iterator();
-
-         while (var2.hasNext()) {
-            HabboItem item = (HabboItem)var2.next();
+        for (HabboItem item : this.items) {
             item.setExtradata(state + "");
-         }
+        }
 
-         this.room.sendComposer(new ItemsDataUpdateComposer(this.items).compose());
-         if (this.count != 9) {
-            this.count++;
-            Emulator.getThreading().run(this, 500L);
-         } else {
-            var2 = this.room.getRoomSpecialTypes().getItemsOfType(InteractionBattleBanzaiSphere.class).iterator();
+        this.room.sendComposer(new ItemsDataUpdateComposer(this.items).compose());
 
-            while (var2.hasNext()) {
-               HabboItem item = (HabboItem)var2.next();
-               item.setExtradata("0");
-               this.room.updateItemState(item);
+        if (this.count == 9) {
+            for (HabboItem item : this.room.getRoomSpecialTypes().getItemsOfType(InteractionBattleBanzaiSphere.class)) {
+                item.setExtradata("0");
+                this.room.updateItemState(item);
             }
-         }
-      }
-   }
+            return;
+        }
+
+        this.count++;
+
+        Emulator.getThreading().run(this, 500);
+    }
 }

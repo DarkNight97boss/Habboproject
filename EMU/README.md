@@ -1,11 +1,11 @@
-# Zabbo MS Arcturus 3.5.3 #
+# Arcturus Morningstar #
 
 Arcturus Morningstar is as a fork of Arcturus Emulator by TheGeneral. Arcturus Morningstar is released under the [GNU General Public License v3](https://www.gnu.org/licenses/gpl-3.0.txt) and is developed for free by talented developers at Krews.org and is compatible with the following client revision/community projects:
 
 
 | Flash | Community Clients |
 | ------------- | ------------- |
-| [PRODUCTION-201611291003-338511768](https://git.krews.org/morningstar/apollyon/uploads/dc669a26613bf2356e48eb653734ab29/patched-habbo.swf) | [Nitro (Recommended)*](https://git.krews.org/nitro) |
+| [PRODUCTION-201611291003-338511768](https://git.krews.org/morningstar/apollyon/uploads/dc669a26613bf2356e48eb653734ab29/patched-habbo.swf) | [Nitro (Recommended)*](https://github.com/billsonnn/nitro-react) |
  
 ###### *Note to use Nitro you will need to use the following [plugin](https://git.krews.org/nitro/ms-websockets/-/releases) with Arcturus Morningstar #######
 
@@ -13,16 +13,12 @@ Arcturus Morningstar is as a fork of Arcturus Emulator by TheGeneral. Arcturus M
 
 
 
-## Discord ## 
-Link: https://discord.gg/TNmZ5yhd82
-
-Username: justinretros
-
+[![image](https://img.shields.io/discord/557240155040251905?style=for-the-badge&logo=discord&color=7289DA&label=KREWS&logoColor=fff)](https://discord.gg/BzfFsTp)
 
 ## Download ##
-[![image](https://img.shields.io/badge/STABLE%20RELEASES-3.5.3-success.svg?style=for-the-badge&logo=appveyor)](https://git.krews.org/morningstar/Arcturus-Community/-/releases)
+[![image](https://img.shields.io/badge/STABLE%20RELEASES-3.5.5-success.svg?style=for-the-badge&logo=appveyor)](https://git.krews.org/morningstar/Arcturus-Community/-/releases)
 
-[![image](https://img.shields.io/badge/DEVELOPER%20BUILDS-4.0-red.svg?style=for-the-badge&logo=appveyor)](https://git.krews.org/morningstar/Arcturus-Community/-/jobs) *
+[![image](https://img.shields.io/badge/DEVELOPER%20BUILDS-4.0-red.svg?style=for-the-badge&logo=appveyor)](https://git.krews.org/morningstar/Arcturus-Community/-/jobs)
 
 [![image](https://img.shields.io/badge/RECOMMENDED%20PLUGINS-blue.svg?style=for-the-badge&logo=)](https://git.krews.org/morningstar/archive) 
 
@@ -30,20 +26,17 @@ Username: justinretros
 
 
 ### Branches ###
-There are two main branches in use on the Arcturus Morningstar git. Developers should target the 4.x branch for merge requests.
+There are two main branches in use on the Arcturus Morningstar git. Developers should target the dev branch for merge requests.
 
-| master * | The stable 3.x branch of Arcturus Morningstar. |
-|----------|------------------------------------------------|
-###### * Note: This branch is no longer being maintained except for Security Patches #######
+| master| The stable 3.x branch of Arcturus Morningstar. |
+|-------|------------------------------------------------|
 
-| dev* | The 4.x branch of Arcturus Morningstar. |
-|------|-----------------------------------------|
-###### * Note: This version is currently untested on a production hotel and is not recommended for daily use until a release has been made. #######
+| dev| The dev branch of Arcturus Morningstar. |
+|----|-----------------------------------------|
 
 
 
-
-There is no set timeframe on when new versions will be released or when the stable branch will be updated
+There is no set timeframe on when new versions will be released or when the stable branch will be updated.
 
 
 ## Can I Help!? ##
@@ -111,8 +104,7 @@ If we ever are to make paid features or plugins, we will not prevent or discoura
        - Brenoepic
        - Stankman
        - Laynester
-	   - Justin
-	   - Hxmada
+       - Yordi
 
     
 

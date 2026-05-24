@@ -7,85 +7,89 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.WiredHandler;
+import com.eu.habbo.messages.ClientMessage;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class WiredConditionHabboHasEffect extends InteractionWiredCondition {
-   public static final WiredConditionType type = WiredConditionType.ACTOR_WEARS_EFFECT;
-   protected int effectId = 0;
+    public static final WiredConditionType type = WiredConditionType.ACTOR_WEARS_EFFECT;
 
-   public WiredConditionHabboHasEffect(ResultSet set, Item baseItem) throws SQLException {
-      super(set, baseItem);
-   }
+    protected int effectId = 0;
 
-   public WiredConditionHabboHasEffect(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
-      super(id, userId, item, extradata, limitedStack, limitedSells);
-   }
+    public WiredConditionHabboHasEffect(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+    }
 
-   @Override
-   public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
-      return roomUnit == null ? false : roomUnit.getEffectId() == this.effectId;
-   }
+    public WiredConditionHabboHasEffect(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
 
-   @Override
-   public String getWiredData() {
-      return WiredHandler.getGsonBuilder().create().toJson(new WiredConditionHabboHasEffect.JsonData(this.effectId));
-   }
+    @Override
+    public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
+        if (roomUnit == null) return false;
+        return roomUnit.getEffectId() == this.effectId;
+    }
 
-   @Override
-   public void loadWiredData(ResultSet set, Room room) throws SQLException {
-      String wiredData = set.getString("wired_data");
-      if (wiredData.startsWith("{")) {
-         WiredConditionHabboHasEffect.JsonData data = (WiredConditionHabboHasEffect.JsonData)WiredHandler.getGsonBuilder()
-            .create()
-            .fromJson(wiredData, WiredConditionHabboHasEffect.JsonData.class);
-         this.effectId = data.effectId;
-      } else {
-         this.effectId = Integer.parseInt(wiredData);
-      }
-   }
+    @Override
+    public String getWiredData() {
+        return WiredHandler.getGsonBuilder().create().toJson(new JsonData(
+                this.effectId
+        ));
+    }
 
-   @Override
-   public void onPickUp() {
-      this.effectId = 0;
-   }
+    @Override
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        String wiredData = set.getString("wired_data");
 
-   @Override
-   public WiredConditionType getType() {
-      return type;
-   }
+        if (wiredData.startsWith("{")) {
+            JsonData data = WiredHandler.getGsonBuilder().create().fromJson(wiredData, JsonData.class);
+            this.effectId = data.effectId;
+        } else {
+            this.effectId = Integer.parseInt(wiredData);
+        }
+    }
 
-   @Override
-   public void serializeWiredData(ServerMessage message, Room room) {
-      message.appendBoolean(true);
-      message.appendInt(5);
-      message.appendInt(0);
-      message.appendInt(this.getBaseItem().getSpriteId());
-      message.appendInt(this.getId());
-      message.appendString(this.effectId + "");
-      message.appendInt(0);
-      message.appendInt(0);
-      message.appendInt(this.getType().code);
-      message.appendInt(0);
-      message.appendInt(0);
-   }
+    @Override
+    public void onPickUp() {
+        this.effectId = 0;
+    }
 
-   @Override
-   public boolean saveData(WiredSettings settings) {
-      if (settings.getIntParams().length < 1) {
-         return false;
-      }
+    @Override
+    public WiredConditionType getType() {
+        return type;
+    }
 
-      this.effectId = settings.getIntParams()[0];
-      return true;
-   }
+    @Override
+    public void serializeWiredData(ServerMessage message, Room room) {
+        message.appendBoolean(true);
+        message.appendInt(5);
+        message.appendInt(0);
+        message.appendInt(this.getBaseItem().getSpriteId());
+        message.appendInt(this.getId());
+        message.appendString("");
+        message.appendInt(1);
+        message.appendInt(this.effectId);
+        message.appendInt(0);
+        message.appendInt(this.getType().code);
+        message.appendInt(0);
+        message.appendInt(0);
+    }
 
-   static class JsonData {
-      int effectId;
+    @Override
+    public boolean saveData(WiredSettings settings) {
+        if(settings.getIntParams().length < 1) return false;
+        this.effectId = settings.getIntParams()[0];
 
-      public JsonData(int effectId) {
-         this.effectId = effectId;
-      }
-   }
+        return true;
+    }
+
+    static class JsonData {
+        int effectId;
+
+        public JsonData(int effectId) {
+            this.effectId = effectId;
+        }
+    }
 }

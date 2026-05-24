@@ -3,19 +3,28 @@ package com.eu.habbo.messages.outgoing;
 import com.eu.habbo.messages.ServerMessage;
 
 public abstract class MessageComposer {
-   private ServerMessage composed = null;
-   protected final ServerMessage response = new ServerMessage();
 
-   protected MessageComposer() {
-   }
+    private ServerMessage composed;
+    protected final ServerMessage response;
 
-   protected abstract ServerMessage composeInternal();
+    protected MessageComposer() {
+        this.composed = null;
+        this.response = new ServerMessage();
+    }
 
-   public ServerMessage compose() {
-      if (this.composed == null) {
-         this.composed = this.composeInternal();
-      }
+    protected abstract ServerMessage composeInternal();
 
-      return this.composed;
-   }
+    public ServerMessage compose() {
+        if (this.composed == null) {
+            this.composed = this.composeInternal();
+            if(this.composed != null) {
+                if(this.composed.getComposer() == null) {
+                    this.composed.setComposer(this);
+                }
+            }
+        }
+
+        return this.composed;
+    }
+
 }

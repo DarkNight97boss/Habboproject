@@ -1,162 +1,147 @@
 package com.eu.habbo.habbohotel.users.subscriptions;
 
 import com.eu.habbo.Emulator;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+/**
+ * @author Beny
+ */
 public class Subscription {
-   public static final String HABBO_CLUB = "HABBO_CLUB";
-   private final int id;
-   private final int userId;
-   private final String subscriptionType;
-   private final int timestampStart;
-   private int duration;
-   private boolean active;
+    public static final String HABBO_CLUB = "HABBO_CLUB";
 
-   public Subscription(Integer id, Integer userId, String subscriptionType, Integer timestampStart, Integer duration, Boolean active) {
-      this.id = id;
-      this.userId = userId;
-      this.subscriptionType = subscriptionType;
-      this.timestampStart = timestampStart;
-      this.duration = duration;
-      this.active = active;
-   }
+    private final int id;
+    private final int userId;
+    private final String subscriptionType;
+    private final int timestampStart;
+    private int duration;
+    private boolean active;
 
-   public int getSubscriptionId() {
-      return this.id;
-   }
+    /**
+     * Subscription constructor
+     * @param id ID of the subscription
+     * @param userId ID of user who has the subscription
+     * @param subscriptionType Subscription type name (e.g. HABBO_CLUB)
+     * @param timestampStart Unix timestamp start of subscription
+     * @param duration Length of subscription in seconds
+     * @param active Boolean indicating if subscription is active
+     */
+    public Subscription(Integer id, Integer userId, String subscriptionType, Integer timestampStart, Integer duration, Boolean active) {
+        this.id = id;
+        this.userId = userId;
+        this.subscriptionType = subscriptionType;
+        this.timestampStart = timestampStart;
+        this.duration = duration;
+        this.active = active;
+    }
 
-   public int getUserId() {
-      return this.userId;
-   }
+    /**
+     * @return ID of the subscription
+     */
+    public int getSubscriptionId() {
+        return id;
+    }
 
-   public String getSubscriptionType() {
-      return this.subscriptionType;
-   }
+    /**
+     * @return ID of user who has the subscription
+     */
+    public int getUserId() {
+        return userId;
+    }
 
-   public int getDuration() {
-      return this.duration;
-   }
+    /**
+     * @return Subscription type name (e.g. HABBO_CLUB)
+     */
+    public String getSubscriptionType() {
+        return subscriptionType;
+    }
 
-   public void addDuration(int amount) {
-      this.duration += amount;
+    /**
+     * @return Length of subscription in seconds
+     */
+    public int getDuration() {
+        return duration;
+    }
 
-      try {
-         Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+    /**
+     * Updates the Subscription record with new duration
+     * @param amount Length of time to add in seconds
+     */
+    public void addDuration(int amount) {
+        this.duration += amount;
 
-         try {
-            PreparedStatement statement = connection.prepareStatement("UPDATE `users_subscriptions` SET `duration` = ? WHERE `id` = ? LIMIT 1");
-
-            try {
-               statement.setInt(1, this.duration);
-               statement.setInt(2, this.id);
-               statement.executeUpdate();
-            } catch (Throwable var8) {
-               if (statement != null) {
-                  try {
-                     statement.close();
-                  } catch (Throwable var7) {
-                     var8.addSuppressed(var7);
-                  }
-               }
-
-               throw var8;
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement("UPDATE `users_subscriptions` SET `duration` = ? WHERE `id` = ? LIMIT 1")) {
+                statement.setInt(1, this.duration);
+                statement.setInt(2, this.id);
+                statement.executeUpdate();
             }
+        } catch (SQLException e) {
+            SubscriptionManager.LOGGER.error("Caught SQL exception", e);
+        }
+    }
 
-            if (statement != null) {
-               statement.close();
+    /**
+     * Sets the subscription as active or inactive. If active and remaining time <= 0 the SubscriptionScheduler will inactivate the subscription and call onExpired()
+     * @param active Boolean indicating if the subscription is active
+     */
+    public void setActive(boolean active) {
+        this.active = active;
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement("UPDATE `users_subscriptions` SET `active` = ? WHERE `id` = ? LIMIT 1")) {
+                statement.setInt(1, this.active ? 1 : 0);
+                statement.setInt(2, this.id);
+                statement.executeUpdate();
             }
-         } catch (Throwable var9) {
-            if (connection != null) {
-               try {
-                  connection.close();
-               } catch (Throwable var6) {
-                  var9.addSuppressed(var6);
-               }
-            }
+        } catch (SQLException e) {
+            SubscriptionManager.LOGGER.error("Caught SQL exception", e);
+        }
+    }
 
-            throw var9;
-         }
+    /**
+     * @return Remaining duration of subscription in seconds
+     */
+    public int getRemaining() {
+        return (this.timestampStart + this.duration) - Emulator.getIntUnixTimestamp();
+    }
 
-         if (connection != null) {
-            connection.close();
-         }
-      } catch (SQLException e) {
-         SubscriptionManager.LOGGER.error("Caught SQL exception", e);
-      }
-   }
+    /**
+     * @return Unix timestamp start of subscription
+     */
+    public int getTimestampStart() {
+        return this.timestampStart;
+    }
 
-   public void setActive(boolean active) {
-      this.active = active;
+    /**
+     * @return Unix timestamp end of subscription
+     */
+    public int getTimestampEnd() {
+        return (this.timestampStart + this.duration);
+    }
 
-      try {
-         Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+    /**
+     * @return Boolean indicating if the subscription is active
+     */
+    public boolean isActive() {
+        return active;
+    }
 
-         try {
-            PreparedStatement statement = connection.prepareStatement("UPDATE `users_subscriptions` SET `active` = ? WHERE `id` = ? LIMIT 1");
+    /**
+     * Called when the subscription is first created
+     */
+    public void onCreated() { }
 
-            try {
-               statement.setInt(1, this.active ? 1 : 0);
-               statement.setInt(2, this.id);
-               statement.executeUpdate();
-            } catch (Throwable var8) {
-               if (statement != null) {
-                  try {
-                     statement.close();
-                  } catch (Throwable var7) {
-                     var8.addSuppressed(var7);
-                  }
-               }
+    /**
+     * Called when the subscription is extended or bought again when already exists
+     * @param duration Extended duration time in seconds
+     */
+    public void onExtended(int duration) { }
 
-               throw var8;
-            }
-
-            if (statement != null) {
-               statement.close();
-            }
-         } catch (Throwable var9) {
-            if (connection != null) {
-               try {
-                  connection.close();
-               } catch (Throwable var6) {
-                  var9.addSuppressed(var6);
-               }
-            }
-
-            throw var9;
-         }
-
-         if (connection != null) {
-            connection.close();
-         }
-      } catch (SQLException e) {
-         SubscriptionManager.LOGGER.error("Caught SQL exception", e);
-      }
-   }
-
-   public int getRemaining() {
-      return this.timestampStart + this.duration - Emulator.getIntUnixTimestamp();
-   }
-
-   public int getTimestampStart() {
-      return this.timestampStart;
-   }
-
-   public int getTimestampEnd() {
-      return this.timestampStart + this.duration;
-   }
-
-   public boolean isActive() {
-      return this.active;
-   }
-
-   public void onCreated() {
-   }
-
-   public void onExtended(int duration) {
-   }
-
-   public void onExpired() {
-   }
+    /**
+     * Called by SubscriptionScheduler when isActive() && getRemaining() < 0
+     */
+    public void onExpired() { }
 }

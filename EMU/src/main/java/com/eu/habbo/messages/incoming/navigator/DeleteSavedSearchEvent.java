@@ -5,21 +5,22 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.navigator.NewNavigatorSavedSearchesComposer;
 
 public class DeleteSavedSearchEvent extends MessageHandler {
-   @Override
-   public void handle() throws Exception {
-      int searchId = this.packet.readInt();
-      NavigatorSavedSearch search = null;
+    @Override
+    public void handle() throws Exception {
+        int searchId = this.packet.readInt();
 
-      for (NavigatorSavedSearch savedSearch : this.client.getHabbo().getHabboInfo().getSavedSearches()) {
-         if (savedSearch.getId() == searchId) {
-            search = savedSearch;
-            break;
-         }
-      }
+        NavigatorSavedSearch search = null;
+        for (NavigatorSavedSearch savedSearch : this.client.getHabbo().getHabboInfo().getSavedSearches()) {
+            if (savedSearch.getId() == searchId) {
+                search = savedSearch;
+                break;
+            }
+        }
 
-      if (search != null) {
-         this.client.getHabbo().getHabboInfo().deleteSavedSearch(search);
-         this.client.sendResponse(new NewNavigatorSavedSearchesComposer(this.client.getHabbo().getHabboInfo().getSavedSearches()));
-      }
-   }
+        if (search == null) return;
+
+        this.client.getHabbo().getHabboInfo().deleteSavedSearch(search);
+
+        this.client.sendResponse(new NewNavigatorSavedSearchesComposer(this.client.getHabbo().getHabboInfo().getSavedSearches()));
+    }
 }

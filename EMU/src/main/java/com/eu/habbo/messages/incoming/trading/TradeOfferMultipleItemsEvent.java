@@ -6,23 +6,26 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import gnu.trove.set.hash.THashSet;
 
 public class TradeOfferMultipleItemsEvent extends MessageHandler {
-   @Override
-   public void handle() throws Exception {
-      if (this.client.getHabbo().getHabboInfo().getCurrentRoom() != null) {
-         RoomTrade trade = this.client.getHabbo().getHabboInfo().getCurrentRoom().getActiveTradeForHabbo(this.client.getHabbo());
-         if (trade != null) {
-            THashSet<HabboItem> items = new THashSet();
-            int count = this.packet.readInt();
+    @Override
+    public void handle() throws Exception {
+        if (this.client.getHabbo().getHabboInfo().getCurrentRoom() == null)
+            return;
 
-            for (int i = 0; i < count; i++) {
-               HabboItem item = this.client.getHabbo().getInventory().getItemsComponent().getHabboItem(this.packet.readInt());
-               if (item != null && item.getBaseItem().allowTrade()) {
-                  items.add(item);
-               }
+        RoomTrade trade = this.client.getHabbo().getHabboInfo().getCurrentRoom().getActiveTradeForHabbo(this.client.getHabbo());
+
+        if (trade == null)
+            return;
+
+        THashSet<HabboItem> items = new THashSet<>();
+
+        int count = this.packet.readInt();
+        for (int i = 0; i < count; i++) {
+            HabboItem item = this.client.getHabbo().getInventory().getItemsComponent().getHabboItem(this.packet.readInt());
+            if (item != null && item.getBaseItem().allowTrade()) {
+                items.add(item);
             }
+        }
 
-            trade.offerMultipleItems(this.client.getHabbo(), items);
-         }
-      }
-   }
+        trade.offerMultipleItems(this.client.getHabbo(), items);
+    }
 }

@@ -10,27 +10,25 @@ import com.eu.habbo.plugin.events.support.SupportUserAlertedEvent;
 import com.eu.habbo.plugin.events.support.SupportUserAlertedReason;
 
 public class AmbassadorAlertCommandEvent extends MessageHandler {
-   @Override
-   public void handle() throws Exception {
-      if (!this.client.getHabbo().hasPermission(Permission.ACC_AMBASSADOR)) {
-         ScripterManager.scripterDetected(
-            this.client,
-            Emulator.getTexts()
-               .getValue("scripter.warning.modtools.alert")
-               .replace("%username%", this.client.getHabbo().getHabboInfo().getUsername())
-               .replace("%message%", "${notification.ambassador.alert.warning.message}")
-         );
-      } else {
-         int userId = this.packet.readInt();
-         Habbo habbo = this.client.getHabbo().getHabboInfo().getCurrentRoom().getHabbo(userId);
-         if (habbo != null) {
-            SupportUserAlertedEvent alertedEvent = new SupportUserAlertedEvent(
-               this.client.getHabbo(), habbo, "${notification.ambassador.alert.warning.message}", SupportUserAlertedReason.AMBASSADOR
-            );
-            if (!Emulator.getPluginManager().fireEvent(alertedEvent).isCancelled()) {
-               habbo.getClient().sendResponse(new BubbleAlertComposer("ambassador.alert.warning"));
-            }
-         }
-      }
-   }
+    @Override
+    public void handle() throws Exception {
+        if (!this.client.getHabbo().hasPermission(Permission.ACC_AMBASSADOR)) {
+            ScripterManager.scripterDetected(this.client, Emulator.getTexts().getValue("scripter.warning.modtools.alert").replace("%username%", client.getHabbo().getHabboInfo().getUsername()).replace("%message%", "${notification.ambassador.alert.warning.message}"));
+            return;
+        }
+
+        int userId = this.packet.readInt();
+
+        Habbo habbo = this.client.getHabbo().getHabboInfo().getCurrentRoom().getHabbo(userId);
+
+        if (habbo == null)
+            return;
+
+        SupportUserAlertedEvent alertedEvent = new SupportUserAlertedEvent(client.getHabbo(), habbo, "${notification.ambassador.alert.warning.message}", SupportUserAlertedReason.AMBASSADOR);
+
+        if (Emulator.getPluginManager().fireEvent(alertedEvent).isCancelled())
+            return;
+
+        habbo.getClient().sendResponse(new BubbleAlertComposer("ambassador.alert.warning"));
+    }
 }

@@ -4,70 +4,71 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.core.Scheduler;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.plugin.events.users.subscriptions.UserSubscriptionExpiredEvent;
-import gnu.trove.iterator.hash.TObjectHashIterator;
-import java.util.Map.Entry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+
+/**
+ * @author Beny
+ */
 public class SubscriptionScheduler extends Scheduler {
-   private static final Logger LOGGER = LoggerFactory.getLogger(SubscriptionScheduler.class);
 
-   public SubscriptionScheduler() {
-      super(Emulator.getConfig().getInt("subscriptions.scheduler.interval", 10));
-      this.reloadConfig();
-   }
+    private static final Logger LOGGER = LoggerFactory.getLogger(SubscriptionScheduler.class);
 
-   public void reloadConfig() {
-      if (Emulator.getConfig().getBoolean("subscriptions.scheduler.enabled", true)) {
-         if (this.disposed) {
-            this.disposed = false;
-            this.run();
-         }
-      } else {
-         this.disposed = true;
-      }
-   }
+    public SubscriptionScheduler() {
+        super(Emulator.getConfig().getInt("subscriptions.scheduler.interval", 10));
+        this.reloadConfig();
+    }
 
-   @Override
-   public void run() {
-      super.run();
-
-      for (Entry<Integer, Habbo> map : Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos().entrySet()) {
-         Habbo habbo = map.getValue();
-
-         try {
-            if (habbo != null) {
-               TObjectHashIterator e = habbo.getHabboStats().subscriptions.iterator();
-
-               while (e.hasNext()) {
-                  Subscription subscription = (Subscription)e.next();
-                  if (subscription.isActive()
-                     && subscription.getRemaining() < 0
-                     && !Emulator.getPluginManager().fireEvent(new UserSubscriptionExpiredEvent(habbo.getHabboInfo().getId(), subscription)).isCancelled()) {
-                     subscription.onExpired();
-                     subscription.setActive(false);
-                  }
-               }
+    /**
+     * Called when config is changed. Should end the scheduler if disabled.
+     */
+    public void reloadConfig() {
+        if (Emulator.getConfig().getBoolean("subscriptions.scheduler.enabled", true)) {
+            if (this.disposed) {
+                this.disposed = false;
+                this.run();
             }
-         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
-         }
-      }
+        } else {
+            this.disposed = true;
+        }
+    }
 
-      if (SubscriptionHabboClub.HC_PAYDAY_ENABLED
-         && !SubscriptionHabboClub.isExecuting
-         && SubscriptionHabboClub.HC_PAYDAY_NEXT_DATE < Emulator.getIntUnixTimestamp()) {
-         SubscriptionHabboClub.executePayDay();
-      }
-   }
+    @Override
+    public void run() {
+        super.run();
 
-   @Override
-   public boolean isDisposed() {
-      return this.disposed;
-   }
+        Habbo habbo;
+        for (Map.Entry<Integer, Habbo> map : Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos().entrySet()) {
+            habbo = map.getValue();
 
-   @Override
-   public void setDisposed(boolean disposed) {
-      this.disposed = disposed;
-   }
+            try {
+                if (habbo != null) {
+                    for(Subscription subscription : habbo.getHabboStats().subscriptions) {
+                        if(subscription.isActive() && subscription.getRemaining() < 0) {
+                            if (!Emulator.getPluginManager().fireEvent(new UserSubscriptionExpiredEvent(habbo.getHabboInfo().getId(), subscription)).isCancelled()) {
+                                subscription.onExpired();
+                                subscription.setActive(false);
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.error("Caught exception", e);
+            }
+        }
+
+        if(SubscriptionHabboClub.HC_PAYDAY_ENABLED && !SubscriptionHabboClub.isExecuting && SubscriptionHabboClub.HC_PAYDAY_NEXT_DATE < Emulator.getIntUnixTimestamp()) {
+            SubscriptionHabboClub.executePayDay();
+        }
+    }
+
+    public boolean isDisposed() {
+        return this.disposed;
+    }
+
+    public void setDisposed(boolean disposed) {
+        this.disposed = disposed;
+    }
 }

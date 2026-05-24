@@ -2,32 +2,43 @@ package com.eu.habbo.messages.outgoing.unknown;
 
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
+import com.eu.habbo.messages.outgoing.Outgoing;
+
 import java.util.Map;
-import java.util.Map.Entry;
 
 public class RoomUserQuestionAnsweredComposer extends MessageComposer {
-   private final int userId;
-   private final String value;
-   private final Map<String, Integer> unknownMap;
+    private final int userId;
+    private final String value;
+    private final Map<String, Integer> unknownMap;
 
-   public RoomUserQuestionAnsweredComposer(int userId, String value, Map<String, Integer> unknownMap) {
-      this.userId = userId;
-      this.value = value;
-      this.unknownMap = unknownMap;
-   }
+    public RoomUserQuestionAnsweredComposer(int userId, String value, Map<String, Integer> unknownMap) {
+        this.userId = userId;
+        this.value = value;
+        this.unknownMap = unknownMap;
+    }
 
-   @Override
-   protected ServerMessage composeInternal() {
-      this.response.init(-1);
-      this.response.appendInt(this.userId);
-      this.response.appendString(this.value);
-      this.response.appendInt(this.unknownMap.size());
+    @Override
+    protected ServerMessage composeInternal() {
+        this.response.init(Outgoing.RoomUserQuestionAnsweredComposer);
+        this.response.appendInt(this.userId);
+        this.response.appendString(this.value);
+        this.response.appendInt(this.unknownMap.size());
+        for (Map.Entry<String, Integer> entry : this.unknownMap.entrySet()) {
+            this.response.appendString(entry.getKey());
+            this.response.appendInt(entry.getValue());
+        }
+        return this.response;
+    }
 
-      for (Entry<String, Integer> entry : this.unknownMap.entrySet()) {
-         this.response.appendString(entry.getKey());
-         this.response.appendInt(entry.getValue());
-      }
+    public int getUserId() {
+        return userId;
+    }
 
-      return this.response;
-   }
+    public String getValue() {
+        return value;
+    }
+
+    public Map<String, Integer> getUnknownMap() {
+        return unknownMap;
+    }
 }

@@ -8,16 +8,24 @@ import com.eu.habbo.messages.outgoing.guilds.forums.GuildForumThreadsComposer;
 import com.eu.habbo.messages.outgoing.handshake.ConnectionErrorComposer;
 
 public class GuildForumThreadsEvent extends MessageHandler {
-   @Override
-   public void handle() throws Exception {
-      int guildId = this.packet.readInt();
-      int index = this.packet.readInt();
-      Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
-      if (guild == null) {
-         this.client.sendResponse(new ConnectionErrorComposer(404));
-      } else {
-         this.client.sendResponse(new GuildForumDataComposer(guild, this.client.getHabbo()));
-         this.client.sendResponse(new GuildForumThreadsComposer(guild, index));
-      }
-   }
+    @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
+    @Override
+    public void handle() throws Exception {
+        int guildId = packet.readInt();
+        int index = packet.readInt();
+
+        Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
+
+        if (guild == null || !guild.hasForum()) {
+            this.client.sendResponse(new ConnectionErrorComposer(404));
+            return;
+        }
+
+        this.client.sendResponse(new GuildForumDataComposer(guild, this.client.getHabbo()));
+        this.client.sendResponse(new GuildForumThreadsComposer(guild, index));
+    }
 }

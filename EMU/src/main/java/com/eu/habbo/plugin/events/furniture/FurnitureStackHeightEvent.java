@@ -4,33 +4,34 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.plugin.Event;
 
 public class FurnitureStackHeightEvent extends Event {
-   public final short x;
-   public final short y;
-   public final Room room;
-   private boolean pluginHelper;
-   private Double height;
 
-   public FurnitureStackHeightEvent(short x, short y, Room room) {
-      this.x = x;
-      this.y = y;
-      this.room = room;
-      this.pluginHelper = false;
-      this.height = 0.0;
-   }
+    public final short x;
+    public final short y;
+    public final Room room;
+    private boolean pluginHelper;
+    private Double height;
 
-   public void setPluginHelper(boolean helper) {
-      this.pluginHelper = helper;
-   }
+    public FurnitureStackHeightEvent(short x, short y, Room room) {
+        this.x = x;
+        this.y = y;
+        this.room = room;
+        this.pluginHelper = false;
+        this.height = 0.0D;
+    }
 
-   public boolean hasPluginHelper() {
-      return this.pluginHelper;
-   }
+    public void setPluginHelper(boolean helper) {
+        this.pluginHelper = helper;
+    }
 
-   public void setHeight(Double height) {
-      this.height = height;
-   }
+    public boolean hasPluginHelper() {
+        return this.pluginHelper;
+    }
 
-   public Double getHeight() {
-      return this.height;
-   }
+    public void setHeight(Double height) {
+        this.height = height;
+    }
+
+    public Double getHeight() {
+        return this.height;
+    }
 }

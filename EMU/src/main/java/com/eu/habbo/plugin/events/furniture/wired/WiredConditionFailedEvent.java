@@ -7,12 +7,16 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.plugin.events.roomunit.RoomUnitEvent;
 
 public class WiredConditionFailedEvent extends RoomUnitEvent {
-   public final InteractionWiredTrigger trigger;
-   public final InteractionWiredCondition condition;
 
-   public WiredConditionFailedEvent(Room room, RoomUnit roomUnit, InteractionWiredTrigger trigger, InteractionWiredCondition condition) {
-      super(room, roomUnit);
-      this.trigger = trigger;
-      this.condition = condition;
-   }
+    public final InteractionWiredTrigger trigger;
+
+
+    public final InteractionWiredCondition condition;
+
+
+    public WiredConditionFailedEvent(Room room, RoomUnit roomUnit, InteractionWiredTrigger trigger, InteractionWiredCondition condition) {
+        super(room, roomUnit);
+        this.trigger = trigger;
+        this.condition = condition;
+    }
 }

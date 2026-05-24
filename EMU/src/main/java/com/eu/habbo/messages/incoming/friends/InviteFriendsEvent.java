@@ -6,26 +6,42 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.friends.RoomInviteComposer;
 
 public class InviteFriendsEvent extends MessageHandler {
-   @Override
-   public void handle() throws Exception {
-      if (this.client.getHabbo().getHabboStats().allowTalk()) {
-         int[] userIds = new int[this.packet.readInt()];
+    @Override
+    public int getRatelimit() {
+        return 500;
+    }
 
-         for (int i = 0; i < userIds.length; i++) {
-            userIds[i] = this.packet.readInt();
-         }
+    @Override
+    public void handle() throws Exception {
+        if (this.client.getHabbo().getHabboStats().allowTalk()) {
+            final int count = this.packet.readInt();
+            if (count <= 0 || count > 100) return;
 
-         String message = this.packet.readString();
-         message = Emulator.getGameEnvironment().getWordFilter().filter(message, this.client.getHabbo());
+            final int[] userIds = new int[count];
 
-         for (int i : userIds) {
-            if (i != 0) {
-               Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(i);
-               if (habbo != null && !habbo.getHabboStats().blockRoomInvites) {
-                  habbo.getClient().sendResponse(new RoomInviteComposer(this.client.getHabbo().getHabboInfo().getId(), message));
-               }
+            for (int i = 0; i < userIds.length; i++) {
+                userIds[i] = this.packet.readInt();
             }
-         }
-      }
-   }
+
+            String message = this.packet.readString();
+
+            message = Emulator.getGameEnvironment().getWordFilter().filter(message, this.client.getHabbo());
+
+            for (int i : userIds) {
+                if (i == 0)
+                    continue;
+
+                if (!this.client.getHabbo().getMessenger().getFriends().containsKey(i))
+                    continue;
+
+                Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(i);
+
+                if (habbo != null) {
+                    if (!habbo.getHabboStats().blockRoomInvites) {
+                        habbo.getClient().sendResponse(new RoomInviteComposer(this.client.getHabbo().getHabboInfo().getId(), message));
+                    }
+                }
+            }
+        }
+    }
 }

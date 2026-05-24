@@ -4,15 +4,17 @@ import com.eu.habbo.Emulator;
 import com.google.gson.Gson;
 
 public class StaffAlert extends RCONMessage<StaffAlert.JSON> {
-   public StaffAlert() {
-      super(StaffAlert.JSON.class);
-   }
+    public StaffAlert() {
+        super(JSON.class);
+    }
 
-   public void handle(Gson gson, StaffAlert.JSON json) {
-      Emulator.getGameEnvironment().getHabboManager().staffAlert(json.message);
-   }
+    @Override
+    public void handle(Gson gson, JSON json) {
+        Emulator.getGameEnvironment().getHabboManager().staffAlert(json.message);
+    }
 
-   static class JSON {
-      public String message;
-   }
+    static class JSON {
+
+        public String message;
+    }
 }

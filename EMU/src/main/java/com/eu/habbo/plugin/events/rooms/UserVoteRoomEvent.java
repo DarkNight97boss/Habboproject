@@ -5,11 +5,11 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.plugin.Event;
 
 public class UserVoteRoomEvent extends Event {
-   public final Room room;
-   public final Habbo habbo;
+    public final Room room;
+    public final Habbo habbo;
 
-   public UserVoteRoomEvent(Room room, Habbo habbo) {
-      this.room = room;
-      this.habbo = habbo;
-   }
+    public UserVoteRoomEvent(Room room, Habbo habbo) {
+        this.room = room;
+        this.habbo = habbo;
+    }
 }

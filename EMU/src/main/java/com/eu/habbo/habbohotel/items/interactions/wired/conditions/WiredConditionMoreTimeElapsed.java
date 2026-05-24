@@ -8,90 +8,91 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.WiredHandler;
+import com.eu.habbo.messages.ClientMessage;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class WiredConditionMoreTimeElapsed extends InteractionWiredCondition {
-   private static final WiredConditionType type = WiredConditionType.TIME_MORE_THAN;
-   private int cycles;
+    private static final WiredConditionType type = WiredConditionType.TIME_MORE_THAN;
 
-   public WiredConditionMoreTimeElapsed(ResultSet set, Item baseItem) throws SQLException {
-      super(set, baseItem);
-   }
+    private int cycles;
 
-   public WiredConditionMoreTimeElapsed(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
-      super(id, userId, item, extradata, limitedStack, limitedSells);
-   }
+    public WiredConditionMoreTimeElapsed(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+    }
 
-   @Override
-   public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
-      return (Emulator.getIntUnixTimestamp() - room.getLastTimerReset()) / 0.5 > this.cycles;
-   }
+    public WiredConditionMoreTimeElapsed(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
 
-   @Override
-   public String getWiredData() {
-      return WiredHandler.getGsonBuilder().create().toJson(new WiredConditionMoreTimeElapsed.JsonData(this.cycles));
-   }
+    @Override
+    public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
+        return (Emulator.getIntUnixTimestamp() - room.getLastTimerReset()) / 0.5 > this.cycles;
+    }
 
-   @Override
-   public void loadWiredData(ResultSet set, Room room) throws SQLException {
-      String wiredData = set.getString("wired_data");
+    @Override
+    public String getWiredData() {
+        return WiredHandler.getGsonBuilder().create().toJson(new JsonData(
+                this.cycles
+        ));
+    }
 
-      try {
-         if (wiredData.startsWith("{")) {
-            WiredConditionMoreTimeElapsed.JsonData data = (WiredConditionMoreTimeElapsed.JsonData)WiredHandler.getGsonBuilder()
-               .create()
-               .fromJson(wiredData, WiredConditionMoreTimeElapsed.JsonData.class);
-            this.cycles = data.cycles;
-         } else if (!wiredData.equals("")) {
-            this.cycles = Integer.parseInt(wiredData);
-         }
-      } catch (Exception var5) {
-      }
-   }
+    @Override
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        String wiredData = set.getString("wired_data");
 
-   @Override
-   public void onPickUp() {
-      this.cycles = 0;
-   }
+        try {
+            if (wiredData.startsWith("{")) {
+                JsonData data = WiredHandler.getGsonBuilder().create().fromJson(wiredData, JsonData.class);
+                this.cycles = data.cycles;
+            } else {
+                if (!wiredData.equals(""))
+                    this.cycles = Integer.parseInt(wiredData);
+            }
+        } catch (Exception e) {
+        }
+    }
 
-   @Override
-   public WiredConditionType getType() {
-      return type;
-   }
+    @Override
+    public void onPickUp() {
+        this.cycles = 0;
+    }
 
-   @Override
-   public void serializeWiredData(ServerMessage message, Room room) {
-      message.appendBoolean(false);
-      message.appendInt(5);
-      message.appendInt(0);
-      message.appendInt(this.getBaseItem().getSpriteId());
-      message.appendInt(this.getId());
-      message.appendString("");
-      message.appendInt(1);
-      message.appendInt(this.cycles);
-      message.appendInt(0);
-      message.appendInt(this.getType().code);
-      message.appendInt(0);
-      message.appendInt(0);
-   }
+    @Override
+    public WiredConditionType getType() {
+        return type;
+    }
 
-   @Override
-   public boolean saveData(WiredSettings settings) {
-      if (settings.getIntParams().length < 1) {
-         return false;
-      }
+    @Override
+    public void serializeWiredData(ServerMessage message, Room room) {
+        message.appendBoolean(false);
+        message.appendInt(5);
+        message.appendInt(0);
+        message.appendInt(this.getBaseItem().getSpriteId());
+        message.appendInt(this.getId());
+        message.appendString("");
+        message.appendInt(1);
+        message.appendInt(this.cycles);
+        message.appendInt(0);
+        message.appendInt(this.getType().code);
+        message.appendInt(0);
+        message.appendInt(0);
+    }
 
-      this.cycles = settings.getIntParams()[0];
-      return true;
-   }
+    @Override
+    public boolean saveData(WiredSettings settings) {
+        if(settings.getIntParams().length < 1) return false;
+        this.cycles = settings.getIntParams()[0];
+        return true;
+    }
 
-   static class JsonData {
-      int cycles;
+    static class JsonData {
+        int cycles;
 
-      public JsonData(int cycles) {
-         this.cycles = cycles;
-      }
-   }
+        public JsonData(int cycles) {
+            this.cycles = cycles;
+        }
+    }
 }

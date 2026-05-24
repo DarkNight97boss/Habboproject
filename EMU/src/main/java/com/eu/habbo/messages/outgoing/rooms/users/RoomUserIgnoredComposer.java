@@ -3,24 +3,34 @@ package com.eu.habbo.messages.outgoing.rooms.users;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
+import com.eu.habbo.messages.outgoing.Outgoing;
 
 public class RoomUserIgnoredComposer extends MessageComposer {
-   public static final int IGNORED = 1;
-   public static final int MUTED = 2;
-   public static final int UNIGNORED = 3;
-   private final Habbo habbo;
-   private final int state;
+    public final static int IGNORED = 1;
+    public final static int MUTED = 2;
+    public final static int UNIGNORED = 3;
 
-   public RoomUserIgnoredComposer(Habbo habbo, int state) {
-      this.habbo = habbo;
-      this.state = state;
-   }
+    private final Habbo habbo;
+    private final int state;
 
-   @Override
-   protected ServerMessage composeInternal() {
-      this.response.init(207);
-      this.response.appendInt(this.state);
-      this.response.appendString(this.habbo.getHabboInfo().getUsername());
-      return this.response;
-   }
+    public RoomUserIgnoredComposer(Habbo habbo, int state) {
+        this.habbo = habbo;
+        this.state = state;
+    }
+
+    @Override
+    protected ServerMessage composeInternal() {
+        this.response.init(Outgoing.RoomUserIgnoredComposer);
+        this.response.appendInt(this.state);
+        this.response.appendString(this.habbo.getHabboInfo().getUsername());
+        return this.response;
+    }
+
+    public Habbo getHabbo() {
+        return habbo;
+    }
+
+    public int getState() {
+        return state;
+    }
 }

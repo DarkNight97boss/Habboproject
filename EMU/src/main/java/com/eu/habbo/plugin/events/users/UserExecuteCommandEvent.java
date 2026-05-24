@@ -4,22 +4,24 @@ import com.eu.habbo.habbohotel.commands.Command;
 import com.eu.habbo.habbohotel.users.Habbo;
 
 public class UserExecuteCommandEvent extends UserEvent {
-   public final Command command;
-   public final String[] params;
-   private boolean success;
 
-   public UserExecuteCommandEvent(Habbo habbo, Command command, String[] params) {
-      super(habbo);
-      this.command = command;
-      this.params = params;
-      this.success = true;
-   }
+    public final Command command;
+    public final String[] params;
+    private boolean success;
 
-   public void setSuccess(boolean success) {
-      this.success = success;
-   }
+    public UserExecuteCommandEvent(Habbo habbo, Command command, String[] params) {
+        super(habbo);
 
-   public boolean isSuccess() {
-      return this.success;
-   }
+        this.command = command;
+        this.params = params;
+        this.success = true;
+    }
+
+    public void setSuccess(boolean success) {
+        this.success = success;
+    }
+
+    public boolean isSuccess() {
+        return success;
+    }
 }

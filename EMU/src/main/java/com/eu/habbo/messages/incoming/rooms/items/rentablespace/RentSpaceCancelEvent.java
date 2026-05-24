@@ -7,17 +7,24 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
 
 public class RentSpaceCancelEvent extends MessageHandler {
-   @Override
-   public void handle() throws Exception {
-      int itemId = this.packet.readInt();
-      Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
-      if (room != null) {
-         HabboItem item = room.getHabboItem(itemId);
-         if ((room.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER))
-            && item instanceof InteractionRentableSpace) {
-            ((InteractionRentableSpace)item).endRent();
-            room.updateItem(item);
-         }
-      }
-   }
+    @Override
+    public void handle() throws Exception {
+        int itemId = this.packet.readInt();
+
+        Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+
+        if (room == null)
+            return;
+
+        HabboItem item = room.getHabboItem(itemId);
+
+        if (room.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() ||
+                this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) {
+            if (item instanceof InteractionRentableSpace) {
+                ((InteractionRentableSpace) item).endRent();
+
+                room.updateItem(item);
+            }
+        }
+    }
 }

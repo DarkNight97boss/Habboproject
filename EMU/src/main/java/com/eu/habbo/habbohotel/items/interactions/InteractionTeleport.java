@@ -11,190 +11,222 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.threading.runnables.RoomUnitWalkToLocation;
 import com.eu.habbo.threading.runnables.teleport.TeleportActionOne;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class InteractionTeleport extends HabboItem {
-   private int targetId;
-   private int targetRoomId;
-   private int roomUnitID = -1;
-   private boolean walkable;
+    private int targetId;
+    private int targetRoomId;
+    private int roomUnitID = -1;
+    private boolean walkable;
 
-   public InteractionTeleport(ResultSet set, Item baseItem) throws SQLException {
-      super(set, baseItem);
-      this.walkable = baseItem.allowWalk();
-      this.setExtradata("0");
-   }
+    public InteractionTeleport(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+        walkable = baseItem.allowWalk();
+        this.setExtradata("0");
+    }
 
-   public InteractionTeleport(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
-      super(id, userId, item, extradata, limitedStack, limitedSells);
-      this.walkable = item.allowWalk();
-      this.setExtradata("0");
-   }
+    public InteractionTeleport(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+        walkable = item.allowWalk();
+        this.setExtradata("0");
+    }
 
-   @Override
-   public void serializeExtradata(ServerMessage serverMessage) {
-      serverMessage.appendInt(this.isLimited() ? 256 : 0);
-      serverMessage.appendString(this.getExtradata());
-      super.serializeExtradata(serverMessage);
-   }
+    @Override
+    public void serializeExtradata(ServerMessage serverMessage) {
+        serverMessage.appendInt((this.isLimited() ? 256 : 0));
+        serverMessage.appendString(this.getExtradata());
 
-   @Override
-   public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
-      return this.getBaseItem().allowWalk() || roomUnit.getId() == this.roomUnitID;
-   }
+        super.serializeExtradata(serverMessage);
+    }
 
-   @Override
-   public boolean isWalkable() {
-      return this.walkable;
-   }
+    @Override
+    public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
+        return this.getBaseItem().allowWalk() || roomUnit.getId() == this.roomUnitID;
+    }
 
-   private void tryTeleport(GameClient client, Room room) {
-      Habbo habbo = client.getHabbo();
-      if (habbo != null) {
-         RoomUnit unit = habbo.getRoomUnit();
-         if (unit != null) {
-            RoomTile currentLocation = room.getLayout().getTile(this.getX(), this.getY());
-            if (currentLocation != null) {
-               RoomTile infrontTile = room.getLayout().getTileInFront(currentLocation, this.getRotation());
-               if (this.canUseTeleport(client, room)) {
-                  if (this.roomUnitID == unit.getId() && unit.getCurrentLocation().equals(currentLocation)) {
-                     this.startTeleport(room, habbo);
-                     this.walkable = true;
+    @Override
+    public boolean isWalkable() {
+        return walkable;
+    }
 
-                     try {
-                        super.onClick(client, room, new Object[]{"TOGGLE_OVERRIDE"});
-                     } catch (Exception e) {
-                        e.printStackTrace();
-                     }
-                  } else if (!unit.getCurrentLocation().equals(currentLocation) && !unit.getCurrentLocation().equals(infrontTile)) {
-                     List<Runnable> onSuccess = new ArrayList<>();
-                     List<Runnable> onFail = new ArrayList<>();
-                     onSuccess.add(() -> this.tryTeleport(client, room));
-                     unit.setGoalLocation(infrontTile);
-                     Emulator.getThreading().run(new RoomUnitWalkToLocation(unit, infrontTile, room, onSuccess, onFail));
-                  } else {
-                     this.roomUnitID = unit.getId();
-                     this.setExtradata("1");
-                     room.updateItemState(this);
-                     unit.setGoalLocation(infrontTile);
-                     List<Runnable> onSuccess = new ArrayList<>();
-                     List<Runnable> onFail = new ArrayList<>();
-                     onSuccess.add(() -> {
-                        room.updateTile(currentLocation);
-                        this.tryTeleport(client, room);
-                        unit.removeOverrideTile(currentLocation);
-                        unit.setCanLeaveRoomByDoor(true);
-                        this.walkable = this.getBaseItem().allowWalk();
-                     });
-                     onFail.add(() -> {
-                        this.walkable = this.getBaseItem().allowWalk();
-                        room.updateTile(currentLocation);
-                        this.setExtradata("0");
-                        room.updateItemState(this);
-                        this.roomUnitID = -1;
-                        unit.removeOverrideTile(currentLocation);
-                        unit.setCanLeaveRoomByDoor(true);
-                     });
-                     this.walkable = true;
-                     room.updateTile(currentLocation);
-                     unit.addOverrideTile(currentLocation);
-                     unit.setGoalLocation(currentLocation);
-                     unit.setCanLeaveRoomByDoor(false);
-                     Emulator.getThreading().run(new RoomUnitWalkToLocation(unit, currentLocation, room, onSuccess, onFail));
-                  }
-               }
+    private void tryTeleport(GameClient client, Room room) {
+        /*
+            if user is on item, startTeleport
+	        else if user is on infront, set state 1 and walk on item
+	        else move to infront and interact
+         */
+
+        Habbo habbo = client.getHabbo();
+
+        if (habbo == null)
+            return;
+
+        RoomUnit unit = habbo.getRoomUnit();
+
+        if (unit == null)
+            return;
+
+        RoomTile currentLocation = room.getLayout().getTile(this.getX(), this.getY());
+
+        if (currentLocation == null)
+            return;
+
+        RoomTile infrontTile = room.getLayout().getTileInFront(currentLocation, this.getRotation());
+
+        if (!canUseTeleport(client, room))
+            return;
+
+        if (this.roomUnitID == unit.getId() && unit.getCurrentLocation().equals(currentLocation)) {
+            startTeleport(room, habbo);
+            walkable = true;
+
+            try {
+                super.onClick(client, room, new Object[]{"TOGGLE_OVERRIDE"});
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-         }
-      }
-   }
+        } else if (unit.getCurrentLocation().equals(currentLocation) || unit.getCurrentLocation().equals(infrontTile)) {
+            // set state 1 and walk on item
+            this.roomUnitID = unit.getId();
+            this.setExtradata("1");
+            room.updateItemState(this);
+            unit.setGoalLocation(infrontTile);
 
-   @Override
-   public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
-      if (room != null && client != null && objects != null && objects.length <= 1) {
-         this.tryTeleport(client, room);
-      }
-   }
+            List<Runnable> onSuccess = new ArrayList<Runnable>();
+            List<Runnable> onFail = new ArrayList<Runnable>();
 
-   @Override
-   public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-   }
+            onSuccess.add(() -> {
+                room.updateTile(currentLocation);
+                tryTeleport(client, room);
+                unit.removeOverrideTile(currentLocation);
+                unit.setCanLeaveRoomByDoor(true);
+                walkable = this.getBaseItem().allowWalk();
+            });
 
-   @Override
-   public void run() {
-      if (!this.getExtradata().equals("0")) {
-         this.setExtradata("0");
-         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
-         if (room != null) {
-            room.updateItem(this);
-         }
-      }
+            onFail.add(() -> {
+                walkable = this.getBaseItem().allowWalk();
+                room.updateTile(currentLocation);
+                this.setExtradata("0");
+                room.updateItemState(this);
+                this.roomUnitID = -1;
+                unit.removeOverrideTile(currentLocation);
+                unit.setCanLeaveRoomByDoor(true);
+            });
 
-      super.run();
-   }
+            walkable = true;
+            room.updateTile(currentLocation);
+            unit.addOverrideTile(currentLocation);
+            unit.setGoalLocation(currentLocation);
+            unit.setCanLeaveRoomByDoor(false);
+            Emulator.getThreading().run(new RoomUnitWalkToLocation(unit, currentLocation, room, onSuccess, onFail));
+        } else {
+            // walk to teleport and interact
+            List<Runnable> onSuccess = new ArrayList<Runnable>();
+            List<Runnable> onFail = new ArrayList<Runnable>();
 
-   @Override
-   public void onPickUp(Room room) {
-      this.targetId = 0;
-      this.targetRoomId = 0;
-      this.roomUnitID = -1;
-      this.setExtradata("0");
-   }
+            onSuccess.add(() -> {
+                tryTeleport(client, room);
+            });
 
-   public int getTargetId() {
-      return this.targetId;
-   }
+            unit.setGoalLocation(infrontTile);
+            Emulator.getThreading().run(new RoomUnitWalkToLocation(unit, infrontTile, room, onSuccess, onFail));
+        }
+    }
 
-   public void setTargetId(int targetId) {
-      this.targetId = targetId;
-   }
+    @Override
+    public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
+        if (room != null && client != null && objects != null && objects.length <= 1) {
+            tryTeleport(client, room);
+        }
+    }
 
-   public int getTargetRoomId() {
-      return this.targetRoomId;
-   }
+    @Override
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+    }
 
-   public void setTargetRoomId(int targetRoomId) {
-      this.targetRoomId = targetRoomId;
-   }
+    @Override
+    public void run() {
+        if (!this.getExtradata().equals("0")) {
+            this.setExtradata("0");
 
-   @Override
-   public boolean allowWiredResetState() {
-      return false;
-   }
+            Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
+            if (room != null) {
+                room.updateItem(this);
+            }
+        }
+        super.run();
+    }
 
-   public boolean canUseTeleport(GameClient client, Room room) {
-      Habbo habbo = client.getHabbo();
-      if (habbo == null) {
-         return false;
-      }
+    @Override
+    public void onPickUp(Room room) {
+        this.targetId = 0;
+        this.targetRoomId = 0;
+        this.roomUnitID = -1;
+        this.setExtradata("0");
+    }
 
-      RoomUnit unit = habbo.getRoomUnit();
-      return unit == null ? false : habbo.getHabboInfo().getRiding() == null;
-   }
+    public int getTargetId() {
+        return this.targetId;
+    }
 
-   public void startTeleport(Room room, Habbo habbo) {
-      this.startTeleport(room, habbo, 500);
-   }
+    public void setTargetId(int targetId) {
+        this.targetId = targetId;
+    }
 
-   public void startTeleport(Room room, Habbo habbo, int delay) {
-      if (habbo.getRoomUnit().isTeleporting) {
-         this.walkable = this.getBaseItem().allowWalk();
-      } else {
-         this.roomUnitID = -1;
-         habbo.getRoomUnit().isTeleporting = true;
-         Emulator.getThreading().run(new TeleportActionOne(this, room, habbo.getClient()), delay);
-      }
-   }
+    public int getTargetRoomId() {
+        return this.targetRoomId;
+    }
 
-   @Override
-   public boolean isUsable() {
-      return true;
-   }
+    public void setTargetRoomId(int targetRoomId) {
+        this.targetRoomId = targetRoomId;
+    }
 
-   @Override
-   public boolean invalidatesToRoomKick() {
-      return true;
-   }
+    @Override
+    public boolean allowWiredResetState() {
+        return false;
+    }
+
+    public boolean canUseTeleport(GameClient client, Room room) {
+
+        Habbo habbo = client.getHabbo();
+
+        if (habbo == null)
+            return false;
+
+        RoomUnit unit = habbo.getRoomUnit();
+
+        if (unit == null)
+            return false;
+
+        return habbo.getHabboInfo().getRiding() == null;
+    }
+
+    public void startTeleport(Room room, Habbo habbo) {
+        this.startTeleport(room, habbo, 500);
+    }
+
+    public void startTeleport(Room room, Habbo habbo, int delay) {
+        if (habbo.getRoomUnit().isTeleporting) {
+            walkable = this.getBaseItem().allowWalk();
+            return;
+        }
+
+        this.roomUnitID = -1;
+        habbo.getRoomUnit().isTeleporting = true;
+        Emulator.getThreading().run(new TeleportActionOne(this, room, habbo.getClient()), delay);
+    }
+
+    @Override
+    public boolean isUsable() {
+        return true;
+    }
+
+    @Override
+    public boolean invalidatesToRoomKick() {
+        return true;
+    }
 }

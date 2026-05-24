@@ -4,10 +4,13 @@ import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.users.Habbo;
 
 public class BotPickUpEvent extends BotEvent {
-   public final Habbo picker;
 
-   public BotPickUpEvent(Bot bot, Habbo picker) {
-      super(bot);
-      this.picker = picker;
-   }
+    public final Habbo picker;
+
+
+    public BotPickUpEvent(Bot bot, Habbo picker) {
+        super(bot);
+
+        this.picker = picker;
+    }
 }

@@ -4,7 +4,8 @@ import com.eu.habbo.habbohotel.games.Game;
 import com.eu.habbo.habbohotel.users.Habbo;
 
 public class GameHabboJoinEvent extends GameUserEvent {
-   public GameHabboJoinEvent(Game game, Habbo habbo) {
-      super(game, habbo);
-   }
+
+    public GameHabboJoinEvent(Game game, Habbo habbo) {
+        super(game, habbo);
+    }
 }

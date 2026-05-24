@@ -8,23 +8,23 @@ import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
 import com.eu.habbo.habbohotel.users.Habbo;
 
 public class ActionStand extends PetAction {
-   public ActionStand() {
-      super(PetTasks.STAND, true);
-      this.statusToRemove.add(RoomUnitStatus.MOVE);
-      this.statusToRemove.add(RoomUnitStatus.LAY);
-      this.statusToRemove.add(RoomUnitStatus.DEAD);
-      this.statusToRemove.add(RoomUnitStatus.LAY);
-   }
+    public ActionStand() {
+        super(PetTasks.STAND, true);
+        this.statusToRemove.add(RoomUnitStatus.MOVE);
+        this.statusToRemove.add(RoomUnitStatus.LAY);
+        this.statusToRemove.add(RoomUnitStatus.DEAD);
+        this.statusToRemove.add(RoomUnitStatus.LAY);
+    }
 
-   @Override
-   public boolean apply(Pet pet, Habbo habbo, String[] data) {
-      pet.clearPosture();
-      if (pet.getHappyness() > 30) {
-         pet.say(pet.getPetData().randomVocal(PetVocalsType.PLAYFUL));
-      } else {
-         pet.say(pet.getPetData().randomVocal(PetVocalsType.GENERIC_NEUTRAL));
-      }
+    @Override
+    public boolean apply(Pet pet, Habbo habbo, String[] data) {
+        pet.clearPosture();
 
-      return true;
-   }
+        if (pet.getHappiness() > 30)
+            pet.say(pet.getPetData().randomVocal(PetVocalsType.PLAYFUL));
+        else
+            pet.say(pet.getPetData().randomVocal(PetVocalsType.GENERIC_NEUTRAL));
+
+        return true;
+    }
 }

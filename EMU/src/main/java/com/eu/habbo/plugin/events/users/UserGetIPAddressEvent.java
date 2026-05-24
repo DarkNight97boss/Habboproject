@@ -2,26 +2,27 @@ package com.eu.habbo.plugin.events.users;
 
 import com.eu.habbo.habbohotel.users.Habbo;
 
-public class UserGetIPAddressEvent extends UserEvent {
-   public final String oldIp;
-   private String updatedIp;
-   private boolean changedIP = false;
+public class UserGetIPAddressEvent extends UserEvent{
+    public final String oldIp;
 
-   public UserGetIPAddressEvent(Habbo habbo, String ip) {
-      super(habbo);
-      this.oldIp = ip;
-   }
+    private String updatedIp;
+    private boolean changedIP = false;
 
-   public void setUpdatedIp(String updatedIp) {
-      this.updatedIp = updatedIp;
-      this.changedIP = true;
-   }
+    public UserGetIPAddressEvent(Habbo habbo, String ip) {
+        super(habbo);
+        this.oldIp = ip;
+    }
 
-   public boolean hasChangedIP() {
-      return this.changedIP;
-   }
+    public void setUpdatedIp(String updatedIp) {
+        this.updatedIp = updatedIp;
+        this.changedIP = true;
+    }
 
-   public String getUpdatedIp() {
-      return this.updatedIp;
-   }
+    public boolean hasChangedIP() {
+        return changedIP;
+    }
+
+    public String getUpdatedIp() {
+        return updatedIp;
+    }
 }

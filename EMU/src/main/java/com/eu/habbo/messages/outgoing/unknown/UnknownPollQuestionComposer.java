@@ -2,29 +2,36 @@ package com.eu.habbo.messages.outgoing.unknown;
 
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
+import com.eu.habbo.messages.outgoing.Outgoing;
+
 import java.util.Map;
-import java.util.Map.Entry;
 
 public class UnknownPollQuestionComposer extends MessageComposer {
-   private final int unknownInt;
-   private final Map<String, Integer> unknownMap;
+    private final int unknownInt;
+    private final Map<String, Integer> unknownMap;
 
-   public UnknownPollQuestionComposer(int unknownInt, Map<String, Integer> unknownMap) {
-      this.unknownInt = unknownInt;
-      this.unknownMap = unknownMap;
-   }
+    public UnknownPollQuestionComposer(int unknownInt, Map<String, Integer> unknownMap) {
+        this.unknownInt = unknownInt;
+        this.unknownMap = unknownMap;
+    }
 
-   @Override
-   protected ServerMessage composeInternal() {
-      this.response.init(1066);
-      this.response.appendInt(this.unknownInt);
-      this.response.appendInt(this.unknownMap.size());
+    @Override
+    protected ServerMessage composeInternal() {
+        this.response.init(Outgoing.SimplePollAnswersComposer);
+        this.response.appendInt(this.unknownInt);
+        this.response.appendInt(this.unknownMap.size());
+        for (Map.Entry<String, Integer> entry : this.unknownMap.entrySet()) {
+            this.response.appendString(entry.getKey());
+            this.response.appendInt(entry.getValue());
+        }
+        return this.response;
+    }
 
-      for (Entry<String, Integer> entry : this.unknownMap.entrySet()) {
-         this.response.appendString(entry.getKey());
-         this.response.appendInt(entry.getValue());
-      }
+    public int getUnknownInt() {
+        return unknownInt;
+    }
 
-      return this.response;
-   }
+    public Map<String, Integer> getUnknownMap() {
+        return unknownMap;
+    }
 }

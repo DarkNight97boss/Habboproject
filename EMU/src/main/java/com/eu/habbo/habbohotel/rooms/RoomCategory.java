@@ -1,69 +1,73 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.habbohotel.navigation.ListMode;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+@SuppressWarnings("NullableProblems")
 public class RoomCategory implements Comparable<RoomCategory> {
-   private int id;
-   private int minRank;
-   private String caption;
-   private String captionSave;
-   private boolean canTrade;
-   private int maxUserCount;
-   private boolean official;
-   private ListMode displayMode;
-   private int order;
 
-   public RoomCategory(ResultSet set) throws SQLException {
-      this.id = set.getInt("id");
-      this.minRank = set.getInt("min_rank");
-      this.caption = set.getString("caption");
-      this.captionSave = set.getString("caption_save");
-      this.canTrade = set.getBoolean("can_trade");
-      this.maxUserCount = set.getInt("max_user_count");
-      this.official = set.getString("public").equals("1");
-      this.displayMode = ListMode.fromType(set.getInt("list_type"));
-      this.order = set.getInt("order_num");
-   }
+    private int id;
+    private int minRank;
+    private String caption;
+    private String captionSave;
+    private boolean canTrade;
+    private int maxUserCount;
+    private boolean official;
+    private ListMode displayMode;
+    private int order;
 
-   public int getId() {
-      return this.id;
-   }
+    public RoomCategory(ResultSet set) throws SQLException {
+        this.id = set.getInt("id");
+        this.minRank = set.getInt("min_rank");
+        this.caption = set.getString("caption");
+        this.captionSave = set.getString("caption_save");
+        this.canTrade = set.getBoolean("can_trade");
+        this.maxUserCount = set.getInt("max_user_count");
+        this.official = set.getString("public").equals("1");
+        this.displayMode = ListMode.fromType(set.getInt("list_type"));
+        this.order = set.getInt("order_num");
+    }
 
-   public int getMinRank() {
-      return this.minRank;
-   }
+    public int getId() {
+        return this.id;
+    }
 
-   public String getCaption() {
-      return this.caption;
-   }
+    public int getMinRank() {
+        return this.minRank;
+    }
 
-   public String getCaptionSave() {
-      return this.captionSave;
-   }
+    public String getCaption() {
+        return this.caption;
+    }
 
-   public boolean isCanTrade() {
-      return this.canTrade;
-   }
+    public String getCaptionSave() {
+        return this.captionSave;
+    }
 
-   public int getMaxUserCount() {
-      return this.maxUserCount;
-   }
+    public boolean isCanTrade() {
+        return this.canTrade;
+    }
 
-   public boolean isPublic() {
-      return this.official;
-   }
+    public int getMaxUserCount() {
+        return this.maxUserCount;
+    }
 
-   public ListMode getDisplayMode() {
-      return this.displayMode;
-   }
+    public boolean isPublic() {
+        return this.official;
+    }
 
-   public int getOrder() {
-      return this.order;
-   }
+    public ListMode getDisplayMode() {
+        return this.displayMode;
+    }
 
-   public int compareTo(RoomCategory o) {
-      return o.getId() - this.getId();
-   }
+    public int getOrder() {
+        return this.order;
+    }
+
+    @Override
+    public int compareTo(RoomCategory o) {
+        return o.getId() - this.getId();
+    }
 }

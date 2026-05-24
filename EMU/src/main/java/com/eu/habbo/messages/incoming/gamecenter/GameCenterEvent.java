@@ -3,7 +3,7 @@ package com.eu.habbo.messages.incoming.gamecenter;
 import com.eu.habbo.messages.incoming.MessageHandler;
 
 public class GameCenterEvent extends MessageHandler {
-   @Override
-   public void handle() throws Exception {
-   }
+    @Override
+    public void handle() throws Exception {
+    }
 }

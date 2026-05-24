@@ -13,41 +13,42 @@ import com.eu.habbo.messages.outgoing.users.AddUserBadgeComposer;
 import gnu.trove.map.hash.THashMap;
 
 public class RoomBadgeCommand extends Command {
-   public RoomBadgeCommand() {
-      super("cmd_roombadge", Emulator.getTexts().getValue("commands.keys.cmd_roombadge").split(";"));
-   }
+    public RoomBadgeCommand() {
+        super("cmd_roombadge", Emulator.getTexts().getValue("commands.keys.cmd_roombadge").split(";"));
+    }
 
-   @Override
-   public boolean handle(GameClient gameClient, String[] params) throws Exception {
-      if (gameClient == null) {
-         return true;
-      }
+    @Override
+    public boolean handle(GameClient gameClient, String[] params) throws Exception {
+        if (gameClient == null)
+            return true;
 
-      if (params.length != 2) {
-         gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_roombadge.no_badge"), RoomChatMessageBubbles.ALERT);
-         return true;
-      }
+        if (params.length == 2) {
+            String badge;
 
-      String badge = params[1];
-      if (!badge.isEmpty()) {
-         THashMap<String, String> keys = new THashMap();
-         keys.put("display", "BUBBLE");
-         keys.put("image", "${image.library.url}album1584/" + badge + ".gif");
-         keys.put("message", Emulator.getTexts().getValue("commands.generic.cmd_badge.received"));
-         ServerMessage message = new BubbleAlertComposer(BubbleAlertKeys.RECEIVED_BADGE.key, keys).compose();
+            badge = params[1];
 
-         for (Habbo habbo : gameClient.getHabbo().getRoomUnit().getRoom().getHabbos()) {
-            if (habbo.isOnline()
-               && habbo.getInventory() != null
-               && habbo.getInventory().getBadgesComponent() != null
-               && !habbo.getInventory().getBadgesComponent().hasBadge(badge)) {
-               HabboBadge b = BadgesComponent.createBadge(badge, habbo);
-               habbo.getClient().sendResponse(new AddUserBadgeComposer(b));
-               habbo.getClient().sendResponse(message);
+            if (!badge.isEmpty()) {
+                THashMap<String, String> keys = new THashMap<>();
+                keys.put("display", "BUBBLE");
+                keys.put("image", "${image.library.url}album1584/" + badge + ".gif");
+                keys.put("message", Emulator.getTexts().getValue("commands.generic.cmd_badge.received"));
+                ServerMessage message = new BubbleAlertComposer(BubbleAlertKeys.RECEIVED_BADGE.key, keys).compose();
+
+                for (Habbo habbo : gameClient.getHabbo().getRoomUnit().getRoom().getHabbos()) {
+                    if (habbo.isOnline()) {
+                        if (habbo.getInventory() != null && habbo.getInventory().getBadgesComponent() != null && !habbo.getInventory().getBadgesComponent().hasBadge(badge)) {
+                            HabboBadge b = BadgesComponent.createBadge(badge, habbo);
+
+                            habbo.getClient().sendResponse(new AddUserBadgeComposer(b));
+                            habbo.getClient().sendResponse(message);
+                        }
+                    }
+                }
             }
-         }
-      }
+            return true;
+        }
 
-      return true;
-   }
+        gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_roombadge.no_badge"), RoomChatMessageBubbles.ALERT);
+        return true;
+    }
 }

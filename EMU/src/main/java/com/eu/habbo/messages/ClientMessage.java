@@ -5,70 +5,81 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 public class ClientMessage {
-   private final int header;
-   private final ByteBuf buffer;
+    private final int header;
+    private final ByteBuf buffer;
 
-   public ClientMessage(int messageId, ByteBuf buffer) {
-      this.header = messageId;
-      this.buffer = buffer != null && buffer.readableBytes() != 0 ? buffer : Unpooled.EMPTY_BUFFER;
-   }
+    public ClientMessage(int messageId, ByteBuf buffer) {
+        this.header = messageId;
+        this.buffer = ((buffer == null) || (buffer.readableBytes() == 0) ? Unpooled.EMPTY_BUFFER : buffer);
+    }
 
-   public ByteBuf getBuffer() {
-      return this.buffer;
-   }
+    public ByteBuf getBuffer() {
+        return this.buffer;
+    }
 
-   public int getMessageId() {
-      return this.header;
-   }
+    public int getMessageId() {
+        return this.header;
+    }
+    
+    
+    /**
+     *
+     * @return
+     * @throws CloneNotSupportedException
+     */
+    @Override
+    public ClientMessage clone() throws CloneNotSupportedException {
+        return new ClientMessage(this.header, this.buffer.duplicate());
+    }
 
-   public ClientMessage clone() throws CloneNotSupportedException {
-      return new ClientMessage(this.header, this.buffer.duplicate());
-   }
+    public int readShort() {
+        try {
+            return this.buffer.readShort();
+        } catch (Exception e) {
+        }
 
-   public int readShort() {
-      try {
-         return this.buffer.readShort();
-      } catch (Exception var2) {
-         return 0;
-      }
-   }
+        return 0;
+    }
 
-   public Integer readInt() {
-      try {
-         return this.buffer.readInt();
-      } catch (Exception var2) {
-         return 0;
-      }
-   }
+    public Integer readInt() {
+        try {
+            return this.buffer.readInt();
+        } catch (Exception e) {
+        }
 
-   public boolean readBoolean() {
-      try {
-         return this.buffer.readByte() == 1;
-      } catch (Exception var2) {
-         return false;
-      }
-   }
+        return 0;
+    }
 
-   public String readString() {
-      try {
-         int length = this.readShort();
-         byte[] data = new byte[length];
-         this.buffer.readBytes(data);
-         return new String(data);
-      } catch (Exception e) {
-         return "";
-      }
-   }
+    public boolean readBoolean() {
+        try {
+            return this.buffer.readByte() == 1;
+        } catch (Exception e) {
+        }
 
-   public String getMessageBody() {
-      return PacketUtils.formatPacket(this.buffer);
-   }
+        return false;
+    }
 
-   public int bytesAvailable() {
-      return this.buffer.readableBytes();
-   }
+    public String readString() {
+        try {
+            int length = this.readShort();
+            byte[] data = new byte[length];
+            this.buffer.readBytes(data);
+            return new String(data);
+        } catch (Exception e) {
+            return "";
+        }
+    }
 
-   public boolean release() {
-      return this.buffer.release();
-   }
+    public String getMessageBody() {
+        return PacketUtils.formatPacket(this.buffer);
+    }
+
+    public int bytesAvailable() {
+        return this.buffer.readableBytes();
+    }
+
+    public boolean release() {
+        return this.buffer.release();
+    }
+
 }

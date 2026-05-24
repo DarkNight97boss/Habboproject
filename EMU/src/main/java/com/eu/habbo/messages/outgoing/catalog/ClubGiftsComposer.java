@@ -6,56 +6,75 @@ import com.eu.habbo.habbohotel.catalog.CatalogPage;
 import com.eu.habbo.habbohotel.catalog.CatalogPageLayouts;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
+import com.eu.habbo.messages.outgoing.Outgoing;
+import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.procedure.TObjectProcedure;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 public class ClubGiftsComposer extends MessageComposer {
-   private final int daysTillNextGift;
-   private final int availableGifts;
-   private final int daysAsHc;
 
-   public ClubGiftsComposer(int daysTillNextGift, int availableGifts, int daysAsHc) {
-      this.daysTillNextGift = daysTillNextGift;
-      this.availableGifts = availableGifts;
-      this.daysAsHc = daysAsHc;
-   }
+    private final int daysTillNextGift;
+    private final int availableGifts;
+    private final int daysAsHc;
 
-   @Override
-   protected ServerMessage composeInternal() {
-      this.response.init(619);
-      this.response.appendInt(this.daysTillNextGift);
-      this.response.appendInt(this.availableGifts);
-      CatalogPage page = Emulator.getGameEnvironment().getCatalogManager().getCatalogPageByLayout(CatalogPageLayouts.club_gift.name().toLowerCase());
-      if (page != null) {
-         List<CatalogItem> items = new ArrayList<>(page.getCatalogItems().valueCollection());
-         Collections.sort(items);
-         this.response.appendInt(items.size());
+    public ClubGiftsComposer(int daysTillNextGift, int availableGifts, int daysAsHc) {
+        this.daysTillNextGift = daysTillNextGift;
+        this.availableGifts = availableGifts;
+        this.daysAsHc = daysAsHc;
+    }
 
-         for (CatalogItem item : items) {
-            item.serialize(this.response);
-         }
+    @Override
+    protected ServerMessage composeInternal() {
+        this.response.init(Outgoing.ClubGiftsComposer);
 
-         this.response.appendInt(items.size());
+        this.response.appendInt(this.daysTillNextGift); //Days Until Next Gift
+        this.response.appendInt(this.availableGifts); //Gift Selectable
 
-         for (CatalogItem item : items) {
-            int daysRequired = 0;
+        CatalogPage page = Emulator.getGameEnvironment().getCatalogManager().getCatalogPageByLayout(CatalogPageLayouts.club_gift.name().toLowerCase());
 
-            try {
-               daysRequired = Integer.parseInt(item.getExtradata());
-            } catch (NumberFormatException var7) {
+        if (page != null) {
+            final List<CatalogItem> items = new ArrayList<>(page.getCatalogItems().valueCollection());
+            Collections.sort(items);
+
+            this.response.appendInt(items.size());
+            for(CatalogItem item : items) {
+                item.serialize(this.response);
             }
 
-            this.response.appendInt(item.getId());
-            this.response.appendBoolean(item.isClubOnly());
-            this.response.appendInt(daysRequired);
-            this.response.appendBoolean(daysRequired <= this.daysAsHc);
-         }
-      } else {
-         this.response.appendInt(0);
-         this.response.appendInt(0);
-      }
+            this.response.appendInt(items.size());
+            for(CatalogItem item : items) {
+                int daysRequired = 0;
+                try {
+                    daysRequired = Integer.parseInt(item.getExtradata());
+                }
+                catch (NumberFormatException ignored) { }
 
-      return this.response;
-   }
+                this.response.appendInt(item.getId());
+                this.response.appendBoolean(item.isClubOnly());
+                this.response.appendInt(daysRequired);
+                this.response.appendBoolean(daysRequired <= daysAsHc);
+            }
+        } else {
+            this.response.appendInt(0);
+            this.response.appendInt(0);
+        }
+
+        return this.response;
+    }
+
+    public int getDaysTillNextGift() {
+        return daysTillNextGift;
+    }
+
+    public int getAvailableGifts() {
+        return availableGifts;
+    }
+
+    public int getDaysAsHc() {
+        return daysAsHc;
+    }
 }

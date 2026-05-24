@@ -7,23 +7,24 @@ import com.eu.habbo.networking.gameserver.GameServerAttributes;
 import io.netty.channel.ChannelHandlerContext;
 
 public class ChannelReadHandler implements Runnable {
-   private final ChannelHandlerContext ctx;
-   private final ClientMessage message;
 
-   public ChannelReadHandler(ChannelHandlerContext ctx, ClientMessage message) {
-      this.ctx = ctx;
-      this.message = message;
-   }
+    private final ChannelHandlerContext ctx;
+    private final ClientMessage message;
 
-   @Override
-   public void run() {
-      try {
-         GameClient client = (GameClient)this.ctx.channel().attr(GameServerAttributes.CLIENT).get();
-         if (client != null) {
-            Emulator.getGameServer().getPacketManager().handlePacket(client, this.message);
-         }
-      } finally {
-         this.message.release();
-      }
-   }
+    public ChannelReadHandler(ChannelHandlerContext ctx, ClientMessage message) {
+        this.ctx = ctx;
+        this.message = message;
+    }
+
+    public void run() {
+        try {
+            GameClient client = this.ctx.channel().attr(GameServerAttributes.CLIENT).get();
+
+            if (client != null) {
+                Emulator.getGameServer().getPacketManager().handlePacket(client, message);
+            }
+        } finally {
+            this.message.release();
+        }
+    }
 }

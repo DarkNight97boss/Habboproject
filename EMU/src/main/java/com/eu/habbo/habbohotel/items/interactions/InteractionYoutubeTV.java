@@ -9,88 +9,88 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.items.youtube.YoutubeVideoComposer;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.concurrent.ScheduledFuture;
 
 public class InteractionYoutubeTV extends HabboItem {
-   public YoutubeManager.YoutubePlaylist currentPlaylist = null;
-   public YoutubeManager.YoutubeVideo currentVideo = null;
-   public int startedWatchingAt = 0;
-   public int offset = 0;
-   public boolean playing = true;
-   public ScheduledFuture autoAdvance = null;
+    public YoutubeManager.YoutubePlaylist currentPlaylist = null;
+    public YoutubeManager.YoutubeVideo currentVideo = null;
+    public int startedWatchingAt = 0;
+    public int offset = 0;
+    public boolean playing = true;
+    public ScheduledFuture autoAdvance = null;
 
-   public InteractionYoutubeTV(ResultSet set, Item baseItem) throws SQLException {
-      super(set, baseItem);
-   }
+    public InteractionYoutubeTV(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+    }
 
-   public InteractionYoutubeTV(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
-      super(id, userId, item, extradata, limitedStack, limitedSells);
-   }
+    public InteractionYoutubeTV(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
 
-   @Override
-   public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
-      return false;
-   }
+    @Override
+    public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
+        return false;
+    }
 
-   @Override
-   public boolean isWalkable() {
-      return false;
-   }
+    @Override
+    public boolean isWalkable() {
+        return false;
+    }
 
-   @Override
-   public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-   }
+    @Override
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
 
-   @Override
-   public void serializeExtradata(ServerMessage serverMessage) {
-      if (this.getExtradata().length() == 0) {
-         this.setExtradata("");
-      }
+    }
 
-      serverMessage.appendInt(1 + (this.isLimited() ? 256 : 0));
-      serverMessage.appendInt(1);
-      serverMessage.appendString("THUMBNAIL_URL");
-      if (this.currentVideo == null) {
-         serverMessage.appendString("");
-      } else {
-         serverMessage.appendString(Emulator.getConfig().getValue("imager.url.youtube").replace("%video%", this.currentVideo.getId()));
-      }
+    @Override
+    public void serializeExtradata(ServerMessage serverMessage) {
+        if (this.getExtradata().length() == 0)
+            this.setExtradata("");
 
-      super.serializeExtradata(serverMessage);
-   }
+        serverMessage.appendInt(1 + (this.isLimited() ? 256 : 0));
+        serverMessage.appendInt(1);
+        serverMessage.appendString("THUMBNAIL_URL");
+        if (this.currentVideo == null) {
+            serverMessage.appendString("");
+        } else {
+            serverMessage.appendString(Emulator.getConfig().getValue("imager.url.youtube").replace("%video%", this.currentVideo.getId()));
+        }
 
-   @Override
-   public void onPickUp(Room room) {
-      super.onPickUp(room);
-      if (this.autoAdvance != null) {
-         this.cancelAdvancement();
-      }
+        super.serializeExtradata(serverMessage);
+    }
 
-      this.currentVideo = null;
-      this.currentPlaylist = null;
-      this.startedWatchingAt = 0;
-      this.offset = 0;
-   }
+    @Override
+    public void onPickUp(Room room) {
+        super.onPickUp(room);
 
-   public void cancelAdvancement() {
-      if (this.autoAdvance != null) {
-         this.autoAdvance.cancel(true);
-         this.autoAdvance = null;
-      }
-   }
+        if (this.autoAdvance != null) {
+            this.cancelAdvancement();
+        }
 
-   @Override
-   public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
-      super.onClick(client, room, objects);
-      if (this.currentVideo != null) {
-         int startTime = this.offset;
-         if (this.playing) {
-            startTime += Emulator.getIntUnixTimestamp() - this.startedWatchingAt;
-         }
+        this.currentVideo = null;
+        this.currentPlaylist = null;
+        this.startedWatchingAt = 0;
+        this.offset = 0;
+    }
 
-         client.sendResponse(new YoutubeVideoComposer(this.getId(), this.currentVideo, this.playing, startTime));
-      }
-   }
+    public void cancelAdvancement() {
+        if (this.autoAdvance == null) return;
+
+        this.autoAdvance.cancel(true);
+        this.autoAdvance = null;
+    }
+
+    @Override
+    public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
+        super.onClick(client, room, objects);
+
+        if (this.currentVideo != null) {
+            int startTime = this.offset;
+            if (this.playing) startTime += Emulator.getIntUnixTimestamp() - this.startedWatchingAt;
+            client.sendResponse(new YoutubeVideoComposer(this.getId(), this.currentVideo, this.playing, startTime));
+        }
+    }
 }

@@ -9,27 +9,29 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CameraUpdateNotification extends CameraIncomingMessage {
-   private static final Logger LOGGER = LoggerFactory.getLogger(CameraUpdateNotification.class);
 
-   public CameraUpdateNotification(Short header, ByteBuf body) {
-      super(header, body);
-   }
+    private static final Logger LOGGER = LoggerFactory.getLogger(CameraUpdateNotification.class);
 
-   @Override
-   public void handle(Channel client) throws Exception {
-      boolean alert = this.readBoolean();
-      String message = this.readString();
-      int type = this.readInt();
-      if (type == 0) {
-         LOGGER.info("Camera update: {}", message);
-      } else if (type == 1) {
-         LOGGER.warn("Camera update: {}", message);
-      } else if (type == 2) {
-         LOGGER.error("Camera update: {}", message);
-      }
+    public CameraUpdateNotification(Short header, ByteBuf body) {
+        super(header, body);
+    }
 
-      if (alert) {
-         Emulator.getGameServer().getGameClientManager().sendBroadcastResponse(new GenericAlertComposer(message).compose());
-      }
-   }
+    @Override
+    public void handle(Channel client) throws Exception {
+        boolean alert = this.readBoolean();
+        String message = this.readString();
+        int type = this.readInt();
+
+        if (type == 0) {
+            LOGGER.info("Camera update: {}", message);
+        } else if (type == 1) {
+            LOGGER.warn("Camera update: {}", message);
+        } else if (type == 2) {
+            LOGGER.error("Camera update: {}", message);
+        }
+
+        if (alert) {
+            Emulator.getGameServer().getGameClientManager().sendBroadcastResponse(new GenericAlertComposer(message).compose());
+        }
+    }
 }

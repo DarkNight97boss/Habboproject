@@ -10,41 +10,43 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.rooms.RoomUserAction;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserActionComposer;
-import java.util.Map.Entry;
+
+import java.util.Map;
+
 
 public class FootballGame extends Game {
-   private Room room;
+    private Room room;
 
-   public FootballGame(Room room) {
-      super(null, null, room, true);
-      this.room = room;
-   }
+    public FootballGame(Room room) {
+        super(null, null, room, true);
 
-   @Override
-   public void initialise() {
-   }
+        this.room = room;
+    }
 
-   @Override
-   public void run() {
-   }
+    @Override
+    public void initialise() {
+    }
 
-   public void onScore(RoomUnit kicker, GameTeamColors team) {
-      if (this.room != null && this.room.isLoaded()) {
-         Habbo habbo = this.room.getHabbo(kicker);
-         if (habbo != null) {
+    @Override
+    public void run() {
+    }
+
+    public void onScore(RoomUnit kicker, GameTeamColors team) {
+        if (this.room == null || !this.room.isLoaded())
+            return;
+
+        Habbo habbo = this.room.getHabbo(kicker);
+        if (habbo != null) {
             AchievementManager.progressAchievement(habbo, Emulator.getGameEnvironment().getAchievementManager().getAchievement("FootballGoalScored"));
             if (habbo.getHabboInfo().getId() != this.room.getOwnerId()) {
-               AchievementManager.progressAchievement(
-                  this.room.getOwnerId(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("FootballGoalScoredInRoom")
-               );
+                AchievementManager.progressAchievement(this.room.getOwnerId(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("FootballGoalScoredInRoom"));
             }
-         }
+        }
 
-         this.room.sendComposer(new RoomUserActionComposer(kicker, RoomUserAction.WAVE).compose());
+        this.room.sendComposer(new RoomUserActionComposer(kicker, RoomUserAction.WAVE).compose());
 
-         for (Entry<Integer, InteractionFootballScoreboard> scoreBoard : this.room.getRoomSpecialTypes().getFootballScoreboards(team).entrySet()) {
+        for (Map.Entry<Integer, InteractionFootballScoreboard> scoreBoard : this.room.getRoomSpecialTypes().getFootballScoreboards(team).entrySet()) {
             scoreBoard.getValue().changeScore(1);
-         }
-      }
-   }
+        }
+    }
 }

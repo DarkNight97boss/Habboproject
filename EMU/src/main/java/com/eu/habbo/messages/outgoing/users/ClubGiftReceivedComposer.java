@@ -3,30 +3,38 @@ package com.eu.habbo.messages.outgoing.users;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
-import gnu.trove.iterator.hash.TObjectHashIterator;
+import com.eu.habbo.messages.outgoing.Outgoing;
 import gnu.trove.set.hash.THashSet;
 
 public class ClubGiftReceivedComposer extends MessageComposer {
-   private final String name;
-   private final THashSet<Item> items;
+    //:test 735 s:t i:1 s:s i:230 s:throne i:1 b:1 i:1 i:10;
+    private final String name;
+    private final THashSet<Item> items;
 
-   public ClubGiftReceivedComposer(String name, THashSet<Item> items) {
-      this.name = name;
-      this.items = items;
-   }
+    public ClubGiftReceivedComposer(String name, THashSet<Item> items) {
+        this.name = name;
+        this.items = items;
+    }
 
-   @Override
-   protected ServerMessage composeInternal() {
-      this.response.init(659);
-      this.response.appendString(this.name);
-      this.response.appendInt(this.items.size());
-      TObjectHashIterator var1 = this.items.iterator();
+    @Override
+    protected ServerMessage composeInternal() {
+        this.response.init(Outgoing.ClubGiftReceivedComposer);
 
-      while (var1.hasNext()) {
-         Item item = (Item)var1.next();
-         item.serialize(this.response);
-      }
+        this.response.appendString(this.name);
+        this.response.appendInt(this.items.size());
 
-      return this.response;
-   }
+        for (Item item : this.items) {
+            item.serialize(this.response);
+        }
+
+        return this.response;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public THashSet<Item> getItems() {
+        return items;
+    }
 }

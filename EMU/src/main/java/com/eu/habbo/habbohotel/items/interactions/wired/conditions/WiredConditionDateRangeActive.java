@@ -9,100 +9,103 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.WiredHandler;
 import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class WiredConditionDateRangeActive extends InteractionWiredCondition {
-   public static final WiredConditionType type = WiredConditionType.DATE_RANGE;
-   private int startDate;
-   private int endDate;
+    public static final WiredConditionType type = WiredConditionType.DATE_RANGE;
 
-   public WiredConditionDateRangeActive(ResultSet set, Item baseItem) throws SQLException {
-      super(set, baseItem);
-   }
+    private int startDate;
+    private int endDate;
 
-   public WiredConditionDateRangeActive(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
-      super(id, userId, item, extradata, limitedStack, limitedSells);
-   }
+    public WiredConditionDateRangeActive(ResultSet set, Item baseItem) throws SQLException {
+        super(set, baseItem);
+    }
 
-   @Override
-   public WiredConditionType getType() {
-      return type;
-   }
+    public WiredConditionDateRangeActive(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+        super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
 
-   @Override
-   public void serializeWiredData(ServerMessage message, Room room) {
-      message.appendBoolean(false);
-      message.appendInt(5);
-      message.appendInt(0);
-      message.appendInt(this.getBaseItem().getSpriteId());
-      message.appendInt(this.getId());
-      message.appendString("");
-      message.appendInt(2);
-      message.appendInt(this.startDate);
-      message.appendInt(this.endDate);
-      message.appendInt(0);
-      message.appendInt(this.getType().code);
-      message.appendInt(this.startDate);
-      message.appendInt(this.endDate);
-   }
+    @Override
+    public WiredConditionType getType() {
+        return type;
+    }
 
-   @Override
-   public boolean saveData(WiredSettings settings) {
-      if (settings.getIntParams().length < 2) {
-         return false;
-      }
+    @Override
+    public void serializeWiredData(ServerMessage message, Room room) {
+        message.appendBoolean(false);
+        message.appendInt(5);
+        message.appendInt(0);
+        message.appendInt(this.getBaseItem().getSpriteId());
+        message.appendInt(this.getId());
+        message.appendString("");
+        message.appendInt(2);
+        message.appendInt(this.startDate);
+        message.appendInt(this.endDate);
+        message.appendInt(0);
+        message.appendInt(this.getType().code);
+        message.appendInt(this.startDate);
+        message.appendInt(this.endDate);
+    }
 
-      this.startDate = settings.getIntParams()[0];
-      this.endDate = settings.getIntParams()[1];
-      return true;
-   }
+    @Override
+    public boolean saveData(WiredSettings settings) {
+        if(settings.getIntParams().length < 2) return false;
+        this.startDate = settings.getIntParams()[0];
+        this.endDate = settings.getIntParams()[1];
+        return true;
+    }
 
-   @Override
-   public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
-      int time = Emulator.getIntUnixTimestamp();
-      return this.startDate < time && this.endDate >= time;
-   }
+    @Override
+    public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
+        int time = Emulator.getIntUnixTimestamp();
+        return this.startDate < time && this.endDate >= time;
+    }
 
-   @Override
-   public String getWiredData() {
-      return WiredHandler.getGsonBuilder().create().toJson(new WiredConditionDateRangeActive.JsonData(this.startDate, this.endDate));
-   }
+    @Override
+    public String getWiredData() {
+        return WiredHandler.getGsonBuilder().create().toJson(new JsonData(
+                this.startDate,
+                this.endDate
+        ));
+    }
 
-   @Override
-   public void loadWiredData(ResultSet set, Room room) throws SQLException {
-      String wiredData = set.getString("wired_data");
-      if (wiredData.startsWith("{")) {
-         WiredConditionDateRangeActive.JsonData data = (WiredConditionDateRangeActive.JsonData)WiredHandler.getGsonBuilder()
-            .create()
-            .fromJson(wiredData, WiredConditionDateRangeActive.JsonData.class);
-         this.startDate = data.startDate;
-         this.endDate = data.endDate;
-      } else {
-         String[] data = wiredData.split("\t");
-         if (data.length == 2) {
-            try {
-               this.startDate = Integer.parseInt(data[0]);
-               this.endDate = Integer.parseInt(data[1]);
-            } catch (Exception var6) {
+    @Override
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        String wiredData = set.getString("wired_data");
+
+        if (wiredData.startsWith("{")) {
+            JsonData data = WiredHandler.getGsonBuilder().create().fromJson(wiredData, JsonData.class);
+            this.startDate = data.startDate;
+            this.endDate = data.endDate;
+        } else {
+            String[] data = wiredData.split("\t");
+
+            if (data.length == 2) {
+                try {
+                    this.startDate = Integer.parseInt(data[0]);
+                    this.endDate = Integer.parseInt(data[1]);
+                } catch (Exception e) {
+                }
             }
-         }
-      }
-   }
+        }
+    }
 
-   @Override
-   public void onPickUp() {
-      this.startDate = 0;
-      this.endDate = 0;
-   }
+    @Override
+    public void onPickUp() {
+        this.startDate = 0;
+        this.endDate = 0;
+    }
 
-   static class JsonData {
-      int startDate;
-      int endDate;
+    static class JsonData {
+        int startDate;
+        int endDate;
 
-      public JsonData(int startDate, int endDate) {
-         this.startDate = startDate;
-         this.endDate = endDate;
-      }
-   }
+        public JsonData(int startDate, int endDate) {
+            this.startDate = startDate;
+            this.endDate = endDate;
+        }
+    }
 }

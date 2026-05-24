@@ -3,16 +3,24 @@ package com.eu.habbo.messages.incoming.hotelview;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.hotelview.HotelViewSecondsUntilComposer;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 public class HotelViewRequestSecondsUntilEvent extends MessageHandler {
-   private static DateFormat dateFormat = new SimpleDateFormat("yyyy-mm-dd hh:mm");
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-   @Override
-   public void handle() throws Exception {
-      String date = this.packet.readString();
-      int secondsUntil = Math.max(0, (int)(dateFormat.parse(date).getTime() / 1000L) - Emulator.getIntUnixTimestamp());
-      this.client.sendResponse(new HotelViewSecondsUntilComposer(date, secondsUntil));
-   }
+    @Override
+    public void handle() throws Exception {
+        final String date = this.packet.readString();
+
+        try {
+            LocalDateTime dt = LocalDateTime.parse(date, formatter);
+            int secondsUntil = Math.max(0, (int) dt.atZone(ZoneId.systemDefault()).toEpochSecond() - Emulator.getIntUnixTimestamp());
+            this.client.sendResponse(new HotelViewSecondsUntilComposer(date, secondsUntil));
+        } catch (DateTimeParseException ignored) {
+        }
+    }
 }

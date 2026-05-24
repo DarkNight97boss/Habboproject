@@ -7,688 +7,463 @@ import com.eu.habbo.messages.ISerialize;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.plugin.events.guilds.forums.GuildForumThreadBeforeCreated;
 import com.eu.habbo.plugin.events.guilds.forums.GuildForumThreadCreated;
-import gnu.trove.iterator.hash.TObjectHashIterator;
 import gnu.trove.map.hash.THashMap;
 import gnu.trove.set.hash.THashSet;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.*;
+import java.util.*;
+
 public class ForumThread implements Runnable, ISerialize {
-   private static final Logger LOGGER = LoggerFactory.getLogger(ForumThread.class);
-   private static final THashMap<Integer, THashSet<ForumThread>> guildThreadsCache = new THashMap();
-   private static final THashMap<Integer, ForumThread> forumThreadsCache = new THashMap();
-   private final int threadId;
-   private final int guildId;
-   private final int openerId;
-   private final String subject;
-   private final int createdAt;
-   private final THashMap<Integer, ForumThreadComment> comments;
-   private int postsCount;
-   private int updatedAt;
-   private ForumThreadState state;
-   private boolean pinned;
-   private boolean locked;
-   private int adminId;
-   private boolean needsUpdate;
-   private boolean hasCommentsLoaded;
-   private int commentIndex;
-   private ForumThreadComment lastComment;
+    private static final Logger LOGGER = LoggerFactory.getLogger(ForumThread.class);
 
-   public ForumThread(
-      int threadId,
-      int guildId,
-      int openerId,
-      String subject,
-      int postsCount,
-      int createdAt,
-      int updatedAt,
-      ForumThreadState state,
-      boolean pinned,
-      boolean locked,
-      int adminId,
-      ForumThreadComment lastComment
-   ) {
-      this.threadId = threadId;
-      this.guildId = guildId;
-      this.openerId = openerId;
-      this.subject = subject;
-      this.postsCount = postsCount;
-      this.createdAt = createdAt;
-      this.updatedAt = updatedAt;
-      this.state = state;
-      this.pinned = pinned;
-      this.locked = locked;
-      this.adminId = adminId;
-      this.lastComment = lastComment;
-      this.comments = new THashMap();
-      this.needsUpdate = false;
-      this.hasCommentsLoaded = false;
-      this.commentIndex = 0;
-   }
 
-   public ForumThread(ResultSet set) throws SQLException {
-      this.threadId = set.getInt("id");
-      this.guildId = set.getInt("guild_id");
-      this.openerId = set.getInt("opener_id");
-      this.subject = set.getString("subject");
-      this.postsCount = set.getInt("posts_count");
-      this.createdAt = set.getInt("created_at");
-      this.updatedAt = set.getInt("updated_at");
-      this.state = ForumThreadState.fromValue(set.getInt("state"));
-      this.pinned = set.getInt("pinned") > 0;
-      this.locked = set.getInt("locked") > 0;
-      this.adminId = set.getInt("admin_id");
-      this.lastComment = null;
+    private final static THashMap<Integer, THashSet<ForumThread>> guildThreadsCache = new THashMap<>();
+    private final static THashMap<Integer, ForumThread> forumThreadsCache = new THashMap<>();
+    private final int threadId;
+    private final int guildId;
+    private final int openerId;
+    private final String subject;
+    private final int createdAt;
+    private final THashMap<Integer, ForumThreadComment> comments;
+    private int postsCount;
+    private int updatedAt;
+    private ForumThreadState state;
+    private boolean pinned;
+    private boolean locked;
+    private int adminId;
+    private boolean needsUpdate;
+    private boolean hasCommentsLoaded;
+    private int commentIndex;
+    private ForumThreadComment lastComment;
 
-      try {
-         this.lastComment = ForumThreadComment.getById(set.getInt("last_comment_id"));
-      } catch (SQLException e) {
-         LOGGER.error("ForumThread last_comment_id exception", e);
-      }
+    public ForumThread(int threadId, int guildId, int openerId, String subject, int postsCount, int createdAt, int updatedAt, ForumThreadState state, boolean pinned, boolean locked, int adminId, ForumThreadComment lastComment) {
+        this.threadId = threadId;
+        this.guildId = guildId;
+        this.openerId = openerId;
+        this.subject = subject;
+        this.postsCount = postsCount;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.state = state;
+        this.pinned = pinned;
+        this.locked = locked;
+        this.adminId = adminId;
+        this.lastComment = lastComment;
+        this.comments = new THashMap<>();
+        this.needsUpdate = false;
+        this.hasCommentsLoaded = false;
+        this.commentIndex = 0;
+    }
 
-      this.comments = new THashMap();
-      this.needsUpdate = false;
-      this.hasCommentsLoaded = false;
-      this.commentIndex = 0;
-   }
+    public ForumThread(ResultSet set) throws SQLException {
+        this.threadId = set.getInt("id");
+        this.guildId = set.getInt("guild_id");
+        this.openerId = set.getInt("opener_id");
+        this.subject = set.getString("subject");
+        this.postsCount = set.getInt("posts_count");
+        this.createdAt = set.getInt("created_at");
+        this.updatedAt = set.getInt("updated_at");
+        this.state = ForumThreadState.fromValue(set.getInt("state"));
+        this.pinned = set.getInt("pinned") > 0;
+        this.locked = set.getInt("locked") > 0;
+        this.adminId = set.getInt("admin_id");
+        this.lastComment = null;
 
-   public static ForumThread create(Guild guild, Habbo opener, String subject, String message) throws Exception {
-      ForumThread createdThread = null;
-      if (Emulator.getPluginManager().fireEvent(new GuildForumThreadBeforeCreated(guild, opener, subject, message)).isCancelled()) {
-         return null;
-      }
+        try {
+            this.lastComment = ForumThreadComment.getById(set.getInt("last_comment_id"));
+        } catch (SQLException e) {
+            LOGGER.error("ForumThread last_comment_id exception", e);
+        }
 
-      try {
-         Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        this.comments = new THashMap<>();
+        this.needsUpdate = false;
+        this.hasCommentsLoaded = false;
+        this.commentIndex = 0;
+    }
 
-         Object set;
-         label94: {
-            try {
-               PreparedStatement statement = connection.prepareStatement(
-                  "INSERT INTO `guilds_forums_threads`(`guild_id`, `opener_id`, `subject`, `created_at`, `updated_at`) VALUES (?, ?, ?, ?, ?)", 1
-               );
+    public static ForumThread create(Guild guild, Habbo opener, String subject, String message) throws Exception {
+        ForumThread createdThread = null;
 
-               label87: {
-                  try {
-                     int timestamp = Emulator.getIntUnixTimestamp();
-                     statement.setInt(1, guild.getId());
-                     statement.setInt(2, opener.getHabboInfo().getId());
-                     statement.setString(3, subject);
-                     statement.setInt(4, timestamp);
-                     statement.setInt(5, timestamp);
-                     if (statement.executeUpdate() >= 1) {
-                        ResultSet setx = statement.getGeneratedKeys();
-                        if (setx.next()) {
-                           int threadId = setx.getInt(1);
-                           createdThread = new ForumThread(
-                              threadId,
-                              guild.getId(),
-                              opener.getHabboInfo().getId(),
-                              subject,
-                              0,
-                              timestamp,
-                              timestamp,
-                              ForumThreadState.OPEN,
-                              false,
-                              false,
-                              0,
-                              null
-                           );
-                           cacheThread(createdThread);
-                           ForumThreadComment comment = ForumThreadComment.create(createdThread, opener, message);
-                           createdThread.addComment(comment);
-                           Emulator.getPluginManager().fireEvent(new GuildForumThreadCreated(createdThread));
-                        }
-                        break label87;
-                     }
+        if (Emulator.getPluginManager().fireEvent(new GuildForumThreadBeforeCreated(guild, opener, subject, message)).isCancelled())
+            return null;
 
-                     set = null;
-                  } catch (Throwable var13) {
-                     if (statement != null) {
-                        try {
-                           statement.close();
-                        } catch (Throwable var12) {
-                           var13.addSuppressed(var12);
-                        }
-                     }
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO `guilds_forums_threads`(`guild_id`, `opener_id`, `subject`, `created_at`, `updated_at`) VALUES (?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+            int timestamp = Emulator.getIntUnixTimestamp();
 
-                     throw var13;
-                  }
+            statement.setInt(1, guild.getId());
+            statement.setInt(2, opener.getHabboInfo().getId());
+            statement.setString(3, subject);
+            statement.setInt(4, timestamp);
+            statement.setInt(5, timestamp);
 
-                  if (statement != null) {
-                     statement.close();
-                  }
-                  break label94;
-               }
+            if (statement.executeUpdate() < 1)
+                return null;
 
-               if (statement != null) {
-                  statement.close();
-               }
-            } catch (Throwable var14) {
-               if (connection != null) {
-                  try {
-                     connection.close();
-                  } catch (Throwable var11) {
-                     var14.addSuppressed(var11);
-                  }
-               }
+            ResultSet set = statement.getGeneratedKeys();
+            if (set.next()) {
+                int threadId = set.getInt(1);
+                createdThread = new ForumThread(threadId, guild.getId(), opener.getHabboInfo().getId(), subject, 0, timestamp, timestamp, ForumThreadState.OPEN, false, false, 0, null);
+                cacheThread(createdThread);
 
-               throw var14;
+                ForumThreadComment comment = ForumThreadComment.create(createdThread, opener, message);
+                createdThread.addComment(comment);
+
+                Emulator.getPluginManager().fireEvent(new GuildForumThreadCreated(createdThread));
             }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
 
-            if (connection != null) {
-               connection.close();
-            }
+        return createdThread;
+    }
 
-            return createdThread;
-         }
+    public static THashSet<ForumThread> getByGuildId(int guildId) {
+        THashSet<ForumThread> threads = null;
 
-         if (connection != null) {
-            connection.close();
-         }
+        if (guildThreadsCache.containsKey(guildId)) {
+            threads = guildThreadsCache.get(guildId);
+        }
 
-         return (ForumThread)set;
-      } catch (SQLException e) {
-         LOGGER.error("Caught SQL exception", e);
-         return createdThread;
-      }
-   }
+        if (threads != null)
+            return threads;
 
-   public static THashSet<ForumThread> getByGuildId(int guildId) {
-      THashSet<ForumThread> threads = null;
-      if (guildThreadsCache.containsKey(guildId)) {
-         guildThreadsCache.get(guildId);
-      }
+        threads = new THashSet<ForumThread>();
 
-      if (threads != null) {
-         return threads;
-      }
+        guildThreadsCache.put(guildId, threads);
 
-      threads = new THashSet();
-      guildThreadsCache.put(guildId, threads);
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT A.*, B.`id` AS `last_comment_id` " +
+                "FROM guilds_forums_threads A " +
+                "JOIN (" +
+                "SELECT * " +
+                "FROM `guilds_forums_comments` " +
+                "WHERE `id` IN (" +
+                "SELECT MAX(id) " +
+                "FROM `guilds_forums_comments` B " +
+                "GROUP BY `thread_id` AND B.`id` " +
+                "ORDER BY B.`id` " +
+                ") " +
+                "ORDER BY `id` DESC " +
+                ") B ON A.`id` = B.`thread_id` " +
+                "WHERE A.`guild_id` = ? " +
+                "ORDER BY A.`pinned` DESC, B.`created_at` DESC "
+        )) {
+            statement.setInt(1, guildId);
 
-      try {
-         Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-
-         try {
-            PreparedStatement statement = connection.prepareStatement(
-               "SELECT A.*, B.`id` AS `last_comment_id` FROM guilds_forums_threads A JOIN (SELECT * FROM `guilds_forums_comments` WHERE `id` IN (SELECT MAX(id) FROM `guilds_forums_comments` B GROUP BY `thread_id` ORDER BY B.`id` ASC ) ORDER BY `id` DESC ) B ON A.`id` = B.`thread_id` WHERE A.`guild_id` = ? ORDER BY A.`pinned` DESC, B.`created_at` DESC "
-            );
-
-            try {
-               statement.setInt(1, guildId);
-               ResultSet set = statement.executeQuery();
-
-               try {
-                  while (set.next()) {
-                     ForumThread thread = new ForumThread(set);
-                     synchronized (threads) {
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    ForumThread thread = new ForumThread(set);
+                    synchronized (threads) {
                         threads.add(thread);
-                     }
-
-                     cacheThread(thread);
-                  }
-               } catch (Throwable var12) {
-                  if (set != null) {
-                     try {
-                        set.close();
-                     } catch (Throwable var10) {
-                        var12.addSuppressed(var10);
-                     }
-                  }
-
-                  throw var12;
-               }
-
-               if (set != null) {
-                  set.close();
-               }
-            } catch (Throwable var13) {
-               if (statement != null) {
-                  try {
-                     statement.close();
-                  } catch (Throwable var9) {
-                     var13.addSuppressed(var9);
-                  }
-               }
-
-               throw var13;
+                    }
+                    cacheThread(thread);
+                }
             }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
 
-            if (statement != null) {
-               statement.close();
+        return threads;
+    }
+
+    public static ForumThread getById(int threadId) throws SQLException {
+        ForumThread foundThread = forumThreadsCache.get(threadId);
+
+        if (foundThread != null)
+            return foundThread;
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement(
+                "SELECT A.*, B.`id` AS `last_comment_id` " +
+                        "FROM guilds_forums_threads A " +
+                        "JOIN (" +
+                        "SELECT * " +
+                        "FROM `guilds_forums_comments` " +
+                        "WHERE `id` IN (" +
+                        "SELECT MAX(id) " +
+                        "FROM `guilds_forums_comments` B " +
+                        "GROUP BY `thread_id` AND b.`id`" +
+                        "ORDER BY B.`id` " +
+                        ") " +
+                        "ORDER BY `id` DESC " +
+                        ") B ON A.`id` = B.`thread_id` " +
+                        "WHERE A.`id` = ? " +
+                        "ORDER BY A.`pinned` DESC, B.`created_at` DESC " +
+                        "LIMIT 1"
+        )) {
+            statement.setInt(1, threadId);
+
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    foundThread = new ForumThread(set);
+                    cacheThread(foundThread);
+                }
             }
-         } catch (Throwable var14) {
-            if (connection != null) {
-               try {
-                  connection.close();
-               } catch (Throwable var8) {
-                  var14.addSuppressed(var8);
-               }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+
+        return foundThread;
+    }
+
+    private static void cacheThread(ForumThread thread) {
+        synchronized (forumThreadsCache) {
+            forumThreadsCache.put(thread.threadId, thread);
+        }
+
+        THashSet<ForumThread> guildThreads = guildThreadsCache.get(thread.guildId);
+
+        if (guildThreads == null) {
+            guildThreads = new THashSet<>();
+            synchronized (forumThreadsCache) {
+                guildThreadsCache.put(thread.guildId, guildThreads);
             }
+        }
+            guildThreads.add(thread);
+    }
 
-            throw var14;
-         }
-
-         if (connection != null) {
-            connection.close();
-         }
-      } catch (SQLException e) {
-         LOGGER.error("Caught SQL exception", e);
-      }
-
-      return threads;
-   }
-
-   public static ForumThread getById(int threadId) throws SQLException {
-      ForumThread foundThread = (ForumThread)forumThreadsCache.get(threadId);
-      if (foundThread != null) {
-         return foundThread;
-      }
-
-      try {
-         Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-
-         try {
-            PreparedStatement statement = connection.prepareStatement(
-               "SELECT A.*, B.`id` AS `last_comment_id` FROM guilds_forums_threads A JOIN (SELECT * FROM `guilds_forums_comments` WHERE `id` IN (SELECT MAX(id) FROM `guilds_forums_comments` B GROUP BY `thread_id` ORDER BY B.`id` ASC ) ORDER BY `id` DESC ) B ON A.`id` = B.`thread_id` WHERE A.`id` = ? ORDER BY A.`pinned` DESC, B.`created_at` DESC LIMIT 1"
-            );
-
-            try {
-               statement.setInt(1, threadId);
-               ResultSet set = statement.executeQuery();
-
-               try {
-                  while (set.next()) {
-                     foundThread = new ForumThread(set);
-                     cacheThread(foundThread);
-                  }
-               } catch (Throwable var10) {
-                  if (set != null) {
-                     try {
-                        set.close();
-                     } catch (Throwable var9) {
-                        var10.addSuppressed(var9);
-                     }
-                  }
-
-                  throw var10;
-               }
-
-               if (set != null) {
-                  set.close();
-               }
-            } catch (Throwable var11) {
-               if (statement != null) {
-                  try {
-                     statement.close();
-                  } catch (Throwable var8) {
-                     var11.addSuppressed(var8);
-                  }
-               }
-
-               throw var11;
+    public static void clearCache() {
+        for (THashSet<ForumThread> threads : guildThreadsCache.values()) {
+            for (ForumThread thread : threads) {
+                thread.run();
             }
+        }
 
-            if (statement != null) {
-               statement.close();
-            }
-         } catch (Throwable var12) {
-            if (connection != null) {
-               try {
-                  connection.close();
-               } catch (Throwable var7) {
-                  var12.addSuppressed(var7);
-               }
-            }
+        synchronized (forumThreadsCache) {
+            forumThreadsCache.clear();
+        }
 
-            throw var12;
-         }
+        synchronized (guildThreadsCache) {
+            guildThreadsCache.clear();
+        }
+    }
 
-         if (connection != null) {
-            connection.close();
-         }
-      } catch (SQLException e) {
-         LOGGER.error("Caught SQL exception", e);
-      }
+    public int getThreadId() {
+        return threadId;
+    }
 
-      return foundThread;
-   }
+    public int getGuildId() {
+        return guildId;
+    }
 
-   private static void cacheThread(ForumThread thread) {
-      synchronized (forumThreadsCache) {
-         forumThreadsCache.put(thread.threadId, thread);
-      }
+    public int getOpenerId() {
+        return openerId;
+    }
 
-      THashSet<ForumThread> guildThreads = (THashSet<ForumThread>)guildThreadsCache.get(thread.guildId);
-      if (guildThreads == null) {
-         guildThreads = new THashSet();
-         synchronized (forumThreadsCache) {
-            guildThreadsCache.put(thread.guildId, guildThreads);
-         }
-      }
+    public String getSubject() {
+        return subject;
+    }
 
-      synchronized (guildThreads) {
-         guildThreads.add(thread);
-      }
-   }
+    public int getCreatedAt() {
+        return createdAt;
+    }
 
-   public static void clearCache() {
-      for (THashSet<ForumThread> threads : guildThreadsCache.values()) {
-         TObjectHashIterator var2 = threads.iterator();
+    public int getPostsCount() {
+        return postsCount;
+    }
 
-         while (var2.hasNext()) {
-            ForumThread thread = (ForumThread)var2.next();
-            thread.run();
-         }
-      }
+    public void setPostsCount(int postsCount) {
+        this.postsCount = postsCount;
+        this.needsUpdate = true;
+    }
 
-      synchronized (forumThreadsCache) {
-         forumThreadsCache.clear();
-      }
+    public int getUpdatedAt() {
+        return updatedAt;
+    }
 
-      synchronized (guildThreadsCache) {
-         guildThreadsCache.clear();
-      }
-   }
+    public void setUpdatedAt(int updatedAt) {
+        this.updatedAt = updatedAt;
+        this.needsUpdate = true;
+    }
 
-   public int getThreadId() {
-      return this.threadId;
-   }
+    public ForumThreadState getState() {
+        return state;
+    }
 
-   public int getGuildId() {
-      return this.guildId;
-   }
+    public void setState(ForumThreadState state) {
+        this.state = state;
+        this.needsUpdate = true;
+    }
 
-   public int getOpenerId() {
-      return this.openerId;
-   }
+    public boolean isPinned() {
+        return pinned;
+    }
 
-   public String getSubject() {
-      return this.subject;
-   }
+    public void setPinned(boolean pinned) {
+        this.pinned = pinned;
+        this.needsUpdate = true;
+    }
 
-   public int getCreatedAt() {
-      return this.createdAt;
-   }
+    public boolean isLocked() {
+        return locked;
+    }
 
-   public int getPostsCount() {
-      return this.postsCount;
-   }
+    public void setLocked(boolean locked) {
+        this.locked = locked;
+        this.needsUpdate = true;
+    }
 
-   public void setPostsCount(int postsCount) {
-      this.postsCount = postsCount;
-      this.needsUpdate = true;
-   }
+    public int getAdminId() {
+        return adminId;
+    }
 
-   public int getUpdatedAt() {
-      return this.updatedAt;
-   }
+    public void setAdminId(int adminId) {
+        this.adminId = adminId;
+        this.needsUpdate = true;
+    }
 
-   public void setUpdatedAt(int updatedAt) {
-      this.updatedAt = updatedAt;
-      this.needsUpdate = true;
-   }
+    public ForumThreadComment getLastComment() {
+        return lastComment;
+    }
 
-   public ForumThreadState getState() {
-      return this.state;
-   }
+    public void setLastComment(ForumThreadComment lastComment) {
+        this.lastComment = lastComment;
+    }
 
-   public void setState(ForumThreadState state) {
-      this.state = state;
-      this.needsUpdate = true;
-   }
+    private void loadComments() {
+        if (this.hasCommentsLoaded)
+            return;
 
-   public boolean isPinned() {
-      return this.pinned;
-   }
-
-   public void setPinned(boolean pinned) {
-      this.pinned = pinned;
-      this.needsUpdate = true;
-   }
-
-   public boolean isLocked() {
-      return this.locked;
-   }
-
-   public void setLocked(boolean locked) {
-      this.locked = locked;
-      this.needsUpdate = true;
-   }
-
-   public int getAdminId() {
-      return this.adminId;
-   }
-
-   public void setAdminId(int adminId) {
-      this.adminId = adminId;
-      this.needsUpdate = true;
-   }
-
-   public ForumThreadComment getLastComment() {
-      return this.lastComment;
-   }
-
-   public void setLastComment(ForumThreadComment lastComment) {
-      this.lastComment = lastComment;
-   }
-
-   private void loadComments() {
-      if (!this.hasCommentsLoaded) {
-         synchronized (this.comments) {
+        synchronized (this.comments) {
             this.hasCommentsLoaded = true;
-            this.commentIndex = 0;
+
+            commentIndex = 0;
             this.comments.clear();
 
-            try {
-               Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM `guilds_forums_comments` WHERE `thread_id` = ? ORDER BY `id`")) {
+                statement.setInt(1, this.threadId);
+                ResultSet set = statement.executeQuery();
 
-               try {
-                  PreparedStatement statement = connection.prepareStatement("SELECT * FROM `guilds_forums_comments` WHERE `thread_id` = ? ORDER BY `id`");
-
-                  try {
-                     statement.setInt(1, this.threadId);
-                     ResultSet set = statement.executeQuery();
-
-                     while (set.next()) {
-                        ForumThreadComment comment = new ForumThreadComment(set);
-                        this.addComment(comment);
-                     }
-                  } catch (Throwable var9) {
-                     if (statement != null) {
-                        try {
-                           statement.close();
-                        } catch (Throwable var8) {
-                           var9.addSuppressed(var8);
-                        }
-                     }
-
-                     throw var9;
-                  }
-
-                  if (statement != null) {
-                     statement.close();
-                  }
-               } catch (Throwable var10) {
-                  if (connection != null) {
-                     try {
-                        connection.close();
-                     } catch (Throwable var7) {
-                        var10.addSuppressed(var7);
-                     }
-                  }
-
-                  throw var10;
-               }
-
-               if (connection != null) {
-                  connection.close();
-               }
+                while (set.next()) {
+                    ForumThreadComment comment = new ForumThreadComment(set);
+                    addComment(comment);
+                }
             } catch (SQLException e) {
-               LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Caught SQL exception", e);
             }
-         }
-      }
-   }
+        }
+    }
 
-   public void addComment(ForumThreadComment comment) {
-      this.comments.put(comment.getCommentId(), comment);
-      comment.setIndex(this.commentIndex);
-      this.commentIndex++;
-      this.lastComment = comment;
-   }
+    public void addComment(ForumThreadComment comment) {
+        this.comments.put(comment.getCommentId(), comment);
+        comment.setIndex(this.commentIndex);
+        this.commentIndex++;
+        this.lastComment = comment;
+    }
 
-   public Collection<ForumThreadComment> getComments() {
-      if (!this.hasCommentsLoaded) {
-         this.loadComments();
-      }
+    public Collection<ForumThreadComment> getComments() {
+        if (!this.hasCommentsLoaded) {
+            loadComments();
+        }
 
-      return this.comments.values();
-   }
+        return this.comments.values();
+    }
 
-   public Collection<ForumThreadComment> getComments(int limit, int offset) {
-      if (!this.hasCommentsLoaded) {
-         this.loadComments();
-      }
+    public Collection<ForumThreadComment> getComments(int limit, int offset) {
+        if (!this.hasCommentsLoaded) {
+            loadComments();
+        }
 
-      synchronized (this.comments) {
-         ArrayList<ForumThreadComment> limitedComments = new ArrayList<>();
-         List<ForumThreadComment> comments = new ArrayList<>(this.comments.values());
-         comments.sort(Comparator.comparingInt(ForumThreadComment::getIndex));
-         Iterator<ForumThreadComment> iterator = comments.iterator();
+        synchronized (this.comments) {
+            ArrayList<ForumThreadComment> limitedComments = new ArrayList<>();
 
-         while (offset > 0 && iterator.hasNext()) {
-            iterator.next();
-            offset--;
-         }
+            List<ForumThreadComment> comments = new ArrayList<>(this.comments.values());
+            comments.sort(Comparator.comparingInt(ForumThreadComment::getIndex));
 
-         while (limit > 0 && iterator.hasNext()) {
-            limitedComments.add(iterator.next());
-            limit--;
-         }
+            Iterator<ForumThreadComment> iterator = comments.iterator();
 
-         return limitedComments;
-      }
-   }
+            for (; offset > 0; --offset) {
+                if (!iterator.hasNext())
+                    break;
 
-   public ForumThreadComment getCommentById(int commentId) {
-      if (!this.hasCommentsLoaded) {
-         this.loadComments();
-      }
-
-      synchronized (this.comments) {
-         return (ForumThreadComment)this.comments.get(commentId);
-      }
-   }
-
-   @Override
-   public void serialize(ServerMessage message) {
-      Habbo opener = Emulator.getGameEnvironment().getHabboManager().getHabbo(this.openerId);
-      Habbo admin = Emulator.getGameEnvironment().getHabboManager().getHabbo(this.adminId);
-      Collection<ForumThreadComment> comments = this.getComments();
-      int lastSeenAt = 0;
-      int totalComments = comments.size();
-      int newComments = 0;
-      ForumThreadComment lastComment = this.lastComment;
-      if (lastComment == null) {
-         for (ForumThreadComment comment : comments) {
-            if (comment.getCreatedAt() > lastSeenAt) {
-               newComments++;
+                iterator.next();
             }
 
-            if (lastComment == null || lastComment.getCreatedAt() < comment.getCreatedAt()) {
-               lastComment = comment;
-            }
-         }
+            for (; limit > 0; --limit) {
+                if (!iterator.hasNext())
+                    break;
 
-         this.lastComment = lastComment;
-      }
-
-      Habbo lastAuthor = lastComment != null ? lastComment.getHabbo() : null;
-      int nowTimestamp = Emulator.getIntUnixTimestamp();
-      message.appendInt(this.threadId);
-      message.appendInt(this.openerId);
-      message.appendString(opener != null ? opener.getHabboInfo().getUsername() : "");
-      message.appendString(this.subject);
-      message.appendBoolean(this.pinned);
-      message.appendBoolean(this.locked);
-      message.appendInt(nowTimestamp - this.createdAt);
-      message.appendInt(totalComments);
-      message.appendInt(newComments);
-      message.appendInt(1);
-      message.appendInt(lastAuthor != null ? lastAuthor.getHabboInfo().getId() : -1);
-      message.appendString(lastAuthor != null ? lastAuthor.getHabboInfo().getUsername() : "");
-      message.appendInt(nowTimestamp - (lastComment != null ? lastComment.getCreatedAt() : this.updatedAt));
-      message.appendByte(this.state.getStateId());
-      message.appendInt(this.adminId);
-      message.appendString(admin != null ? admin.getHabboInfo().getUsername() : "");
-      message.appendInt(this.threadId);
-   }
-
-   @Override
-   public void run() {
-      if (this.needsUpdate) {
-         try {
-            Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-
-            try {
-               PreparedStatement statement = connection.prepareStatement(
-                  "UPDATE `guilds_forums_threads` SET `posts_count` = ?, `updated_at` = ?, `state` = ?, `pinned` = ?, `locked` = ?, `admin_id` = ? WHERE `id` = ?"
-               );
-
-               try {
-                  statement.setInt(1, this.postsCount);
-                  statement.setInt(2, this.updatedAt);
-                  statement.setInt(3, this.state.getStateId());
-                  statement.setInt(4, this.pinned ? 1 : 0);
-                  statement.setInt(5, this.locked ? 1 : 0);
-                  statement.setInt(6, this.adminId);
-                  statement.setInt(7, this.threadId);
-                  statement.execute();
-                  this.needsUpdate = false;
-               } catch (Throwable var7) {
-                  if (statement != null) {
-                     try {
-                        statement.close();
-                     } catch (Throwable var6) {
-                        var7.addSuppressed(var6);
-                     }
-                  }
-
-                  throw var7;
-               }
-
-               if (statement != null) {
-                  statement.close();
-               }
-            } catch (Throwable var8) {
-               if (connection != null) {
-                  try {
-                     connection.close();
-                  } catch (Throwable var5) {
-                     var8.addSuppressed(var5);
-                  }
-               }
-
-               throw var8;
+                limitedComments.add(iterator.next());
             }
 
-            if (connection != null) {
-               connection.close();
+            return limitedComments;
+        }
+    }
+
+    public ForumThreadComment getCommentById(int commentId) {
+        if (!this.hasCommentsLoaded) {
+            loadComments();
+        }
+
+        synchronized (this.comments) {
+            return this.comments.get(commentId);
+        }
+    }
+
+    @Override
+    public void serialize(ServerMessage message) {
+        Habbo opener = Emulator.getGameEnvironment().getHabboManager().getHabbo(this.openerId);
+        Habbo admin = Emulator.getGameEnvironment().getHabboManager().getHabbo(this.adminId);
+
+        Collection<ForumThreadComment> comments = this.getComments();
+        int lastSeenAt = 0;
+        int totalComments = comments.size();
+        int newComments = 0;
+        ForumThreadComment lastComment = this.lastComment;
+
+        if (lastComment == null) {
+            for (ForumThreadComment comment : comments) {
+                if (comment.getCreatedAt() > lastSeenAt) {
+                    newComments++;
+                }
+                if (lastComment == null || lastComment.getCreatedAt() < comment.getCreatedAt()) {
+                    lastComment = comment;
+                }
             }
-         } catch (SQLException e) {
+            this.lastComment = lastComment;
+        }
+
+        Habbo lastAuthor = lastComment != null ? lastComment.getHabbo() : null;
+
+        int nowTimestamp = Emulator.getIntUnixTimestamp();
+        message.appendInt(this.threadId);
+        message.appendInt(this.openerId);
+        message.appendString(opener != null ? opener.getHabboInfo().getUsername() : "");
+        message.appendString(this.subject);
+        message.appendBoolean(this.pinned);
+        message.appendBoolean(this.locked);
+        message.appendInt(nowTimestamp - this.createdAt);
+        message.appendInt(totalComments); // total comments
+        message.appendInt(newComments); // unread comments
+        message.appendInt(1);
+
+        message.appendInt(lastAuthor != null ? lastAuthor.getHabboInfo().getId() : -1);
+        message.appendString(lastAuthor != null ? lastAuthor.getHabboInfo().getUsername() : "");
+        message.appendInt(nowTimestamp - (lastComment != null ? lastComment.getCreatedAt() : this.updatedAt));
+        message.appendByte(this.state.getStateId());
+        message.appendInt(this.adminId);
+        message.appendString(admin != null ? admin.getHabboInfo().getUsername() : "");
+        message.appendInt(this.threadId);
+    }
+
+    @Override
+    public void run() {
+        if (!this.needsUpdate)
+            return;
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE `guilds_forums_threads` SET `posts_count` = ?, `updated_at` = ?, `state` = ?, `pinned` = ?, `locked` = ?, `admin_id` = ? WHERE `id` = ?")) {
+            statement.setInt(1, this.postsCount);
+            statement.setInt(2, this.updatedAt);
+            statement.setInt(3, this.state.getStateId());
+            statement.setInt(4, this.pinned ? 1 : 0);
+            statement.setInt(5, this.locked ? 1 : 0);
+            statement.setInt(6, this.adminId);
+            statement.setInt(7, this.threadId);
+            statement.execute();
+
+            this.needsUpdate = false;
+        } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
-         }
-      }
-   }
+        }
+    }
 }

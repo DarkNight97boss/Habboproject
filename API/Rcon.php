@@ -24,6 +24,7 @@ class Rcon{
         $tcpsocket = $this->openSocket();
         $payload = array(
             "key" => "executecommand",
+            "token" => $this->password,
             "data" => array(
                 "user_id" => (string)$UserID,
                 "command" => $commandStr
@@ -37,6 +38,7 @@ class Rcon{
         $tcpsocket = $this->openSocket();
         $payload = array(
             "key" => "alertuser",
+            "token" => $this->password,
             "data" => array(
                 "user_id" => (string)$UserID,
                 "message" => $message
@@ -49,6 +51,7 @@ class Rcon{
         $tcpsocket = $this->openSocket();
         $payload = array(
             "key" => "talkuser",
+            "token" => $this->password,
             "data" => array(
                 "user_id" => (string)$UserID,
                 "bubble" => "-1",
@@ -87,6 +90,7 @@ class Rcon{
         $tcpsocket = $this->openSocket();
         $payload = array(
             "key" => "reloadroom",
+            "token" => $this->password,
             "data" => array(
                 "username" => $username
             )

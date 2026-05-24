@@ -33,14 +33,21 @@ networking.auth.timeout.seconds=30
 #Max connessioni per IP (0 = illimitato). LASCIA 0 se sei dietro proxy/Cloudflare
 #(l'IP del socket sarebbe quello del proxy): in quel caso limita per-IP sul proxy.
 networking.max.connections.per.ip=0
+#PROXY protocol: abilita SOLO se sei dietro un proxy TCP che antepone l'header PROXY
+#(es. Cloudflare Spectrum con "Proxy Protocol" attivo). Con true l'EMU ricava l'IP reale
+#dall'header e RIFIUTA le connessioni senza header (accetta cioe' solo traffico via proxy).
+#Richiede un firewall che consenta il game port SOLO dagli IP del proxy.
+networking.tcp.proxy=false
 
 #RCON Configuration.
 #RCON Host IP. Leave this at 127.0.0.1 if you're running your website on the same server as the emulator.
-#SECURITY: RCON has NO authentication beyond this IP allow-list. Never expose rcon.port to the
-#public internet. Keep rcon.host bound to 127.0.0.1 and restrict access with a firewall.
+#SECURITY: keep rcon.host on 127.0.0.1, never expose rcon.port publicly, restrict it with a firewall.
+#rcon.token adds a shared-secret check on top of the IP allow-list (empty = disabled). Set the SAME
+#value here and in the CMS/API RCON config to require it.
 rcon.host=127.0.0.1
 rcon.port=3001
 rcon.allowed=127.0.0.1;127.0.0.2
+rcon.token=
 
 #Encryption (RSA used in the client<->server Diffie-Hellman handshake).
 #SECURITY: with enc.enabled=false the handshake is unencrypted. The keypair below is the DEFAULT

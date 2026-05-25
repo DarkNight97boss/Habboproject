@@ -24,9 +24,9 @@ if (-not (Test-Path "$G\nitro-react\public\renderer-config.json")) {
     Copy-Item "public\ui-config.json.example" "public\ui-config.json"
     (Get-Content "public\renderer-config.json") `
         -replace '"socket\.url":\s*"[^"]*"','"socket.url": "ws://127.0.0.1:2096"' `
-        -replace '"asset\.url":\s*"[^"]*"','"asset.url": "http://localhost:8090"' `
-        -replace '"image\.library\.url":\s*"[^"]*"','"image.library.url": "http://localhost:8090/c_images/"' `
-        -replace '"hof\.furni\.url":\s*"[^"]*"','"hof.furni.url": "http://localhost:8090/c_images/dcr/hof_furni"' `
+        -replace '"asset\.url":\s*"[^"]*"','"asset.url": "."' `
+        -replace '"image\.library\.url":\s*"[^"]*"','"image.library.url": "/c_images/"' `
+        -replace '"hof\.furni\.url":\s*"[^"]*"','"hof.furni.url": "/dcr/hof_furni"' `
         -replace '"avatar\.mandatory\.effect\.libraries":\s*\[[^\]]*\]','"avatar.mandatory.effect.libraries": []' |
         Set-Content "public\renderer-config.json"
 }

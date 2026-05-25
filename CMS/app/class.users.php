@@ -677,7 +677,7 @@ namespace Revolution;
 	
 	final public function createSSO($k) 	
 	{ 	 	
-		$sessionKey = 'Hotel-'.rand(9,999).'/'.substr(sha1(time()).'/'.rand(9,9999999).'/'.rand(9,9999999).'/'.rand(9,9999999),0,33);
+		$sessionKey = 'Hotel-' . bin2hex(function_exists('random_bytes') ? random_bytes(16) : openssl_random_pseudo_bytes(16));
 		
 		$this->updateUser($k, 'auth_ticket', $sessionKey);
 		
@@ -689,7 +689,7 @@ namespace Revolution;
 	final public function addUser($username, $password, $email, $motto, $credits, $rank, $figure, $gender, $security_enabled) 	
 	{ 		
 		global $engine; 		 		 		 		
-		$sessionKey = 'Hotel-'.rand(9,999).'/'.substr(sha1(time()).'/'.rand(9,9999999).'/'.rand(9,9999999).'/'.rand(9,9999999),0,33);
+		$sessionKey = 'Hotel-' . bin2hex(function_exists('random_bytes') ? random_bytes(16) : openssl_random_pseudo_bytes(16));
 		$engine->query("INSERT INTO users (username, password, mail, motto, credits, rank, look, gender, security_enabled, ip_current, ip_register, account_created, last_online, auth_ticket) VALUES('" . $username . "', '" . $password . "', '" . $email . "', '" . $motto . "', '" . $credits . "', '" . $rank . "', '" . $figure . "', '" . $gender . "', '" . $security_enabled . "', '" . $_SERVER['REMOTE_ADDR'] . "', '" . $_SERVER['REMOTE_ADDR'] . "', '" . time() . "', '" . time() . "', '" . $sessionKey . "')"); 	
 		unset($sessionKey);	
 		 			 

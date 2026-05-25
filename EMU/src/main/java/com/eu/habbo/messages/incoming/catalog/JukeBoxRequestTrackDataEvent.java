@@ -12,8 +12,9 @@ public class JukeBoxRequestTrackDataEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         int count = this.packet.readInt();
+        if (count < 0 || count > 1000) return; // bound client-supplied count to prevent OOM/DoS
 
-        List<SoundTrack> tracks = new ArrayList<>(count);
+        List<SoundTrack> tracks = new ArrayList<>();
 
         for (int i = 0; i < count; i++) {
             SoundTrack track = Emulator.getGameEnvironment().getItemManager().getSoundTrack(this.packet.readInt());

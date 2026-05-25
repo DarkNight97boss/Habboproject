@@ -25,6 +25,7 @@ public class ModToolSanctionBanEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
+        if (com.eu.habbo.core.StaffMfa.blockIfLocked(this.client)) return;
         int userId = this.packet.readInt();
         String message = this.packet.readString();
         int cfhTopic = this.packet.readInt();

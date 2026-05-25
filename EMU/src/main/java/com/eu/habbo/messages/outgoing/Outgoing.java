@@ -553,5 +553,9 @@ public class Outgoing {
     public static final int SnowStormGenericErrorComposer = 5028;
     public static final int SnowStormUserRematchedComposer = 5029;
 
+    // Custom: staff step-up MFA (Google Authenticator). Header must match nitro client modal.
+    public static final int StaffMfaRequiredComposer = 9500;
+    public static final int StaffMfaResultComposer = 9502;
+
 
 }

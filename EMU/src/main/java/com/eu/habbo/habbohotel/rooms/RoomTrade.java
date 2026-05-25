@@ -272,6 +272,10 @@ public class RoomTrade {
 
         userOne.getHabbo().getClient().sendResponse(new InventoryRefreshComposer());
         userTwo.getHabbo().getClient().sendResponse(new InventoryRefreshComposer());
+
+        com.eu.habbo.core.AuditLog.record(userOne.getHabbo().getHabboInfo().getId(), userOne.getHabbo().getHabboInfo().getUsername(), "TRADE",
+                "user:" + userTwo.getHabbo().getHabboInfo().getId(),
+                "items=" + itemsUserOne.size() + "/" + itemsUserTwo.size() + " credits=" + creditsForUserOne + "/" + creditsForUserTwo);
         return true;
     }
 

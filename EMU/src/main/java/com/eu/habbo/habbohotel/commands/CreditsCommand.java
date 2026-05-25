@@ -30,6 +30,7 @@ public class CreditsCommand extends Command {
                 if (habbo != null) {
                     if (credits != 0) {
                         habbo.giveCredits(credits);
+                        com.eu.habbo.core.AuditLog.record(gameClient.getHabbo().getHabboInfo().getId(), gameClient.getHabbo().getHabboInfo().getUsername(), "GIVE_CREDITS", "user:" + info.getId(), "amount=" + credits);
                         if (habbo.getHabboInfo().getCurrentRoom() != null)
                             habbo.whisper(Emulator.getTexts().getValue("commands.generic.cmd_credits.received").replace("%amount%", Integer.parseInt(params[2]) + ""), RoomChatMessageBubbles.ALERT);
                         else
@@ -42,6 +43,7 @@ public class CreditsCommand extends Command {
                     }
                 } else {
                     Emulator.getGameEnvironment().getHabboManager().giveCredits(info.getId(), credits);
+                    com.eu.habbo.core.AuditLog.record(gameClient.getHabbo().getHabboInfo().getId(), gameClient.getHabbo().getHabboInfo().getUsername(), "GIVE_CREDITS", "user:" + info.getId(), "amount=" + credits);
                     gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.succes.cmd_credits.send").replace("%amount%", Integer.parseInt(params[2]) + "").replace("%user%", params[1]), RoomChatMessageBubbles.ALERT);
 
                 }

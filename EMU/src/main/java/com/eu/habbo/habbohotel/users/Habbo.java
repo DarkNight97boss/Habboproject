@@ -18,7 +18,6 @@ import com.eu.habbo.plugin.events.furniture.FurnitureBuildheightEvent;
 import com.eu.habbo.plugin.events.users.UserCreditsEvent;
 import com.eu.habbo.plugin.events.users.UserDisconnectEvent;
 import com.eu.habbo.plugin.events.users.UserGetIPAddressEvent;
-import com.eu.habbo.networking.gameserver.GameServerAttributes;
 import com.eu.habbo.plugin.events.users.UserPointsEvent;
 import gnu.trove.TIntCollection;
 import gnu.trove.map.hash.THashMap;
@@ -130,13 +129,6 @@ public class Habbo implements Runnable {
         {
             SocketAddress address = this.client.getChannel().remoteAddress();
             ProxyIP = ((InetSocketAddress) address).getAddress().getHostAddress();
-
-            // Behind a PROXY-protocol proxy (e.g. Cloudflare Spectrum): use the real client IP decoded
-            // from the PROXY header so IP bans / clone detection / per-IP logic work correctly.
-            String realIp = this.client.getChannel().attr(GameServerAttributes.IP).get();
-            if (realIp != null && !realIp.isEmpty()) {
-                ip = realIp;
-            }
         }
 
         if (Emulator.getPluginManager().isRegistered(UserGetIPAddressEvent.class, true)) {

@@ -1,6 +1,5 @@
 package com.eu.habbo.networking.gameserver.decoders;
 
-import com.eu.habbo.Emulator;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
@@ -13,7 +12,7 @@ public class GameByteFrameDecoder extends LengthFieldBasedFrameDecoder {
      * Maximum camera packet is 320 * 320 Pixel * 4 Bytes per Pixel = 409600.
      * Adding some for overhead 409600 + 8192 = 417792
      */
-    private static final int DEFAULT_MAX_PACKET_LENGTH = 417792;
+    private static final int MAX_PACKET_LENGTH = 417792;
     private static final int LENGTH_FIELD_OFFSET = 0;
     private static final int LENGTH_FIELD_LENGTH = 4;
     private static final int LENGTH_FIELD_ADJUSTMENT = 0;
@@ -21,15 +20,7 @@ public class GameByteFrameDecoder extends LengthFieldBasedFrameDecoder {
 
     public GameByteFrameDecoder()
     {
-        super(maxPacketLength(), LENGTH_FIELD_OFFSET, LENGTH_FIELD_LENGTH, LENGTH_FIELD_ADJUSTMENT, INITIAL_BYTES_TO_STRIP);
-    }
-
-    /**
-     * Max inbound packet size. Defaults to the camera PNG limit (417792). If you do not use the
-     * in-client camera you can safely lower this (e.g. 16384) to shrink the buffer-abuse surface.
-     */
-    private static int maxPacketLength() {
-        return Emulator.getConfig().getInt("networking.packet.max.length", DEFAULT_MAX_PACKET_LENGTH);
+        super(MAX_PACKET_LENGTH, LENGTH_FIELD_OFFSET, LENGTH_FIELD_LENGTH, LENGTH_FIELD_ADJUSTMENT, INITIAL_BYTES_TO_STRIP);
     }
 
     @Override

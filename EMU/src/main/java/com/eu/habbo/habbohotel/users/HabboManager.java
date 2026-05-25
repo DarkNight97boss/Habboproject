@@ -142,7 +142,7 @@ public class HabboManager {
                         Emulator.getPluginManager().fireEvent(new UserRegisteredEvent(habbo));
                     }
 
-                    { // SSO ticket is single-use: always invalidate it (was guarded by !Emulator.debugging, which allowed replay in debug mode)
+                    if (!Emulator.debugging) {
                         try (PreparedStatement stmt = connection.prepareStatement("UPDATE users SET auth_ticket = ? WHERE id = ? LIMIT 1")) {
                             stmt.setString(1, "");
                             stmt.setInt(2, habbo.getHabboInfo().getId());

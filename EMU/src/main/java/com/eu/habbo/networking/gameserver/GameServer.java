@@ -10,7 +10,6 @@ import com.eu.habbo.networking.gameserver.encoders.GameServerMessageLogger;
 import com.eu.habbo.networking.gameserver.handlers.IdleTimeoutHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.codec.haproxy.HAProxyMessageDecoder;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 
@@ -32,14 +31,6 @@ public class GameServer extends Server {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
                 ch.pipeline().addLast("logger", new LoggingHandler());
-
-                // Behind a PROXY-protocol TCP proxy (e.g. Cloudflare Spectrum): decode the real client
-                // IP from the PROXY header first. Connections without a valid header are rejected, so
-                // only traffic that comes through the proxy is accepted when this is enabled.
-                if (Emulator.getConfig().getBoolean("networking.tcp.proxy")) {
-                    ch.pipeline().addLast(new HAProxyMessageDecoder());
-                    ch.pipeline().addLast(new HAProxyIpHandler());
-                }
 
                 // Decoders.
                 ch.pipeline().addLast(new GamePolicyDecoder());

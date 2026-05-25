@@ -150,6 +150,7 @@ public final class Emulator {
             Emulator.rconServer.initializePipeline();
             Emulator.rconServer.connect();
             Emulator.badgeImager = new BadgeImager();
+            new com.eu.habbo.core.Watchdog();
 
             LOGGER.info("Arcturus Morningstar has successfully loaded.");
             LOGGER.info("System launched in: {}ms. Using {} threads!", (System.nanoTime() - startTime) / 1e6, Runtime.getRuntime().availableProcessors() * 2);

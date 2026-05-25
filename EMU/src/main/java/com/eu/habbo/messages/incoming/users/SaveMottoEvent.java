@@ -13,7 +13,8 @@ public class SaveMottoEvent extends MessageHandler {
         UserSavedMottoEvent event = new UserSavedMottoEvent(this.client.getHabbo(), this.client.getHabbo().getHabboInfo().getMotto(), motto);
         Emulator.getPluginManager().fireEvent(event);
         motto = event.newMotto;
-        
+        motto = motto.replace("<", "").replace(">", ""); // strip markup (anti stored-XSS)
+
         if(motto.length() <= Emulator.getConfig().getInt("motto.max_length", 38)) {
             this.client.getHabbo().getHabboInfo().setMotto(motto);
             this.client.getHabbo().getHabboInfo().run();

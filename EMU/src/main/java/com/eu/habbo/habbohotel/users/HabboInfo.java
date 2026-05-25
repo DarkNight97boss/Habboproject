@@ -241,7 +241,8 @@ public class HabboInfo implements Runnable {
     }
 
     public void addCurrencyAmount(int type, int amount) {
-        this.currencies.adjustOrPutValue(type, amount, amount);
+        long total = (long) this.currencies.get(type) + amount;
+        this.currencies.put(type, (int) Math.max(0L, Math.min(total, Integer.MAX_VALUE))); // clamp: no overflow / negative
         this.run();
     }
 
@@ -348,7 +349,8 @@ public class HabboInfo implements Runnable {
     }
 
     public void addCredits(int credits) {
-        this.credits += credits;
+        long total = (long) this.credits + credits;
+        this.credits = (int) Math.max(0L, Math.min(total, Integer.MAX_VALUE)); // clamp: no overflow / negative
         this.run();
     }
 

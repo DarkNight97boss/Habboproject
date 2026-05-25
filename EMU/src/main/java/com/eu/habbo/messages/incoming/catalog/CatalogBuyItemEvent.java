@@ -102,13 +102,13 @@ public class CatalogBuyItemEvent extends MessageHandler {
                        this.client.sendResponse(new PurchaseOKComposer(null)); // Send this so the alert disappears, not sure if this is how it should be handled :S
                        return;
                     }
-                        ((RoomBundleLayout) page).buyRoom(this.client.getHabbo());
                         if (!this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS)) { //if the player has this perm disabled
                             this.client.getHabbo().giveCredits(-roomBundleItem.getCredits()); // takes their credits away
                         }
                         if (!this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_POINTS)) { //if the player has this perm disabled
                             this.client.getHabbo().givePoints(roomBundleItem.getPointsType(), -roomBundleItem.getPoints()); // takes their points away
                         }
+                        ((RoomBundleLayout) page).buyRoom(this.client.getHabbo()); // grant the room only after charging
                         this.client.sendResponse(new PurchaseOKComposer()); // Sends the composer to close the window.
 
                     item[0].getBaseItems().stream().filter(i -> i.getType() == FurnitureType.BADGE).forEach(i -> {
@@ -155,6 +155,10 @@ public class CatalogBuyItemEvent extends MessageHandler {
                     totalDays += item.getDays();
                     totalCredits += item.getCredits();
                     totalDuckets += item.getPoints();
+                }
+
+                if (totalDays < 0 || totalCredits < 0 || totalDuckets < 0) { // integer-overflow guard
+                    return;
                 }
 
                 if (totalDays > 0) {

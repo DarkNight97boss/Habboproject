@@ -152,7 +152,7 @@ public class BotSaveSettingsEvent extends MessageHandler {
                     }
                     break;
                 case 9:
-                    String motto = this.packet.readString();
+                    String motto = this.packet.readString().replace("<", "").replace(">", ""); // strip markup (anti stored-XSS)
 
                     if(motto.length() > Emulator.getConfig().getInt("motto.max_length", 38)) break;
 

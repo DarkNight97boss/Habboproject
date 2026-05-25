@@ -24,7 +24,7 @@ public class RoomSettingsSaveEvent extends MessageHandler {
 
         if (room != null) {
             if (room.isOwner(this.client.getHabbo())) {
-                String name = this.packet.readString();
+                String name = this.packet.readString().replace("<", "").replace(">", ""); // strip markup (anti stored-XSS)
 
                 if (name.trim().isEmpty() || name.length() > 60) {
                     this.client.sendResponse(new RoomEditSettingsErrorComposer(room.getId(), RoomEditSettingsErrorComposer.ROOM_NAME_MISSING, ""));
@@ -36,7 +36,7 @@ public class RoomSettingsSaveEvent extends MessageHandler {
                     return;
                 }
 
-                String description = this.packet.readString();
+                String description = this.packet.readString().replace("<", "").replace(">", ""); // strip markup (anti stored-XSS)
 
                 if (description.length() > 255) {
                     return;

@@ -8,12 +8,16 @@ public class JukeBoxRemoveSoundTrackEvent extends MessageHandler {
     public void handle() throws Exception {
         int index = this.packet.readInt();
 
-        if (this.client.getHabbo().getHabboInfo().getCurrentRoom() == null) return;
+        com.eu.habbo.habbohotel.rooms.Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+        if (room == null || !room.hasRights(this.client.getHabbo())) return; // only users with rights can edit the jukebox
 
-        InteractionMusicDisc musicDisc = this.client.getHabbo().getHabboInfo().getCurrentRoom().getTraxManager().getSongs().get(index);
+        java.util.List<InteractionMusicDisc> songs = room.getTraxManager().getSongs();
+        if (index < 0 || index >= songs.size()) return; // bounds-check the client index
+
+        InteractionMusicDisc musicDisc = songs.get(index);
 
         if (musicDisc != null) {
-            this.client.getHabbo().getHabboInfo().getCurrentRoom().getTraxManager().removeSong(musicDisc.getId());
+            room.getTraxManager().removeSong(musicDisc.getId());
         }
     }
 }

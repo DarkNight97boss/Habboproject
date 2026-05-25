@@ -61,15 +61,22 @@ public class CatalogSelectClubGiftEvent extends MessageHandler {
             return;
         }
 
+        // Atomically reserve a gift slot before creating items (anti TOCTOU double-claim).
+        synchronized (this.client.getHabbo().getHabboStats()) {
+            if (this.client.getHabbo().getHabboStats().getRemainingClubGifts() < 1) {
+                this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                return;
+            }
+            this.client.getHabbo().getHabboStats().hcGiftsClaimed++;
+        }
+        Emulator.getThreading().run(this.client.getHabbo().getHabboStats());
+
         THashSet<Item> itemsGiven = new THashSet<>();
         for(Item item : catalogItem.getBaseItems()) {
             if(Emulator.getGameEnvironment().getItemManager().createGift(this.client.getHabbo().getHabboInfo().getId(), item, "", 0, 0) != null) {
                 itemsGiven.add(item);
             }
         }
-
-        this.client.getHabbo().getHabboStats().hcGiftsClaimed++;
-        Emulator.getThreading().run(this.client.getHabbo().getHabboStats());
 
         this.client.sendResponse(new ClubGiftReceivedComposer(itemName, itemsGiven));
 

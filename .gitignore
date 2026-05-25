@@ -4,6 +4,8 @@
 # Logs (may contain PII / payment data)
 *.log
 **/.ipn_results.log
+emu.out.log
+emu.err.log
 
 # Runtime user uploads
 API/audios/
@@ -15,3 +17,11 @@ target/
 Thumbs.db
 *.swp
 *~
+
+# Nitro client / generati pesanti (rigenerati da build_clean_client.ps1 / SETUP.md)
+CMS/react/
+client-dist/
+node_modules/
+dist/
+*.jar
+.claude/settings.json

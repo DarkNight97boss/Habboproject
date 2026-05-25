@@ -62,6 +62,8 @@ Hardening applicato (vedi commit `fix(security)`/`feat(security)`):
 - **CMS** (`app/security.php`): header di sicurezza, protezione CSRF globale (Origin/Referer + token), SQLi/XSS chiusi, rate-limit login, cookie sessione HttpOnly/SameSite/Secure.
 - **DB/secret**: `CMS/app/management/config.php`, `EMU/config.ini`, `API/config.php` NON sono tracciati → copia dai `.example` e imposta le credenziali. Le vecchie credenziali nello storico git vanno **ruotate** se diventano reali.
 - Lasciare `debug.mode` **off** (auth_ticket single-use). `enc.enabled` può restare `false` con nitro.
+- **Emulatore anti-DoS/scala**: rate-limit pacchetti aggregato con disconnessione (`GameMessageRateLimit`), cap sui `count` lato client in 8+ handler, guardia anti-crash nel decoder. `emulator_settings` consigliati: `debug.mode=0`, `runtime.threads`≈ (core) e `io.workergroup.threads`≈ (2×core), `db.pool` adeguato. Heap JVM in `start_clean_stack.ps1` (`-Xmx` in base alla RAM, G1GC).
+- **Flood di connessioni**: NON limitati nell'emulatore (dietro Cloudflare l'emu vede solo IP CF). Gestiscili a livello **Cloudflare** (Rate Limiting Rules / "Under Attack Mode") o **firewall** (es. `iptables`/`nftables` connlimit sulle porte 3000/2096).
 
 ## Cloudflare (produzione)
 Il codice è già predisposto (trust degli IP CF, HTTPS via `X-Forwarded-Proto`/`CF-Visitor`, HSTS, Secure cookie). Per attivarlo:

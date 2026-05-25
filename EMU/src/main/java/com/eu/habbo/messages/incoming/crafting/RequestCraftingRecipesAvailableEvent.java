@@ -18,12 +18,14 @@ public class RequestCraftingRecipesAvailableEvent extends MessageHandler {
 
         HabboItem item = this.client.getHabbo().getHabboInfo().getCurrentRoom().getHabboItem(altarId);
 
+        if (item == null) return; // guard against NPE from invalid altar id
+
         CraftingAltar altar = Emulator.getGameEnvironment().getCraftingManager().getAltar(item.getBaseItem());
 
         if (altar != null) {
             Map<Item, Integer> items = new THashMap<>();
 
-            int count = this.packet.readInt();
+            int count = Math.min(this.packet.readInt(), 500); // bound client count (anti-DoS)
             for (int i = 0; i < count; i++) {
                 HabboItem habboItem = this.client.getHabbo().getInventory().getItemsComponent().getHabboItem(this.packet.readInt());
 

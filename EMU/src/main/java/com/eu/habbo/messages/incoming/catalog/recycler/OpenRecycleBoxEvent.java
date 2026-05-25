@@ -29,10 +29,10 @@ public class OpenRecycleBoxEvent extends MessageHandler {
             if (item.getUserId() != this.client.getHabbo().getHabboInfo().getId()) return;
 
             if (item instanceof InteractionGift) {
-                if (item.getBaseItem().getName().contains("present_wrap")) {
-                    ((InteractionGift) item).explode = true;
-                    room.updateItem(item);
-                }
+                // Remove the gift from the room up-front so a duplicate/concurrent open can't process it
+                // twice during the OpenGift delay (anti item-duplication).
+                room.removeHabboItem(item);
+                room.sendComposer(new RemoveFloorItemComposer(item).compose());
 
                 Emulator.getThreading().run(new OpenGift(item, this.client.getHabbo(), room), item.getBaseItem().getName().contains("present_wrap") ? 1000 : 0);
             } else {

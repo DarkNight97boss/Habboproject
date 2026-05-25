@@ -100,6 +100,21 @@ public class ItemsComponent {
         return this.items.get(Math.abs(itemId));
     }
 
+    /**
+     * Atomically removes and returns the item if present, else null. Use this when a packet
+     * handler is about to CONSUME an item (sell/recycle/place/redeem) so the same item cannot
+     * be claimed twice by two concurrent operations (anti-duplication).
+     */
+    public HabboItem getAndClaim(int itemId) {
+        synchronized (this.items) {
+            HabboItem item = this.items.get(Math.abs(itemId));
+            if (item != null) {
+                this.items.remove(Math.abs(itemId));
+            }
+            return item;
+        }
+    }
+
     public HabboItem getAndRemoveHabboItem(final Item item) {
         final HabboItem[] habboItem = {null};
         synchronized (this.items) {

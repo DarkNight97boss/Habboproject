@@ -23,7 +23,11 @@ public class RoomEffectCommand extends Command {
 
             if (effectId >= 0) {
                 Room room = gameClient.getHabbo().getHabboInfo().getCurrentRoom();
+                if (room == null) return true;
                 for (Habbo habbo : room.getHabbos()) {
+                    if (Emulator.getGameEnvironment().getPermissionsManager().isEffectBlocked(effectId, habbo.getHabboInfo().getRank().getId())) {
+                        continue; // don't push rank-restricted effects onto users
+                    }
                     room.giveEffect(habbo, effectId, -1);
                 }
 

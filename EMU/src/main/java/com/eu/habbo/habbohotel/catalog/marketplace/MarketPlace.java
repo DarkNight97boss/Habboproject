@@ -349,6 +349,11 @@ public class MarketPlace {
 
         RequestOffersEvent.cachedResults.clear();
 
+        // Atomically claim the item; abort if another concurrent op already took it (anti-dupe).
+        if (client.getHabbo().getInventory().getItemsComponent().getAndClaim(event.item.getId()) == null) {
+            return false;
+        }
+
         client.sendResponse(new RemoveHabboItemComposer(event.item.getGiftAdjustedId()));
         client.sendResponse(new InventoryRefreshComposer());
 
@@ -356,7 +361,6 @@ public class MarketPlace {
 
         MarketPlaceOffer offer = new MarketPlaceOffer(event.item, event.price, client.getHabbo());
         client.getHabbo().getInventory().addMarketplaceOffer(offer);
-        client.getHabbo().getInventory().getItemsComponent().removeHabboItem(event.item);
         item.setUserId(-1);
         item.needsUpdate(true);
         Emulator.getThreading().run(item);

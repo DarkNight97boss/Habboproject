@@ -29,6 +29,11 @@ public class MuteCommand extends Command {
                 return true;
             }
 
+            if (habbo.getHabboInfo().getRank().getId() >= gameClient.getHabbo().getHabboInfo().getRank().getId()) {
+                gameClient.getHabbo().whisper("You cannot mute a user of equal or higher rank.", RoomChatMessageBubbles.ALERT);
+                return true;
+            }
+
             int duration = Integer.MAX_VALUE;
 
             if (params.length == 3) {

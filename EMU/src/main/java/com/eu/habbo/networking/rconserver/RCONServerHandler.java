@@ -59,7 +59,9 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
                 response = "ERROR";
             } else {
                 key = object.get("key").getAsString();
-                response = Emulator.getRconServer().handle(ctx, key, object.get("data").toString());
+                String dataStr = object.has("data") ? object.get("data").toString() : "";
+                response = Emulator.getRconServer().handle(ctx, key, dataStr);
+                com.eu.habbo.core.AuditLog.record(0, "RCON", key, "", dataStr); // tamper-evident audit trail
             }
         } catch (ArrayIndexOutOfBoundsException e) {
             LOGGER.error("Unknown RCON Message: {}", key);

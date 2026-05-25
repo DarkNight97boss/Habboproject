@@ -33,6 +33,7 @@ public class MassCreditsCommand extends Command {
                     if (habbo.getHabboInfo().getCurrentRoom() != null)
                         habbo.whisper(Emulator.getTexts().getValue("commands.generic.cmd_credits.received").replace("%amount%", amount + ""), RoomChatMessageBubbles.ALERT);
                 }
+                com.eu.habbo.core.AuditLog.record(gameClient.getHabbo().getHabboInfo().getId(), gameClient.getHabbo().getHabboInfo().getUsername(), "MASS_CREDITS", "all_online", "amount=" + amount);
             }
             return true;
         }

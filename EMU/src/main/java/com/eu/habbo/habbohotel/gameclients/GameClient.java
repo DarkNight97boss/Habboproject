@@ -56,6 +56,9 @@ public class GameClient {
 
     public void setHabbo(Habbo habbo) {
         this.habbo = habbo;
+        if (habbo != null && habbo.getHabboInfo() != null) {
+            Emulator.getGameServer().getGameClientManager().indexHabbo(habbo.getHabboInfo().getId(), this);
+        }
     }
 
     public boolean isHandshakeFinished() {

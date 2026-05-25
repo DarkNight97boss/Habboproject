@@ -43,16 +43,6 @@ public class RequestGuildBuyEvent extends MessageHandler {
             return;
         }
 
-        if (!this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS)) {
-            int guildPrice = Emulator.getConfig().getInt("catalog.guild.price");
-            if (this.client.getHabbo().getHabboInfo().getCredits() >= guildPrice) {
-                this.client.getHabbo().giveCredits(-guildPrice);
-            } else {
-                this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
-                return;
-            }
-        }
-
         int roomId = this.packet.readInt();
 
         Room r = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
@@ -88,6 +78,16 @@ public class RequestGuildBuyEvent extends MessageHandler {
                         badge.append(id < 100 ? "0" : "").append(id < 10 ? "0" : "").append(id).append(color < 10 ? "0" : "").append(color).append(pos);
 
                         base += 3;
+                    }
+
+                    // Deduct credits only now that all validations passed (no money-burn on failure).
+                    if (!this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS)) {
+                        int guildPrice = Emulator.getConfig().getInt("catalog.guild.price");
+                        if (this.client.getHabbo().getHabboInfo().getCredits() < guildPrice) {
+                            this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                            return;
+                        }
+                        this.client.getHabbo().giveCredits(-guildPrice);
                     }
 
                     Guild guild = Emulator.getGameEnvironment().getGuildManager().createGuild(this.client.getHabbo(), roomId, r.getName(), name, description, badge.toString(), colorOne, colorTwo);

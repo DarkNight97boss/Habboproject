@@ -36,10 +36,11 @@
 
 namespace Revolution;
 
-    // Only honor proxy IP headers when the request actually originates from a trusted
-    // proxy (local reverse proxy / Cloudflare tunnel on loopback). Otherwise clients
-    // could spoof X-Forwarded-For / CF-Connecting-IP to forge their IP (captcha / IP-ban bypass).
-    if (in_array($_SERVER['REMOTE_ADDR'], array('127.0.0.1', '::1'), true)) {
+    // CF-aware client IP resolution (centralized in app/security.php; idempotent).
+    // Fallback to loopback-only trust if loaded outside global.php.
+    if (function_exists('hp_resolve_client_ip')) {
+        hp_resolve_client_ip();
+    } else if (in_array($_SERVER['REMOTE_ADDR'], array('127.0.0.1', '::1'), true)) {
         if (isset($_SERVER['HTTP_CF_CONNECTING_IP']) && filter_var($_SERVER['HTTP_CF_CONNECTING_IP'], FILTER_VALIDATE_IP))
             $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_CF_CONNECTING_IP'];
         else if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && filter_var(trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]), FILTER_VALIDATE_IP))

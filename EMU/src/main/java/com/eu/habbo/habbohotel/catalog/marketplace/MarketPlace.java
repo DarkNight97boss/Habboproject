@@ -368,10 +368,10 @@ public class MarketPlace {
     public static void getCredits(GameClient client) {
         int credits = 0;
 
-        THashSet<MarketPlaceOffer> offers = new THashSet<>();
-        offers.addAll(client.getHabbo().getInventory().getMarketplaceItems());
-
+        // Snapshot AND payout must both be inside the lock, otherwise two concurrent
+        // requests snapshot the same SOLD offers and pay the credits twice (double-claim).
         synchronized (client.getHabbo().getInventory()) {
+            THashSet<MarketPlaceOffer> offers = new THashSet<>(client.getHabbo().getInventory().getMarketplaceItems());
             for (MarketPlaceOffer offer : offers) {
                 if (offer.getState().equals(MarketPlaceState.SOLD)) {
                     client.getHabbo().getInventory().removeMarketplaceOffer(offer);
@@ -382,8 +382,6 @@ public class MarketPlace {
                 }
             }
         }
-
-        offers.clear();
 
         if (MARKETPLACE_CURRENCY == 0) {
             client.getHabbo().giveCredits(credits);

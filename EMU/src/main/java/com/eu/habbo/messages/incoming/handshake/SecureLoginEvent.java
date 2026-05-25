@@ -1,6 +1,9 @@
 package com.eu.habbo.messages.incoming.handshake;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.core.AuditLog;
+import com.eu.habbo.core.StaffMfa;
+import com.eu.habbo.messages.outgoing.handshake.StaffMfaRequiredComposer;
 import com.eu.habbo.habbohotel.messenger.Messenger;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctionItem;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctions;
@@ -151,6 +154,28 @@ public class SecureLoginEvent extends MessageHandler {
                 }
 
                 this.client.sendResponses(messages);
+
+                // Staff step-up MFA (Google Authenticator): if enabled and this is a
+                // staff account, lock staff powers until a valid code is entered in the
+                // Habbo-style popup. Config-gated OFF by default (mfa.staff.enabled).
+                if (StaffMfa.isEnabled() && StaffMfa.isStaffAccount(this.client.getHabbo())) {
+                    this.client.setMfaRequired(true);
+                    this.client.setMfaElevated(false);
+
+                    int mfaUserId = this.client.getHabbo().getHabboInfo().getId();
+                    String mfaUsername = this.client.getHabbo().getHabboInfo().getUsername();
+                    boolean mfaEnrolled = StaffMfa.isEnrolled(mfaUserId);
+
+                    if (mfaEnrolled) {
+                        this.client.sendResponse(new StaffMfaRequiredComposer(true, "", ""));
+                    } else {
+                        String mfaSecret = StaffMfa.getOrCreateSecret(mfaUserId);
+                        String mfaUri = StaffMfa.provisioningUri(mfaUsername, mfaSecret);
+                        this.client.sendResponse(new StaffMfaRequiredComposer(false, mfaSecret, mfaUri));
+                    }
+
+                    AuditLog.record(mfaUserId, mfaUsername, "STAFF_MFA_CHALLENGE", "user:" + mfaUserId, "enrolled=" + mfaEnrolled);
+                }
 
                 //Hardcoded
                 //this.client.sendResponse(new ForumsTestComposer());

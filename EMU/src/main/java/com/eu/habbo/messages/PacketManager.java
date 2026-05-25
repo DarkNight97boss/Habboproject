@@ -275,6 +275,7 @@ public class PacketManager {
         this.registerHandler(Incoming.MachineIDEvent, MachineIDEvent.class);
         this.registerHandler(Incoming.UsernameEvent, UsernameEvent.class);
         this.registerHandler(Incoming.PingEvent, PingEvent.class);
+        this.registerHandler(Incoming.StaffMfaVerifyEvent, StaffMfaVerifyEvent.class);
     }
 
     private void registerFriends() throws Exception {

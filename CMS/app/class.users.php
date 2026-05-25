@@ -421,9 +421,25 @@ namespace Revolution;
 			
 			$template->form->setData();
 			unset($template->form->error);
-			
+
+			// Rate limiting (defense-in-depth on top of the captcha): max 8 login
+			// attempts per 15 min window, then a 5 min cooldown.
+			if (!isset($_SESSION['login_rl']) || (time() - $_SESSION['login_rl']['first']) > 900) {
+				$_SESSION['login_rl'] = array('count' => 0, 'first' => time(), 'blocked_until' => 0);
+			}
+			if (time() < $_SESSION['login_rl']['blocked_until']) {
+				$template->form->error = 'Too many login attempts. Please wait a few minutes and try again.';
+				return;
+			}
+			$_SESSION['login_rl']['count']++;
+			if ($_SESSION['login_rl']['count'] > 8) {
+				$_SESSION['login_rl']['blocked_until'] = time() + 300;
+				$template->form->error = 'Too many login attempts. Please wait a few minutes and try again.';
+				return;
+			}
+
 			$turnstileUrl = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'; // Replace with the actual Turnstile server URL
-			$secretKey = $_CONFIG['cloudflare']['secretkey']; 
+			$secretKey = $_CONFIG['cloudflare']['secretkey'];
 
 			// Get the user's CAPTCHA response from the form submission
 			$captchaResponse = $_POST['cf-turnstile-response'];
@@ -465,6 +481,7 @@ namespace Revolution;
 						if($this->userValidation($template->form->log_username, $template->form->log_password))
 						{
 							session_regenerate_id(true); $this->turnOn($template->form->log_username);
+							unset($_SESSION['login_rl']);
 							$this->updateUser($_SESSION['user']['id'], 'ip_current', $_SERVER['REMOTE_ADDR']);
 							$engine->query("INSERT INTO users_logins (user_id, verified_ip, timestamp) VALUES ('" . $_SESSION['user']['id'] . "', '" . $_SERVER['REMOTE_ADDR'] . "', '" . time() . "')");
 							

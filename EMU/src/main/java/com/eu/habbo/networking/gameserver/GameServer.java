@@ -30,6 +30,13 @@ public class GameServer extends Server {
         this.serverBootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
+                // PROXY protocol (Cloudflare Spectrum / L4 proxy): must run first to read the header
+                // and to drop any connection not coming from a trusted (Cloudflare) source.
+                if (Emulator.getConfig().getBoolean("io.proxy.protocol.enabled")) {
+                    ch.pipeline().addLast("haproxyDecoder", new io.netty.handler.codec.haproxy.HAProxyMessageDecoder());
+                    ch.pipeline().addLast("haproxyHandler", new com.eu.habbo.networking.gameserver.handlers.HAProxyIpHandler());
+                }
+
                 ch.pipeline().addLast("logger", new LoggingHandler());
 
                 // Decoders.

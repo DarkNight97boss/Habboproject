@@ -129,6 +129,12 @@ public class Habbo implements Runnable {
         {
             SocketAddress address = this.client.getChannel().remoteAddress();
             ProxyIP = ((InetSocketAddress) address).getAddress().getHostAddress();
+
+            // Real client IP injected by the PROXY-protocol handler (Cloudflare Spectrum / L4 proxy).
+            String realIp = this.client.getChannel().attr(com.eu.habbo.networking.gameserver.GameServerAttributes.PROXY_REAL_IP).get();
+            if (realIp != null && !realIp.isEmpty()) {
+                ip = realIp;
+            }
         }
 
         if (Emulator.getPluginManager().isRegistered(UserGetIPAddressEvent.class, true)) {

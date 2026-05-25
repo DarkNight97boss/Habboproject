@@ -73,3 +73,15 @@ Il codice è già predisposto (trust degli IP CF, HTTPS via `X-Forwarded-Proto`/
 4. **Turnstile** (captcha): crea un widget su Cloudflare e metti `sitekey`/`secretkey` in `config.php` (`$_CONFIG['cloudflare']`). In locale il captcha è saltato solo da `127.0.0.1`.
 5. Apri solo le porte necessarie; WebSocket (2096): instradalo via CF (WS supportato sul proxy) o esponi `wss://` con TLS. Aggiorna `socket.url` del client di conseguenza.
 6. I range IP CF sono in `app/security.php` (`hp_cloudflare_ranges()`); aggiornali se Cloudflare li cambia (cloudflare.com/ips).
+
+## Blindatura porte emulatore (Cloudflare Spectrum / proxy L4)
+La porta game raw (3000) e il WS (2096) NON possono andare sotto il proxy HTTP "arancione". Per proteggerle:
+
+**Opzione A — Cloudflare Spectrum (consigliata):** crea un'app Spectrum (TCP) che instrada la porta pubblica → origine, con **PROXY protocol abilitato**. L'emulatore ora lo supporta:
+- `emulator_settings`: `io.proxy.protocol.enabled=1` (e opzionale `io.proxy.protocol.trusted` = lista CIDR separati da `;`, default = range Cloudflare + loopback) e `networking.tcp.proxy=1`.
+- Con Spectrum+PROXY: l'emu legge l'**IP reale** del client (ban/anti-clone corretti) e **rifiuta** ogni connessione non proveniente da IP Cloudflare → la porta è "cieca" agli attacchi diretti.
+- Nitro WS (2096) dietro Cloudflare usa il proxy WS standard; ms-websockets inietta l'IP reale via `UserGetIPAddressEvent` quando `networking.tcp.proxy=1`.
+
+**Opzione B — Firewall:** consenti 3000/2096 SOLO dagli IP Cloudflare (cloudflare.com/ips), droppa il resto (`iptables`/`nftables`). Aggiungi `connlimit`/`hashlimit` per i flood di connessione.
+
+**"Porte random":** sconsigliato per servizi client-facing (il client deve conoscere la porta) → falso senso di sicurezza. L'equivalente robusto: Spectrum espone una porta pubblica gestita da CF mentre l'**origine usa una porta non standard, firewallata solo verso CF** (di fatto non scansionabile). Per il game flash interno puoi anche bindare `game.host=127.0.0.1` se usi solo nitro.

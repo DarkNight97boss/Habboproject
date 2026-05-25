@@ -23,7 +23,7 @@ public class CraftingCraftSecretEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         int altarId = this.packet.readInt();
-        int count = this.packet.readInt();
+        int count = Math.min(this.packet.readInt(), 500); // bound client count (anti-DoS)
 
         HabboItem craftingAltar = this.client.getHabbo().getHabboInfo().getCurrentRoom().getHabboItem(altarId);
 

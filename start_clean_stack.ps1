@@ -25,7 +25,8 @@ else { Write-Host "[..] Avvio MariaDB..."; Start-Process -FilePath $MYSQLD -Argu
 if (Test-Port 2096) { Write-Host "[OK] Emulatore gia' attivo (2096)" }
 else {
     Write-Host "[..] Avvio Arcturus MS 3.5.5 (JDK 11)..."
-    Start-Process -FilePath $JAVA -ArgumentList '-jar','Habbo-3.5.5-jar-with-dependencies.jar' -WorkingDirectory $EMU -RedirectStandardOutput "$EMU\emu.out.log" -RedirectStandardError "$EMU\emu.err.log" -WindowStyle Hidden
+    # JVM tuning per molti utenti: heap 512MB-2GB (alza -Xmx in base alla RAM) + G1GC a bassa latenza
+    Start-Process -FilePath $JAVA -ArgumentList '-Xms512m','-Xmx2g','-XX:+UseG1GC','-XX:MaxGCPauseMillis=100','-jar','Habbo-3.5.5-jar-with-dependencies.jar' -WorkingDirectory $EMU -RedirectStandardOutput "$EMU\emu.out.log" -RedirectStandardError "$EMU\emu.err.log" -WindowStyle Hidden
     Start-Sleep 28
 }
 

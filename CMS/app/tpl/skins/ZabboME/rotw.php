@@ -37,7 +37,7 @@ if(mysql_num_rows($check) < $limit_rooms){
 			$sql = mysql_query("SELECT name, description, state FROM rooms WHERE owner_id = '".$_SESSION['user']['id']."' AND id = '".$_POST['id']."' LIMIT 1");
 			if(mysql_num_rows($sql)){
 				$row = mysql_fetch_array($sql);
-				mysql_query("INSERT INTO rotw_entries VALUES ('".$_POST['id']."', '".$_SESSION['user']['username']."', '".$row['name']."', '".$row['description']."', '".$row['state']."')");
+				mysql_query("INSERT INTO rotw_entries VALUES ('".(int)$_POST['id']."', '".mysql_real_escape_string($_SESSION['user']['username'])."', '".mysql_real_escape_string($row['name'])."', '".mysql_real_escape_string($row['description'])."', '".mysql_real_escape_string($row['state'])."')");
 				echo $txt_succes;
 			}else{
 				echo $txt_not_your_room;

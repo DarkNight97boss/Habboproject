@@ -36,10 +36,15 @@
 
 namespace Revolution;
 
-    if (isset($_SERVER['HTTP_CF_CONNECTING_IP']) && filter_var($_SERVER['HTTP_CF_CONNECTING_IP'], FILTER_VALIDATE_IP))
-        $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_CF_CONNECTING_IP'];
-    else if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && filter_var($_SERVER['HTTP_X_FORWARDED_FOR'], FILTER_VALIDATE_IP))
-        $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_X_FORWARDED_FOR'];
+    // Only honor proxy IP headers when the request actually originates from a trusted
+    // proxy (local reverse proxy / Cloudflare tunnel on loopback). Otherwise clients
+    // could spoof X-Forwarded-For / CF-Connecting-IP to forge their IP (captcha / IP-ban bypass).
+    if (in_array($_SERVER['REMOTE_ADDR'], array('127.0.0.1', '::1'), true)) {
+        if (isset($_SERVER['HTTP_CF_CONNECTING_IP']) && filter_var($_SERVER['HTTP_CF_CONNECTING_IP'], FILTER_VALIDATE_IP))
+            $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_CF_CONNECTING_IP'];
+        else if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && filter_var(trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]), FILTER_VALIDATE_IP))
+            $_SERVER['REMOTE_ADDR'] = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
+    }
 
    if(!defined('IN_INDEX')) { die('Sorry, you cannot access this file.'); }
    class users implements iUsers

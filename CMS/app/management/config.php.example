@@ -55,9 +55,9 @@
 
 $_CONFIG['mysql']['connection_type'] = 'connect';
 $_CONFIG['mysql']['hostname'] = '127.0.0.1';
-$_CONFIG['mysql']['username'] = 'arcturus';
-$_CONFIG['mysql']['password'] = 'arcturus';
-$_CONFIG['mysql']['database'] = 'habbo';
+$_CONFIG['mysql']['username'] = 'CHANGE_ME';
+$_CONFIG['mysql']['password'] = 'CHANGE_ME';
+$_CONFIG['mysql']['database'] = 'CHANGE_ME';
 $_CONFIG['mysql']['port'] = '3306';
 /*
 

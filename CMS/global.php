@@ -47,8 +47,10 @@
 	}
 
 	if(!defined('IN_INDEX')) { die('Sorry, you cannot access this file.'); }
-	 // Only trust proxy IP headers from a loopback (trusted) proxy; otherwise clients could spoof their IP.
-	 if (in_array($_SERVER['REMOTE_ADDR'], array('127.0.0.1', '::1'), true)) { if (isset($_SERVER['HTTP_CF_CONNECTING_IP']) && filter_var($_SERVER['HTTP_CF_CONNECTING_IP'], FILTER_VALIDATE_IP)) { $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_CF_CONNECTING_IP']; } else if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && filter_var(trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]), FILTER_VALIDATE_IP)) { $_SERVER['REMOTE_ADDR'] = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]); } }
+	 // Centralized security: CF-aware client IP resolution (anti XFF spoofing) + response headers
+	 require_once __DIR__ . '/app/security.php';
+	 hp_resolve_client_ip();
+	 hp_send_security_headers();
 
 	define('A', 'app/');
 	define('I', 'interfaces/');
@@ -310,6 +312,12 @@ if (session_status() === PHP_SESSION_NONE) {
 	]);
 }
 session_start();
+
+// CSRF protection for state-changing requests (token, else Origin/Referer must match host)
+if (!hp_verify_csrf()) {
+	http_response_code(403);
+	die('Invalid request (CSRF check failed). Please go back and try again.');
+}
 
 /*
 $core->CheckTheVote();

@@ -12,9 +12,6 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-
 public class RCONServerHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RCONServerHandler.class);
@@ -46,15 +43,8 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
         String key = "";
         try {
             JsonObject object = gson.fromJson(message, JsonObject.class);
-
-            // Optional shared-secret token on top of the IP allow-list (rcon.token, empty = disabled).
-            String requiredToken = Emulator.getConfig().getValue("rcon.token", "");
-            if (!requiredToken.isEmpty() && !constantTimeEquals(requiredToken, optString(object, "token"))) {
-                LOGGER.warn("RCON request rejected: invalid or missing token from {}", ctx.channel().remoteAddress());
-            } else {
-                key = object.get("key").getAsString();
-                response = Emulator.getRconServer().handle(ctx, key, object.get("data").toString());
-            }
+            key = object.get("key").getAsString();
+            response = Emulator.getRconServer().handle(ctx, key, object.get("data").toString());
         } catch (ArrayIndexOutOfBoundsException e) {
             LOGGER.error("Unknown RCON Message: {}", key);
         } catch (Exception e) {
@@ -67,13 +57,5 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
         ctx.flush();
         f.channel().close();
         data.release();
-    }
-
-    private static String optString(JsonObject object, String key) {
-        return object.has(key) && !object.get(key).isJsonNull() ? object.get(key).getAsString() : "";
-    }
-
-    private static boolean constantTimeEquals(String a, String b) {
-        return MessageDigest.isEqual(a.getBytes(StandardCharsets.UTF_8), b.getBytes(StandardCharsets.UTF_8));
     }
 }

@@ -7,7 +7,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.security.SecureRandom;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class HabboRSACrypto {
 
@@ -15,8 +15,6 @@ public class HabboRSACrypto {
     private final BigInteger n;
     private final BigInteger d;
     private final int blockSize;
-
-    private static final SecureRandom RANDOM = new SecureRandom();
 
     public HabboRSACrypto(String e, String n) {
         this.e = new BigInteger(e, 16);
@@ -122,7 +120,7 @@ public class HabboRSACrypto {
 
         if (padType == 2) {
             while (n > 2) {
-                result[--n] = (byte) (RANDOM.nextInt(255) + 1);
+                result[--n] = (byte) ThreadLocalRandom.current().nextInt(1, 256);
             }
         } else {
             while (n > 2) {

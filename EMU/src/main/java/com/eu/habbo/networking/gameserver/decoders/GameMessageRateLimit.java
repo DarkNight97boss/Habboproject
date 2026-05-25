@@ -11,19 +11,8 @@ import java.util.List;
 
 public class GameMessageRateLimit extends MessageToMessageDecoder<ClientMessage> {
 
-    private final int resetTime;
-    private final int maxPerId;
-    private final int maxTotal;
-    private final int maxViolations;
-    private final int maxPreAuthPackets;
-
-    public GameMessageRateLimit() {
-        this.resetTime = Emulator.getConfig().getInt("networking.ratelimit.reset.seconds", 1);
-        this.maxPerId = Emulator.getConfig().getInt("networking.ratelimit.max.per.id", 10);
-        this.maxTotal = Emulator.getConfig().getInt("networking.ratelimit.max.total", 200);
-        this.maxViolations = Emulator.getConfig().getInt("networking.ratelimit.max.violations", 10);
-        this.maxPreAuthPackets = Emulator.getConfig().getInt("networking.auth.max.packets", 50);
-    }
+    private static final int RESET_TIME = 1;
+    private static final int MAX_COUNTER = 10;
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ClientMessage message, List<Object> out) throws Exception {
@@ -33,45 +22,25 @@ public class GameMessageRateLimit extends MessageToMessageDecoder<ClientMessage>
             return;
         }
 
-        // Cap the number of packets accepted before the client authenticates (anti SSO/handshake flood).
-        if (this.maxPreAuthPackets > 0 && client.getHabbo() == null) {
-            if (++client.preAuthPacketCount > this.maxPreAuthPackets) {
-                ctx.close();
-                return;
-            }
-        }
+        int count = 0;
 
-        // Reset the per-second window.
+        // Check if reset time has passed.
         int timestamp = Emulator.getIntUnixTimestamp();
-        if (timestamp - client.lastPacketCounterCleared > this.resetTime) {
-            // Track consecutive windows that breached the global cap, so sustained floods get disconnected.
-            if (this.maxTotal > 0 && client.incomingPacketTotal > this.maxTotal) {
-                client.rateLimitViolations++;
-            } else {
-                client.rateLimitViolations = 0;
-            }
+        if (timestamp - client.lastPacketCounterCleared > RESET_TIME) {
+            // Reset counter.
             client.incomingPacketCounter.clear();
-            client.incomingPacketTotal = 0;
             client.lastPacketCounterCleared = timestamp;
+        } else {
+            // Get stored count for message id.
+            count = client.incomingPacketCounter.getOrDefault(message.getMessageId(), 0);
         }
 
-        // Global per-connection cap (covers floods of varied packet ids that the per-id cap misses).
-        if (this.maxTotal > 0) {
-            client.incomingPacketTotal++;
-            if (client.incomingPacketTotal > this.maxTotal) {
-                if (this.maxViolations > 0 && client.rateLimitViolations >= this.maxViolations) {
-                    ctx.close();
-                }
-                return;
-            }
-        }
-
-        // Per-id cap (original behaviour).
-        int count = client.incomingPacketCounter.getOrDefault(message.getMessageId(), 0);
-        if (count > this.maxPerId) {
+        // If we exceeded the counter, drop the packet.
+        if (count > MAX_COUNTER) {
             return;
         }
-        client.incomingPacketCounter.put(message.getMessageId(), count + 1);
+
+        client.incomingPacketCounter.put(message.getMessageId(), ++count);
 
         // Continue processing.
         out.add(message);

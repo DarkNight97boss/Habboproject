@@ -3,7 +3,6 @@ package com.eu.habbo.messages.incoming.handshake;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.core.AuditLog;
 import com.eu.habbo.core.StaffMfa;
-import com.eu.habbo.messages.outgoing.handshake.StaffMfaRequiredComposer;
 import com.eu.habbo.habbohotel.messenger.Messenger;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctionItem;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctions;
@@ -164,17 +163,12 @@ public class SecureLoginEvent extends MessageHandler {
 
                     int mfaUserId = this.client.getHabbo().getHabboInfo().getId();
                     String mfaUsername = this.client.getHabbo().getHabboInfo().getUsername();
-                    boolean mfaEnrolled = StaffMfa.isEnrolled(mfaUserId);
 
-                    if (mfaEnrolled) {
-                        this.client.sendResponse(new StaffMfaRequiredComposer(true, "", ""));
-                    } else {
-                        String mfaSecret = StaffMfa.getOrCreateSecret(mfaUserId);
-                        String mfaUri = StaffMfa.provisioningUri(mfaUsername, mfaSecret);
-                        this.client.sendResponse(new StaffMfaRequiredComposer(false, mfaSecret, mfaUri));
-                    }
+                    // Best-effort proactive popup. The client also re-requests it on
+                    // ready (StaffMfaStatusRequestEvent) to avoid the login-time race.
+                    StaffMfa.sendChallenge(this.client);
 
-                    AuditLog.record(mfaUserId, mfaUsername, "STAFF_MFA_CHALLENGE", "user:" + mfaUserId, "enrolled=" + mfaEnrolled);
+                    AuditLog.record(mfaUserId, mfaUsername, "STAFF_MFA_CHALLENGE", "user:" + mfaUserId, "");
                 }
 
                 //Hardcoded

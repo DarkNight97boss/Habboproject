@@ -38,7 +38,10 @@ public class GuildDeleteEvent extends MessageHandler {
 
                 Emulator.getGameEnvironment().getGuildManager().deleteGuild(guild);
                 Emulator.getPluginManager().fireEvent(new GuildDeletedEvent(guild, this.client.getHabbo()));
-                Emulator.getGameEnvironment().getRoomManager().getRoom(guild.getRoomId()).sendComposer(new RemoveGuildFromRoomComposer(guildId).compose());
+                com.eu.habbo.habbohotel.rooms.Room guildRoom = Emulator.getGameEnvironment().getRoomManager().getRoom(guild.getRoomId());
+                if (guildRoom != null) {
+                    guildRoom.sendComposer(new RemoveGuildFromRoomComposer(guildId).compose());
+                }
 
                 if (this.client.getHabbo().getHabboInfo().getCurrentRoom() != null) {
                     if (guild.getRoomId() == this.client.getHabbo().getHabboInfo().getCurrentRoom().getId()) {

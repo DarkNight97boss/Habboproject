@@ -151,7 +151,7 @@ public class CatalogBuyItemEvent extends MessageHandler {
                 int totalCredits = 0;
                 int totalDuckets = 0;
 
-                for (int i = 0; i < count; i++) {
+                for (int i = 0; i < count && i < 1000; i++) { // bound client count (anti-overflow/DoS)
                     totalDays += item.getDays();
                     totalCredits += item.getCredits();
                     totalDuckets += item.getPoints();

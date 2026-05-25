@@ -7,7 +7,7 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 public class RoomUserRemoveRightsEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
-        int amount = this.packet.readInt();
+        int amount = Math.min(this.packet.readInt(), 1000); // bound client count (anti-DoS, per-iter DB writes)
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 

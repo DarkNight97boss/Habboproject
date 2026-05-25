@@ -30,7 +30,7 @@ public class AdvertisingSaveEvent extends MessageHandler {
         }
         if (item instanceof InteractionCustomValues) {
             THashMap<String, String> oldValues = new THashMap<>(((InteractionCustomValues) item).values);
-            int count = this.packet.readInt();
+            int count = Math.min(this.packet.readInt(), 200); // bound client count (anti-DoS)
             for (int i = 0; i < count / 2; i++) {
                 String key = this.packet.readString();
                 String value = this.packet.readString();

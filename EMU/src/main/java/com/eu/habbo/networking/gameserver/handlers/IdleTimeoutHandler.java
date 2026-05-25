@@ -42,6 +42,14 @@ public class IdleTimeoutHandler extends ChannelDuplexHandler {
         if (pingScheduleNanos > 0) {
             pingScheduleFuture = ctx.executor().schedule(new PingScheduledTask(ctx), pingScheduleNanos, TimeUnit.NANOSECONDS);
         }
+
+        // Pre-login timeout (anti-slowloris): drop connections not authenticated within 20s.
+        ctx.executor().schedule(() -> {
+            GameClient client = ctx.channel().attr(GameServerAttributes.CLIENT).get();
+            if (ctx.channel().isOpen() && (client == null || client.getHabbo() == null)) {
+                ctx.close();
+            }
+        }, 20, TimeUnit.SECONDS);
     }
 
     private void destroy() {

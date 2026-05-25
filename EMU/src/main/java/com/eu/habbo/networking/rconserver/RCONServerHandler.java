@@ -43,8 +43,24 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
         String key = "";
         try {
             JsonObject object = gson.fromJson(message, JsonObject.class);
-            key = object.get("key").getAsString();
-            response = Emulator.getRconServer().handle(ctx, key, object.get("data").toString());
+
+            // Token authentication: defense-in-depth on top of the IP allowlist.
+            // Enforced only when rcon.token is configured (non-empty) to stay backward compatible.
+            String requiredToken = Emulator.getConfig().getValue("rcon.token", "");
+            boolean authorized = (requiredToken == null || requiredToken.isEmpty());
+            if (!authorized) {
+                String providedToken = (object.has("token") && !object.get("token").isJsonNull())
+                        ? object.get("token").getAsString() : "";
+                authorized = requiredToken.equals(providedToken);
+            }
+
+            if (!authorized) {
+                LOGGER.warn("RCON request rejected (invalid token) from {}", ctx.channel().remoteAddress());
+                response = "ERROR";
+            } else {
+                key = object.get("key").getAsString();
+                response = Emulator.getRconServer().handle(ctx, key, object.get("data").toString());
+            }
         } catch (ArrayIndexOutOfBoundsException e) {
             LOGGER.error("Unknown RCON Message: {}", key);
         } catch (Exception e) {

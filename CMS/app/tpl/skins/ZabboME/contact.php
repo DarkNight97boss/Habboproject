@@ -172,14 +172,14 @@
 								<div class="form-group">
 									<label for="exampleInputEmail1"><b>Please explain what you are reporting/suggesting or what is wrong with the furni you are asking to be fixed</b></label>
 									<div class="col-sm-10">
-										<textarea class="uk-select" rows="5" name="report_info" maxlength="255" style="width:350px;height:100px;resize:none" required=""><?php if(isset($_POST['report_info'])) { echo $_POST['report_info']; } ?></textarea>
+										<textarea class="uk-select" rows="5" name="report_info" maxlength="255" style="width:350px;height:100px;resize:none" required=""><?php if(isset($_POST['report_info'])) { echo htmlspecialchars($_POST['report_info'], ENT_QUOTES, 'UTF-8'); } ?></textarea>
 									</div>
 								</div>
 								<br />
 								<div class="form-group">
 									<label for="exampleInputEmail1"><b>Would you like to add anything?</b><br><i>Proof? Pictures of the furni, anything else you think is important?! Leave it here!</i></label>
 									<div class="col-sm-10">
-										<textarea class="uk-select" rows="3" name="report_extra" maxlength="255" class="ss-q-short" style="width:350px;height:100px;resize:none" required=""><?php if(isset($_POST['report_extra'])) { echo $_POST['report_extra']; } ?></textarea>
+										<textarea class="uk-select" rows="3" name="report_extra" maxlength="255" class="ss-q-short" style="width:350px;height:100px;resize:none" required=""><?php if(isset($_POST['report_extra'])) { echo htmlspecialchars($_POST['report_extra'], ENT_QUOTES, 'UTF-8'); } ?></textarea>
 									</div>
 								</div>
 								<br />

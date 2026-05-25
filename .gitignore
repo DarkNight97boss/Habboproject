@@ -7,6 +7,11 @@
 emu.out.log
 emu.err.log
 
+# Secrets / local configs (contengono credenziali DB + token RCON) - usare i .example
+CMS/app/management/config.php
+EMU/config.ini
+API/config.php
+
 # Runtime user uploads
 API/audios/
 

@@ -36,10 +36,16 @@
 
 namespace Revolution;
 
-    if (isset($_SERVER['HTTP_CF_CONNECTING_IP']) && filter_var($_SERVER['HTTP_CF_CONNECTING_IP'], FILTER_VALIDATE_IP))
-        $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_CF_CONNECTING_IP'];
-    else if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && filter_var($_SERVER['HTTP_X_FORWARDED_FOR'], FILTER_VALIDATE_IP))
-        $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_X_FORWARDED_FOR'];
+    // CF-aware client IP resolution (centralized in app/security.php; idempotent).
+    // Fallback to loopback-only trust if loaded outside global.php.
+    if (function_exists('hp_resolve_client_ip')) {
+        hp_resolve_client_ip();
+    } else if (in_array($_SERVER['REMOTE_ADDR'], array('127.0.0.1', '::1'), true)) {
+        if (isset($_SERVER['HTTP_CF_CONNECTING_IP']) && filter_var($_SERVER['HTTP_CF_CONNECTING_IP'], FILTER_VALIDATE_IP))
+            $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_CF_CONNECTING_IP'];
+        else if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && filter_var(trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]), FILTER_VALIDATE_IP))
+            $_SERVER['REMOTE_ADDR'] = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
+    }
 
    if(!defined('IN_INDEX')) { die('Sorry, you cannot access this file.'); }
    class users implements iUsers
@@ -416,9 +422,25 @@ namespace Revolution;
 			
 			$template->form->setData();
 			unset($template->form->error);
-			
+
+			// Rate limiting (defense-in-depth on top of the captcha): max 8 login
+			// attempts per 15 min window, then a 5 min cooldown.
+			if (!isset($_SESSION['login_rl']) || (time() - $_SESSION['login_rl']['first']) > 900) {
+				$_SESSION['login_rl'] = array('count' => 0, 'first' => time(), 'blocked_until' => 0);
+			}
+			if (time() < $_SESSION['login_rl']['blocked_until']) {
+				$template->form->error = 'Too many login attempts. Please wait a few minutes and try again.';
+				return;
+			}
+			$_SESSION['login_rl']['count']++;
+			if ($_SESSION['login_rl']['count'] > 8) {
+				$_SESSION['login_rl']['blocked_until'] = time() + 300;
+				$template->form->error = 'Too many login attempts. Please wait a few minutes and try again.';
+				return;
+			}
+
 			$turnstileUrl = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'; // Replace with the actual Turnstile server URL
-			$secretKey = $_CONFIG['cloudflare']['secretkey']; 
+			$secretKey = $_CONFIG['cloudflare']['secretkey'];
 
 			// Get the user's CAPTCHA response from the form submission
 			$captchaResponse = $_POST['cf-turnstile-response'];
@@ -460,6 +482,7 @@ namespace Revolution;
 						if($this->userValidation($template->form->log_username, $template->form->log_password))
 						{
 							session_regenerate_id(true); $this->turnOn($template->form->log_username);
+							unset($_SESSION['login_rl']);
 							$this->updateUser($_SESSION['user']['id'], 'ip_current', $_SERVER['REMOTE_ADDR']);
 							$engine->query("INSERT INTO users_logins (user_id, verified_ip, timestamp) VALUES ('" . $_SESSION['user']['id'] . "', '" . $_SERVER['REMOTE_ADDR'] . "', '" . time() . "')");
 							
@@ -655,7 +678,7 @@ namespace Revolution;
 	
 	final public function createSSO($k) 	
 	{ 	 	
-		$sessionKey = 'Hotel-'.rand(9,999).'/'.substr(sha1(time()).'/'.rand(9,9999999).'/'.rand(9,9999999).'/'.rand(9,9999999),0,33);
+		$sessionKey = 'Hotel-' . bin2hex(function_exists('random_bytes') ? random_bytes(16) : openssl_random_pseudo_bytes(16));
 		
 		$this->updateUser($k, 'auth_ticket', $sessionKey);
 		
@@ -667,7 +690,7 @@ namespace Revolution;
 	final public function addUser($username, $password, $email, $motto, $credits, $rank, $figure, $gender, $security_enabled) 	
 	{ 		
 		global $engine; 		 		 		 		
-		$sessionKey = 'Hotel-'.rand(9,999).'/'.substr(sha1(time()).'/'.rand(9,9999999).'/'.rand(9,9999999).'/'.rand(9,9999999),0,33);
+		$sessionKey = 'Hotel-' . bin2hex(function_exists('random_bytes') ? random_bytes(16) : openssl_random_pseudo_bytes(16));
 		$engine->query("INSERT INTO users (username, password, mail, motto, credits, rank, look, gender, security_enabled, ip_current, ip_register, account_created, last_online, auth_ticket) VALUES('" . $username . "', '" . $password . "', '" . $email . "', '" . $motto . "', '" . $credits . "', '" . $rank . "', '" . $figure . "', '" . $gender . "', '" . $security_enabled . "', '" . $_SERVER['REMOTE_ADDR'] . "', '" . $_SERVER['REMOTE_ADDR'] . "', '" . time() . "', '" . time() . "', '" . $sessionKey . "')"); 	
 		unset($sessionKey);	
 		 			 

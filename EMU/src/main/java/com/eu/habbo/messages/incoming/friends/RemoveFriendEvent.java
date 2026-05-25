@@ -17,7 +17,7 @@ public class RemoveFriendEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        int count = this.packet.readInt();
+        int count = Math.min(this.packet.readInt(), 200); // bound client count (anti-DoS, per-iter DB writes)
         for (int i = 0; i < count; i++) {
             int habboId = this.packet.readInt();
             this.removedFriends.add(habboId);

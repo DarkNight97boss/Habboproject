@@ -10,8 +10,11 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class HabboDiffieHellman {
 
-    private static final int DH_PRIMES_BIT_SIZE = 128;
-    private static final int DH_KEY_BIT_SIZE = 128;
+    // Note: RC4/DH is legacy transport crypto and is disabled (enc.enabled=false) for nitro;
+    // real transport security should be TLS via Cloudflare/Spectrum (wss). Sizes raised from 128
+    // for defense-in-depth should encryption ever be enabled for flash clients.
+    private static final int DH_PRIMES_BIT_SIZE = 256;
+    private static final int DH_KEY_BIT_SIZE = 256;
 
     private final HabboRSACrypto crypto;
 

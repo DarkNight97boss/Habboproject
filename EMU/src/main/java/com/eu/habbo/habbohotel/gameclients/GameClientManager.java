@@ -14,14 +14,21 @@ import java.util.concurrent.ConcurrentMap;
 public class GameClientManager {
 
     private final ConcurrentMap<ChannelId, GameClient> clients;
+    private final ConcurrentMap<Integer, GameClient> habboIndex; // O(1) lookup by user id (perf under load)
 
     public GameClientManager() {
         this.clients = new ConcurrentHashMap<>();
+        this.habboIndex = new ConcurrentHashMap<>();
     }
 
 
     public ConcurrentMap<ChannelId, GameClient> getSessions() {
         return this.clients;
+    }
+
+    /** Maintain the O(1) user-id -> client index (called from GameClient.setHabbo on login). */
+    public void indexHabbo(int id, GameClient client) {
+        this.habboIndex.put(id, client);
     }
 
 
@@ -49,6 +56,10 @@ public class GameClientManager {
         GameClient client = channel.attr(GameServerAttributes.CLIENT).get();
 
         if (client != null) {
+            Habbo habbo = client.getHabbo();
+            if (habbo != null && habbo.getHabboInfo() != null) {
+                this.habboIndex.remove(habbo.getHabboInfo().getId(), client); // only if still mapped to this client
+            }
             client.dispose();
         }
         channel.deregister();
@@ -60,29 +71,19 @@ public class GameClientManager {
 
 
     public boolean containsHabbo(Integer id) {
-        if (!this.clients.isEmpty()) {
-            for (GameClient client : this.clients.values()) {
-                if (client.getHabbo() != null) {
-                    if (client.getHabbo().getHabboInfo() != null) {
-                        if (client.getHabbo().getHabboInfo().getId() == id)
-                            return true;
-                    }
-                }
-            }
-        }
-        return false;
+        GameClient client = this.habboIndex.get(id);
+        return client != null && client.getHabbo() != null;
     }
 
 
     public Habbo getHabbo(int id) {
-        for (GameClient client : this.clients.values()) {
-            if (client.getHabbo() == null)
-                continue;
-
-            if (client.getHabbo().getHabboInfo().getId() == id)
-                return client.getHabbo();
+        GameClient client = this.habboIndex.get(id);
+        if (client != null) {
+            Habbo habbo = client.getHabbo();
+            if (habbo != null && habbo.getHabboInfo() != null && habbo.getHabboInfo().getId() == id) {
+                return habbo;
+            }
         }
-
         return null;
     }
 

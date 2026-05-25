@@ -146,7 +146,7 @@ include "includes/header.php";
 						}
 						
 	                    if(isset($_POST['lookup'])) {
-	                        if(mysql_num_rows(mysql_query("SELECT * FROM users WHERE username = '". ($_POST['l_username']) ."'")) == 0) { 
+	                        if(mysql_num_rows(mysql_query("SELECT * FROM users WHERE username = '". mysql_real_escape_string($_POST['l_username']) ."'")) == 0) {
 	                            echo "<div class=\"alert alert-error\" style=\"padding: 15px;margin-bottom: 25px;border: 1px solid #7b0909a1;border-radius: 4px;background: #d85e5ef2;width: fit-content;margin-top: 50px;font-size: 15px;color: white;font-weight: bolder;margin-left: 27px;\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\" style=\"float: right; margin-left: 5px;font-size: 35px;margin-top: -7px;border-radius: 140px;background: #00000000;\">×</button>User <b>" . strip_tags($_POST['l_username']) . "</b> not found!</div>"; 
 	                        } else {
 	                ?>

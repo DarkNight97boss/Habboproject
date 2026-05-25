@@ -49,17 +49,7 @@ if (isset($_GET["type"]) && $_GET["type"] == "getOnlineCounter") {
     echo json_encode($online);
     exit;
 }
-if(isset($_GET["type"]) && isset($_GET["password"]) && isset($_GET["username"])){
-    $rcon = new Rcon(RCON_HOST, RCON_PORT, $_GET["password"]);
-    if(isset($_SESSION["security_cooldown"])){
-        if($_SESSION["security_cooldown"] > time() - 2){
-            echo "Security cooldown, try again.";
-            exit();
-        }
-    }
-    $_SESSION["security_cooldown"] = time();
-}
-else if(isset($_GET["type"]) && isset($_GET["sso"])){
+if(isset($_GET["type"]) && isset($_GET["sso"])){
     if(isset($_SESSION["security_cooldown"])){
         if($_SESSION["security_cooldown"] > time() - 1){
             echo "Security cooldown, try again.";

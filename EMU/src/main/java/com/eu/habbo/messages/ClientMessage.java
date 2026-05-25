@@ -62,6 +62,9 @@ public class ClientMessage {
     public String readString() {
         try {
             int length = this.readShort();
+            if (length <= 0) return "";
+            // Clamp the allocation to what's actually available (anti over-allocation/DoS).
+            length = Math.min(length, this.buffer.readableBytes());
             byte[] data = new byte[length];
             this.buffer.readBytes(data);
             return new String(data);

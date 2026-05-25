@@ -10,7 +10,7 @@ public class DeclineFriendRequestEvent extends MessageHandler {
         if (all) {
             this.client.getHabbo().getMessenger().deleteAllFriendRequests(this.client.getHabbo().getHabboInfo().getId());
         } else {
-            int count = this.packet.readInt();
+            int count = Math.min(this.packet.readInt(), 200); // bound client count (anti-DoS, per-iter DB deletes)
 
             for (int i = 0; i < count; i++) {
                 this.client.getHabbo().getMessenger().deleteFriendRequests(this.packet.readInt(), this.client.getHabbo().getHabboInfo().getId());

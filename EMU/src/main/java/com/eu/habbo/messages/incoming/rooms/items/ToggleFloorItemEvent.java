@@ -96,8 +96,13 @@ public class ToggleFloorItemEvent extends MessageHandler {
                 }
             }*/
 
+            // Destructive branches (consume the furni) require ownership or room rights (anti-IDOR).
+            boolean canConsume = room.hasRights(this.client.getHabbo())
+                    || item.getUserId() == this.client.getHabbo().getHabboInfo().getId();
+
             // Do not move to onClick(). Wired could trigger it.
             if (item instanceof InteractionMonsterPlantSeed) {
+                if (!canConsume) return;
                 Emulator.getThreading().run(new QueryDeleteHabboItem(item.getId()));
 
                 boolean isRare = item.getBaseItem().getName().contains("rare");
@@ -122,6 +127,7 @@ public class ToggleFloorItemEvent extends MessageHandler {
             }
 
             if (PET_BOXES.contains(item.getBaseItem().getName()) && room.getCurrentPets().size() < Room.MAXIMUM_PETS) {
+                if (!canConsume) return;
                 this.client.sendResponse(new PetPackageComposer(item));
                 return;
             }

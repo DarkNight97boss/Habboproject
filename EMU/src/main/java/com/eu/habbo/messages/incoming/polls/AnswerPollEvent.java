@@ -21,6 +21,7 @@ public class AnswerPollEvent extends MessageHandler {
         int pollId = this.packet.readInt();
         int questionId = this.packet.readInt();
         int count = this.packet.readInt();
+        if (count < 0 || count > 100) return; // bound client-supplied count to prevent OOM/DoS
         String answers = this.packet.readString();
         
         StringBuilder answer = new StringBuilder();

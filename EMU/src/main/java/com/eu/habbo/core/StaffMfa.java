@@ -120,7 +120,7 @@ public final class StaffMfa {
         if (client == null || !client.isStaffMfaLocked()) {
             return false;
         }
-        client.sendResponse(new StaffMfaRequiredComposer(true, "", ""));
+        sendChallenge(client);
         if (client.getHabbo() != null) {
             client.getHabbo().whisper(
                     Emulator.getTexts().getValue("mfa.staff.locked", "Verify your authenticator code to unlock staff powers."),
@@ -132,6 +132,25 @@ public final class StaffMfa {
     /** otpauth:// provisioning URI for the QR code shown during enrollment. */
     public static String provisioningUri(String account, String secret) {
         return Totp.provisioningUri(issuer(), account, secret);
+    }
+
+    /**
+     * Sends the Habbo-style MFA popup to the client. If the user is already
+     * enrolled we just ask for a code; otherwise we generate/persist a secret and
+     * include the otpauth:// URI so the client can render a QR for enrollment.
+     */
+    public static void sendChallenge(GameClient client) {
+        if (client == null || client.getHabbo() == null || client.getHabbo().getHabboInfo() == null) {
+            return;
+        }
+        int userId = client.getHabbo().getHabboInfo().getId();
+        if (isEnrolled(userId)) {
+            client.sendResponse(new StaffMfaRequiredComposer(true, "", ""));
+        } else {
+            String secret = getOrCreateSecret(userId);
+            String uri = provisioningUri(client.getHabbo().getHabboInfo().getUsername(), secret);
+            client.sendResponse(new StaffMfaRequiredComposer(false, secret, uri));
+        }
     }
 
     /**

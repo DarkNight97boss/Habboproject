@@ -77,9 +77,7 @@ public class CommandHandler {
                                     // Staff step-up MFA: block privileged (permission-gated) commands until verified.
                                     if (command.permission != null && gameClient.isStaffMfaLocked()) {
                                         gameClient.getHabbo().whisper(Emulator.getTexts().getValue("mfa.staff.locked", "Verify your authenticator code to unlock staff powers."), com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles.ALERT);
-                                        // Re-nudge the popup (enrolled=true: just the code field; the full
-                                        // enrollment QR, if any, was already delivered at login).
-                                        gameClient.sendResponse(new com.eu.habbo.messages.outgoing.handshake.StaffMfaRequiredComposer(true, "", ""));
+                                        com.eu.habbo.core.StaffMfa.sendChallenge(gameClient);
                                         return false;
                                     }
                                     try {

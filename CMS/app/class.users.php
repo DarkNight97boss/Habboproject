@@ -292,11 +292,14 @@ namespace Revolution;
 				),
 			));
 
-			// Send the POST request
-			$response = file_get_contents($turnstileUrl, false, $context);
-
-			// Parse the response
-			$captchaSuccess = json_decode($response);
+			// Send the POST request (Turnstile skipped when accessed from localhost for local testing)
+			if (in_array($_SERVER['REMOTE_ADDR'], array('127.0.0.1', '::1'), true)) {
+				$captchaSuccess = (object) array('success' => true);
+			} else {
+				$response = file_get_contents($turnstileUrl, false, $context);
+				// Parse the response
+				$captchaSuccess = json_decode($response);
+			}
 
 			
 			if ($captchaSuccess->success == true) {  
@@ -436,11 +439,14 @@ namespace Revolution;
 				),
 			));
 
-			// Send the POST request
-			$response = file_get_contents($turnstileUrl, false, $context);
-
-			// Parse the response
-			$captchaSuccess = json_decode($response);
+			// Send the POST request (Turnstile skipped when accessed from localhost for local testing)
+			if (in_array($_SERVER['REMOTE_ADDR'], array('127.0.0.1', '::1'), true)) {
+				$captchaSuccess = (object) array('success' => true);
+			} else {
+				$response = file_get_contents($turnstileUrl, false, $context);
+				// Parse the response
+				$captchaSuccess = json_decode($response);
+			}
 
 			
 			if ($captchaSuccess->success == true) { 

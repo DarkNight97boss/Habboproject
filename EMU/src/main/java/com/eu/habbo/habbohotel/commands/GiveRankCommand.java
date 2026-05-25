@@ -50,6 +50,7 @@ public class GiveRankCommand extends Command {
                     }
 
                     Emulator.getGameEnvironment().getHabboManager().setRank(habbo.getId(), rank.getId());
+                    com.eu.habbo.core.AuditLog.record(gameClient.getHabbo().getHabboInfo().getId(), gameClient.getHabbo().getHabboInfo().getUsername(), "GIVE_RANK", "user:" + habbo.getId(), "rank=" + rank.getId());
 
                     gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.succes.cmd_give_rank.updated").replace("%id%", rank.getName()).replace("%username%", params[1]), RoomChatMessageBubbles.ALERT);
                     return true;

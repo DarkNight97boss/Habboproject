@@ -284,7 +284,10 @@ public class HabboInfo implements Runnable {
     }
 
     public void setLook(String look) {
-        this.look = look;
+        if (look == null) { this.look = ""; return; }
+        // Sanitize: cap length and restrict to the figure charset (anti injection/oversize broadcast).
+        if (look.length() > 512) look = look.substring(0, 512);
+        this.look = look.replaceAll("[^a-zA-Z0-9.\\-]", "");
     }
 
     public HabboGender getGender() {

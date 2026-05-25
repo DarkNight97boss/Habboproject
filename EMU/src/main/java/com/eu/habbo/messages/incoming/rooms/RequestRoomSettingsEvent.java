@@ -14,7 +14,8 @@ public class RequestRoomSettingsEvent extends MessageHandler {
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
         if (room == null) return;
-        if (!room.hasRights(this.client.getHabbo()) || !this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) return;
+        // Only the room owner (or staff) may view settings (which include the room password).
+        if (!room.isOwner(this.client.getHabbo()) && !this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) return;
 
         this.client.sendResponse(new RoomSettingsComposer(room));
     }

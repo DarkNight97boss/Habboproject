@@ -30,25 +30,28 @@ public class RecycleEvent extends MessageHandler {
             if (count != Emulator.getConfig().getInt("recycler.value", 8)) return;
 
             for (int i = 0; i < count; i++) {
-                HabboItem item = this.client.getHabbo().getInventory().getItemsComponent().getHabboItem(this.packet.readInt());
+                // Atomically claim each item so it can't be simultaneously sold/placed/traded (anti-dupe).
+                HabboItem item = this.client.getHabbo().getInventory().getItemsComponent().getAndClaim(this.packet.readInt());
 
-                if (item == null)
+                if (item == null || !item.getBaseItem().allowRecyle()) {
+                    // re-add anything already claimed and abort (no item loss)
+                    for (HabboItem claimed : items) {
+                        this.client.getHabbo().getInventory().getItemsComponent().addItem(claimed);
+                    }
+                    if (item != null) {
+                        this.client.getHabbo().getInventory().getItemsComponent().addItem(item);
+                    }
+                    this.client.sendResponse(new InventoryRefreshComposer());
+                    this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
                     return;
-
-                if (item.getBaseItem().allowRecyle()) {
-                    items.add(item);
                 }
+
+                items.add(item);
             }
 
-            if (items.size() == count) {
-                for (HabboItem item : items) {
-                    this.client.getHabbo().getInventory().getItemsComponent().removeHabboItem(item);
-                    this.client.sendResponse(new RemoveHabboItemComposer(item.getGiftAdjustedId()));
-                    Emulator.getThreading().run(new QueryDeleteHabboItem(item.getId()));
-                }
-            } else {
-                this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
-                return;
+            for (HabboItem item : items) {
+                this.client.sendResponse(new RemoveHabboItemComposer(item.getGiftAdjustedId()));
+                Emulator.getThreading().run(new QueryDeleteHabboItem(item.getId()));
             }
 
             HabboItem reward = Emulator.getGameEnvironment().getItemManager().handleRecycle(this.client.getHabbo(), Emulator.getGameEnvironment().getCatalogManager().getRandomRecyclerPrize().getId() + "");

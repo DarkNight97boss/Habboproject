@@ -406,7 +406,8 @@ public class ModToolManager {
     }
 
     public void kick(Habbo moderator, Habbo target, String message) {
-        if (moderator.hasPermission(Permission.ACC_SUPPORTTOOL) && !target.hasPermission(Permission.ACC_UNKICKABLE)) {
+        if (moderator.hasPermission(Permission.ACC_SUPPORTTOOL) && !target.hasPermission(Permission.ACC_UNKICKABLE)
+                && target.getHabboInfo().getRank().getId() < moderator.getHabboInfo().getRank().getId()) {
             if (target.getHabboInfo().getCurrentRoom() != null) {
                 Emulator.getGameEnvironment().getRoomManager().leaveRoom(target, target.getHabboInfo().getCurrentRoom());
             }

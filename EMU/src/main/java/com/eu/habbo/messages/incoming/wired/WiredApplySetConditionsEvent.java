@@ -63,6 +63,7 @@ public class WiredApplySetConditionsEvent extends MessageHandler {
                         // Try to apply the set settings to each item
                         wired.getMatchFurniSettings().forEach(setting -> {
                             HabboItem matchItem = room.getHabboItem(setting.item_id);
+                            if (matchItem == null) return; // skip removed/stale furni (anti-NPE)
 
                             // Match state
                             if (wired.shouldMatchState() && matchItem.allowWiredResetState()) {

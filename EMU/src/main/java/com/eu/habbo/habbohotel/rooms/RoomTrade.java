@@ -57,7 +57,7 @@ public class RoomTrade {
         this.sendMessageToUsers(new TradeStartComposer(this));
     }
 
-    public void offerItem(Habbo habbo, HabboItem item) {
+    public synchronized void offerItem(Habbo habbo, HabboItem item) {
         RoomTradeUser user = this.getRoomTradeUserForHabbo(habbo);
 
         if (user.getItems().contains(item))
@@ -70,7 +70,7 @@ public class RoomTrade {
         this.updateWindow();
     }
 
-    public void offerMultipleItems(Habbo habbo, THashSet<HabboItem> items) {
+    public synchronized void offerMultipleItems(Habbo habbo, THashSet<HabboItem> items) {
         RoomTradeUser user = this.getRoomTradeUserForHabbo(habbo);
 
         for (HabboItem item : items) {
@@ -84,7 +84,7 @@ public class RoomTrade {
         this.updateWindow();
     }
 
-    public void removeItem(Habbo habbo, HabboItem item) {
+    public synchronized void removeItem(Habbo habbo, HabboItem item) {
         RoomTradeUser user = this.getRoomTradeUserForHabbo(habbo);
 
         if (!user.getItems().contains(item))
@@ -97,7 +97,7 @@ public class RoomTrade {
         this.updateWindow();
     }
 
-    public void accept(Habbo habbo, boolean value) {
+    public synchronized void accept(Habbo habbo, boolean value) {
         RoomTradeUser user = this.getRoomTradeUserForHabbo(habbo);
 
         user.setAccepted(value);
@@ -113,7 +113,7 @@ public class RoomTrade {
         }
     }
 
-    public void confirm(Habbo habbo) {
+    public synchronized void confirm(Habbo habbo) {
         RoomTradeUser user = this.getRoomTradeUserForHabbo(habbo);
 
         user.confirm();
@@ -134,11 +134,20 @@ public class RoomTrade {
         }
     }
 
-    boolean tradeItems() {
+    synchronized boolean tradeItems() {
+        // Guard against double execution (concurrent confirms) -> would duplicate items.
+        if (this.tradeCompleted) {
+            return false;
+        }
+        this.tradeCompleted = true;
+
+        // Re-validate every offered item still belongs to the offerer (anti-dupe / TOCTOU).
         for (RoomTradeUser roomTradeUser : this.users) {
+            int ownerId = roomTradeUser.getHabbo().getHabboInfo().getId();
             for (HabboItem item : roomTradeUser.getItems()) {
-                if (roomTradeUser.getHabbo().getInventory().getItemsComponent().getHabboItem(item.getId()) != null) {
+                if (item.getUserId() != ownerId) {
                     this.sendMessageToUsers(new TradeClosedComposer(roomTradeUser.getHabbo().getRoomUnit().getId(), TradeClosedComposer.ITEMS_NOT_FOUND));
+                    this.returnItems();
                     return false;
                 }
             }
@@ -179,12 +188,13 @@ public class RoomTrade {
             int userOneId = userOne.getHabbo().getHabboInfo().getId();
             int userTwoId = userTwo.getHabbo().getHabboInfo().getId();
 
-            try (PreparedStatement statement = connection.prepareStatement("UPDATE items SET user_id = ? WHERE id = ? LIMIT 1")) {
+            try (PreparedStatement statement = connection.prepareStatement("UPDATE items SET user_id = ? WHERE id = ? AND user_id = ? LIMIT 1")) {
                 try (PreparedStatement stmt = connection.prepareStatement("INSERT INTO room_trade_log_items (id, item_id, user_id) VALUES (?, ?, ?)")) {
                     for (HabboItem item : userOne.getItems()) {
                         item.setUserId(userTwoId);
                         statement.setInt(1, userTwoId);
                         statement.setInt(2, item.getId());
+                        statement.setInt(3, userOneId);
                         statement.addBatch();
 
                         if (logTrades) {
@@ -199,6 +209,7 @@ public class RoomTrade {
                         item.setUserId(userOneId);
                         statement.setInt(1, userOneId);
                         statement.setInt(2, item.getId());
+                        statement.setInt(3, userTwoId);
                         statement.addBatch();
 
                         if (logTrades) {
@@ -285,7 +296,7 @@ public class RoomTrade {
         this.sendMessageToUsers(new TradeCloseWindowComposer());
     }
 
-    public void stopTrade(Habbo habbo) {
+    public synchronized void stopTrade(Habbo habbo) {
         this.removeStatusses();
         this.clearAccepted();
         this.returnItems();

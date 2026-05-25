@@ -168,7 +168,8 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                             this.client.sendResponse(new AlertLimitedSoldOutComposer());
                             return;
                         }
-                        item.sellRare();
+                        // sellRare() moved below: consume limited stock only after the purchase commits
+                        // (otherwise a later failure burns a serial without delivering the item).
                     }
 
                     int totalCredits = item.getCredits();
@@ -329,6 +330,10 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                     if (gift == null) {
                         this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
                         return;
+                    }
+
+                    if (item.isLimited()) {
+                        item.sellRare(); // consume limited stock now that the gift is created and the purchase commits
                     }
 
                     if (this.client.getHabbo().getHabboInfo().getId() != userId) {

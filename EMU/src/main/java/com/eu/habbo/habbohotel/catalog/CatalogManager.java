@@ -535,17 +535,20 @@ public class CatalogManager {
             return;
         }
 
-        if (voucher.isExhausted()) {
-            client.sendResponse(new RedeemVoucherErrorComposer(Emulator.getGameEnvironment().getCatalogManager().deleteVoucher(voucher) ? RedeemVoucherErrorComposer.INVALID_CODE : RedeemVoucherErrorComposer.TECHNICAL_ERROR));
-            return;
-        }
+        // Atomic check-and-record per voucher (anti TOCTOU double-redeem).
+        synchronized (voucher) {
+            if (voucher.isExhausted()) {
+                client.sendResponse(new RedeemVoucherErrorComposer(Emulator.getGameEnvironment().getCatalogManager().deleteVoucher(voucher) ? RedeemVoucherErrorComposer.INVALID_CODE : RedeemVoucherErrorComposer.TECHNICAL_ERROR));
+                return;
+            }
 
-        if (voucher.hasUserExhausted(habbo.getHabboInfo().getId())) {
-            client.sendResponse(new ModToolIssueHandledComposer("You have exceeded the limit for redeeming this voucher."));
-            return;
-        }
+            if (voucher.hasUserExhausted(habbo.getHabboInfo().getId())) {
+                client.sendResponse(new ModToolIssueHandledComposer("You have exceeded the limit for redeeming this voucher."));
+                return;
+            }
 
-        voucher.addHistoryEntry(habbo.getHabboInfo().getId());
+            voucher.addHistoryEntry(habbo.getHabboInfo().getId());
+        }
 
         if (voucher.points > 0) {
             client.getHabbo().givePoints(voucher.pointsType, voucher.points);

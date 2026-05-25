@@ -1,10 +1,27 @@
-# Generati/binari pesanti (rigenerati dagli script / SETUP.md)
+.DS_Store
+**/.DS_Store
+
+# Logs (may contain PII / payment data)
+*.log
+**/.ipn_results.log
+emu.out.log
+emu.err.log
+
+# Runtime user uploads
+API/audios/
+
+# Java build output
+target/
+
+# Editor / OS junk
+Thumbs.db
+*.swp
+*~
+
+# Nitro client / generati pesanti (rigenerati da build_clean_client.ps1 / SETUP.md)
 CMS/react/
 client-dist/
 node_modules/
 dist/
 *.jar
-*.log
-emu.out.log
-emu.err.log
 .claude/settings.json

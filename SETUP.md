@@ -55,3 +55,19 @@ ed entra in stanza dal Navigator (→ Mijn Wereld/My Rooms → Welcome).
 - `room.nitro` e i bundle **generic** devono essere coerenti col renderer (i set 2022 davano `createRoomObjectAndInitalize('room') = null`).
 - Il client si connette via `ws://127.0.0.1:2096` (ms-websockets); l'emulatore autentica via `auth_ticket` (SSO).
 - L'utente di test `test` ha rank 7 (Administrator).
+
+## Sicurezza
+Hardening applicato (vedi commit `fix(security)`/`feat(security)`):
+- **RCON**: token obbligatorio (`rcon.token` in `config.ini` = `RCON_PASS` in `API/config.php`), bind su loopback. Genera un secret forte e tienilo **fuori dal repo** (i config sono in `.gitignore`).
+- **CMS** (`app/security.php`): header di sicurezza, protezione CSRF globale (Origin/Referer + token), SQLi/XSS chiusi, rate-limit login, cookie sessione HttpOnly/SameSite/Secure.
+- **DB/secret**: `CMS/app/management/config.php`, `EMU/config.ini`, `API/config.php` NON sono tracciati → copia dai `.example` e imposta le credenziali. Le vecchie credenziali nello storico git vanno **ruotate** se diventano reali.
+- Lasciare `debug.mode` **off** (auth_ticket single-use). `enc.enabled` può restare `false` con nitro.
+
+## Cloudflare (produzione)
+Il codice è già predisposto (trust degli IP CF, HTTPS via `X-Forwarded-Proto`/`CF-Visitor`, HSTS, Secure cookie). Per attivarlo:
+1. DNS del dominio su Cloudflare (proxy "arancione" attivo) → punta all'IP del server.
+2. SSL/TLS in modalità **Full** (o Full Strict con certificato origin).
+3. `config.php`: `$_CONFIG['hotel']['url']` (+ `cdnurl`, `swfurl`, `api.link`) col dominio **https://**.
+4. **Turnstile** (captcha): crea un widget su Cloudflare e metti `sitekey`/`secretkey` in `config.php` (`$_CONFIG['cloudflare']`). In locale il captcha è saltato solo da `127.0.0.1`.
+5. Apri solo le porte necessarie; WebSocket (2096): instradalo via CF (WS supportato sul proxy) o esponi `wss://` con TLS. Aggiorna `socket.url` del client di conseguenza.
+6. I range IP CF sono in `app/security.php` (`hp_cloudflare_ranges()`); aggiornali se Cloudflare li cambia (cloudflare.com/ips).

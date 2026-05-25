@@ -53,11 +53,11 @@
 ## Hotel MySQL Settings Also known as Database Settings. ##
 ## Type of connection: It must be connect, or pconnect: if you want a persistent connection. ##
 
-$_CONFIG['mysql']['connection_type'] = 'pconnect';
-$_CONFIG['mysql']['hostname'] = 'localhost';
-$_CONFIG['mysql']['username'] = 'root';
-$_CONFIG['mysql']['password'] = 'yourpass';
-$_CONFIG['mysql']['database'] = 'yourdb';
+$_CONFIG['mysql']['connection_type'] = 'connect';
+$_CONFIG['mysql']['hostname'] = '127.0.0.1';
+$_CONFIG['mysql']['username'] = 'arcturus';
+$_CONFIG['mysql']['password'] = 'arcturus';
+$_CONFIG['mysql']['database'] = 'habbo';
 $_CONFIG['mysql']['port'] = '3306';
 /*
 
@@ -73,8 +73,8 @@ $_CONFIG['mysql']['port'] = '3306';
 */
 
 ## Hotel URL Settings & Basic Settings & Register Currency & Maintenance Settings. ##
-$_CONFIG['hotel']['url'] = 'https://demo.habzone.lol'; /*/ All URL's do not end with an ---> [ / ] /*/
-$_CONFIG['hotel']['cdnurl'] = 'https://demo.habzone.lol/app/tpl/skins/ZabboME/assets'; /*/ All URL's do not end with an ---> [ / ] This is where you edit the web-build. /*/
+$_CONFIG['hotel']['url'] = 'http://127.0.0.1:8080'; /*/ All URL's do not end with an ---> [ / ] /*/
+$_CONFIG['hotel']['cdnurl'] = 'http://127.0.0.1:8080/app/tpl/skins/ZabboME/assets'; /*/ All URL's do not end with an ---> [ / ] This is where you edit the web-build. /*/
 $_CONFIG['hotel']['shortname'] = 'Zabbo'; /*/ Your hotels shortname example 'Short Hotel Name' /*/
 $_CONFIG['hotel']['longname'] = 'Zabbo Hotel'; /*/ Your hotels shortname example 'Long Hotel Name' /*/
 $_CONFIG['hotel']['description'] = 'Make friends, join the fun, get noticed!'; /*/ Tell users about your hotel. /*/
@@ -96,7 +96,7 @@ $_CONFIG['social']['twitter'] = 'https://twitter.com/Zabbo_ME'; /*/ Your Hotel T
 $_CONFIG['avatar']['imager'] = 'https://www.habbo.com/habbo-imaging/avatarimage?figure='; /*/ Your Hotel avatar imager Link 'https://imager.url.com/?figure=' /*/
 
 ## Hotel API Link Management ##
-$_CONFIG['api']['link'] = 'https://ext.habzone.lol'; /*/ Your Hotel API Link 'https://api.habzone.lol' /*/
+$_CONFIG['api']['link'] = 'http://127.0.0.1:8081'; /*/ Your Hotel API Link 'https://api.habzone.lol' /*/
 
 ## Cloudflare Turnstile Captcha Site Key Management ##
 ## https://www.cloudflare.com/en-gb/application-services/products/turnstile/
@@ -115,7 +115,7 @@ $_CONFIG['tinycloud']['tinykey'] = 'YOUR_TINYMCE_API_KEY'; /*/ Paste your Tiny C
 $_CONFIG['template']['style'] = 'ZabboME';
 
 ## Client Settings For Client.php Vars,Flash_Text, Furnidata etc.... ##
-$_CONFIG['hotel']['swfurl'] = 'https://game1.habzone.lol'; /*/ All URL's do not end with an ---> [ / ] This is where you edit the SWF URL. /*/
+$_CONFIG['hotel']['swfurl'] = 'http://127.0.0.1:8080'; /*/ All URL's do not end with an ---> [ / ] This is where you edit the SWF URL. /*/
 $_CONFIG['hotel']['external_vars'] = '/gamedata/external_variables.txt'; //URL to your external vars
 $_CONFIG['hotel']['external_texts'] = '/gamedata/external_flash_texts.txt'; //URL to your external texts
 $_CONFIG['hotel']['product_data'] = '/gamedata/productdata.txt'; //URL to your productdata

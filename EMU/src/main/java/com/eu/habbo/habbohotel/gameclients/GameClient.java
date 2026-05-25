@@ -32,11 +32,6 @@ public class GameClient {
     public final ConcurrentHashMap<Class<? extends MessageHandler>, Long> messageTimestamps = new ConcurrentHashMap<>();
     public long lastPacketCounterCleared = Emulator.getIntUnixTimestamp();
 
-    // Anti-flood counters - only touched on the channel's EventLoop thread (GameMessageRateLimit).
-    public int incomingPacketTotal = 0;
-    public int rateLimitViolations = 0;
-    public int preAuthPacketCount = 0;
-
     public GameClient(Channel channel) {
         this.channel = channel;
         this.encryption = Emulator.getCrypto().isEnabled()

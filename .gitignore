@@ -1,17 +1,10 @@
-.DS_Store
-**/.DS_Store
-
-# Logs (may contain PII / payment data)
+# Generati/binari pesanti (rigenerati dagli script / SETUP.md)
+CMS/react/
+client-dist/
+node_modules/
+dist/
+*.jar
 *.log
-**/.ipn_results.log
-
-# Runtime user uploads
-API/audios/
-
-# Java build output
-target/
-
-# Editor / OS junk
-Thumbs.db
-*.swp
-*~
+emu.out.log
+emu.err.log
+.claude/settings.json

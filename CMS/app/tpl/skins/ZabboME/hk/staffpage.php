@@ -72,7 +72,7 @@ $marginright     = secureStr($_POST['marginright']);
 $extra     = secureStr($_POST['extra']);
 $lepageid     = secureStr($_POST['pageid']);
 $q = "INSERT INTO cms_staff (username, margintop, marginright, extra, pageid) VALUES('{$username}','{$margintop}','{$marginright}','{$extra}', '{$lepageid}')";
-mysql_query($q) or die(mysql_error());
+mysql_query($q) or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 echo '<div class="alert alert-success"><button type="button" class="close" data-dismiss="alert">×</button><strong>Well done!</strong> User Added</div>';
 } else if ($_POST['rare_view']) {
 ?>
@@ -119,7 +119,7 @@ die('Go away please.');
 									</thead>
 									<tbody>										
 									<?php
-$getStaff = mysql_query("SELECT * FROM cms_staff ORDER BY id ASC") or die(mysql_error());
+$getStaff = mysql_query("SELECT * FROM cms_staff ORDER BY id ASC") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 while ($staff = mysql_fetch_assoc($getStaff)) {
 	$pageid = $staff['pageid'];
 if ($pageid == 1) {

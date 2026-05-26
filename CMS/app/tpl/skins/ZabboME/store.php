@@ -130,7 +130,7 @@ echo '<div class="alert alert-danger" style="text-align: justify;">
 </div></div>';
 } else {
 mysql_query("UPDATE users SET shopbalance = shopbalance + '".$voucheramount."' WHERE username = '".$user['username']."'");
-mysql_query("UPDATE shop_vouchers SET used = '1' WHERE voucher = '" . mysql_real_escape_string($_POST['vouchercode']) . "'") or die(mysql_error());
+mysql_query("UPDATE shop_vouchers SET used = '1' WHERE voucher = '" . mysql_real_escape_string($_POST['vouchercode']) . "'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 mysql_query("INSERT INTO `shop_payments`(username,item,time,amount,userid) VALUES ('".$_SESSION['user']['username']."', 'Voucher Code', '".date('l\, F jS\, Y ')."', '".$voucheramount."', '".$_SESSION['user']['id']."')");
 echo '<div class="alert alert-success" style="text-align: justify;">
 <div class="col-1 alert-icon-col">

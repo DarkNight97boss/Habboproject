@@ -89,7 +89,7 @@ include "includes/header.php";
 							items_base.interaction_modes_count = '" . mysql_escape_string($_POST['interaction_modes_count']) . "',
 							items_base.interaction_type = '" . mysql_escape_string($_POST['interaction_type']) . "',
 							items_base.vending_ids = '" . mysql_escape_string($_POST['vending_ids']) . "'
-							WHERE items.item_id = items_base.id AND items.id = '".  mysql_real_escape_string($_POST['item_current_id']) ."'") or die(mysql_error());
+							WHERE items.item_id = items_base.id AND items.id = '".  mysql_real_escape_string($_POST['item_current_id']) ."'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	                        echo '<div class="col-lg-12"><div class="alert bg-success" role="alert"><em class="fa fa-lg fa-warning">&nbsp;</em> Item ' . mysql_real_escape_string($_POST['item_current_id']) . ' successfully updated!<a href="#" class="pull-right"><em class="fa fa-lg fa-close"></em></a></div></div><meta http-equiv="refresh" content="2;url=furni"/>';
 							/*$Hamada->sendMUS("reload_items");*/
 	                    }

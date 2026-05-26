@@ -57,7 +57,7 @@ include "includes/header.php";
 // Get ID of rare
 $id = intval($_GET['id']);
 // Get existing 
-$existq = mysql_query("SELECT * FROM cms_values WHERE id = '$id'") or die(mysql_error());
+$existq = mysql_query("SELECT * FROM cms_values WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $exist            = mysql_num_rows($existq);
 $values           = mysql_fetch_array($existq);
 // If non-existing, redirect to /me
@@ -79,7 +79,7 @@ echo '
 								<strong>Error</strong> Please fill in all fields!
 							</div>';
 } else {
-mysql_query("UPDATE cms_values SET name = '$name', credits = '$credits', diamonds = '$diamonds', tokens = '$tokens', added_time = '$time' WHERE id = '$id'") or die(mysql_error());
+mysql_query("UPDATE cms_values SET name = '$name', credits = '$credits', diamonds = '$diamonds', tokens = '$tokens', added_time = '$time' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 echo '
 							<div class="alert alert-success">
 								<button type="button" class="close" data-dismiss="alert">×</button>

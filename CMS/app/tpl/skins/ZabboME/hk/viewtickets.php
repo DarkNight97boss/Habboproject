@@ -145,8 +145,8 @@ $i++;
 
 										<?php
 $id = intval($_GET['id']);
-$existq = mysql_query("SELECT * FROM cms_user_reports WHERE id = '$id'") or die(mysql_error());
-$existq1 = mysql_query("SELECT * FROM users WHERE id = ".$_SESSION['user']['id']."") or die(mysql_error());
+$existq = mysql_query("SELECT * FROM cms_user_reports WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+$existq1 = mysql_query("SELECT * FROM users WHERE id = ".$_SESSION['user']['id']."") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 
 $exist = mysql_num_rows($existq);
 $news1  = mysql_fetch_array($existq1);
@@ -165,8 +165,8 @@ echo '
 										<strong>Error</strong> Please fill in all fields!
 									</div>';
 } else {
-mysql_query("UPDATE cms_user_reports SET status = '$status' WHERE id = '$id'") or die(mysql_error());
-mysql_query("UPDATE cms_user_reports SET handled_by = '$handled_by' WHERE id = '$id'") or die(mysql_error());
+mysql_query("UPDATE cms_user_reports SET status = '$status' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE cms_user_reports SET handled_by = '$handled_by' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 header("Refresh:0");
 echo '
 									<div class="alert alert-success">

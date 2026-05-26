@@ -52,23 +52,27 @@ if ($last_present < 86400){
 	
 	if($uInfo['online'] == 1){
 	echo "<div id='refreshreward'>";
- 
+
 	$query = mysql_query("SELECT * FROM `cms_presents_prizes` ORDER BY RAND() LIMIT 1");
 	$prize = mysql_fetch_array($query);
-	 
+
+	// Guard: tabella vuota -> $prize == false e $furni_id == null,
+	// che generava "UPDATE ... WHERE id =" -> syntax error "near '' line 1".
+	if (!$prize || empty($prize['id'])) { echo "</div>"; return; }
+
 	$furni_name = $prize['name'];
 	$item_id = $prize['furni_id'];
-	$furni_id = $prize['id'];
+	$furni_id = (int) $prize['id'];
 	$img = $prize['image'];
+
+	mysql_query("UPDATE `cms_presents_prizes` SET amount = amount+1 WHERE id = '".$furni_id."'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	 
-	mysql_query("UPDATE `cms_presents_prizes` SET amount = amount+1 WHERE id =".$furni_id) or die(mysql_error());
-	 
-	mysql_query("INSERT INTO `cms_present_logs` (username,prize,timestamp) VALUES ('".$user."', '".$furni_name."', '".time()."')") or die(mysql_error());
+	mysql_query("INSERT INTO `cms_present_logs` (username,prize,timestamp) VALUES ('".$user."', '".$furni_name."', '".time()."')") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	 
 	sendMUS("sendgift", ["user_id" => "".$u['id']."", "itemid" =>  "".$item_id."", "message" =>  "This present was sent by our automatic daily reward system. Coded by: Justin"]);
 
 	sendMUS("alertuser", ["user_id" => "".$u['id']."", "message" => "Hey ".$username.", you've received your daily reward, please check your inventory for a present to open!"]);
-	mysql_query("UPDATE users SET reward_check = '0' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+	mysql_query("UPDATE users SET reward_check = '0' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 
 	echo "</div>";
 }
@@ -93,7 +97,7 @@ $info = mysql_query("SELECT id, online FROM users WHERE id = '".$user."'");
 	    	echo "<div id='refreshreward'>";
 
 	    sendMUS("alertuser", ["user_id" => "".$u['id']."", "message" => "Hey  ".$username.", you need to be a member for at least one day to receive daily rewards!"]);
-		mysql_query("UPDATE users SET newbie_check = '1' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+		mysql_query("UPDATE users SET newbie_check = '1' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 
    	echo "<div>";
 

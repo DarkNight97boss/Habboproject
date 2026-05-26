@@ -91,7 +91,11 @@ echo ' ';
 while ($row = mysql_fetch_array($result)) {{
 $ip          = $row['verified_ip'];
 
- require_once ('/includes/client_addons.php');
+ // Fix: path was '/includes/client_addons.php' which on Windows resolves to
+ // C:\includes\client_addons.php (non-existent) -> fatal -> pagina bianca.
+ // Use the template directory explicitly.
+ $__addons = __DIR__ . '/includes/client_addons.php';
+ if (file_exists($__addons)) { require_once $__addons; }
 	}
 	}
 	}

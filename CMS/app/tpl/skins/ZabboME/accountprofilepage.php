@@ -24,9 +24,9 @@ function strip_tags_content($text, $tags = '', $invert = FALSE) {
   }
   return $text;
 }
-mysql_query("UPDATE users SET country = '".strip_tags_content($acc_country)."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
-mysql_query("UPDATE users SET youtube_embed = '".strip_tags_content($acc_youtube)."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
-mysql_query("UPDATE users SET cms_currency_private = '".strip_tags_content($cms_currency_private)."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+mysql_query("UPDATE users SET country = '".strip_tags_content($acc_country)."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE users SET youtube_embed = '".strip_tags_content($acc_youtube)."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE users SET cms_currency_private = '".strip_tags_content($cms_currency_private)."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 
 }
 ?>
@@ -35,21 +35,21 @@ mysql_query("UPDATE users SET cms_currency_private = '".strip_tags_content($cms_
 if(isset($_POST['account']))
 	{
 	$acc_country = mysql_real_escape_string(filter($_POST['acc_country']));
-	mysql_query("UPDATE users SET country = '".$acc_country."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+	mysql_query("UPDATE users SET country = '".$acc_country."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	}
 ?>
 <?php
 if(isset($_POST['account']))
 	{
 	$acc_youtube = mysql_real_escape_string(filter($_POST['acc_youtube']));
-	mysql_query("UPDATE users SET youtube_embed = '".$acc_youtube."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+	mysql_query("UPDATE users SET youtube_embed = '".$acc_youtube."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	}
 ?>
 <?php
 if(isset($_POST['account']))
 	{
 	$cms_currency_private = mysql_real_escape_string(filter($_POST['cms_currency_private']));
-	mysql_query("UPDATE users SET cms_currency_private = '".$cms_currency_private."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+	mysql_query("UPDATE users SET cms_currency_private = '".$cms_currency_private."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	$successMessage = '<div class="alert alert-success" style="text-align: justify;"><b></b><center><b>Your changes have successfully saved!</b></center></div>';
 	}
 ?>

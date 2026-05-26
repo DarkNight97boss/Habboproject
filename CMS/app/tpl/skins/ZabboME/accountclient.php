@@ -26,17 +26,17 @@ function strip_tags_content($text, $tags = '', $invert = FALSE) {
   }
   return $text;
 }
-mysql_query("UPDATE users SET motto = '".strip_tags_content($acc_motto)."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
-mysql_query("UPDATE users_settings SET block_friendrequests = '".strip_tags_content($acc_fr)."' WHERE user_id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
-mysql_query("UPDATE users_settings SET block_following = '".strip_tags_content($acc_fo)."' WHERE user_id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
-mysql_query("UPDATE users SET look = '".strip_tags_content($acc_look)."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+mysql_query("UPDATE users SET motto = '".strip_tags_content($acc_motto)."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE users_settings SET block_friendrequests = '".strip_tags_content($acc_fr)."' WHERE user_id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE users_settings SET block_following = '".strip_tags_content($acc_fo)."' WHERE user_id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE users SET look = '".strip_tags_content($acc_look)."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 }
 ?>
 <?php
 if(isset($_POST['account']))
 	{
 	$acc_motto = mysql_real_escape_string(filter($_POST['acc_motto']));
-	mysql_query("UPDATE users SET motto = '".$acc_motto."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+	mysql_query("UPDATE users SET motto = '".$acc_motto."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	$successMessage = '<div class="alert alert-success" style="text-align: justify;"><b></b><center><b>Your changes have successfully saved!</b></center></div>';
 	}
 ?>
@@ -46,7 +46,7 @@ if(isset($_POST['account']))
 	$acc_fr = mysql_real_escape_string(filter($_POST['acc_fr']));
 	if(is_numeric($acc_fr) && ($acc_fr == 0 || $acc_fr == 1))
 	{
-		mysql_query("UPDATE users_settings SET block_friendrequests = '".$acc_fr."' WHERE user_id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+		mysql_query("UPDATE users_settings SET block_friendrequests = '".$acc_fr."' WHERE user_id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 		$successMessage = '<div class="alert alert-success" style="text-align: justify;"><b></b><center><b>Your changes have successfully saved!</b></center></div>';
 	}
 }
@@ -57,7 +57,7 @@ if(isset($_POST['account']))
 	$acc_fo = mysql_real_escape_string(filter($_POST['acc_fo']));
 	if(is_numeric($acc_fo) && ($acc_fo == 0 || $acc_fo == 1))
 	{
-		mysql_query("UPDATE users_settings SET block_following = '".$acc_fo."' WHERE user_id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+		mysql_query("UPDATE users_settings SET block_following = '".$acc_fo."' WHERE user_id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 		$successMessage = '<div class="alert alert-success" style="text-align: justify;"><b></b><center><b>Your changes have successfully saved!</b></center></div>';
 	}
 }
@@ -68,7 +68,7 @@ if(isset($_POST['account']))
 	$acc_foom = mysql_real_escape_string(filter($_POST['acc_foom']));
 	if(is_numeric($acc_foom) && ($acc_foom == 0 || $acc_foom == 1))
 	{
-		mysql_query("UPDATE users_settings SET block_roominvites = '".$acc_foom."' WHERE user_id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+		mysql_query("UPDATE users_settings SET block_roominvites = '".$acc_foom."' WHERE user_id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 		$successMessage = '<div class="alert alert-success" style="text-align: justify;"><b></b><center><b>Your changes have successfully saved!</b></center></div>';
 	}
 }
@@ -77,7 +77,7 @@ if(isset($_POST['account']))
 if(isset($_POST['account']))
 	{
 	$acc_look = mysql_real_escape_string(filter($_POST['acc_look']));
-	mysql_query("UPDATE users SET look = '".$acc_look."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+	mysql_query("UPDATE users SET look = '".$acc_look."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 		$successMessage = '<div class="alert alert-success" style="text-align: justify;"><b></b><center><b>Your changes have successfully saved!</b></center></div>';
 	}
 ?>
@@ -88,7 +88,7 @@ if(isset($_POST['account']))
 	$acc_clientmenu = mysql_real_escape_string(filter($_POST['acc_clientmenu']));
 	if(($acc_clientmenu == 0 || $acc_clientmenu == 1))
 	{
-		mysql_query("UPDATE users SET client_menu = '".$acc_clientmenu."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+		mysql_query("UPDATE users SET client_menu = '".$acc_clientmenu."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 		$successMessage = '<div class="alert alert-success" style="text-align: justify;"><b></b><center><b>Your changes have successfully saved!</b></center></div>';
 	}
 }

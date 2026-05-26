@@ -74,7 +74,7 @@ include "includes/header.php";
 					<div class="panel-body">
 <?php
 $id = intval($_GET['id']);
-$existq = mysql_query("SELECT * FROM cms_news WHERE id = '$id'") or die(mysql_error());
+$existq = mysql_query("SELECT * FROM cms_news WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $exist = mysql_num_rows($existq);
 $news  = mysql_fetch_array($existq);
 if ($exist == 0) {
@@ -95,7 +95,7 @@ echo '
 										<strong>Error</strong> Please fill in all fields!
 									</div>';
 } else {
-mysql_query("UPDATE cms_news SET title = '$title', shortstory = '$shortstory', longstory = '$longstory', image = '$topstory', author = '$author' WHERE id = '$id'") or die(mysql_error());
+mysql_query("UPDATE cms_news SET title = '$title', shortstory = '$shortstory', longstory = '$longstory', image = '$topstory', author = '$author' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 header("Refresh:0");
 echo '
 									<div class="alert alert-success">

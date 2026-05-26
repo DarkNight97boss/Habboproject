@@ -81,7 +81,7 @@ if (empty($filteredword)) {
 echo '<div class="alert alert-error"><button type="button" class="close" data-dismiss="alert">×</button><strong>Error:</strong> You have not entered a word to filter!</div>';
 } else {
 $q = "INSERT INTO wordfilter (key, replacement, hide, report, mute) VALUES('{$filteredword}','{$replacement}','{$hideword}','{$reportword}','{$muteword}')";
-mysql_query($q) or die(mysql_error());
+mysql_query($q) or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 echo '<div class="alert alert-success"><button type="button" class="close" data-dismiss="alert">×</button><strong>'.$filteredword.'</strong> has been replaced with <strong>'.$replacement.'</strong></div>';
 }
 }

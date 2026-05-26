@@ -88,7 +88,7 @@ include "includes/header.php";
 <tbody>
 
 <?php
-$getApps = mysql_query("SELECT * FROM users_submissions WHERE entry = 'ROTW' ORDER BY id DESC") or die(mysql_error());
+$getApps = mysql_query("SELECT * FROM users_submissions WHERE entry = 'ROTW' ORDER BY id DESC") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 while ($apps = mysql_fetch_assoc($getApps)) {
 echo '
 												<tr>
@@ -133,7 +133,7 @@ echo '<input type="button" class="btn btn-danger btn-xs" value="Delete" onclick=
 </thead>
 <tbody>
 <?php
-$getApps = mysql_query("SELECT * FROM users_submissions WHERE entry = 'COTW' ORDER BY id DESC") or die(mysql_error());
+$getApps = mysql_query("SELECT * FROM users_submissions WHERE entry = 'COTW' ORDER BY id DESC") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 while ($apps = mysql_fetch_assoc($getApps)) {
 echo '
 												<tr>
@@ -179,7 +179,7 @@ echo '<input type="button" class="btn btn-danger btn-xs" value="Delete" onclick=
 </thead>
 <tbody>
 <?php
-$getApps = mysql_query("SELECT * FROM users_submissions WHERE entry = 'OOTW' ORDER BY id DESC") or die(mysql_error());
+$getApps = mysql_query("SELECT * FROM users_submissions WHERE entry = 'OOTW' ORDER BY id DESC") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 while ($apps = mysql_fetch_assoc($getApps)) {
 echo '
 												<tr>

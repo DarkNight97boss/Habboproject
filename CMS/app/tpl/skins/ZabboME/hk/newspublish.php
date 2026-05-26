@@ -113,7 +113,7 @@ echo '<div class="alert alert-danger"><strong>Error:</strong> You have not enter
 echo '<div class="alert alert-danger"><strong>Error:</strong> You havent entered a Long Story.</div>';
 } else {
 $q         = "INSERT INTO cms_news (title, shortstory, longstory, published, image, author, look) VALUES('{$title}','{$shortstory}','" . htmlspecialchars_decode($longstory) . "'," . time() . ",'{$topstory}','" . $_SESSION['user']['username'] . "','" . $_SESSION['user']['look'] . "')";
-mysql_query($q) or die(mysql_error());
+mysql_query($q) or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 echo '<div class="alert alert-success"><strong>Well done!</strong> News Article created.</div>';
 header("refresh:0;url={url}/ase/index.php?url=news");
 }

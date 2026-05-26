@@ -137,7 +137,15 @@ class engine
 	
 	final public function query($sql)
 	{
-		return $this->mysql['query']($sql, $this->connection) or die(mysql_error());
+		// On failure, log the offending query alongside the error so we know
+		// where the bug is even after the user closes the page. Output stays
+		// generic.
+		$res = $this->mysql['query']($sql, $this->connection);
+		if (!$res) {
+			error_log("[engine] SQL fail: " . mysql_error() . " | query: " . $sql);
+			die("Database error.");
+		}
+		return $res;
 	}
 	
 	final public function num_rows($sql)

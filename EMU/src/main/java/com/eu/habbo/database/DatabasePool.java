@@ -65,4 +65,53 @@ class DatabasePool {
     public HikariDataSource getDatabase() {
         return this.database;
     }
+
+    /**
+     * Costruisce un pool secondario verso una read-replica MariaDB.
+     * Pensato per query read-only pesanti (audit scan, leaderboard) cosi'
+     * il primary pool non si esaurisce sotto traffico applicativo.
+     *
+     * Config:
+     *   db.replica.host           (default '' = disabled)
+     *   db.replica.port           (default = db.port)
+     *   db.replica.database       (default = db.database)
+     *   db.replica.username       (default = db.username)
+     *   db.replica.password       (default = db.password)
+     *   db.replica.pool.maxsize   (default 16)
+     *   db.replica.pool.minsize   (default 4)
+     *
+     * Il pool e' costruito con readOnly=true cosi' qualsiasi tentativo di
+     * scrittura sbaglia immediatamente (defense-in-depth: anche se un dev
+     * passa per errore getReadDataSource() su una write, MySQL ritorna
+     * "Cannot execute statement in a READ ONLY transaction").
+     */
+    static HikariDataSource buildReadReplica(com.eu.habbo.core.ConfigurationManager config) {
+        String host = config.getValue("db.replica.host");
+        String port = config.getValue("db.replica.port", config.getValue("db.port", "3306"));
+        String name = config.getValue("db.replica.database", config.getValue("db.database", "habbo"));
+        String user = config.getValue("db.replica.username", config.getValue("db.username"));
+        String pwd  = config.getValue("db.replica.password", config.getValue("db.password"));
+        int maxSize = config.getInt("db.replica.pool.maxsize", 16);
+        int minIdle = config.getInt("db.replica.pool.minsize", 4);
+
+        HikariConfig c = new HikariConfig();
+        c.setMaximumPoolSize(maxSize);
+        c.setMinimumIdle(minIdle);
+        c.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + name + config.getValue("db.params"));
+        c.addDataSourceProperty("user", user);
+        c.addDataSourceProperty("password", pwd);
+        c.addDataSourceProperty("cachePrepStmts", "true");
+        c.addDataSourceProperty("useServerPrepStmts", "true");
+        c.addDataSourceProperty("prepStmtCacheSize", "500");
+        c.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        // Read-only: il driver dice al server "SET SESSION TRANSACTION READ ONLY"
+        // e qualsiasi UPDATE/INSERT/DELETE accidentale fallisce subito.
+        c.setReadOnly(true);
+        c.setAutoCommit(true);
+        c.setConnectionTimeout(config.getInt("db.pool.connection_timeout_ms", 30_000));
+        c.setMaxLifetime(1_800_000L);
+        c.setIdleTimeout(600_000L);
+        c.setPoolName("HikariReadReplica");
+        return new HikariDataSource(c);
+    }
 }

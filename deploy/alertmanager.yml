@@ -1,0 +1,67 @@
+# alertmanager.yml — routing notifiche dalle PromQL rules.
+#
+# Inviare alert TUTTE alle stesse destinazioni e' rumoroso.
+# Strategia:
+#   - critical -> Slack #ops + (opz.) PagerDuty
+#   - warning  -> Slack #ops-warnings  (no pager)
+#   - info     -> solo dashboard (non arrivano qui)
+#
+# Configura i webhook qui sotto poi:
+#   docker compose --profile obs up -d alertmanager
+#
+# Le credenziali (Slack token, ecc.) NON vanno committate: usa env var
+# tramite docker-compose -> Alertmanager le legge come ${VAR}.
+
+global:
+  resolve_timeout: 5m
+  # Inserisci endpoint Slack webhook se vuoi notifiche Slack:
+  # slack_api_url: 'https://hooks.slack.com/services/REPLACE/ME'
+
+route:
+  receiver: 'default'
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers:
+        - severity = critical
+      receiver: 'critical'
+      group_wait: 10s
+    - matchers:
+        - severity = warning
+      receiver: 'warnings'
+
+receivers:
+  - name: 'default'
+    # Non manda niente — placeholder per i match-all.
+    webhook_configs: []
+
+  - name: 'critical'
+    # Esempio Slack: scommenta + setta slack_api_url sopra.
+    # slack_configs:
+    #   - channel: '#ops'
+    #     title: '{{ .Status | toUpper }} - {{ .CommonLabels.alertname }}'
+    #     text: |
+    #       {{ range .Alerts -}}
+    #       *{{ .Annotations.summary }}*
+    #       {{ .Annotations.description }}
+    #       {{ end }}
+    # Esempio webhook generico (Discord / Mattermost / ecc):
+    webhook_configs:
+      - url: 'http://127.0.0.1:9999/alerts'  # cambialo
+        send_resolved: true
+
+  - name: 'warnings'
+    webhook_configs:
+      - url: 'http://127.0.0.1:9999/alerts'  # cambialo
+        send_resolved: true
+
+inhibit_rules:
+  # Se EmuDown e' attivo, sopprimi tutti gli altri alert dell'istanza
+  # (non e' utile sapere che heap e' alto se il process e' morto).
+  - source_matchers:
+      - alertname = EmuDown
+    target_matchers:
+      - severity =~ "warning|info"
+    equal: ['instance']

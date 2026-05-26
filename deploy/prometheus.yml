@@ -7,9 +7,23 @@
 global:
   scrape_interval: 15s
   scrape_timeout: 10s
-  evaluation_interval: 15s
+  evaluation_interval: 30s
   external_labels:
     monitor: 'habbo-emu'
+
+# Alert rules: caricate da /etc/prometheus/rules/ in container.
+# Montato dal docker-compose nel profilo "obs".
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+# Alertmanager (opzionale, commenta se non vuoi notifiche esterne).
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+      # In dev/locale non c'e' alertmanager -> Prometheus continua, le
+      # alert restano visibili su /alerts ma non vengono notificate.
+      timeout: 5s
 
 scrape_configs:
   # EMU HealthEndpoint /metrics

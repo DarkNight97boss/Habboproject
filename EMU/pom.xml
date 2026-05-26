@@ -218,6 +218,20 @@
         </dependency>
 
         <!--
+            Jedis: client Redis (single-instance + Sentinel). 4.4.x e' l'ultima
+            compatibile Java 8 (5.x richiede Java 11). Usato come backing store
+            opzionale per rate-limiter e session-cache CROSS-instance quando
+            l'emulatore gira su >1 nodo (Tier 2 architettura nel deliverable).
+            Se redis.host e' vuoto, RedisClient resta in modalita' "disabled"
+            e nessuno si connette -> overhead zero su single-node.
+        -->
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>4.4.6</version>
+        </dependency>
+
+        <!--
             JUnit 5 (Jupiter). 5.10.x e' l'ultima minor compatibile col target
             Java 8; 5.11+ richiede Java 17. Scope=test => non finisce nel JAR
             production. Aggregator "junit-jupiter" tira API + engine + params.

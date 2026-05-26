@@ -22,6 +22,16 @@ public class Database {
     private HikariDataSource dataSource;
     private DatabasePool databasePool;
 
+    /**
+     * Pool secondario verso una read-replica MariaDB (opzionale).
+     * Quando configurato, le query read-only "pesanti" (audit_log scan,
+     * leaderboard, statistiche) possono passare via {@link #getReadDataSource()}
+     * invece di consumare connection del pool primary. Senza replica
+     * configurata, getReadDataSource() ritorna il primary -> zero impatto
+     * sui caller esistenti.
+     */
+    private HikariDataSource readDataSource;
+
     public Database(ConfigurationManager config) {
         long millis = System.currentTimeMillis();
 
@@ -35,6 +45,21 @@ public class Database {
                 return;
             }
             this.dataSource = this.databasePool.getDatabase();
+
+            // Read replica opzionale. Se db.replica.host e' vuoto, restiamo
+            // single-DB (getReadDataSource() = primary). Se settato, monta
+            // un secondo pool isolato verso quel host, in read-only.
+            String replicaHost = config.getValue("db.replica.host", "");
+            if (replicaHost != null && !replicaHost.trim().isEmpty()) {
+                try {
+                    this.readDataSource = DatabasePool.buildReadReplica(config);
+                    LOGGER.info("Database -> read replica configured at {}", replicaHost);
+                } catch (Exception e) {
+                    LOGGER.warn("Database -> failed to init read replica '{}', falling back to primary: {}",
+                            replicaHost, e.toString());
+                    this.readDataSource = null;
+                }
+            }
         } catch (Exception e) {
             SQLException = true;
             LOGGER.error("Failed to connect to your database.", e);
@@ -53,10 +78,23 @@ public class Database {
         }
 
         this.dataSource.close();
+        if (this.readDataSource != null) {
+            try { this.readDataSource.close(); } catch (Exception ignored) {}
+        }
     }
 
     public HikariDataSource getDataSource() {
         return this.dataSource;
+    }
+
+    /**
+     * Ritorna il pool da usare per query READ-ONLY potenzialmente pesanti
+     * (scan, leaderboard, stats). Se non e' configurata una replica,
+     * ritorna il primary -> chiamanti possono usarlo opportunisticamente
+     * senza preoccuparsi della topologia.
+     */
+    public HikariDataSource getReadDataSource() {
+        return this.readDataSource != null ? this.readDataSource : this.dataSource;
     }
 
     public DatabasePool getDatabasePool() {

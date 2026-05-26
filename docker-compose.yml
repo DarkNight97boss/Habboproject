@@ -109,6 +109,37 @@ services:
     networks:
       - habbo_net
 
+  # ============= Redis (profilo "redis") =============
+  # Backing store opzionale per rate-limit cross-instance + session cache.
+  # Necessario solo se l'emulatore gira su >1 nodo. Single-node lo lasci off.
+  # Abilita con: docker compose --profile redis up -d
+  redis:
+    image: redis:7-alpine
+    container_name: habbo-redis
+    restart: unless-stopped
+    profiles: ["redis"]
+    command:
+      - "redis-server"
+      - "--maxmemory"
+      - "256mb"
+      - "--maxmemory-policy"
+      - "allkeys-lru"
+      - "--save"
+      - ""  # disable RDB snapshot (rate-limit state e' ephemeral)
+      - "--appendonly"
+      - "no"
+      - "--requirepass"
+      - "${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}"
+    volumes:
+      - redis_data:/data
+    networks:
+      - habbo_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
   # ============= Observability (profilo "obs") =============
   # Abilita con: docker compose --profile obs up -d
   # Prometheus scraper + Grafana con dashboard auto-provisioned.
@@ -128,12 +159,29 @@ services:
       - "--web.enable-lifecycle"
     volumes:
       - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./deploy/prometheus_rules:/etc/prometheus/rules:ro
       - prometheus_data:/prometheus
     networks:
       - habbo_net
     # Espone su loopback dell'host (per query manuali); MAI 0.0.0.0:9091.
     ports:
       - "127.0.0.1:9091:9091"
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: habbo-alertmanager
+    restart: unless-stopped
+    profiles: ["obs"]
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+    volumes:
+      - ./deploy/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    networks:
+      - habbo_net
+    ports:
+      - "127.0.0.1:9093:9093"
 
   grafana:
     image: grafana/grafana-oss:10.4.2
@@ -195,6 +243,8 @@ volumes:
   backup_data:
   prometheus_data:
   grafana_data:
+  alertmanager_data:
+  redis_data:
 
 networks:
   habbo_net:

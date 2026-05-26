@@ -217,6 +217,9 @@ public final class DailyStreak {
 
             AuditLog.record(userId, habbo.getHabboInfo().getUsername(), "DAILY_STREAK",
                     "user:" + userId, "streak=" + newStreak + " kind=" + reward.kind + " amount=" + reward.amount);
+
+            // Cross-feature hook: grant battle-pass XP for the daily claim.
+            try { BattlePass.grantStreakXp(habbo); } catch (Exception ignored) {}
             return reward;
         } catch (Exception e) {
             LOGGER.error("DailyStreak.claim failed for user {}", userId, e);

@@ -200,6 +200,9 @@ public final class BattlePass {
      */
     public static synchronized void addXp(Habbo habbo, int amount, boolean dailyOnce) {
         if (habbo == null || !isEnabled() || amount <= 0) return;
+        // Apply the live XP multiplier (time-of-week + active hotel event).
+        amount = HotelEvents.applyXpMultiplier(amount);
+        if (amount <= 0) return;
         int seasonId = ensureActiveSeason();
         if (seasonId == 0) return;
         int userId = habbo.getHabboInfo().getId();

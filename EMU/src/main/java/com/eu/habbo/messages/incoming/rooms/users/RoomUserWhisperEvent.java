@@ -23,6 +23,10 @@ public class RoomUserWhisperEvent extends MessageHandler {
             if (!this.client.getHabbo().getHabboStats().allowTalk() || chatMessage.getTargetHabbo() == null)
                 return;
 
+            if (!chatMessage.isCommand && com.eu.habbo.core.ChatSpamGuard.observe(this.client.getHabbo(), chatMessage.getMessage())) {
+                return;
+            }
+
             if (Emulator.getPluginManager().fireEvent(new UserTalkEvent(this.client.getHabbo(), chatMessage, RoomChatType.WHISPER)).isCancelled()) {
                 return;
             }

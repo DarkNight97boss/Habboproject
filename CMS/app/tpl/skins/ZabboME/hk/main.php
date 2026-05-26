@@ -105,7 +105,7 @@ echo number_format(mysql_num_rows(mysql_query("SELECT NULL FROM catalog_items"))
 					<div class="panel panel-orange panel-widget border-right">
 						<div class="row no-padding"><em class="fa fa-xl fa-users color-teal"></em>
 							<div class="large"><?php 
-$query = mysql_query("SELECT COUNT(*) AS stats1 FROM users") or die(mysql_error());
+$query = mysql_query("SELECT COUNT(*) AS stats1 FROM users") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $data = mysql_fetch_assoc($query);
 echo number_format($data['stats1']);
 ?></div>

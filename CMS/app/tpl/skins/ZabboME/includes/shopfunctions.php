@@ -245,7 +245,7 @@ sendMUS("store", ["user_id" => "".$user['id']."", "packagename" =>  "Goat VIP", 
 mysql_query("INSERT INTO `shop_payments`(username,item,time,amount,userid) VALUES ('".$_SESSION['user']['username']."', 'Goat VIP', '".date('l\, F jS\, Y ')."', '".$GoatVIP."', '".$_SESSION['user']['id']."')");
 $Thrones = 10;
 for($i =0; $i < $Thrones; $i++){
-   mysql_query("INSERT INTO `items`(user_id,room_id,item_id,extra_data,x,y,z,rot,wall_pos) VALUES ('".$user['id']."', 0,'230', 'This present includes your Throne sent by our automatic store system. Coded by: Justin', 0, 0, 0, 0, '')") or die(mysql_error());
+   mysql_query("INSERT INTO `items`(user_id,room_id,item_id,extra_data,x,y,z,rot,wall_pos) VALUES ('".$user['id']."', 0,'230', 'This present includes your Throne sent by our automatic store system. Coded by: Justin', 0, 0, 0, 0, '')") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 }
 }
 echo'<meta http-equiv="refresh" content="5;url={url}/store/vip"/>';
@@ -489,7 +489,7 @@ mysql_query("INSERT INTO `shop_payments`(username,item,time,amount,userid) VALUE
 sendMUS("store", ["user_id" => "".$user['id']."", "packagename" =>  "Goat VIP Gift for ".$username."", "packageprice" =>  $GoatVIP]);
 $Thrones = 10;
 for($i =0; $i < $Thrones; $i++){
-   mysql_query("INSERT INTO `items`(user_id,room_id,item_id,extra_data,x,y,z,rot,wall_pos) VALUES ('".$userid."', 0,'230', 'This present includes your Throne sent by our automatic store system. Coded by: Justin', 0, 0, 0, 0, '')") or die(mysql_error());
+   mysql_query("INSERT INTO `items`(user_id,room_id,item_id,extra_data,x,y,z,rot,wall_pos) VALUES ('".$userid."', 0,'230', 'This present includes your Throne sent by our automatic store system. Coded by: Justin', 0, 0, 0, 0, '')") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 }
 }
 }

@@ -154,7 +154,7 @@ include "includes/header.php";
 												}
 													if ($_POST['badge'] == basename($_FILES["badgeimage"]["name"], ".gif") && move_uploaded_file($_FILES["badgeimage"]["tmp_name"], $target_file) && $_POST['badge'] != $filter['code']) 
 													{
-														mysql_query("INSERT INTO `badge_definitions` (code) VALUES('".$_POST['badge']."')") or die(mysql_error());
+														mysql_query("INSERT INTO `badge_definitions` (code) VALUES('".$_POST['badge']."')") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 														$Hamada->sendMUS("reload_badgedef");
 														echo '<div class="col-lg-12"><div class="alert bg-success" role="alert"><em class="fa fa-lg fa-warning">&nbsp;</em>The badge ' . basename($_FILES["badgeimage"]["name"], ".gif"). '</b> is now added.</div></div><meta http-equiv="refresh" content="1;url=addbadge"/>';
 													}
@@ -202,7 +202,7 @@ include "includes/header.php";
 </thead>
 <tbody>
 <?php
-$getValues = mysql_query("SELECT * FROM cms_values ORDER BY id DESC") or die(mysql_error());
+$getValues = mysql_query("SELECT * FROM cms_values ORDER BY id DESC") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 while ($values = mysql_fetch_assoc($getValues)) {
 $type = $values['category'];
 $removeUnderscore = str_replace("_", " ", $values['name']); // Remove any underscores and replace with a space
@@ -264,7 +264,7 @@ if (empty($item_name) && empty($item_total) && empty($item_icon) && empty($item_
 echo '<div class="alert alert-error"><button type="button" class="close" data-dismiss="alert">×</button><strong>Error:</strong> You have not entered all required for the rare item, make sure to put 0 in cunrrecy if it doesn\'t have a cost!</div>';
 } else {
 $q = "INSERT INTO cms_values (item_name, item_credits, item_duckets, item_diamonds, item_points, item_icon, item_total, item_category, user_look, user_id, added_by, added_date) VALUES('{$item_name}','{$item_credits}','{$item_duckets}','{$item_diamonds}','{$item_points}','{swfurl}/dcr/hof_furni/icons/{$item_icon}','{$item_total}','{$item_category}','" . $_SESSION['user']['look'] . "','" . $_SESSION['user']['id'] . "','" . $_SESSION['user']['username'] . "','" . time() . "')";
-mysql_query($q) or die(mysql_error());
+mysql_query($q) or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 echo '<div class="alert alert-success"><button type="button" class="close" data-dismiss="alert">×</button><strong>Well done!</strong> Rare Value Added!</div>';
 echo ("<meta http-equiv=\"refresh\" content=\"0;url={url}/ase/index.php?url=values\" />");
 

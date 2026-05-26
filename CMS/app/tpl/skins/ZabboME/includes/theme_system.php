@@ -2,7 +2,7 @@
 if(isset($_POST['account_cms']))
 	{
 	$cms_bg = mysql_real_escape_string(filter($_POST['cms_bg']));
-	mysql_query("UPDATE users SET cms_bg = '".$cms_bg."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+	mysql_query("UPDATE users SET cms_bg = '".$cms_bg."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	}
 ?>
 
@@ -19,7 +19,7 @@ $cms_bg1 = mysql_fetch_array($profileData);
 if(isset($_POST['account_cms']))
 	{
 	$cms_headerbg = mysql_real_escape_string(filter($_POST['cms_headerbg']));
-	mysql_query("UPDATE users SET cms_headerbg = '".$cms_headerbg."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+	mysql_query("UPDATE users SET cms_headerbg = '".$cms_headerbg."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	}
 ?>
 
@@ -36,7 +36,7 @@ $cms_headerbg1 = mysql_fetch_array($profileData);
 if(isset($_POST['account_cms']))
 	{
 	$cms_color = mysql_real_escape_string(filter($_POST['cms_color']));
-	mysql_query("UPDATE users SET cms_color = '".$cms_color."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+	mysql_query("UPDATE users SET cms_color = '".$cms_color."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 			$successMessage = '<div class="alert alert-success"><b></b><center><b>Your changes have successfully saved!</b></center></div>';
 
 	}
@@ -55,7 +55,7 @@ $cms_color1 = mysql_fetch_array($profileData);
 if(isset($_POST['account_cms']))
 	{
 	$cms_mebg = mysql_real_escape_string(filter($_POST['cms_mebg']));
-	mysql_query("UPDATE users SET cms_mebg = '".$cms_mebg."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+	mysql_query("UPDATE users SET cms_mebg = '".$cms_mebg."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	}
 ?>
 
@@ -72,7 +72,7 @@ $cms_mebg1 = mysql_fetch_array($profileData);
 if(isset($_POST['account_cms']))
 	{
 	$cms_rightheader = mysql_real_escape_string(filter($_POST['cms_rightheader']));
-	mysql_query("UPDATE users SET cms_rightheader = '".$cms_rightheader."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+	mysql_query("UPDATE users SET cms_rightheader = '".$cms_rightheader."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	}
 ?>
 
@@ -91,7 +91,7 @@ if(isset($_POST['account_cms']))
 	$acc_pin =  mysql_real_escape_string(filter($_POST['acc_pin']));
 	if(is_numeric($acc_pin) && ($acc_pin == 0 || $acc_pin == 1))
 	{
-		mysql_query("UPDATE users SET security_enabled = '".$acc_pin."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+		mysql_query("UPDATE users SET security_enabled = '".$acc_pin."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	}
 }
 ?>

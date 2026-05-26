@@ -87,7 +87,7 @@ include "includes/header.php";
 	                        mysql_query("UPDATE users SET 
 							username = '" . mysql_real_escape_string($_POST['username']) . "',
 	                        rank = '" . mysql_real_escape_string($_POST['rank']) . "',
-							pin = '" . mysql_real_escape_string($_POST['pin']) . "'	WHERE username = '" . mysql_real_escape_string($_POST['username_current']) . "'") or die(mysql_error());
+							pin = '" . mysql_real_escape_string($_POST['pin']) . "'	WHERE username = '" . mysql_real_escape_string($_POST['username_current']) . "'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	                        echo "<div class=\"alert alert-success\" style=\"margin-top: 45px;font-size: 15px;margin-left: 27px; width: fit-content;font-weight: bolder;color: #ffffff;background-color: #38b904;border-color: #4f861f;\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\" style=\"float: right; margin-left: 5px;font-size: 35px;margin-top: -7px;border-radius: 140px;background: #00000000;\">×</button>User <b>" . strip_tags($_POST['username_current']) . "</b> successfully updated!</div>";
 	                    }
 						
@@ -99,7 +99,7 @@ include "includes/header.php";
 							mysql_query("UPDATE users SET 
 							username = '" . mysql_real_escape_string($_POST['username']) . "',
 	                        rank = '" . mysql_real_escape_string($_POST['rank']) . "',
-							pin = '" . mysql_real_escape_string($_POST['pin']) . "'	WHERE username = '" . mysql_real_escape_string($_POST['username_current']) . "'") or die(mysql_error());
+							pin = '" . mysql_real_escape_string($_POST['pin']) . "'	WHERE username = '" . mysql_real_escape_string($_POST['username_current']) . "'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	                        echo "<div class=\"alert alert-success\" style=\"margin-top: 45px;font-size: 15px;margin-left: 27px; width: fit-content;font-weight: bolder;color: #ffffff;background-color: #38b904;border-color: #4f861f;\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\" style=\"float: right; margin-left: 5px;font-size: 35px;margin-top: -7px;border-radius: 140px;background: #00000000;\">×</button>User <b>" . strip_tags($_POST['username_current']) . "</b> successfully updated!</div>";
 							//doCommand("reload_user_rank", "".$u['id']."");
 							//doCommand("alert_user", "".$u['id'].":Your rank has been updated by a Event Manager, please reload the client!");

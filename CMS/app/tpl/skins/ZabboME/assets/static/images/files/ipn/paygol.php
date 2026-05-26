@@ -26,8 +26,8 @@
 	$currency	= ($_GET['currency']);
 
 	$get_id = mysql_result(mysql_query("SELECT id FROM users WHERE username = '".$custom."' LIMIT 1"), 0);
-	mysql_query("UPDATE users SET vip_points = vip_points + '".$points."' WHERE username = '".$custom."'") or die(mysql_error());
-	mysql_query("INSERT INTO `user_tokens` (username,currency,type) VALUES ('".$custom."', '".$points."', 'paygol')") or die(mysql_error());
+	mysql_query("UPDATE users SET vip_points = vip_points + '".$points."' WHERE username = '".$custom."'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+	mysql_query("INSERT INTO `user_tokens` (username,currency,type) VALUES ('".$custom."', '".$points."', 'paygol')") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	mus("updatepoints", $get_id);
 	
 ?>

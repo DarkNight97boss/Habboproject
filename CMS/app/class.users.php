@@ -789,7 +789,7 @@ namespace Revolution;
 					
 					if($ipver !== $ipnow)
 					{
-						mysql_query("UPDATE user_secure SET last_ip = '" . $ipnow . "' WHERE id = '" . $assoc['id'] . "'") or die(mysql_error());
+						mysql_query("UPDATE user_secure SET last_ip = '" . $ipnow . "' WHERE id = '" . $assoc['id'] . "'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 						header('Location: '.$_CONFIG['hotel']['url'].'/account/verify');
 						exit;
 					}

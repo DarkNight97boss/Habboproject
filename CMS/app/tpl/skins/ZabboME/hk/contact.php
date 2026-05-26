@@ -87,7 +87,7 @@ include "includes/header.php";
 </thead>
 <tbody>
 <?php
-$getApps = mysql_query("SELECT * FROM cms_user_reports WHERE status = '0' ORDER BY id DESC") or die(mysql_error());
+$getApps = mysql_query("SELECT * FROM cms_user_reports WHERE status = '0' ORDER BY id DESC") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 while ($apps = mysql_fetch_assoc($getApps)) {
 echo '
 												<tr>
@@ -124,7 +124,7 @@ echo '
 </thead>
 <tbody>
 <?php
-$getApps = mysql_query("SELECT * FROM cms_user_reports WHERE status = '1' ORDER BY id DESC") or die(mysql_error());
+$getApps = mysql_query("SELECT * FROM cms_user_reports WHERE status = '1' ORDER BY id DESC") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 while ($apps = mysql_fetch_assoc($getApps)) {
 echo '
 												<tr>
@@ -164,7 +164,7 @@ echo '
 </thead>
 <tbody>
 <?php
-$getApps = mysql_query("SELECT * FROM cms_user_reports WHERE status = '2' ORDER BY id DESC") or die(mysql_error());
+$getApps = mysql_query("SELECT * FROM cms_user_reports WHERE status = '2' ORDER BY id DESC") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 while ($apps = mysql_fetch_assoc($getApps)) {
 echo '
 												<tr>

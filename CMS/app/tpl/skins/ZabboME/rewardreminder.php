@@ -39,7 +39,7 @@ if ($last_present < 86400){
    	    	echo "<div id='refreshreminder'>";
 
     	sendMUSTest("alertuser", ["user_id" => "".$u['id']."", "message" => "Hey ".$username.", this is a reminder your daily reward has been given to you already! Please wait until tomorrow to get another one when you're online! <3"]);
-		mysql_query("UPDATE cms_present_logs SET reward_check = '1' WHERE username = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+		mysql_query("UPDATE cms_present_logs SET reward_check = '1' WHERE username = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	    	echo "<div>";
 
 }  

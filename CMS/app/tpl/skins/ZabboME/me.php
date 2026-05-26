@@ -175,7 +175,7 @@ function GenerateRoomOccupancy($usersNow, $usersMax)
 ?>
 <?php
  
- $get = mysql_query("SELECT * FROM rooms WHERE state = 'open' AND users > '0' ORDER BY users DESC LIMIT 5")or die(mysql_error());
+ $get = mysql_query("SELECT * FROM rooms WHERE state = 'open' AND users > '0' ORDER BY users DESC LIMIT 5")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
  if (mysql_num_rows($get) == 0)
  echo '<center style="padding: 10px;"><div style="background: #990000;color: #fff;padding: 15px;font-weight: 500;border-radius: 4px;text-align: center;width: 55%;margin-top: -10px;"><b>There are no active rooms on {longname} yet!</b></div></center>';
  else				
@@ -290,7 +290,7 @@ function GenerateRoomOccupancy($usersNow, $usersMax)
 </div>
 </div>
 <?php
-$to5 = mysql_query("SELECT * FROM cms_news ORDER BY ID DESC LIMIT 3") or die(mysql_error());
+$to5 = mysql_query("SELECT * FROM cms_news ORDER BY ID DESC LIMIT 3") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 ?>
 <div class="col-md-5">
 <div class="card">

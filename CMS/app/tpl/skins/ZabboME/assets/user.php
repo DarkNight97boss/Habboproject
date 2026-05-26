@@ -6,8 +6,8 @@ $user = "root"; // Database username
 $password = "yourpass"; // Your database password
 $database = "hotel"; // The name of the database on your server
 
-mysql_connect($host, $user, $password) or die(mysql_error());
-mysql_select_db($database) or die(mysql_error());
+mysql_connect($host, $user, $password) or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_select_db($database) or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 
 if(!isset($_GET["username"]) || empty($_GET["username"])) {
         echo "No username request";

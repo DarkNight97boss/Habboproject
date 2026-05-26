@@ -129,7 +129,7 @@ $i++;
 
 										<?php
 $id = intval($_GET['id']);
-$existq = mysql_query("SELECT * FROM users_apps WHERE id = '$id'") or die(mysql_error());
+$existq = mysql_query("SELECT * FROM users_apps WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $exist = mysql_num_rows($existq);
 $news  = mysql_fetch_array($existq);
 if ($exist == 0) {
@@ -145,9 +145,9 @@ echo '
 										<strong>Error</strong> Please fill in all fields!
 									</div>';
 } else {
-mysql_query("UPDATE users_apps SET reply = '$reply' WHERE id = '$id'") or die(mysql_error());
-mysql_query("UPDATE users_apps SET denied = '$denied' WHERE id = '$id'") or die(mysql_error());
-mysql_query("UPDATE users_apps SET reply_sent = '2' WHERE id = '$id'") or die(mysql_error());
+mysql_query("UPDATE users_apps SET reply = '$reply' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE users_apps SET denied = '$denied' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE users_apps SET reply_sent = '2' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 header("Refresh:0");
 echo '
 									<div class="alert alert-success">

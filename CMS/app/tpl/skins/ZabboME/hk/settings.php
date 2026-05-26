@@ -76,9 +76,9 @@ $aanwezuug = "Enabled";
 									<?php
 if (isset($_POST['account'])) {
 $uotw = mysql_real_escape_string($_POST['uotw']);
-mysql_query("UPDATE settings SET uotw = '" . $uotw . "'") or die(mysql_error());
+mysql_query("UPDATE settings SET uotw = '" . $uotw . "'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $uotwmessage = mysql_real_escape_string($_POST['uotwmessage']);
-mysql_query("UPDATE settings SET uotwmessage = '" . $uotwmessage . "'") or die(mysql_error());
+mysql_query("UPDATE settings SET uotwmessage = '" . $uotwmessage . "'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $maint = mysql_real_escape_string($_POST['maint']);
 if ($maint == 0) {
 $aanwezug = "Disabled";
@@ -86,9 +86,9 @@ $aanwezug = "Disabled";
 if ($maint == 1) {
 $aanwezug = "Enabled";
 }
-mysql_query("UPDATE settings SET maintenance = '" . $maint . "'") or die(mysql_error());
+mysql_query("UPDATE settings SET maintenance = '" . $maint . "'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $notice = mysql_real_escape_string($_POST['notice']);
-mysql_query("UPDATE settings SET notice = '" . $notice . "'") or die(mysql_error());
+mysql_query("UPDATE settings SET notice = '" . $notice . "'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 echo '<div class="alert alert-success" align="center">Your changes have been saved!</div>';
 }
 ?>
@@ -144,25 +144,25 @@ if (isset($_POST['server'])) {
     socket_close($sock);
 }
 $creditcycle = mysql_real_escape_string($_POST['creditc']);
-mysql_query("UPDATE server_settings SET value = '" . $creditcycle . "' WHERE variable = 'game.rewards.cycle'") or die(mysql_error());
+mysql_query("UPDATE server_settings SET value = '" . $creditcycle . "' WHERE variable = 'game.rewards.cycle'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $diamondcycle = mysql_real_escape_string($_POST['diamondc']);
-mysql_query("UPDATE server_settings SET value = '" . $diamondcycle . "' WHERE variable = 'game.rewards.diamondcycle'") or die(mysql_error());
+mysql_query("UPDATE server_settings SET value = '" . $diamondcycle . "' WHERE variable = 'game.rewards.diamondcycle'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $credits = mysql_real_escape_string($_POST['credits']);
-mysql_query("UPDATE server_settings SET value = '" . $credits . "' WHERE variable = 'game.rewards.credits.amount'") or die(mysql_error());
+mysql_query("UPDATE server_settings SET value = '" . $credits . "' WHERE variable = 'game.rewards.credits.amount'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $duckets = mysql_real_escape_string($_POST['duckets']);
-mysql_query("UPDATE server_settings SET value = '" . $duckets . "' WHERE variable = 'game.rewards.pixels.amount'") or die(mysql_error());
+mysql_query("UPDATE server_settings SET value = '" . $duckets . "' WHERE variable = 'game.rewards.pixels.amount'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $diamonds = mysql_real_escape_string($_POST['diamonds']);
-mysql_query("UPDATE server_settings SET value = '" . $diamonds . "' WHERE variable = 'game.rewards.diamonds.amount'") or die(mysql_error());
+mysql_query("UPDATE server_settings SET value = '" . $diamonds . "' WHERE variable = 'game.rewards.diamonds.amount'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $doubled = mysql_real_escape_string($_POST['doubled']);
-mysql_query("UPDATE server_settings SET value = '" . $doubled . "' WHERE variable = 'game.rewards.doublediamonds'") or die(mysql_error());
+mysql_query("UPDATE server_settings SET value = '" . $doubled . "' WHERE variable = 'game.rewards.doublediamonds'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $cata = mysql_real_escape_string($_POST['cata']);
-mysql_query("UPDATE server_settings SET value = '" . $cata . "' WHERE variable = 'catalogue_enabled'") or die(mysql_error());
+mysql_query("UPDATE server_settings SET value = '" . $cata . "' WHERE variable = 'catalogue_enabled'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $exch = mysql_real_escape_string($_POST['exch']);
-mysql_query("UPDATE server_settings SET value = '" . $exch . "' WHERE variable = 'exchange_enabled'") or die(mysql_error());
+mysql_query("UPDATE server_settings SET value = '" . $exch . "' WHERE variable = 'exchange_enabled'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $gift = mysql_real_escape_string($_POST['gift']);
-mysql_query("UPDATE server_settings SET value = '" . $gift . "' WHERE variable = 'gifts_enabled'") or die(mysql_error());
+mysql_query("UPDATE server_settings SET value = '" . $gift . "' WHERE variable = 'gifts_enabled'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $welcome = mysql_real_escape_string($_POST['welcome']);
-mysql_query("UPDATE server_settings SET value = '" . $welcome . "' WHERE variable = 'welcome_message'") or die(mysql_error());
+mysql_query("UPDATE server_settings SET value = '" . $welcome . "' WHERE variable = 'welcome_message'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 doCommand("reload_server_settings");
 echo '<div class="alert alert-success" align="center">Your changes have been saved!</div>';
 }

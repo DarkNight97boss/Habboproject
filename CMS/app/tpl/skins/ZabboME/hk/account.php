@@ -49,7 +49,7 @@ include "includes/header.php";
 						<?php
 if (isset($_POST['account'])) {
 $clientpin = mysql_real_escape_string($_POST['clientpin']);
-mysql_query("UPDATE users SET pin = '" . $clientpin . "' WHERE id = '" . $_SESSION['user']['id'] . "'") or die(mysql_error());
+mysql_query("UPDATE users SET pin = '" . $clientpin . "' WHERE id = '" . $_SESSION['user']['id'] . "'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 echo '<div class="alert alert-success" align="center">Your changes have been saved!</div>';
 }
 ?>

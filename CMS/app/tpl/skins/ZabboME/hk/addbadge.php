@@ -133,7 +133,7 @@ include "includes/header.php";
 												}
 													if ($_POST['badge'] == basename($_FILES["badgeimage"]["name"], ".gif") && move_uploaded_file($_FILES["badgeimage"]["tmp_name"], $target_file) && $_POST['badge'] != $filter['code']) 
 													{
-														//mysql_query("INSERT INTO `badge_definitions` (code) VALUES('".$_POST['badge']."')") or die(mysql_error());
+														//mysql_query("INSERT INTO `badge_definitions` (code) VALUES('".$_POST['badge']."')") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 														//$Hamada->sendMUS("reload_badgedef");
 														echo '<div class="col-lg-12"><div class="alert bg-success" role="alert"><em class="fa fa-lg fa-warning">&nbsp;</em>The badge ' . basename($_FILES["badgeimage"]["name"], ".gif"). '</b> is now added.</div></div><meta http-equiv="refresh" content="1;url=addbadge"/>';
 													}

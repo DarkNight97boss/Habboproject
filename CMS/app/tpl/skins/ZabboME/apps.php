@@ -23,7 +23,7 @@
 	else
 	{
 	if(mysql_num_rows($sql) < 2){
-	mysql_query("INSERT INTO `users_apps` (user_id,user,`real`,location,age,why,dif,additional,willyou,role,skype,howlong,agree,timestamp,reply_sent) VALUES ('".$_SESSION['user']['id']."', '".$_SESSION['user']['username']."', '".filter($_POST["real"])."', '".filter($_POST["location"])."', '".filter($_POST["age"])."', '".filter($_POST["why"])."', '".filter($_POST["dif"])."', '".filter($_POST["additional"])."', '".filter($_POST["willyou"])."', '".filter($_POST["role"])."', '".filter($_POST["skype"])."', '".filter($_POST["howlong"])."', '".filter($_POST["agree"])."','".time($_POST["timestamp"])."', '".filter($_POST["reply_sent"])."')") or die(mysql_error());
+	mysql_query("INSERT INTO `users_apps` (user_id,user,`real`,location,age,why,dif,additional,willyou,role,skype,howlong,agree,timestamp,reply_sent) VALUES ('".$_SESSION['user']['id']."', '".$_SESSION['user']['username']."', '".filter($_POST["real"])."', '".filter($_POST["location"])."', '".filter($_POST["age"])."', '".filter($_POST["why"])."', '".filter($_POST["dif"])."', '".filter($_POST["additional"])."', '".filter($_POST["willyou"])."', '".filter($_POST["role"])."', '".filter($_POST["skype"])."', '".filter($_POST["howlong"])."', '".filter($_POST["agree"])."','".time($_POST["timestamp"])."', '".filter($_POST["reply_sent"])."')") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	mysql_query("INSERT INTO users_apps SET timestamp = '" . time() . "' WHERE timestamp = '' LIMIT 1");
 	mysql_query("INSERT INTO users_apps SET reply_sent = '1' WHERE reply_sent = '0' LIMIT 1");
 

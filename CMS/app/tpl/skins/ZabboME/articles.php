@@ -39,11 +39,11 @@ if ($_SESSION['user']['rank'] >= 17)
 $getRank = mysql_fetch_array(mysql_query("SELECT `rank` FROM `users` WHERE `id` = '".$_SESSION['user']['id']."'"));
 if ($getRank >= 17)
 {
-$getComments = mysql_query("SELECT * FROM `site_news_comments` WHERE `id` = '".$banID."'")  or die(mysql_error());
+$getComments = mysql_query("SELECT * FROM `site_news_comments` WHERE `id` = '".$banID."'")  or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 if (mysql_num_rows($getComments) > 0)
 {
 $commentData = mysql_fetch_array($getComments);
-mysql_query("DELETE FROM `site_news_comments` WHERE `userid` = '".$commentData['userid']."'") or die(mysql_error());
+mysql_query("DELETE FROM `site_news_comments` WHERE `userid` = '".$commentData['userid']."'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 mysql_query("UPDATE `users` SET `cms_comment_banned` = '1' WHERE `id` = '".$commentData['userid']."' LIMIT 1");
 mysql_query("INSERT INTO `stafflogs` (`type`,`userid`,`action`,`timestamp`) VALUES ('CMS','".$_SESSION['user']['id']."','Banned a user from posting news comments.','Banned user ID: ('".filter($_GET['ban'])."')','".time()."')");
 }
@@ -179,10 +179,10 @@ $getComments = mysql_query("SELECT * FROM `site_news_comments` WHERE `article` =
 			{
 			if(isset($_POST['post_comment']) && $_SESSION['user']['id'] != null)
 			{
-			$getArticle = mysql_query("SELECT * FROM `cms_news` WHERE `id` = '".filter($_GET['id'])."'") or die(mysql_error());
+			$getArticle = mysql_query("SELECT * FROM `cms_news` WHERE `id` = '".filter($_GET['id'])."'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 			if (mysql_num_rows($getArticle) > 0)
 			{
-			$articleInfo = mysql_fetch_array($getArticle) or die(mysql_error());
+			$articleInfo = mysql_fetch_array($getArticle) or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 
 			if (mysql_num_rows($checkBan) > 0)
 			{
@@ -194,14 +194,14 @@ $getComments = mysql_query("SELECT * FROM `site_news_comments` WHERE `article` =
 			$errorMessage = 'You have left a field empty.';
 			}else
 			{
-			$checkInfo = mysql_query("SELECT * FROM `site_news_comments` WHERE `article` = '".filter($_GET['id'])."' ORDER BY `id` DESC LIMIT 1") or die(mysql_error());
+			$checkInfo = mysql_query("SELECT * FROM `site_news_comments` WHERE `article` = '".filter($_GET['id'])."' ORDER BY `id` DESC LIMIT 1") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 			$newsInfo = mysql_fetch_array($checkInfo);
 			if($newsInfo['userid'] == $_SESSION['user']['id'])
 			{
 			$errorMessage = 'Hey! The last comment was from you, let somebody else comment first!';
 			}else
 			{
-			mysql_query("INSERT INTO `site_news_comments` (`article`, `userid`, `comment`, `posted_on`) VALUES ('".filter($_GET['id'])."', '".$_SESSION['user']['id']."', '".filter($_POST['comment'])."', '".date("M j, Y g:i A")."')") or die(mysql_error());
+			mysql_query("INSERT INTO `site_news_comments` (`article`, `userid`, `comment`, `posted_on`) VALUES ('".filter($_GET['id'])."', '".$_SESSION['user']['id']."', '".filter($_POST['comment'])."', '".date("M j, Y g:i A")."')") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 			$successMessage = 'You have successfully left a comment.';
 			}
 			}

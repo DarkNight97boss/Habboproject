@@ -56,8 +56,8 @@
 		case 'ipn':
 		if ($p->validate_ipn()) { 
 				$get_id = mysql_result(mysql_query("SELECT id FROM users WHERE username = '".$p->ipn_data['custom']."' LIMIT 1"), 0);
-				mysql_query("UPDATE users SET credits = credits + '".$p->ipn_data['item_number']."' WHERE id = '".$get_id."' LIMIT 1") or die(mysql_error());
-				mysql_query("INSERT INTO user_tokens (username, currency, type, amount) VALUES ('".$p->ipn_data['custom']."', '".$p->ipn_data['item_number']."', 'paypal', '".$p->ipn_data['amount']."')")  or die(mysql_error());
+				mysql_query("UPDATE users SET credits = credits + '".$p->ipn_data['item_number']."' WHERE id = '".$get_id."' LIMIT 1") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+				mysql_query("INSERT INTO user_tokens (username, currency, type, amount) VALUES ('".$p->ipn_data['custom']."', '".$p->ipn_data['item_number']."', 'paypal', '".$p->ipn_data['amount']."')")  or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 				mus("updatepoints", $get_id);
 		  }
 		  break;

@@ -57,7 +57,7 @@ include "includes/header.php";
 // Get ID of rare
 $id = intval($_GET['id']);
 // Get existing 
-$existq = mysql_query("SELECT * FROM cms_staff WHERE id = '$id'") or die(mysql_error());
+$existq = mysql_query("SELECT * FROM cms_staff WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $exist            = mysql_num_rows($existq);
 $staff           = mysql_fetch_array($existq);
 $pageid = $staff['pageid'];
@@ -81,7 +81,7 @@ $margintop   = mysql_real_escape_string($_POST['margintop']);
 $marginright   = mysql_real_escape_string($_POST['marginright']);
 $extra   = mysql_real_escape_string($_POST['extra']);
 $lepageid   = mysql_real_escape_string($_POST['pageid']);
-mysql_query("UPDATE cms_staff SET username = '$username', margintop = '$margintop', marginright = '$marginright', extra = '$extra', pageid = '$lepageid' WHERE id = '$id'") or die(mysql_error());
+mysql_query("UPDATE cms_staff SET username = '$username', margintop = '$margintop', marginright = '$marginright', extra = '$extra', pageid = '$lepageid' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 echo '
 							<div class="alert alert-success">
 								<button type="button" class="close" data-dismiss="alert">×</button>

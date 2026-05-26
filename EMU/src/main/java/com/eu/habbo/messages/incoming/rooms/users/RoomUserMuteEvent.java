@@ -14,6 +14,13 @@ public class RoomUserMuteEvent extends MessageHandler {
         int userId = this.packet.readInt();
         int roomId = this.packet.readInt();
         int minutes = this.packet.readInt();
+        // Clamp: the UI offers only short mute durations (max 1440 = 24h).
+        // Unbounded `minutes` lets a junior staffer pin a target with
+        // Integer.MAX_VALUE/60 (~70 years), and Integer.MAX_VALUE itself
+        // overflows `minutes * 60` (line below) to a *negative* timestamp
+        // — effectively an unmute. Clamp into a sane range early.
+        if (minutes < 1) minutes = 1;
+        if (minutes > 1440) minutes = 1440;
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
 

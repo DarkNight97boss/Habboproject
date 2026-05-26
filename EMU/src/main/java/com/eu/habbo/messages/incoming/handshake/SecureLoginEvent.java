@@ -2,8 +2,10 @@ package com.eu.habbo.messages.incoming.handshake;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.core.AuditLog;
+import com.eu.habbo.core.BattlePass;
 import com.eu.habbo.core.DailyStreak;
 import com.eu.habbo.core.StaffMfa;
+import com.eu.habbo.messages.outgoing.users.BattlePassInfoComposer;
 import com.eu.habbo.messages.outgoing.users.DailyStreakInfoComposer;
 import com.eu.habbo.habbohotel.messenger.Messenger;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctionItem;
@@ -180,6 +182,24 @@ public class SecureLoginEvent extends MessageHandler {
                     try {
                         DailyStreak.State streakState = DailyStreak.load(this.client.getHabbo().getHabboInfo().getId());
                         this.client.sendResponse(new DailyStreakInfoComposer(streakState));
+                    } catch (Exception ignored) {
+                    }
+                }
+
+                // Battle pass: award daily-login XP (idempotent per day) and send
+                // the current state so the widget can render immediately on login.
+                if (BattlePass.isEnabled()) {
+                    try {
+                        BattlePass.grantDailyLoginXp(this.client.getHabbo());
+                        BattlePass.SeasonInfo bpSeason = BattlePass.activeSeason();
+                        if (bpSeason == null) {
+                            BattlePass.ensureActiveSeason();
+                            bpSeason = BattlePass.activeSeason();
+                        }
+                        BattlePass.Progress bpProgress = bpSeason == null
+                                ? new BattlePass.Progress(0, false, new java.util.HashSet<>(), new java.util.HashSet<>())
+                                : BattlePass.loadProgress(this.client.getHabbo().getHabboInfo().getId(), bpSeason.id);
+                        this.client.sendResponse(new BattlePassInfoComposer(bpSeason, bpProgress));
                     } catch (Exception ignored) {
                     }
                 }

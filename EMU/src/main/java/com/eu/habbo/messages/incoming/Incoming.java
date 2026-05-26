@@ -412,4 +412,9 @@ public class Incoming {
 
     // Custom: device fingerprint (anti-multiaccount).
     public static final int SubmitFingerprintEvent = 9520;
+
+    // Custom: seasonal battle pass.
+    public static final int BattlePassRequestInfoEvent = 9530;
+    public static final int BattlePassClaimEvent = 9531;
+    public static final int BattlePassBuyPremiumEvent = 9532;
 }

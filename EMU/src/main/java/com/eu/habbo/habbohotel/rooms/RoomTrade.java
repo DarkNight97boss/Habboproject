@@ -330,6 +330,13 @@ public class RoomTrade {
         com.eu.habbo.core.AuditLog.record(userOne.getHabbo().getHabboInfo().getId(), userOne.getHabbo().getHabboInfo().getUsername(), "TRADE",
                 "user:" + userTwo.getHabbo().getHabboInfo().getId(),
                 "items=" + itemsUserOne.size() + "/" + itemsUserTwo.size() + " credits=" + creditsForUserOne + "/" + creditsForUserTwo);
+
+        // Cross-feature hook: battle-pass XP for both sides on a completed trade.
+        try {
+            com.eu.habbo.core.BattlePass.grantTradeXp(userOne.getHabbo());
+            com.eu.habbo.core.BattlePass.grantTradeXp(userTwo.getHabbo());
+        } catch (Exception ignored) {
+        }
         return true;
     }
 

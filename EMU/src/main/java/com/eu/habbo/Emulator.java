@@ -166,6 +166,7 @@ public final class Emulator {
             new com.eu.habbo.core.Watchdog();
             new com.eu.habbo.core.HotelEvents();
             new com.eu.habbo.core.DbCleanup();
+            new com.eu.habbo.core.SecurityMonitor();
 
             LOGGER.info("Arcturus Morningstar has successfully loaded.");
             LOGGER.info("System launched in: {}ms. Using {} threads!", (System.nanoTime() - startTime) / 1e6, Runtime.getRuntime().availableProcessors() * 2);

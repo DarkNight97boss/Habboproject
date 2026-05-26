@@ -1,0 +1,15 @@
+# Auto-provision del datasource Prometheus al boot di Grafana.
+# Niente click manuali nell'UI; quando apri Grafana, e' gia' collegato.
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: habbo-prom
+    access: proxy
+    url: http://prometheus:9091
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: 15s

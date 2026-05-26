@@ -74,6 +74,12 @@ public final class AuditLog {
                 }
 
                 lastHash = hash;
+                // Increment Prometheus counter exposed via HealthEndpoint /metrics.
+                // No-op if HealthEndpoint isn't loaded (e.g. in tests).
+                try {
+                    HealthEndpoint.AUDIT_TOTAL.incrementAndGet();
+                } catch (Throwable ignored) {
+                }
             } catch (Exception e) {
                 LOGGER.error("Failed to write audit log entry", e);
             }

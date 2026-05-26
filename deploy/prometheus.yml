@@ -1,0 +1,27 @@
+# prometheus.yml — config Prometheus per stack Habboproject.
+#
+# Scope: scrape /metrics dell'EMU (porta 9090) ogni 15 secondi.
+# Niente alerting integrato per ora (alertmanager separato in Fase C),
+# ma le metriche sono pronte per regole tipo "audit_entries oltre soglia".
+
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'habbo-emu'
+
+scrape_configs:
+  # EMU HealthEndpoint /metrics
+  - job_name: 'habbo-emu'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['emu:9090']
+        labels:
+          service: 'emu'
+          instance: 'primary'
+
+  # Prometheus stesso (self-monitoring base)
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9091']

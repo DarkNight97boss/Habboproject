@@ -109,6 +109,56 @@ services:
     networks:
       - habbo_net
 
+  # ============= Observability (profilo "obs") =============
+  # Abilita con: docker compose --profile obs up -d
+  # Prometheus scraper + Grafana con dashboard auto-provisioned.
+  # I container NON sono esposti sull'host: chi vuole vedere Grafana fa
+  # `docker compose port grafana 3000` o passa da reverse proxy Caddy.
+
+  prometheus:
+    image: prom/prometheus:v2.51.2
+    container_name: habbo-prometheus
+    restart: unless-stopped
+    profiles: ["obs"]
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.listen-address=:9091"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - habbo_net
+    # Espone su loopback dell'host (per query manuali); MAI 0.0.0.0:9091.
+    ports:
+      - "127.0.0.1:9091:9091"
+
+  grafana:
+    image: grafana/grafana-oss:10.4.2
+    container_name: habbo-grafana
+    restart: unless-stopped
+    profiles: ["obs"]
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      # Disabilita feed news / phone home.
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - habbo_net
+    ports:
+      - "127.0.0.1:3030:3000"
+
   # Backup runner: cron giornaliero mysqldump -> volume montato sul host.
   # Disabilitato di default (profilo "backup"); abilita con:
   #   docker compose --profile backup up -d
@@ -143,6 +193,8 @@ volumes:
   caddy_data:
   caddy_config:
   backup_data:
+  prometheus_data:
+  grafana_data:
 
 networks:
   habbo_net:

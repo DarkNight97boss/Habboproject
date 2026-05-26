@@ -40,6 +40,12 @@ public final class UnknownPacketGuard {
 
     public static void observe(GameClient client, int headerId) {
         if (client == null) return;
+        // Ogni invocazione e' un packet rejected dal dispatch (header non
+        // registrato). Bump del contatore Prometheus a prescindere dal kick.
+        try {
+            HealthEndpoint.PACKETS_REJECTED.incrementAndGet();
+        } catch (Throwable ignored) {
+        }
         int userId = client.getHabbo() != null && client.getHabbo().getHabboInfo() != null
                 ? client.getHabbo().getHabboInfo().getId() : -1;
         if (userId <= 0) return; // pre-auth garbage is normal during handshake

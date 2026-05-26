@@ -87,10 +87,16 @@ public class FriendRequestEvent extends MessageHandler {
             return;
         }
 
-        if(targetHabbo.isOnline()) {
+        // Anti-spam: don't re-notify a target that already has a pending request
+        // from this sender. Without this, the 500ms handler ratelimit allowed
+        // ~170k duplicate inserts/day per pair (and 170k notification popups).
+        int fromId = this.client.getHabbo().getHabboInfo().getId();
+        boolean alreadyPending = Messenger.friendRequestExists(fromId, targetId);
+
+        if (!alreadyPending && targetHabbo.isOnline()) {
             targetHabbo.getClient().sendResponse(new FriendRequestComposer(this.client.getHabbo()));
         }
 
-        Messenger.makeFriendRequest(this.client.getHabbo().getHabboInfo().getId(), targetId);
+        Messenger.makeFriendRequest(fromId, targetId);
     }
 }

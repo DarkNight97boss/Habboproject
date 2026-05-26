@@ -35,6 +35,15 @@ public class GuildForumThreadUpdateEvent extends MessageHandler {
             return;
         }
 
+        // IDOR fix: the thread must belong to the guild whose permissions we
+        // are about to evaluate, otherwise a member/admin of guild A could
+        // pin/lock/hide threads of any other guild B by sending guildId=A +
+        // threadId from B.
+        if (thread.getGuildId() != guildId) {
+            this.client.sendResponse(new ConnectionErrorComposer(404));
+            return;
+        }
+
         boolean isStaff = this.client.getHabbo().hasPermission(Permission.ACC_MODTOOL_TICKET_Q);
 
         GuildMember member = Emulator.getGameEnvironment().getGuildManager().getGuildMember(guildId, this.client.getHabbo().getHabboInfo().getId());

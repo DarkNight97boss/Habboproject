@@ -19,7 +19,13 @@ public class MannequinSaveNameEvent extends MessageHandler {
         String[] data = item.getExtradata().split(":");
         String name = this.packet.readString();
 
-        if (name.length() < 3 || name.length() > 15) {
+        // Sanitize: ':' is the field separator in the mannequin extradata, so
+        // injecting it would corrupt the parse on MannequinSaveLookEvent
+        // (wrong look/gender field). Also drop other control chars defensively.
+        if (name != null) {
+            name = name.replace(":", "").replace("\r", "").replace("\n", "");
+        }
+        if (name == null || name.length() < 3 || name.length() > 15) {
             name = Emulator.getTexts().getValue("hotel.mannequin.name.default", "My look");
         }
 

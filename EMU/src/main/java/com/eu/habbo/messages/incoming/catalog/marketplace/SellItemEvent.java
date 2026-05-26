@@ -31,6 +31,16 @@ public class SellItemEvent extends MessageHandler {
 
         if (furniType != 1 && furniType != 2) return;
 
+        // Anti-abuse: cap active offers per user. Without this, an attacker
+        // can list thousands of items (free or near-zero credits) and bloat
+        // the marketplace cache + UI for everyone.
+        int activeOffers = this.client.getHabbo().getInventory().getMarketplaceItems().size();
+        int cap = Emulator.getConfig().getInt("hotel.marketplace.max_active_offers", 50);
+        if (activeOffers >= cap) {
+            this.client.sendResponse(new MarketplaceItemPostedComposer(MarketplaceItemPostedComposer.FAILED_TECHNICAL_ERROR));
+            return;
+        }
+
         HabboItem item = this.client.getHabbo().getInventory().getItemsComponent().getHabboItem(itemId);
         if (item != null) {
             if (!item.getBaseItem().allowMarketplace()) {

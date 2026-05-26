@@ -35,6 +35,11 @@ public class SearchRoomsEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         String name = this.packet.readString();
+        // Cap the cache-key + amplification cost. Without this, the client can
+        // push unbounded `name` strings, evict-cycle the LRU and burn CPU on
+        // PrivateRoomsComposer for every unique query.
+        if (name == null) return;
+        if (name.length() > 64) name = name.substring(0, 64);
 
         String prefix = "";
         String query = name;

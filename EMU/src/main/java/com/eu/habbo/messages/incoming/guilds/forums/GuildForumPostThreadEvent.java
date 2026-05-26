@@ -45,6 +45,14 @@ public class GuildForumPostThreadEvent extends MessageHandler {
 
         ForumThread thread = ForumThread.getById(threadId);
 
+        // IDOR fix: when posting a REPLY (threadId != 0), the thread must
+        // belong to `guild`. Otherwise a permissive guild's member could
+        // post into any thread of any other guild.
+        if (threadId != 0 && (thread == null || thread.getGuildId() != guildId)) {
+            this.client.sendResponse(new ConnectionErrorComposer(404));
+            return;
+        }
+
         if (threadId == 0) {
             if (!((guild.canPostThreads().state == 0)
                     || (guild.canPostThreads().state == 1 && member != null)

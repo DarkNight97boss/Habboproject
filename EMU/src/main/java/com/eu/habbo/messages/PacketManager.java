@@ -169,7 +169,14 @@ public class PacketManager {
             return;
 
         try {
-            if (this.isRegistered(packet.getMessageId())) {
+            if (!this.isRegistered(packet.getMessageId())) {
+                // Anti-Tanji header fuzzing: a real nitro client never emits
+                // unregistered headers. UnknownPacketGuard accumulates strikes
+                // per user and kicks past threshold (default 5 in 30s).
+                com.eu.habbo.core.UnknownPacketGuard.observe(client, packet.getMessageId());
+                return;
+            }
+            {
                 Class<? extends MessageHandler> handlerClass = this.incoming.get(packet.getMessageId());
 
                 if (handlerClass == null) throw new Exception("Unknown message " + packet.getMessageId());

@@ -51,6 +51,60 @@ if (isset($seg[0]) && $seg[0] === 'react') {
     return true;
 }
 
+// The Nitro client (vite build + nitro runtime) uses ROOT-absolute paths for
+// EVERYTHING: bundles, configs, gamedata, bundled assets, etc. The files live
+// under react/, not at the CMS document root, so without this re-route the CMS
+// HTML page would be served (200) and the client would parse HTML as JS / JSON
+// / .nitro -> "Configuration Failed" / decode errors.
+$nitroRootPaths = array(
+    'assets',     // vite bundles (index-*.js, vendor-*.js, ...)
+    'src',        // vite raw assets (fonts/css/svg)
+    'bundled',    // .nitro asset libraries
+    'gamedata',   // FigureMap, FurnitureData, ExternalTexts, ...
+    'c_images',   // badges and album textures
+    'dcr',        // furni icons
+    'sounds',
+    'images',
+);
+$nitroRootFiles = array(
+    'renderer-config.json',
+    'ui-config.json',
+    'site.webmanifest',
+    'browserconfig.xml',
+    'safari-pinned-tab.svg',
+);
+if (isset($seg[0]) && (in_array($seg[0], $nitroRootPaths, true) || in_array($seg[0], $nitroRootFiles, true))) {
+    $target = $base . DIRECTORY_SEPARATOR . 'react' . str_replace('/', DIRECTORY_SEPARATOR, $uri);
+    if (is_file($target)) {
+        $ext = strtolower(pathinfo($target, PATHINFO_EXTENSION));
+        $mime = array(
+            'js'    => 'text/javascript; charset=UTF-8',
+            'mjs'   => 'text/javascript; charset=UTF-8',
+            'css'   => 'text/css; charset=UTF-8',
+            'json'  => 'application/json; charset=UTF-8',
+            'svg'   => 'image/svg+xml',
+            'map'   => 'application/json; charset=UTF-8',
+            'png'   => 'image/png',
+            'jpg'   => 'image/jpeg',
+            'jpeg'  => 'image/jpeg',
+            'gif'   => 'image/gif',
+            'woff'  => 'font/woff',
+            'woff2' => 'font/woff2',
+            'ttf'   => 'font/ttf',
+            'mp3'   => 'audio/mpeg',
+            'nitro' => 'application/octet-stream',
+            'xml'   => 'application/xml; charset=UTF-8',
+        );
+        if (isset($mime[$ext])) header('Content-Type: ' . $mime[$ext]);
+        readfile($target);
+        return true;
+    }
+    http_response_code(404);
+    header('Content-Type: text/plain');
+    echo 'Not Found';
+    return true;
+}
+
 // Pretty routes handled by the main CMS index.php
 $s0 = isset($seg[0]) ? $seg[0] : '';
 $_GET['url'] = $s0;

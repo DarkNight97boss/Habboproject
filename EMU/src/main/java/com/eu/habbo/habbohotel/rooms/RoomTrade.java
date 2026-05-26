@@ -28,14 +28,22 @@ public class RoomTrade {
     private final List<RoomTradeUser> users;
     private final Room room;
     private boolean tradeCompleted;
+    // Timestamp of the last item add/remove on either side. Used by the safety
+    // cooldown to require a brief stable window before accept can take effect.
+    private volatile long lastModificationAt;
 
     public RoomTrade(Habbo userOne, Habbo userTwo, Room room) {
         this.users = new ArrayList<>();
         this.tradeCompleted = false;
+        this.lastModificationAt = 0L;
 
         this.users.add(new RoomTradeUser(userOne));
         this.users.add(new RoomTradeUser(userTwo));
         this.room = room;
+    }
+
+    private void markModified() {
+        this.lastModificationAt = System.currentTimeMillis();
     }
 
     public void start() {
@@ -66,6 +74,7 @@ public class RoomTrade {
         habbo.getInventory().getItemsComponent().removeHabboItem(item);
         user.getItems().add(item);
 
+        this.markModified();
         this.clearAccepted();
         this.updateWindow();
     }
@@ -80,6 +89,7 @@ public class RoomTrade {
             }
         }
 
+        this.markModified();
         this.clearAccepted();
         this.updateWindow();
     }
@@ -93,12 +103,31 @@ public class RoomTrade {
         habbo.getInventory().getItemsComponent().addItem(item);
         user.getItems().remove(item);
 
+        this.markModified();
         this.clearAccepted();
         this.updateWindow();
     }
 
     public synchronized void accept(Habbo habbo, boolean value) {
         RoomTradeUser user = this.getRoomTradeUserForHabbo(habbo);
+
+        // Safety cooldown: after any item add/remove on either side, accept can
+        // only take effect once the trade has been stable for at least N ms.
+        // This blocks classic "last-second swap" scam: attacker waits for victim
+        // to accept, then yanks an item & re-adds while clicking accept itself.
+        long cooldownMs = Emulator.getConfig().getInt("trade.safety.cooldown_ms", 3000);
+        if (value && cooldownMs > 0 && this.lastModificationAt > 0
+                && (System.currentTimeMillis() - this.lastModificationAt) < cooldownMs) {
+            user.setAccepted(false);
+            this.sendMessageToUsers(new TradeAcceptedComposer(user));
+            try {
+                habbo.whisper(
+                        Emulator.getTexts().getValue("trade.safety.cooldown", "Wait a moment before accepting — the trade just changed."),
+                        RoomChatMessageBubbles.ALERT);
+            } catch (Exception ignored) {
+            }
+            return;
+        }
 
         user.setAccepted(value);
 
@@ -155,6 +184,31 @@ public class RoomTrade {
 
         RoomTradeUser userOne = this.users.get(0);
         RoomTradeUser userTwo = this.users.get(1);
+
+        // Audit log a "suspicious" trade: large absolute volume or strongly
+        // asymmetric (one side gives much more than the other). Detection only,
+        // so staff can review for scam patterns. Thresholds are configurable.
+        try {
+            int aCount = userOne.getItems().size();
+            int bCount = userTwo.getItems().size();
+            int volumeThreshold = Emulator.getConfig().getInt("trade.safety.audit_min_items", 10);
+            int ratioThreshold = Emulator.getConfig().getInt("trade.safety.audit_min_ratio", 5);
+            boolean bigVolume = aCount >= volumeThreshold || bCount >= volumeThreshold;
+            int small = Math.min(aCount, bCount);
+            int big = Math.max(aCount, bCount);
+            boolean asymmetric = small == 0 ? big > 0 : (big / Math.max(1, small)) >= ratioThreshold;
+            if (bigVolume || asymmetric) {
+                com.eu.habbo.core.AuditLog.record(
+                        userOne.getHabbo().getHabboInfo().getId(),
+                        userOne.getHabbo().getHabboInfo().getUsername(),
+                        "TRADE_FLAGGED",
+                        "user:" + userTwo.getHabbo().getHabboInfo().getId(),
+                        "a=" + userOne.getHabbo().getHabboInfo().getUsername() + ":" + aCount
+                                + " b=" + userTwo.getHabbo().getHabboInfo().getUsername() + ":" + bCount
+                                + " bigVolume=" + bigVolume + " asym=" + asymmetric);
+            }
+        } catch (Exception ignored) {
+        }
 
         boolean tradeConfirmEventRegistered = Emulator.getPluginManager().isRegistered(TradeConfirmEvent.class, true);
         TradeConfirmEvent tradeConfirmEvent = new TradeConfirmEvent(userOne, userTwo);

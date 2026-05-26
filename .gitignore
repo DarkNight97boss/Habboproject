@@ -23,6 +23,12 @@ Thumbs.db
 *.swp
 *~
 
+# Docker / compose env (credenziali!)
+.env
+
+# Docker volumes mount-points eventuali
+deploy/backups/
+
 # Nitro client / generati pesanti (rigenerati da build_clean_client.ps1 / SETUP.md)
 CMS/react/
 client-dist/

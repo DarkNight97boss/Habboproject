@@ -154,7 +154,18 @@ public final class AuditLog {
     }
 
     private static String sign(String input) {
-        SecretKeySpec key = resolveSigningKey();
+        return signWithKey(input, resolveSigningKey());
+    }
+
+    /**
+     * Package-private testing hook: compute the chain hash with an explicit key.
+     * Allows {@code AuditLogHashChainTest} to verify the HMAC chain math without
+     * spinning up the Emulator + DB.
+     *
+     * Production callers MUST go through {@link #sign(String)} so the chain
+     * always uses the configured signing key (env var / config.ini).
+     */
+    static String signWithKey(String input, SecretKeySpec key) {
         try {
             if (key != null) {
                 Mac mac = Mac.getInstance("HmacSHA256");

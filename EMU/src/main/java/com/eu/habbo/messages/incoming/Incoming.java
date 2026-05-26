@@ -405,4 +405,8 @@ public class Incoming {
     // Custom: staff step-up MFA (Google Authenticator). Header must match nitro client modal.
     public static final int StaffMfaVerifyEvent = 9501;
     public static final int StaffMfaStatusRequestEvent = 9503;
+
+    // Custom: daily login streak.
+    public static final int DailyStreakClaimEvent = 9510;
+    public static final int DailyStreakRequestInfoEvent = 9511;
 }

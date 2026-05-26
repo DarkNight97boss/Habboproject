@@ -557,5 +557,9 @@ public class Outgoing {
     public static final int StaffMfaRequiredComposer = 9500;
     public static final int StaffMfaResultComposer = 9502;
 
+    // Custom: daily login streak.
+    public static final int DailyStreakInfoComposer = 9510;
+    public static final int DailyStreakClaimedComposer = 9511;
+
 
 }

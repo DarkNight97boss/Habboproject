@@ -298,6 +298,8 @@ public class PacketManager {
     private void registerUsers() throws Exception {
         this.registerHandler(Incoming.RequestUserDataEvent, RequestUserDataEvent.class);
         this.registerHandler(Incoming.RequestUserCreditsEvent, RequestUserCreditsEvent.class);
+        this.registerHandler(Incoming.DailyStreakClaimEvent, DailyStreakClaimEvent.class);
+        this.registerHandler(Incoming.DailyStreakRequestInfoEvent, DailyStreakRequestInfoEvent.class);
         this.registerHandler(Incoming.RequestUserClubEvent, RequestUserClubEvent.class);
         this.registerHandler(Incoming.RequestMeMenuSettingsEvent, RequestMeMenuSettingsEvent.class);
         this.registerHandler(Incoming.RequestUserCitizinShipEvent, RequestUserCitizinShipEvent.class);

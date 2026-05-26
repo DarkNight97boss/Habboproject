@@ -2,7 +2,9 @@ package com.eu.habbo.messages.incoming.handshake;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.core.AuditLog;
+import com.eu.habbo.core.DailyStreak;
 import com.eu.habbo.core.StaffMfa;
+import com.eu.habbo.messages.outgoing.users.DailyStreakInfoComposer;
 import com.eu.habbo.habbohotel.messenger.Messenger;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctionItem;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctions;
@@ -169,6 +171,17 @@ public class SecureLoginEvent extends MessageHandler {
                     StaffMfa.sendChallenge(this.client);
 
                     AuditLog.record(mfaUserId, mfaUsername, "STAFF_MFA_CHALLENGE", "user:" + mfaUserId, "");
+                }
+
+                // Daily streak: send the current state so the widget can render the
+                // calendar and the claim button immediately on login. The widget
+                // also re-requests this on mount as a safety net.
+                if (DailyStreak.isEnabled()) {
+                    try {
+                        DailyStreak.State streakState = DailyStreak.load(this.client.getHabbo().getHabboInfo().getId());
+                        this.client.sendResponse(new DailyStreakInfoComposer(streakState));
+                    } catch (Exception ignored) {
+                    }
                 }
 
                 //Hardcoded

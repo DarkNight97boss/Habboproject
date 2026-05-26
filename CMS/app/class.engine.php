@@ -137,10 +137,15 @@ class engine
 	
 	final public function query($sql)
 	{
-		// TEMP debug: surface the failing query so we can locate the call site.
-		// Revert to `die(mysql_error())` after the bug is fixed.
-		return $this->mysql['query']($sql, $this->connection)
-			or die("SQL ERROR: " . mysql_error() . " | QUERY: <pre style='white-space:pre-wrap;font-family:monospace;'>" . htmlspecialchars($sql) . "</pre>");
+		// On failure, log the offending query alongside the error so we know
+		// where the bug is even after the user closes the page. Output stays
+		// generic.
+		$res = $this->mysql['query']($sql, $this->connection);
+		if (!$res) {
+			error_log("[engine] SQL fail: " . mysql_error() . " | query: " . $sql);
+			die("Database error.");
+		}
+		return $res;
 	}
 	
 	final public function num_rows($sql)

@@ -4,6 +4,8 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.modtool.*;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.HabboInfo;
+import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.messages.incoming.MessageHandler;
 
 public class ModToolIssueDefaultSanctionEvent extends MessageHandler {
@@ -15,6 +17,10 @@ public class ModToolIssueDefaultSanctionEvent extends MessageHandler {
             int category = this.packet.readInt();
 
             ModToolIssue issue = Emulator.getGameEnvironment().getModToolManager().getTicket(issueId);
+            if (issue == null) {
+                // bogus issueId from client - previous code NPE'd on `issue.modId`
+                return;
+            }
 
             if (issue.modId == this.client.getHabbo().getHabboInfo().getId()) {
                 CfhTopic modToolCategory = Emulator.getGameEnvironment().getModToolManager().getCfhTopic(category);
@@ -24,6 +30,13 @@ public class ModToolIssueDefaultSanctionEvent extends MessageHandler {
 
                     if (defaultSanction != null) {
                         Habbo target = Emulator.getGameEnvironment().getHabboManager().getHabbo(issue.reportedId);
+
+                        // Rank-target guard works for both online and offline reported users.
+                        HabboInfo targetInfo = (target != null) ? target.getHabboInfo() : HabboManager.getOfflineHabboInfo(issue.reportedId);
+                        if (targetInfo != null && targetInfo.getRank() != null
+                                && targetInfo.getRank().getId() >= this.client.getHabbo().getHabboInfo().getRank().getId()) {
+                            return;
+                        }
 
                         if (defaultSanction.banLength > 0) {
                             Emulator.getGameEnvironment().getModToolManager().ban(issue.reportedId, this.client.getHabbo(), defaultSanction.message, defaultSanction.banLength * 86400, ModToolBanType.ACCOUNT, modToolCategory.id);

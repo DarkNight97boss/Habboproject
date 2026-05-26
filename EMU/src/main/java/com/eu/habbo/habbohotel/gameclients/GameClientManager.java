@@ -62,9 +62,11 @@ public class GameClientManager {
             }
             client.dispose();
         }
-        channel.deregister();
+        // Order: clear attr, close the channel (which deregisters from its event
+        // loop on its own), drop the client mapping. The previous order
+        // (deregister BEFORE close + a bare `closeFuture()` no-op) raced with the
+        // event-loop migration and left FDs lingering under reconnect-storms.
         channel.attr(GameServerAttributes.CLIENT).set(null);
-        channel.closeFuture();
         channel.close();
         this.clients.remove(channel.id());
     }

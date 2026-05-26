@@ -40,8 +40,14 @@ public class ShoutCommand extends Command {
             }
         }
 
-        target.getHabboInfo().getCurrentRoom().sendComposer(new RoomUserShoutComposer(new RoomChatMessage(message.toString(), target, RoomChatMessageBubbles.NORMAL)).compose());
-        gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.succes.cmd_shout").replace("%user%", params[1]).replace("%message%", message.toString()), RoomChatMessageBubbles.ALERT);
+        // Pass the message through the wordfilter (attributed to the ACTOR — the
+        // target is being impersonated and bears no responsibility) so a staff
+        // member can't pipe arbitrary content into the target's mouth, bypassing
+        // the wordfilter + chatlogs that would normally apply.
+        String filtered = Emulator.getGameEnvironment().getWordFilter().filter(message.toString(), gameClient.getHabbo());
+
+        target.getHabboInfo().getCurrentRoom().sendComposer(new RoomUserShoutComposer(new RoomChatMessage(filtered, target, RoomChatMessageBubbles.NORMAL)).compose());
+        gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.succes.cmd_shout").replace("%user%", params[1]).replace("%message%", filtered), RoomChatMessageBubbles.ALERT);
         return true;
     }
 }

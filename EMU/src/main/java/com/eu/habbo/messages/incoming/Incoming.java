@@ -401,4 +401,20 @@ public class Incoming {
     public static final int UNKNOWN_SNOWSTORM_6024 = 6024;
     public static final int UNKNOWN_SNOWSTORM_6025 = 6025;
     public static final int SnowStormUserPickSnowballEvent = 6026;
+
+    // Custom: staff step-up MFA (Google Authenticator). Header must match nitro client modal.
+    public static final int StaffMfaVerifyEvent = 9501;
+    public static final int StaffMfaStatusRequestEvent = 9503;
+
+    // Custom: daily login streak.
+    public static final int DailyStreakClaimEvent = 9510;
+    public static final int DailyStreakRequestInfoEvent = 9511;
+
+    // Custom: device fingerprint (anti-multiaccount).
+    public static final int SubmitFingerprintEvent = 9520;
+
+    // Custom: seasonal battle pass.
+    public static final int BattlePassRequestInfoEvent = 9530;
+    public static final int BattlePassClaimEvent = 9531;
+    public static final int BattlePassBuyPremiumEvent = 9532;
 }

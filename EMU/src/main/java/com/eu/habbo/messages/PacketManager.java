@@ -275,6 +275,8 @@ public class PacketManager {
         this.registerHandler(Incoming.MachineIDEvent, MachineIDEvent.class);
         this.registerHandler(Incoming.UsernameEvent, UsernameEvent.class);
         this.registerHandler(Incoming.PingEvent, PingEvent.class);
+        this.registerHandler(Incoming.StaffMfaVerifyEvent, StaffMfaVerifyEvent.class);
+        this.registerHandler(Incoming.StaffMfaStatusRequestEvent, StaffMfaStatusRequestEvent.class);
     }
 
     private void registerFriends() throws Exception {
@@ -296,6 +298,12 @@ public class PacketManager {
     private void registerUsers() throws Exception {
         this.registerHandler(Incoming.RequestUserDataEvent, RequestUserDataEvent.class);
         this.registerHandler(Incoming.RequestUserCreditsEvent, RequestUserCreditsEvent.class);
+        this.registerHandler(Incoming.DailyStreakClaimEvent, DailyStreakClaimEvent.class);
+        this.registerHandler(Incoming.DailyStreakRequestInfoEvent, DailyStreakRequestInfoEvent.class);
+        this.registerHandler(Incoming.SubmitFingerprintEvent, SubmitFingerprintEvent.class);
+        this.registerHandler(Incoming.BattlePassRequestInfoEvent, BattlePassRequestInfoEvent.class);
+        this.registerHandler(Incoming.BattlePassClaimEvent, BattlePassClaimEvent.class);
+        this.registerHandler(Incoming.BattlePassBuyPremiumEvent, BattlePassBuyPremiumEvent.class);
         this.registerHandler(Incoming.RequestUserClubEvent, RequestUserClubEvent.class);
         this.registerHandler(Incoming.RequestMeMenuSettingsEvent, RequestMeMenuSettingsEvent.class);
         this.registerHandler(Incoming.RequestUserCitizinShipEvent, RequestUserCitizinShipEvent.class);

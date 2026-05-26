@@ -22,6 +22,7 @@ import java.sql.SQLException;
 public class InteractionPetBreedingNest extends HabboItem {
     public Pet petOne = null;
     public Pet petTwo = null;
+    private volatile boolean breeding = false;
 
     public InteractionPetBreedingNest(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -141,7 +142,16 @@ public class InteractionPetBreedingNest extends HabboItem {
         }
     }
 
-    public void breed(Habbo habbo, String name, int petOneId, int petTwoId) {
+    public synchronized void breed(Habbo habbo, String name, int petOneId, int petTwoId) {
+        // Two concurrent confirmations (race between users in the room or a
+        // packet replay) would otherwise both pass the petOne!=null && petTwo!=null
+        // check, both schedule createPet in the 2-second runnable below, and produce
+        // a triplet from a pair. The flag short-circuits any re-entry.
+        if (this.breeding) {
+            return;
+        }
+        this.breeding = true;
+
         Emulator.getThreading().run(new QueryDeleteHabboItem(this.getId()));
 
         this.setExtradata("2");

@@ -36,9 +36,14 @@ public class RedeemClothingEvent extends MessageHandler {
 
                     if (clothing != null) {
                         if (!this.client.getHabbo().getInventory().getWardrobeComponent().getClothing().contains(clothing.id)) {
+                            // Atomic exclusive-claim. Same TOCTOU pattern as RedeemItemEvent
+                            // — two parallel redeems would both INSERT into users_clothing
+                            // (cosmetic dupe; cheap to harden).
+                            if (this.client.getHabbo().getHabboInfo().getCurrentRoom().removeHabboItemIfPresent(item.getId()) == null) {
+                                return;
+                            }
                             item.setRoomId(0);
                             RoomTile tile = this.client.getHabbo().getHabboInfo().getCurrentRoom().getLayout().getTile(item.getX(), item.getY());
-                            this.client.getHabbo().getHabboInfo().getCurrentRoom().removeHabboItem(item);
                             this.client.getHabbo().getHabboInfo().getCurrentRoom().updateTile(tile);
                             this.client.getHabbo().getHabboInfo().getCurrentRoom().sendComposer(new UpdateStackHeightComposer(tile.x, tile.y, tile.z, tile.relativeHeight()).compose());
                             this.client.getHabbo().getHabboInfo().getCurrentRoom().sendComposer(new RemoveFloorItemComposer(item, true).compose());

@@ -553,5 +553,18 @@ public class Outgoing {
     public static final int SnowStormGenericErrorComposer = 5028;
     public static final int SnowStormUserRematchedComposer = 5029;
 
+    // Custom: staff step-up MFA (Google Authenticator). Header must match nitro client modal.
+    public static final int StaffMfaRequiredComposer = 9500;
+    public static final int StaffMfaResultComposer = 9502;
+
+    // Custom: daily login streak.
+    public static final int DailyStreakInfoComposer = 9510;
+    public static final int DailyStreakClaimedComposer = 9511;
+
+    // Custom: seasonal battle pass.
+    public static final int BattlePassInfoComposer = 9530;
+    public static final int BattlePassClaimedComposer = 9531;
+    public static final int BattlePassPremiumPurchasedComposer = 9532;
+
 
 }

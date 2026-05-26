@@ -35,8 +35,28 @@ public class AdvertisingSaveEvent extends MessageHandler {
                 String key = this.packet.readString();
                 String value = this.packet.readString();
 
+                // Bound the value length (anti DoS / DB-bloat) — 512 chars is
+                // plenty for any URL or ad caption.
+                if (value != null && value.length() > 512) {
+                    value = value.substring(0, 512);
+                }
+
+                // Reject XSS / open-redirect schemes on URL-style fields. The
+                // client renders these as <a href=...> or <img src=...>, so a
+                // javascript:/data:/vbscript: URL would be a stored-XSS / phish.
+                if (value != null && key != null
+                        && (key.equalsIgnoreCase("imageUrl")
+                                || key.equalsIgnoreCase("clickUrl")
+                                || key.toLowerCase().endsWith("url"))) {
+                    String trimmed = value.trim();
+                    if (!trimmed.isEmpty() && !trimmed.matches("(?i)^https?://[^\\s<>\"'`]+$")) {
+                        // Drop unsafe URLs silently; keep the rest of the save.
+                        continue;
+                    }
+                }
+
                 if (!Emulator.getConfig().getBoolean("camera.use.https")) {
-                    value = value.replace("https://", "http://");
+                    value = value == null ? "" : value.replace("https://", "http://");
                 }
 
                 ((InteractionCustomValues) item).values.put(key, value);

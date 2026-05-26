@@ -38,8 +38,13 @@ public class SayCommand extends Command {
             }
         }
 
-        target.getHabboInfo().getCurrentRoom().sendComposer(new RoomUserTalkComposer(new RoomChatMessage(message.toString(), target, RoomChatMessageBubbles.NORMAL)).compose());
-        gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.succes.cmd_say").replace("%user%", params[1]).replace("%message%", message.toString()), RoomChatMessageBubbles.ALERT);
+        // Wordfilter attribution: the ACTOR is responsible for the content;
+        // sending unfiltered text in the target's mouth bypasses the wordfilter
+        // and chatlogs.
+        String filtered = Emulator.getGameEnvironment().getWordFilter().filter(message.toString(), gameClient.getHabbo());
+
+        target.getHabboInfo().getCurrentRoom().sendComposer(new RoomUserTalkComposer(new RoomChatMessage(filtered, target, RoomChatMessageBubbles.NORMAL)).compose());
+        gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.succes.cmd_say").replace("%user%", params[1]).replace("%message%", filtered), RoomChatMessageBubbles.ALERT);
         return true;
     }
 }

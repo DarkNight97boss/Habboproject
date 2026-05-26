@@ -10,11 +10,16 @@ import com.eu.habbo.plugin.events.support.SupportUserAlertedReason;
 public class ModToolAlertEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
+        if (com.eu.habbo.core.StaffMfa.blockIfLocked(this.client)) return;
         if (this.client.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL)) {
             Habbo alertedUser = Emulator.getGameEnvironment().getHabboManager().getHabbo(this.packet.readInt());
 
-            if (alertedUser != null)
+            if (alertedUser != null) {
+                if (alertedUser.getHabboInfo().getRank().getId() >= this.client.getHabbo().getHabboInfo().getRank().getId()) {
+                    return; // refuse to alert equal/higher rank
+                }
                 Emulator.getGameEnvironment().getModToolManager().alert(this.client.getHabbo(), alertedUser, this.packet.readString(), SupportUserAlertedReason.ALERT);
+            }
         } else {
             ScripterManager.scripterDetected(this.client, Emulator.getTexts().getValue("scripter.warning.modtools.kick").replace("%username%", this.client.getHabbo().getHabboInfo().getUsername()));
         }

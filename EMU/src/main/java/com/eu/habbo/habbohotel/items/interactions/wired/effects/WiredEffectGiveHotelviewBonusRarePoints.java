@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -73,6 +74,14 @@ public class WiredEffectGiveHotelviewBonusRarePoints extends InteractionWiredEff
             this.amount = Integer.parseInt(settings.getStringParam());
         } catch (Exception e) {
             return false;
+        }
+
+        // Cap unbounded BonusRare points — see HofPoints sibling for the same
+        // reason. Without this gate a room owner can give arbitrary seasonal
+        // currency to any visitor (currency-inflation primitive).
+        if (gameClient == null || !gameClient.getHabbo().hasPermission(Permission.ACC_SUPERWIRED)) {
+            int cap = Emulator.getConfig().getInt("wired.max.bonusrare", 1000);
+            this.amount = Math.max(0, Math.min(this.amount, cap));
         }
 
         this.setDelay(settings.getDelay());

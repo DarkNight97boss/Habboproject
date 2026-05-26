@@ -26,6 +26,13 @@ public class GuildChangeBadgeEvent extends MessageHandler {
                     return;
 
                 int count = this.packet.readInt();
+                // A real guild badge has at most a base + ~4 stickers (≤ 13 ints / count ≈ 13);
+                // anything larger is malicious. Without the bound, a `count =
+                // Integer.MAX_VALUE` exhausts the packet (EOFException — handler
+                // dies + log spam) or builds a multi-megabyte String.
+                if (count < 0 || count > 32) {
+                    return;
+                }
 
                 String badge = "";
 

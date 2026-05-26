@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.rooms.pets;
 
 import com.eu.habbo.habbohotel.pets.MonsterplantPet;
 import com.eu.habbo.habbohotel.pets.Pet;
+import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.messages.incoming.MessageHandler;
 
 public class BreedMonsterplantsEvent extends MessageHandler {
@@ -10,11 +11,22 @@ public class BreedMonsterplantsEvent extends MessageHandler {
         int unknownInt = this.packet.readInt(); //Something state. 2 = accept
 
         if (unknownInt == 0) {
-            Pet petOne = this.client.getHabbo().getHabboInfo().getCurrentRoom().getPet(this.packet.readInt());
-            Pet petTwo = this.client.getHabbo().getHabboInfo().getCurrentRoom().getPet(this.packet.readInt());
+            // Null-guard + ownership/rights gate to mirror ConfirmPetBreedingEvent.
+            Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+            if (room == null) return;
+            int callerId = this.client.getHabbo().getHabboInfo().getId();
+            if (!room.hasRights(this.client.getHabbo()) && room.getOwnerId() != callerId) {
+                return;
+            }
+
+            Pet petOne = room.getPet(this.packet.readInt());
+            Pet petTwo = room.getPet(this.packet.readInt());
 
             if (petOne == null || petTwo == null || petOne == petTwo) {
                 //TODO Add error
+                return;
+            }
+            if (petOne.getUserId() != callerId || petTwo.getUserId() != callerId) {
                 return;
             }
 

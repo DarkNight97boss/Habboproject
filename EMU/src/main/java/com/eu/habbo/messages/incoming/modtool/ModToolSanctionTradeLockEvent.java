@@ -16,6 +16,7 @@ import java.util.Collection;
 public class ModToolSanctionTradeLockEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
+        if (com.eu.habbo.core.StaffMfa.blockIfLocked(this.client)) return;
         int userId = this.packet.readInt();
         String message = this.packet.readString();
         int duration = this.packet.readInt();
@@ -25,6 +26,9 @@ public class ModToolSanctionTradeLockEvent extends MessageHandler {
             Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
 
             if (habbo != null) {
+                if (habbo.getHabboInfo().getRank().getId() >= this.client.getHabbo().getHabboInfo().getRank().getId()) {
+                    return; // refuse to tradelock equal/higher rank
+                }
                 ModToolSanctions modToolSanctions = Emulator.getGameEnvironment().getModToolSanctions();
 
                 if (Emulator.getConfig().getBoolean("hotel.sanctions.enabled")) {

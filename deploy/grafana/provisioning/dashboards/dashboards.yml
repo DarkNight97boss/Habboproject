@@ -1,0 +1,15 @@
+# Auto-provision delle dashboard al boot. I file JSON nella directory
+# `dashboards/` sotto sono caricati e tenuti in sync ogni 30s.
+
+apiVersion: 1
+
+providers:
+  - name: 'Habboproject'
+    orgId: 1
+    folder: 'Habboproject'
+    type: file
+    disableDeletion: false
+    editable: true
+    updateIntervalSeconds: 30
+    options:
+      path: /etc/grafana/provisioning/dashboards

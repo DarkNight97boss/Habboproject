@@ -1,0 +1,112 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "uid": "habbo-overview",
+  "title": "Habboproject — Overview",
+  "tags": ["habbo", "emu"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "time": { "from": "now-30m", "to": "now" },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Users online",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "habbo-prom" },
+      "targets": [{ "expr": "habbo_users_online", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [
+        { "color": "green", "value": null }, { "color": "yellow", "value": 3000 }, { "color": "red", "value": 5000 }
+      ]}}, "overrides": [] }
+    },
+    {
+      "type": "stat",
+      "title": "Rooms active",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "habbo-prom" },
+      "targets": [{ "expr": "habbo_rooms_active", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "graphMode": "area" }
+    },
+    {
+      "type": "stat",
+      "title": "Uptime",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "habbo-prom" },
+      "targets": [{ "expr": "habbo_process_uptime_seconds", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "graphMode": "none" }
+    },
+    {
+      "type": "stat",
+      "title": "JVM threads",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "habbo-prom" },
+      "targets": [{ "expr": "habbo_jvm_threads_active", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "graphMode": "area" }
+    },
+    {
+      "type": "timeseries",
+      "title": "Heap (used / max)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "habbo-prom" },
+      "targets": [
+        { "expr": "habbo_jvm_heap_used_bytes", "legendFormat": "used", "refId": "A" },
+        { "expr": "habbo_jvm_heap_max_bytes", "legendFormat": "max", "refId": "B" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Users online (trend)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "habbo-prom" },
+      "targets": [{ "expr": "habbo_users_online", "refId": "A" }],
+      "options": { "tooltip": { "mode": "single" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Packets rejected (cumulative)",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "habbo-prom" },
+      "targets": [
+        { "expr": "rate(habbo_packets_rejected_total[1m])", "legendFormat": "unknown-header/s", "refId": "A" },
+        { "expr": "rate(habbo_ratelimit_hits_total[1m])", "legendFormat": "ratelimit/s", "refId": "B" }
+      ],
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Audit log writes (rate)",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "habbo-prom" },
+      "targets": [{ "expr": "rate(habbo_audit_entries_total[1m])", "legendFormat": "audit/s", "refId": "A" }],
+      "options": { "tooltip": { "mode": "single" } }
+    },
+    {
+      "type": "stat",
+      "title": "Audit total",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "habbo-prom" },
+      "targets": [{ "expr": "habbo_audit_entries_total", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "graphMode": "area", "colorMode": "value" }
+    }
+  ]
+}

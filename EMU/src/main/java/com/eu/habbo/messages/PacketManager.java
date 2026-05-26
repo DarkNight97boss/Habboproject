@@ -251,6 +251,12 @@ public class PacketManager {
                         if (PacketManager.DEBUG_SHOW_PACKETS) {
                             LOGGER.warn("Client packet {} was ratelimited.", packet.getMessageId());
                         }
+                        // Bump del counter Prometheus: serve a vedere quanto
+                        // spesso il floor sta scartando packet sotto carico.
+                        try {
+                            com.eu.habbo.core.HealthEndpoint.RATELIMIT_HITS.incrementAndGet();
+                        } catch (Throwable ignored) {
+                        }
                         return;
                     }
                     client.messageTimestamps.put(handlerClass, now);

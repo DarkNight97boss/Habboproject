@@ -27,28 +27,29 @@ public class CameraLoginStatusEvent extends CameraIncomingMessage {
     public void handle(Channel client) throws Exception {
         int status = this.readInt();
 
+        // Messaggi tradotti in italiano. Riferimenti al Camera Server upstream
+        // (servizio fornito da Arcturus) preservati per chiarezza operativa:
+        // se l'operatore non usa quel servizio, questi error non vengono mai
+        // emessi (lo Status arriva solo se il client si connette al server).
         if (status == LOGIN_ERROR) {
-            LOGGER.error("Failed to login to Camera Server: Incorrect Details");
+            LOGGER.error("Login Camera Server fallito: credenziali errate.");
         } else if (status == NO_ACCOUNT) {
-            LOGGER.error("Failed to login to Camera Server: No Account Found. Register for free on the Arcturus Forums! Visit http://arcturus.pw/");
+            LOGGER.error("Login Camera Server fallito: nessun account trovato. Registrazione gratuita sui forum upstream Arcturus (http://arcturus.pw/).");
         } else if (status == BANNED) {
-            LOGGER.error("Sorry but you seem to be banned from the Arcturus forums and therefor cant use the Camera Server :'(");
+            LOGGER.error("Accesso al Camera Server negato: account bannato sui forum upstream Arcturus.");
         } else if (status == ALREADY_LOGGED_IN) {
-            LOGGER.error("You seem to be already connected to the Camera Server");
+            LOGGER.error("Risulti gia' connesso al Camera Server.");
         } else if (status == OLD_BUILD) {
-            LOGGER.error("This version of Arcturus Emulator is no longer supported by the Camera Server. Upgrade your emulator.");
+            LOGGER.error("Questa versione del motore Arcturus non e' piu' supportata dal Camera Server. Aggiorna.");
         } else if (status == NO_CAMERA_SUBSCRIPTION) {
-            LOGGER.error("You don't have a Camera Subscription and therefor cannot use the camera!");
-            LOGGER.error("Please consider making a donation to keep this project going. The emulator can be used free of charge!");
-            LOGGER.error("A trial version is available for $2.5. A year subscription is only $10 and a permanent subscription is $25.");
-            LOGGER.error("By donating this subscription you support the development of the emulator you are using :)");
-            LOGGER.error("Visit http://arcturus.pw/mysubscriptions.php to buy your subscription!");
-            LOGGER.error("Please Consider getting a subscription. Regards: The General");
+            LOGGER.error("Sottoscrizione Camera Server assente: il servizio non e' utilizzabile.");
+            LOGGER.error("Il motore (Arcturus Morningstar / Asteria Core) e' gratis: la sottoscrizione finanzia il Camera Server upstream.");
+            LOGGER.error("Trial $2.50 / annuale $10 / lifetime $25 — vedi http://arcturus.pw/mysubscriptions.php");
         }
 
         if (status == LOGIN_OK) {
             CameraClient.isLoggedIn = true;
-            LOGGER.info("Succesfully connected to the Arcturus Camera Server!");
+            LOGGER.info("Connesso al Camera Server (Arcturus upstream).");
         } else {
             CameraClient.attemptReconnect = false;
         }

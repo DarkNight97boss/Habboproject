@@ -14,8 +14,8 @@ public class AboutCommand extends Command {
     public AboutCommand() {
         super(null, new String[]{"about", "info", "online", "server"});
     }
-    public static String credits = "Arcturus Morningstar is an opensource project based on Arcturus By TheGeneral \n" +
-            "The Following people have all contributed to this emulator:\n" +
+    public static String credits = "Asteria Core e' un fork ribrandizzato di Arcturus Morningstar (GPL-3.0).\n" +
+            "Progetto originale di TheGeneral. Hanno contribuito allo sviluppo:\n" +
             " TheGeneral\n Beny\n Alejandro\n Capheus\n Skeletor\n Harmonic\n Mike\n Remco\n zGrav \n Quadral \n Harmony\n Swirny\n ArpyAge\n Mikkel\n Rodolfo\n Rasmus\n Kitt Mustang\n Snaiker\n nttzx\n necmi\n Dome\n Jose Flores\n Cam\n Oliver\n Narzo\n Tenshie\n MartenM\n Ridge\n SenpaiDipper\n Thijmen\n Yordi";
     @Override
     public boolean handle(GameClient gameClient, String[] params) {
@@ -31,23 +31,22 @@ public class AboutCommand extends Command {
         String message = "<b>" + Emulator.version + "</b>\r\n";
 
         if (Emulator.getConfig().getBoolean("info.shown", true)) {
-            message += "<b>Hotel Statistics</b>\r" +
-                    "- Online Users: " + Emulator.getGameEnvironment().getHabboManager().getOnlineCount() + "\r" +
-                    "- Active Rooms: " + Emulator.getGameEnvironment().getRoomManager().getActiveRooms().size() + "\r" +
-                    "- Shop:  " + Emulator.getGameEnvironment().getCatalogManager().catalogPages.size() + " pages and " + CatalogManager.catalogItemAmount + " items. \r" +
-                    "- Furni: " + Emulator.getGameEnvironment().getItemManager().getItems().size() + " item definitions" + "\r" +
+            message += "<b>Statistiche ambiente virtuale</b>\r" +
+                    "- Utenti online: " + Emulator.getGameEnvironment().getHabboManager().getOnlineCount() + "\r" +
+                    "- Stanze attive: " + Emulator.getGameEnvironment().getRoomManager().getActiveRooms().size() + "\r" +
+                    "- Catalogo: " + Emulator.getGameEnvironment().getCatalogManager().catalogPages.size() + " pagine e " + CatalogManager.catalogItemAmount + " articoli. \r" +
+                    "- Oggetti: " + Emulator.getGameEnvironment().getItemManager().getItems().size() + " definizioni" + "\r" +
                     "\n" +
-                    "<b>Server Statistics</b>\r" +
-                    "- Uptime: " + day + (day > 1 ? " days, " : " day, ") + hours + (hours > 1 ? " hours, " : " hour, ") + minute + (minute > 1 ? " minutes, " : " minute, ") + second + (second > 1 ? " seconds!" : " second!") + "\r" +
-                    "- RAM Usage: " + (Emulator.getRuntime().totalMemory() - Emulator.getRuntime().freeMemory()) / (1024 * 1024) + "/" + (Emulator.getRuntime().freeMemory()) / (1024 * 1024) + "MB\r" +
-                    "- CPU Cores: " + Emulator.getRuntime().availableProcessors() + "\r" +
-                    "- Total Memory: " + Emulator.getRuntime().maxMemory() / (1024 * 1024) + "MB" + "\r\n";
+                    "<b>Statistiche server</b>\r" +
+                    "- Uptime: " + day + (day == 1 ? " giorno, " : " giorni, ") + hours + (hours == 1 ? " ora, " : " ore, ") + minute + (minute == 1 ? " minuto, " : " minuti, ") + second + (second == 1 ? " secondo." : " secondi.") + "\r" +
+                    "- RAM in uso: " + (Emulator.getRuntime().totalMemory() - Emulator.getRuntime().freeMemory()) / (1024 * 1024) + "/" + (Emulator.getRuntime().freeMemory()) / (1024 * 1024) + " MB\r" +
+                    "- Core CPU: " + Emulator.getRuntime().availableProcessors() + "\r" +
+                    "- Memoria totale: " + Emulator.getRuntime().maxMemory() / (1024 * 1024) + " MB" + "\r\n";
         }
 
         message += "\r" +
-
-                "<b>Thanks for using Arcturus. Report issues on the forums. http://arcturus.wf \r\r" +
-                "    - The General";
+                "<b>Grazie per usare Asteria Core.</b>\r" +
+                "Motore: Arcturus Morningstar (GPL-3.0) — credit a TheGeneral.\r";
         gameClient.getHabbo().alert(message);
         gameClient.sendResponse(new MessagesForYouComposer(Collections.singletonList(credits)));
         return true;

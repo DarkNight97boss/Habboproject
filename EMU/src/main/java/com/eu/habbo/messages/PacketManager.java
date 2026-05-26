@@ -276,7 +276,19 @@ public class PacketManager {
                 }
 
                 if (!handler.isCancelled) {
-                    handler.handle();
+                    // SLI 3 (latency p99 < 100ms). Misuriamo SOLO il
+                    // tempo dentro handler.handle() — gli step di dispatch
+                    // (ratelimit lookup, ctor cache) sono trascurabili (~us).
+                    long t0 = System.nanoTime();
+                    try {
+                        handler.handle();
+                    } finally {
+                        long dt = System.nanoTime() - t0;
+                        try {
+                            com.eu.habbo.core.HealthEndpoint.PACKET_PROCESSING_SECONDS.record(dt);
+                        } catch (Throwable ignored) {
+                        }
+                    }
                 }
             }
         } catch (NullPointerException npe) {

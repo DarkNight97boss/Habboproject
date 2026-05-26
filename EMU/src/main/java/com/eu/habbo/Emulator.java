@@ -173,6 +173,10 @@ public final class Emulator {
             // Health/metrics endpoint per orchestratori (docker, k8s) e
             // scraper Prometheus. Bind di default su 127.0.0.1:9090.
             com.eu.habbo.core.HealthEndpoint.start();
+            // Synthetic probe: self-test TCP connect ogni 30s. Alimenta
+            // l'histogram habbo_synthetic_connect_seconds usato per detect
+            // di event-loop saturati prima che i client reali se ne accorgano.
+            com.eu.habbo.core.SyntheticProbe.start();
 
             LOGGER.info("Arcturus Morningstar has successfully loaded.");
             LOGGER.info("System launched in: {}ms. Using {} threads!", (System.nanoTime() - startTime) / 1e6, Runtime.getRuntime().availableProcessors() * 2);

@@ -80,6 +80,21 @@ public class CommandHandler {
                                         com.eu.habbo.core.StaffMfa.sendChallenge(gameClient);
                                         return false;
                                     }
+                                    // Staff-command sliding-window quota. Only privileged (permission-gated)
+                                    // commands are counted: a compromised staff account can be hosed by
+                                    // capping rate-of-fire of high-impact actions. Default 60/min is loose
+                                    // enough that no real moderator session hits it.
+                                    if (command.permission != null) {
+                                        int qId = gameClient.getHabbo().getHabboInfo().getId();
+                                        String qName = gameClient.getHabbo().getHabboInfo().getUsername();
+                                        if (!com.eu.habbo.core.StaffCommandQuota.allow(qId, qName, parts[0])) {
+                                            gameClient.getHabbo().whisper(
+                                                    Emulator.getTexts().getValue("commands.staff.quota.exceeded",
+                                                            "You are issuing staff commands too quickly. Wait a moment."),
+                                                    com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles.ALERT);
+                                            return false;
+                                        }
+                                    }
                                     try {
                                         UserExecuteCommandEvent userExecuteCommandEvent = new UserExecuteCommandEvent(gameClient.getHabbo(), command, parts);
                                         Emulator.getPluginManager().fireEvent(userExecuteCommandEvent);

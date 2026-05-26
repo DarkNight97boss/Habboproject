@@ -22,7 +22,10 @@ public class RequestOffersEvent extends MessageHandler {
     public void handle() throws Exception {
         int min = this.packet.readInt();
         int max = this.packet.readInt();
-        String query = this.packet.readString();
+        // Marketplace free-text search; the handler trims to 30 chars below
+        // anyway, but cap at the parser to keep oversize bodies out of the
+        // String allocator entirely.
+        String query = this.packet.readString(128);
         int type = this.packet.readInt();
 
         if (query.length() > 30) {

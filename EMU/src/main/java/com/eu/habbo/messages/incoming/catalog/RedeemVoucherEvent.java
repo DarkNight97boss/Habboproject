@@ -19,7 +19,9 @@ public class RedeemVoucherEvent extends MessageHandler {
             return;
         }
 
-        String voucherCode = this.packet.readString();
+        // Voucher codes are short alphanumerics. Cap to defeat memory DoS via
+        // an attacker submitting a multi-KB "code" to the DB lookup path.
+        String voucherCode = this.packet.readString(64);
 
         if (voucherCode.contains(" ")) {
             this.client.sendResponse(new RedeemVoucherErrorComposer(RedeemVoucherErrorComposer.TECHNICAL_ERROR));

@@ -60,13 +60,45 @@ public class ClientMessage {
     }
 
     public String readString() {
+        // The no-arg variant keeps the historical contract (bounded only by
+        // the packet's remaining bytes). Prefer readString(int) at every call
+        // site where the field semantics imply an upper bound — handler-level
+        // bounding is the only place we know the real max.
+        return readString(Integer.MAX_VALUE);
+    }
+
+    /**
+     * Read a UTF-8 string with an explicit upper bound on the *byte* length.
+     *
+     * Bounding strings at the parser is the cheapest place to defeat memory
+     * amplification: a malicious client can otherwise frame a 64KB payload
+     * containing a single string field and force the server to allocate +
+     * intern that string in every code path the handler touches. By the time
+     * a handler-level length-check runs we've already eaten the allocation.
+     *
+     * Behaviour when the wire length exceeds maxBytes:
+     *   - we still consume the bytes (so the packet stays framed)
+     *   - we return the first maxBytes decoded as UTF-8
+     *   - we DO NOT throw — handlers that need to reject oversize input
+     *     should compare the returned string length to maxBytes
+     *
+     * Pass {@link Integer#MAX_VALUE} to opt out (legacy behaviour).
+     */
+    public String readString(int maxBytes) {
         try {
             int length = this.readShort();
             if (length <= 0) return "";
             // Clamp the allocation to what's actually available (anti over-allocation/DoS).
             length = Math.min(length, this.buffer.readableBytes());
-            byte[] data = new byte[length];
+            if (length <= 0) return "";
+            int take = Math.min(length, Math.max(0, maxBytes));
+            byte[] data = new byte[take];
             this.buffer.readBytes(data);
+            // Discard the overflow so the next field still parses correctly.
+            int discard = length - take;
+            if (discard > 0) {
+                this.buffer.skipBytes(discard);
+            }
             return new String(data);
         } catch (Exception e) {
             return "";

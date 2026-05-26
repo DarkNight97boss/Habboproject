@@ -53,14 +53,21 @@ import { StaffMfaView } from '../staff-mfa/StaffMfaView';
 
 ## Build & deploy del client
 
+**Già fatto** in questa sessione (`yarn build` 20s, type-check pulito sull'intero
+progetto). Bundle vite (`index-*.js`, `nitro-renderer-*.js`, `vendor-*.js`)
+copiati in `Github/client-dist/assets/` insieme al nuovo `index.html`; i
+`renderer-config.json`/`ui-config.json` locali NON sono stati toccati. Test HTTP
+su `:8090` ritorna 200 su index e su tutti i bundle.
+
+Per ri-buildare in futuro:
+
 ```powershell
 # dalla cartella nitro-react
-yarn install   # se necessario
-yarn build     # oppure: powershell -File build_clean_client.ps1
-# poi copia l'output (build/) in client-dist servito su :8090
+yarn install   # solo se mancano dipendenze
+yarn build
+# poi sostituisci client-dist/assets/* + client-dist/index.html con dist/
+# (lascia stare renderer-config.json/ui-config.json se sono gia' personalizzati)
 ```
-
-Il type-check (`tsc --noEmit`) passa già su tutto il progetto con questo patch.
 
 ## Attivazione della feature (quando il client è pronto)
 

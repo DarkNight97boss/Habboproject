@@ -14,8 +14,12 @@ public class ModToolWarnEvent extends MessageHandler {
         if (this.client.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL)) {
             Habbo alertedUser = Emulator.getGameEnvironment().getHabboManager().getHabbo(this.packet.readInt());
 
-            if (alertedUser != null)
+            if (alertedUser != null) {
+                if (alertedUser.getHabboInfo().getRank().getId() >= this.client.getHabbo().getHabboInfo().getRank().getId()) {
+                    return; // refuse to warn equal/higher rank
+                }
                 Emulator.getGameEnvironment().getModToolManager().alert(this.client.getHabbo(), alertedUser, this.packet.readString(), SupportUserAlertedReason.CAUTION);
+            }
         } else {
             ScripterManager.scripterDetected(this.client, Emulator.getTexts().getValue("scripter.warning.modtools.kick").replace("%username%", this.client.getHabbo().getHabboInfo().getUsername()));
         }

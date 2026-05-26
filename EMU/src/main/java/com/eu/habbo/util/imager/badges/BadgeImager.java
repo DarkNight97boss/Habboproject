@@ -150,6 +150,13 @@ public class BadgeImager {
 
     public void generate(Guild guild) {
         String badge = guild.getBadge();
+        // Defense-in-depth path-traversal guard. The badge string is normally produced by
+        // GuildChangeBadgeEvent (constrained ints), but a future bug or a direct DB write
+        // could populate guilds.badge with '../../etc/passwd' and this method would happily
+        // create a file outside the badges directory.
+        if (badge == null || !badge.matches("^[a-zA-Z0-9]+$")) {
+            return;
+        }
         File outputFile;
         try {
             outputFile = new File(Emulator.getConfig().getValue("imager.location.output.badges"), badge + ".png");

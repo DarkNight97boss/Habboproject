@@ -36,7 +36,19 @@ public class SubscriptionHabboClub extends Subscription {
     public static boolean HC_PAYDAY_ENABLED = false;
     public static int HC_PAYDAY_NEXT_DATE = Integer.MAX_VALUE; // yyyy-MM-dd HH:mm:ss
     public static String HC_PAYDAY_INTERVAL = "";
-    public static String HC_PAYDAY_QUERY = "";
+
+    /**
+     * Canonical HC payday query — hard-coded in the binary so a DB write foothold
+     * (e.g. a CMS SQLi residual) cannot replace it with arbitrary SQL that runs
+     * with EMU privileges on every payday calculation. The DB key
+     * `subscriptions.hc.payday.query` is ignored unless it equals this string.
+     */
+    public static final String HC_PAYDAY_QUERY_CANONICAL =
+            "SELECT SUM(cost_credits) AS `amount_spent` FROM `logs_shop_purchases` " +
+            "WHERE `user_id` = @user_id AND `timestamp` > @timestamp_start AND `timestamp` <= @timestamp_end " +
+            "AND `catalog_name` NOT LIKE 'CF_%' AND `catalog_name` NOT LIKE 'CFC_%';";
+
+    public static String HC_PAYDAY_QUERY = HC_PAYDAY_QUERY_CANONICAL;
     public static TreeMap<Integer, Integer> HC_PAYDAY_STREAK = new TreeMap<>();
     public static String HC_PAYDAY_CURRENCY = "";
     public static Double HC_PAYDAY_KICKBACK_PERCENTAGE = 0.1;

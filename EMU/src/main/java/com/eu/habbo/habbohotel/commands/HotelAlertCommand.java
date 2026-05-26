@@ -11,6 +11,10 @@ import java.util.Map;
 
 public class HotelAlertCommand extends Command {
 
+    // Per-actor cooldown — a compromised (or playful) staff account can otherwise spam
+    // hotel-wide alerts continuously, each one iterating every online user.
+    private static final java.util.concurrent.ConcurrentHashMap<Integer, Long> LAST_FIRED = new java.util.concurrent.ConcurrentHashMap<>();
+
     public HotelAlertCommand() {
         super("cmd_ha", Emulator.getTexts().getValue("commands.keys.cmd_ha").split(";"));
     }
@@ -18,6 +22,16 @@ public class HotelAlertCommand extends Command {
     @Override
     public boolean handle(GameClient gameClient, String[] params) {
         if (params.length > 1) {
+            int cooldownMs = Math.max(0, Emulator.getConfig().getInt("commands.hotelalert.cooldown_ms", 5000));
+            int actorId = gameClient.getHabbo().getHabboInfo().getId();
+            long now = System.currentTimeMillis();
+            Long last = LAST_FIRED.get(actorId);
+            if (last != null && now - last < cooldownMs) {
+                gameClient.getHabbo().whisper("Hotel alert cooldown — wait " + ((cooldownMs - (now - last)) / 1000 + 1) + "s.", RoomChatMessageBubbles.ALERT);
+                return true;
+            }
+            LAST_FIRED.put(actorId, now);
+
             StringBuilder message = new StringBuilder();
             for (int i = 1; i < params.length; i++) {
                 message.append(params[i]).append(" ");

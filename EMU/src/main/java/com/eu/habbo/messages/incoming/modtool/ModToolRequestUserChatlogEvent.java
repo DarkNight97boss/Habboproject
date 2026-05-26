@@ -12,7 +12,11 @@ public class ModToolRequestUserChatlogEvent extends MessageHandler {
     public void handle() throws Exception {
         if (this.client.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL)) {
             int userId = this.packet.readInt();
-            String username = HabboManager.getOfflineHabboInfo(userId).getUsername();
+            // Bogus userId -> getOfflineHabboInfo() returns null -> .getUsername() NPE
+            // (staff-side DoS via crafted request).
+            com.eu.habbo.habbohotel.users.HabboInfo info = HabboManager.getOfflineHabboInfo(userId);
+            if (info == null) return;
+            String username = info.getUsername();
 
             this.client.sendResponse(new ModToolUserChatlogComposer(Emulator.getGameEnvironment().getModToolManager().getUserRoomVisitsAndChatlogs(userId), userId, username));
         } else {

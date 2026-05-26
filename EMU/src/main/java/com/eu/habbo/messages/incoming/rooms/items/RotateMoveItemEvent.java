@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
+import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
@@ -20,6 +21,18 @@ public class RotateMoveItemEvent extends MessageHandler {
         int furniId = this.packet.readInt();
         HabboItem item = room.getHabboItem(furniId);
         if (item == null) return;
+
+        // Ownership / authority check — without this, anyone with room rights
+        // (or any visitor inside a build-area edge case) could rotate/move
+        // somebody else's furniture, enabling item theft and grief.
+        int callerId = this.client.getHabbo().getHabboInfo().getId();
+        if (item.getUserId() != callerId
+                && !room.isOwner(this.client.getHabbo())
+                && !this.client.getHabbo().hasPermission(Permission.ACC_MOVEROTATE)
+                && !this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) {
+            this.client.sendResponse(new FloorItemUpdateComposer(item));
+            return;
+        }
 
         int x = this.packet.readInt();
         int y = this.packet.readInt();

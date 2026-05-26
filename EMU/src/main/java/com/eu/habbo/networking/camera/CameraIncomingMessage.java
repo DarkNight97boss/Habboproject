@@ -37,6 +37,12 @@ public abstract class CameraIncomingMessage extends CameraMessage {
     public String readString() {
         try {
             int length = this.readInt();
+            // Same defensive clamp as ClientMessage.readString — the camera client speaks
+            // to an external service over a plain socket, and a length of e.g. 0x7FFFFFFF
+            // (or negative) would either OOM the JVM or throw NegativeArraySizeException.
+            if (length <= 0 || length > this.buffer.readableBytes()) {
+                return "";
+            }
             byte[] data = new byte[length];
             this.buffer.readBytes(data);
             return new String(data);

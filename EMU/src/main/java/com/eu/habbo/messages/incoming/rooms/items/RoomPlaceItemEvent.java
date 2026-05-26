@@ -39,6 +39,20 @@ public class RoomPlaceItemEvent extends MessageHandler {
         if (item == null || item.getBaseItem().getInteractionType().getType() == InteractionPostIt.class)
             return;
 
+        // Serialise concurrent place attempts on the same physical item — without this
+        // lock, two parallel "place" packets both pass the inventory peek above and both
+        // proceed to placeFloorFurniAt, leaving the same item placed twice / in two
+        // rooms simultaneously (classic place-dupe primitive).
+        synchronized (item) {
+            if (this.client.getHabbo().getInventory().getItemsComponent().getHabboItem(itemId) == null) {
+                return;
+            }
+
+            this.placeItem(item, itemId, values, room, rentSpace);
+        }
+    }
+
+    private void placeItem(HabboItem item, int itemId, String[] values, Room room, HabboItem rentSpace) throws Exception {
         if (room.getId() != item.getRoomId() && item.getRoomId() != 0)
             return;
 

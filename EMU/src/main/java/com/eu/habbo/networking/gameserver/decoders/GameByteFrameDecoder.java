@@ -20,7 +20,11 @@ public class GameByteFrameDecoder extends LengthFieldBasedFrameDecoder {
 
     public GameByteFrameDecoder()
     {
-        super(MAX_PACKET_LENGTH, LENGTH_FIELD_OFFSET, LENGTH_FIELD_LENGTH, LENGTH_FIELD_ADJUSTMENT, INITIAL_BYTES_TO_STRIP);
+        // failFast=true: as soon as the length field declares an oversize frame,
+        // throw TooLongFrameException immediately instead of waiting for the full
+        // body to arrive. Without it, an attacker can slow-drip half of a 417k frame
+        // per connection and pin ~6 MB across 15 connections per IP.
+        super(MAX_PACKET_LENGTH, LENGTH_FIELD_OFFSET, LENGTH_FIELD_LENGTH, LENGTH_FIELD_ADJUSTMENT, INITIAL_BYTES_TO_STRIP, true);
     }
 
     @Override

@@ -69,6 +69,16 @@ yarn build
 # (lascia stare renderer-config.json/ui-config.json se sono gia' personalizzati)
 ```
 
+**NB: nuova dipendenza `qrcode.react`** (per il QR di enrollment, vedi sezione
+Sicurezza). Aggiungila a `package.json` se non c'è già:
+
+```json
+"qrcode.react": "^3.1.0"
+```
+
+poi `yarn install && yarn build`. Il QR viene renderizzato client-side (SVG): il
+secret non lascia il browser.
+
 ## Attivazione della feature (quando il client è pronto)
 
 Di default è **spenta** per non bloccare lo staff prima del test. Per attivarla
@@ -87,8 +97,10 @@ ai login successivi solo il campo del codice a 6 cifre.
 ## Sicurezza
 
 - TOTP RFC-6238 (SHA-1, 30s, 6 cifre), confronto a tempo costante, anti-replay
-  (un codice/contatore usato una sola volta).
-- La chiave segreta viaggia solo in fase di enrollment e **non** viene mai
-  inviata a servizi esterni (niente QR di terze parti: inserimento manuale).
+  (un codice/contatore usato una sola volta), rate-limit failure + lockout
+  temporaneo (`mfa.staff.lockout.*`), verify transazionale (no race su 2 socket).
+- Il QR di enrollment è generato lato client da `qrcode.react` (SVG inline):
+  niente chiamate a servizi esterni → il secret non lascia mai il browser.
+  Sotto il QR c'è anche la chiave Base32 per inserimento manuale.
 - Enforcement lato server: comandi con permesso e azioni mod-tool (ban/kick/
   mute/warn/alert/tradelock) sono bloccati finché la sessione non è verificata.

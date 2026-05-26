@@ -1,3 +1,4 @@
+import { QRCodeSVG } from 'qrcode.react';
 import { FC, KeyboardEvent, useEffect, useState } from 'react';
 import { GetConnection, SendMessageComposer } from '../../api';
 import { Button, Column, Flex, NitroCardContentView, NitroCardHeaderView, NitroCardView, Text } from '../../common';
@@ -103,13 +104,15 @@ export const StaffMfaView: FC<{}> = props =>
                     { !enrolled &&
                         <Column gap={ 1 }>
                             <Text bold>Set up Google Authenticator</Text>
-                            <Text small>Open Google Authenticator, choose "Enter a setup key", and add this account key:</Text>
+                            <Text small>Scan this QR with Google Authenticator (or any TOTP app), then enter the 6-digit code below to finish enrollment.</Text>
+                            { !!otpauthUri &&
+                                <Flex alignItems="center" justifyContent="center" className="bg-white rounded p-2">
+                                    <QRCodeSVG value={ otpauthUri } size={ 180 } level="M" includeMargin={ false } />
+                                </Flex> }
+                            <Text small className="text-muted">Can&apos;t scan? Enter this key manually:</Text>
                             <Flex alignItems="center" justifyContent="center" className="bg-muted rounded p-1">
                                 <Text bold className="font-monospace" style={ { letterSpacing: '2px', wordBreak: 'break-all' } }>{ secret }</Text>
                             </Flex>
-                            { !!otpauthUri &&
-                                <Text small className="text-muted" style={ { wordBreak: 'break-all' } }>{ otpauthUri }</Text> }
-                            <Text small>Then enter the 6-digit code it shows to finish enrollment.</Text>
                         </Column> }
                     { enrolled &&
                         <Text>Enter the 6-digit code from your authenticator app to unlock staff powers.</Text> }

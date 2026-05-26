@@ -12,6 +12,9 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+
 public class RCONServerHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RCONServerHandler.class);
@@ -51,7 +54,13 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
             if (!authorized) {
                 String providedToken = (object.has("token") && !object.get("token").isJsonNull())
                         ? object.get("token").getAsString() : "";
-                authorized = requiredToken.equals(providedToken);
+                // Constant-time compare so an attacker cannot leak the token
+                // byte-by-byte from response timing (mostly mitigated by the IP
+                // allowlist, but if `rcon.allowed` ever widens — k8s pod range,
+                // CMS box — this is the line of defence).
+                authorized = MessageDigest.isEqual(
+                        requiredToken.getBytes(StandardCharsets.UTF_8),
+                        providedToken.getBytes(StandardCharsets.UTF_8));
             }
 
             if (!authorized) {

@@ -15,7 +15,21 @@ public final class Totp {
     private static final int STEP_SECONDS = 30;
     private static final int WINDOW = 1; // accept current +/- 1 step (clock skew tolerance)
     private static final String BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-    private static final SecureRandom RANDOM = new SecureRandom();
+    // Prefer SecureRandom.getInstanceStrong() (blocks until a strong source is
+    // available); only relevant the very first time generateSecret() is called.
+    // Fall back to default `new SecureRandom()` on platforms where strong sources
+    // are unavailable so enrollment can still proceed.
+    private static final SecureRandom RANDOM;
+
+    static {
+        SecureRandom r;
+        try {
+            r = SecureRandom.getInstanceStrong();
+        } catch (Exception e) {
+            r = new SecureRandom();
+        }
+        RANDOM = r;
+    }
 
     private Totp() {
     }
@@ -30,7 +44,7 @@ public final class Totp {
     /** otpauth:// URI for QR enrollment in Google Authenticator. */
     public static String provisioningUri(String issuer, String account, String base32Secret) {
         String label = urlEncode(issuer) + ":" + urlEncode(account);
-        return "otpauth://totp/" + label + "?secret=" + base32Secret + "&issuer=" + urlEncode(issuer) + "&digits=" + DIGITS + "&period=" + STEP_SECONDS;
+        return "otpauth://totp/" + label + "?secret=" + urlEncode(base32Secret) + "&issuer=" + urlEncode(issuer) + "&digits=" + DIGITS + "&period=" + STEP_SECONDS;
     }
 
     /** Validate a user-supplied 6-digit code against the secret, with +/- WINDOW tolerance. */

@@ -11,11 +11,12 @@ public class ModToolReleaseTicketEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         if (this.client.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL)) {
-            int count = this.packet.readInt();
+            // Bound from the client. `while (count != 0) count--` with count = -1 or
+            // Integer.MIN_VALUE iterates ~2 billion times before underflowing back to 0,
+            // burning the netty IO thread.
+            int count = Math.max(0, Math.min(this.packet.readInt(), 200));
 
-            while (count != 0) {
-                count--;
-
+            for (int i = 0; i < count; i++) {
                 int ticketId = this.packet.readInt();
 
                 ModToolIssue issue = Emulator.getGameEnvironment().getModToolManager().getTicket(ticketId);

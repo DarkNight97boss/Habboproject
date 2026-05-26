@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -73,6 +74,13 @@ public class WiredEffectGiveRespect extends InteractionWiredEffect {
             this.respects = Integer.parseInt(settings.getStringParam());
         } catch (Exception e) {
             return false;
+        }
+
+        // Cap unbounded respects — these progress the "RespectEarned" achievement
+        // which itself grants credits, making this a currency-inflation primitive.
+        if (gameClient == null || !gameClient.getHabbo().hasPermission(Permission.ACC_SUPERWIRED)) {
+            int cap = Emulator.getConfig().getInt("wired.max.respects", 100);
+            this.respects = Math.max(0, Math.min(this.respects, cap));
         }
 
         this.setDelay(settings.getDelay());

@@ -22,8 +22,24 @@ public class CraftingCraftItemEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         int craftingTable = this.packet.readInt();
-        HabboItem item = this.client.getHabbo().getHabboInfo().getCurrentRoom().getHabboItem(craftingTable);
+
+        // Null-guards: the previous code NPE'd if the user wasn't in a room or
+        // the table id pointed to a missing/non-crafting item, polluting the logs.
+        com.eu.habbo.habbohotel.rooms.Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+        if (room == null) {
+            this.client.sendResponse(new CraftingResultComposer(null));
+            return;
+        }
+        HabboItem item = room.getHabboItem(craftingTable);
+        if (item == null) {
+            this.client.sendResponse(new CraftingResultComposer(null));
+            return;
+        }
         CraftingAltar altar = Emulator.getGameEnvironment().getCraftingManager().getAltar(item.getBaseItem());
+        if (altar == null) {
+            this.client.sendResponse(new CraftingResultComposer(null));
+            return;
+        }
         CraftingRecipe recipe = altar.getRecipe(this.packet.readString());
 
         if (recipe != null) {
@@ -38,6 +54,16 @@ public class CraftingCraftItemEvent extends MessageHandler {
                     HabboItem habboItem = this.client.getHabbo().getInventory().getItemsComponent().getAndRemoveHabboItem(set.getKey());
 
                     if (habboItem == null) {
+                        // Rollback: a concurrent trade/another craft snatched an
+                        // ingredient mid-loop. Put back everything we already
+                        // removed, otherwise items vanish from inventory until
+                        // re-login.
+                        toRemove.forEachValue(restored -> {
+                            CraftingCraftItemEvent.this.client.getHabbo().getInventory().getItemsComponent().addItem(restored);
+                            return true;
+                        });
+                        this.client.sendResponse(new InventoryRefreshComposer());
+                        this.client.sendResponse(new CraftingResultComposer(null));
                         return;
                     }
 

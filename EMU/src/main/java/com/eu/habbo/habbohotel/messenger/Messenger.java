@@ -119,12 +119,32 @@ public class Messenger {
     }
 
     public static void makeFriendRequest(int userFrom, int userTo) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO messenger_friendrequests (user_to_id, user_from_id) VALUES (?, ?)")) {
+        // INSERT IGNORE relies on the UNIQUE KEY (user_to_id, user_from_id) added
+        // by sqlupdates/messenger_friendrequests_unique.sql. Without that key the
+        // method would still INSERT a duplicate; with it, duplicates are silently
+        // dropped — kills the friend-request spam/harassment vector.
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+             PreparedStatement statement = connection.prepareStatement("INSERT IGNORE INTO messenger_friendrequests (user_to_id, user_from_id) VALUES (?, ?)")) {
             statement.setInt(1, userTo);
             statement.setInt(2, userFrom);
             statement.executeUpdate();
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+        }
+    }
+
+    /** Returns true iff a pending friend request from userFrom to userTo exists. */
+    public static boolean friendRequestExists(int userFrom, int userTo) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT 1 FROM messenger_friendrequests WHERE user_from_id = ? AND user_to_id = ? LIMIT 1")) {
+            statement.setInt(1, userFrom);
+            statement.setInt(2, userTo);
+            try (java.sql.ResultSet rs = statement.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+            return false;
         }
     }
 

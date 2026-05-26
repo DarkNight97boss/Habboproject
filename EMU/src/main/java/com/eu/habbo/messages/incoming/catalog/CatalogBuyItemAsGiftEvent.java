@@ -301,6 +301,15 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                                             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
                                             return;
                                         }
+                                        // Anti-impersonation: only allow the buyer to gift guild furni for
+                                        // guilds they are actually a member of. Otherwise an attacker can
+                                        // mint guild gates / badges for any guild and gift them to a
+                                        // victim's room to abuse the visual identity.
+                                        int buyerId = this.client.getHabbo().getHabboInfo().getId();
+                                        if (Emulator.getGameEnvironment().getGuildManager().getGuildMember(guildId, buyerId) == null) {
+                                            this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                                            return;
+                                        }
                                         Emulator.getThreading().run(habboItem);
                                         Emulator.getGameEnvironment().getGuildManager().setGuild(habboItem, guildId);
                                         itemsList.add(habboItem);

@@ -1,4 +1,5 @@
-# Multi-stage Dockerfile per Arcturus Morningstar 3.5.5.
+# Multi-stage Dockerfile per Asteria Core 3.5.5
+# (motore: Arcturus Morningstar 3.5.5, GPL-3.0).
 #
 # Stage 1 (build): Maven con JDK 11 (cap delle dipendenze runtime).
 # Stage 2 (runtime): JRE 11 slim, niente Maven, niente sorgenti, niente shell tools

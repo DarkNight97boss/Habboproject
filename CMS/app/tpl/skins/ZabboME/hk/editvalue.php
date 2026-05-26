@@ -54,7 +54,7 @@ include "includes/header.php";
 						Rare Values Editor</div>	
 <?php
 $id = intval($_GET['id']);
-$existq = mysql_query("SELECT * FROM cms_values WHERE id = '$id'") or die(mysql_error());
+$existq = mysql_query("SELECT * FROM cms_values WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $exist = mysql_num_rows($existq);
 $values  = mysql_fetch_array($existq);
 if ($exist == 0) {
@@ -82,20 +82,20 @@ echo '
 										<strong>Error</strong> Please fill in all fields!
 									</div>';
 } else {
-mysql_query("UPDATE cms_values SET item_name = '$item_name' WHERE id = '$id'") or die(mysql_error());
-mysql_query("UPDATE cms_values SET item_credits = '$item_credits' WHERE id = '$id'") or die(mysql_error());
-mysql_query("UPDATE cms_values SET item_duckets = '$item_duckets' WHERE id = '$id'") or die(mysql_error());
-mysql_query("UPDATE cms_values SET item_diamonds = '$item_diamonds' WHERE id = '$id'") or die(mysql_error());
-mysql_query("UPDATE cms_values SET item_points = '$item_points' WHERE id = '$id'") or die(mysql_error());
-mysql_query("UPDATE cms_values SET item_total = '$item_total' WHERE id = '$id'") or die(mysql_error());
-mysql_query("UPDATE cms_values SET item_up = '$item_up' WHERE id = '$id'") or die(mysql_error());
-mysql_query("UPDATE cms_values SET item_drop = '$item_drop' WHERE id = '$id'") or die(mysql_error());
-mysql_query("UPDATE cms_values SET item_category = '$item_category' WHERE id = '$id'") or die(mysql_error());
-mysql_query("UPDATE cms_values SET added_date = '$added_date' WHERE id = '$id'") or die(mysql_error());
-mysql_query("UPDATE cms_values SET item_edited = '1' WHERE id = '$id'") or die(mysql_error());
-mysql_query("UPDATE cms_values SET added_by = '$userUsername' WHERE id = '$id'") or die(mysql_error());
-mysql_query("UPDATE cms_values SET user_id = '$userId' WHERE id = '$id'") or die(mysql_error());
-mysql_query("UPDATE cms_values SET user_look = '$userLook' WHERE id = '$id'") or die(mysql_error());
+mysql_query("UPDATE cms_values SET item_name = '$item_name' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE cms_values SET item_credits = '$item_credits' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE cms_values SET item_duckets = '$item_duckets' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE cms_values SET item_diamonds = '$item_diamonds' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE cms_values SET item_points = '$item_points' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE cms_values SET item_total = '$item_total' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE cms_values SET item_up = '$item_up' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE cms_values SET item_drop = '$item_drop' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE cms_values SET item_category = '$item_category' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE cms_values SET added_date = '$added_date' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE cms_values SET item_edited = '1' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE cms_values SET added_by = '$userUsername' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE cms_values SET user_id = '$userId' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE cms_values SET user_look = '$userLook' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 
 
 header("Refresh:0");

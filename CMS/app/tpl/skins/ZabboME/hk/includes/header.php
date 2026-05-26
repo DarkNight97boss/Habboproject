@@ -88,13 +88,13 @@ if (!$full)
 $string = array_slice($string, 0, 1);
 return $string ? implode(', ', $string) . ' ago' : 'just now';
 }
-$query1 = mysql_query("SELECT COUNT(*) AS stats1 FROM users_apps") or die(mysql_error());
+$query1 = mysql_query("SELECT COUNT(*) AS stats1 FROM users_apps") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $data1 = mysql_fetch_assoc($query1);
-$query13 = mysql_query("SELECT COUNT(*) AS stats13 FROM users_submissions") or die(mysql_error());
+$query13 = mysql_query("SELECT COUNT(*) AS stats13 FROM users_submissions") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $data12 = mysql_fetch_assoc($query13);
-$query2 = mysql_query("SELECT COUNT(*) AS stats2 FROM bug_reports WHERE status = '0'") or die(mysql_error());
+$query2 = mysql_query("SELECT COUNT(*) AS stats2 FROM bug_reports WHERE status = '0'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $data2 = mysql_fetch_assoc($query2);
-$query11 = mysql_query("SELECT COUNT(*) AS stats3 FROM cms_user_reports ") or die(mysql_error());
+$query11 = mysql_query("SELECT COUNT(*) AS stats3 FROM cms_user_reports ") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $data11 = mysql_fetch_assoc($query11);
 if ($hwuser['online'] == 1) {
 $aanwezug = '<div class="profile-usertitle-status"><span class="indicator label-success"></span>Online</div>';

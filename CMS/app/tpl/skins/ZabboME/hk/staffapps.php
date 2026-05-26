@@ -87,7 +87,7 @@ include "includes/header.php";
 </thead>
 <tbody>
 <?php
-$getApps = mysql_query("SELECT * FROM users_apps WHERE denied = '0' ORDER BY id DESC") or die(mysql_error());
+$getApps = mysql_query("SELECT * FROM users_apps WHERE denied = '0' ORDER BY id DESC") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 while ($apps = mysql_fetch_assoc($getApps)) {
 echo '
 												<tr>
@@ -123,7 +123,7 @@ echo '
 </thead>
 <tbody>
 <?php
-$getApps = mysql_query("SELECT * FROM users_apps WHERE denied = '1' ORDER BY id DESC") or die(mysql_error());
+$getApps = mysql_query("SELECT * FROM users_apps WHERE denied = '1' ORDER BY id DESC") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 while ($apps = mysql_fetch_assoc($getApps)) {
 echo '
 												<tr>
@@ -160,7 +160,7 @@ echo '
 </thead>
 <tbody>
 <?php
-$getApps = mysql_query("SELECT * FROM users_apps WHERE denied = '2' ORDER BY id DESC") or die(mysql_error());
+$getApps = mysql_query("SELECT * FROM users_apps WHERE denied = '2' ORDER BY id DESC") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 while ($apps = mysql_fetch_assoc($getApps)) {
 echo '
 												<tr>

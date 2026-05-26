@@ -21,7 +21,7 @@ function strip_tags_content($text, $tags = '', $invert = FALSE) {
   }
   return $text;
 }
-mysql_query("UPDATE users SET mail = '".strip_tags_content($acc_mail)."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+mysql_query("UPDATE users SET mail = '".strip_tags_content($acc_mail)."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 }
 ?>
 
@@ -29,7 +29,7 @@ mysql_query("UPDATE users SET mail = '".strip_tags_content($acc_mail)."' WHERE i
 if(isset($_POST['account']))
 	{
 	$acc_mail =  mysql_real_escape_string(filter($_POST['acc_mail']));
-	mysql_query("UPDATE users SET mail = '".$acc_mail."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die(mysql_error());
+	mysql_query("UPDATE users SET mail = '".$acc_mail."' WHERE id = '" . $_SESSION['user']['id'] . "'")or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 		$successMessage = '<div class="alert alert-success" style="text-align: justify;"><b></b><center><b>Your changes have successfully saved!</b></center></div>';
 
 	}

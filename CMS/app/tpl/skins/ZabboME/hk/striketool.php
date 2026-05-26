@@ -58,7 +58,7 @@ if (isset($_POST['strikes'])) {
 $strikes      = $_POST['strikes'];
 $strikereason = $_POST['strikereason'];
 $key          = filter($_POST['name']);
-$check = mysql_query("SELECT id,rank,strikes,strikereason FROM users WHERE username = '" . $key . "' OR id = '" . $key . "' LIMIT 1") or die(mysql_error());
+$check = mysql_query("SELECT id,rank,strikes,strikereason FROM users WHERE username = '" . $key . "' OR id = '" . $key . "' LIMIT 1") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 $exists = mysql_num_rows($check);
 $drow   = mysql_fetch_assoc($check);
 if ($exists > 0) {
@@ -66,8 +66,8 @@ if ($drow['rank'] >= 9) {
 echo ('<div class = "alert">You may not Strike an Owner!</div>');
 exit;
 } else {
-mysql_query("UPDATE users SET strikes = '" . $strikes . "' WHERE username = '" . $key . "' LIMIT 1") or die(mysql_error());
-mysql_query("UPDATE users SET strikereason = '" . $strikereason . "' WHERE username = '" . $key . "' LIMIT 1") or die(mysql_error());
+mysql_query("UPDATE users SET strikes = '" . $strikes . "' WHERE username = '" . $key . "' LIMIT 1") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+mysql_query("UPDATE users SET strikereason = '" . $strikereason . "' WHERE username = '" . $key . "' LIMIT 1") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 echo ('<div class="alert alert-success" align="center">Strike has been added.<meta http-equiv="refresh" content="0;url=striketool"/></div>');
 exit;
 }

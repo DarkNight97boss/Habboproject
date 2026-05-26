@@ -9,7 +9,7 @@ if(mysql_num_rows($getBan) == 0)
 $getInfo = mysql_fetch_assoc($getBan);
 if(time() > $getInfo['expire'])
 {
-	mysql_query("DELETE FROM `bans` WHERE `value` = '".$_SESSION['user']['username']."' OR `value` = '".$_SERVER['REMOTE_ADDR']."'") or die(mysql_error());
+	mysql_query("DELETE FROM `bans` WHERE `value` = '".$_SESSION['user']['username']."' OR `value` = '".$_SERVER['REMOTE_ADDR']."'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	header("Location: me");
 	exit;
 }

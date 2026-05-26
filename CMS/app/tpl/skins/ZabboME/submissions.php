@@ -35,7 +35,7 @@ $getLook = mysql_fetch_assoc($Look);
 						else
 						{
 						if(mysql_num_rows($sqlmax1) < 1){
-						mysql_query("INSERT INTO `users_submissions` (user_id,user,feedback,agree,timestamp,reply_sent,entry,room) VALUES ('".$_SESSION['user']['id']."', '".$_SESSION['user']['username']."', '".filter($_POST["feedback"])."', '".filter($_POST["agree"])."','".time($_POST["timestamp"])."', '".filter($_POST["reply_sent"])."', '".filter($_POST["entry"])."', '".filter($_POST["room"])."')") or die(mysql_error());
+						mysql_query("INSERT INTO `users_submissions` (user_id,user,feedback,agree,timestamp,reply_sent,entry,room) VALUES ('".$_SESSION['user']['id']."', '".$_SESSION['user']['username']."', '".filter($_POST["feedback"])."', '".filter($_POST["agree"])."','".time($_POST["timestamp"])."', '".filter($_POST["reply_sent"])."', '".filter($_POST["entry"])."', '".filter($_POST["room"])."')") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 						mysql_query("INSERT INTO users_submissions SET timestamp = '" . time() . "' WHERE timestamp = '' LIMIT 1");
 						mysql_query("INSERT INTO users_submissions SET reply_sent = '1' WHERE reply_sent = '0' LIMIT 1");
 	
@@ -61,7 +61,7 @@ $getLook = mysql_fetch_assoc($Look);
 						else
 						{
 						if(mysql_num_rows($sqlmax2) < 1){
-						mysql_query("INSERT INTO `users_submissions` (user_id,user,feedback,agree,timestamp,reply_sent,entry,room) VALUES ('".$_SESSION['user']['id']."', '".$_SESSION['user']['username']."', '".filter($_POST["feedback"])."', '".filter($_POST["agree"])."','".time($_POST["timestamp"])."', '".filter($_POST["reply_sent"])."', '".filter($_POST["entry"])."', '".filter($_POST["room"])."')") or die(mysql_error());
+						mysql_query("INSERT INTO `users_submissions` (user_id,user,feedback,agree,timestamp,reply_sent,entry,room) VALUES ('".$_SESSION['user']['id']."', '".$_SESSION['user']['username']."', '".filter($_POST["feedback"])."', '".filter($_POST["agree"])."','".time($_POST["timestamp"])."', '".filter($_POST["reply_sent"])."', '".filter($_POST["entry"])."', '".filter($_POST["room"])."')") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 						mysql_query("INSERT INTO users_submissions SET timestamp = '" . time() . "' WHERE timestamp = '' LIMIT 1");
 						mysql_query("INSERT INTO users_submissions SET reply_sent = '1' WHERE reply_sent = '0' LIMIT 1");
 	
@@ -212,7 +212,7 @@ $getLook = mysql_fetch_assoc($Look);
 						else
 						{
 						if(mysql_num_rows($sqlmax3) < 1){
-						mysql_query("INSERT INTO `users_submissions` (user_id,user,feedback,agree,timestamp,reply_sent,look,entry) VALUES ('".$_SESSION['user']['id']."', '".$_SESSION['user']['username']."', '".filter($_POST["feedback"])."', '".filter($_POST["agree"])."','".time($_POST["timestamp"])."', '".filter($_POST["reply_sent"])."', '".$getLook["look"]."', '".filter($_POST["entry"])."')") or die(mysql_error());
+						mysql_query("INSERT INTO `users_submissions` (user_id,user,feedback,agree,timestamp,reply_sent,look,entry) VALUES ('".$_SESSION['user']['id']."', '".$_SESSION['user']['username']."', '".filter($_POST["feedback"])."', '".filter($_POST["agree"])."','".time($_POST["timestamp"])."', '".filter($_POST["reply_sent"])."', '".$getLook["look"]."', '".filter($_POST["entry"])."')") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 						mysql_query("INSERT INTO users_submissions SET timestamp = '" . time() . "' WHERE timestamp = '' LIMIT 1");
 						mysql_query("INSERT INTO users_submissions SET reply_sent = '1' WHERE reply_sent = '0' LIMIT 1");
 	

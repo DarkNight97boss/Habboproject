@@ -68,7 +68,7 @@ include "includes/header.php";
 
 										<?php
 $id = intval($_GET['id']);
-$existq = mysql_query("SELECT * FROM cms_user_reports WHERE id = '$id'") or die(mysql_error());
+$existq = mysql_query("SELECT * FROM cms_user_reports WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 
 $exist = mysql_num_rows($existq);
 $news  = mysql_fetch_array($existq);
@@ -85,7 +85,7 @@ echo '
 										<strong>Error</strong> Please fill in all fields!
 									</div>';
 } else {
-mysql_query("UPDATE cms_user_reports SET status = '$status' WHERE id = '$id'") or die(mysql_error());
+mysql_query("UPDATE cms_user_reports SET status = '$status' WHERE id = '$id'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 header("Refresh:0");
 echo '
 									<div class="alert alert-success">

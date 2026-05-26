@@ -94,7 +94,7 @@ include "includes/header.php";
 	                        motto = '" . mysql_real_escape_string($_POST['motto']) . "',
 							account_locked = '" . mysql_real_escape_string($_POST['account_locked']) . "',
 							security_enabled = '" . mysql_real_escape_string($_POST['security_enabled']) . "',
-							pin = '" . mysql_real_escape_string($_POST['pin']) . "'	WHERE username = '" . mysql_real_escape_string($_POST['username_current']) . "'") or die(mysql_error());	                   
+							pin = '" . mysql_real_escape_string($_POST['pin']) . "'	WHERE username = '" . mysql_real_escape_string($_POST['username_current']) . "'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());	                   
 						   echo "<div class=\"alert alert-success\" style=\"margin-top: 45px;font-size: 15px;margin-left: 27px; width: fit-content;font-weight: bolder;color: #ffffff;background-color: #38b904;border-color: #4f861f;\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\" style=\"float: right; margin-left: 5px;font-size: 35px;margin-top: -7px;border-radius: 140px;background: #00000000;\">×</button>User <b>" . strip_tags($_POST['username_current']) . "</b> successfully updated!</div>";
 	                    }
 						
@@ -114,7 +114,7 @@ include "includes/header.php";
 	                        motto = '" . mysql_real_escape_string($_POST['motto']) . "',
 							account_locked = '" . mysql_real_escape_string($_POST['account_locked']) . "',
 							security_enabled = '" . mysql_real_escape_string($_POST['security_enabled']) . "',
-							pin = '" . mysql_real_escape_string($_POST['pin']) . "'	WHERE username = '" . mysql_real_escape_string($_POST['username_current']) . "'") or die(mysql_error());
+							pin = '" . mysql_real_escape_string($_POST['pin']) . "'	WHERE username = '" . mysql_real_escape_string($_POST['username_current']) . "'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	                        echo "<div class=\"alert alert-success\" style=\"margin-top: 45px;font-size: 15px;margin-left: 27px; width: fit-content;font-weight: bolder;color: #ffffff;background-color: #38b904;border-color: #4f861f;\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\" style=\"float: right; margin-left: 5px;font-size: 35px;margin-top: -7px;border-radius: 140px;background: #00000000;\">×</button>User <b>" . strip_tags($_POST['username_current']) . "</b> successfully updated!</div>";
 							//doCommand("reload_user_rank", "".$u['id']."");
 							//doCommand("reload_user_vip", "".$u['id']."");
@@ -127,9 +127,9 @@ include "includes/header.php";
 						{
 							$user = mysql_query("SELECT * FROM users WHERE username = '". mysql_real_escape_string($_POST['username_current']) ."'");
 							while ($u = mysql_fetch_array($user)){
-							$delete_user = mysql_query("DELETE FROM `users` WHERE `username` = '" . mysql_real_escape_string($_POST['username']) . "'") or die(mysql_error());
-							$delete_items = mysql_query("DELETE FROM `items` WHERE `user_id` = '" . $u['id'] . "'") or die(mysql_error());
-							$delete_rooms = mysql_query("DELETE FROM `rooms` WHERE `owner` = '" . $u['id'] . "'") or die(mysql_error());
+							$delete_user = mysql_query("DELETE FROM `users` WHERE `username` = '" . mysql_real_escape_string($_POST['username']) . "'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+							$delete_items = mysql_query("DELETE FROM `items` WHERE `user_id` = '" . $u['id'] . "'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+							$delete_rooms = mysql_query("DELETE FROM `rooms` WHERE `owner` = '" . $u['id'] . "'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	                        echo "<div class=\"alert alert-danger\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\">×</button>User <b>" . strip_tags($_POST['username_current']) . "</b> successfully deleted!</div>";
 							}
 						}
@@ -138,9 +138,9 @@ include "includes/header.php";
 							$user = mysql_query("SELECT * FROM users WHERE username = '". mysql_real_escape_string($_POST['username_current']) ."'");
 							while ($u = mysql_fetch_array($user)){
 							doCommand("disconnect", "".$u['id']."");
-							$delete_user = mysql_query("DELETE FROM `users` WHERE `username` = '" . mysql_real_escape_string($_POST['username']) . "'") or die(mysql_error());
-							$delete_items = mysql_query("DELETE FROM `items` WHERE `user_id` = '" . $u['id'] . "'") or die(mysql_error());
-							$delete_rooms = mysql_query("DELETE FROM `rooms` WHERE `owner` = '" . $u['id'] . "'") or die(mysql_error());
+							$delete_user = mysql_query("DELETE FROM `users` WHERE `username` = '" . mysql_real_escape_string($_POST['username']) . "'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+							$delete_items = mysql_query("DELETE FROM `items` WHERE `user_id` = '" . $u['id'] . "'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
+							$delete_rooms = mysql_query("DELETE FROM `rooms` WHERE `owner` = '" . $u['id'] . "'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 	                        echo "<div class=\"alert alert-danger\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\">×</button>User <b>" . strip_tags($_POST['username_current']) . "</b> successfully deleted!</div>";
 							}
 						}

@@ -205,7 +205,7 @@ background-image: url(/img/close.png);
 						<h5><font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14.5px;margin-left: 15px;"><img src="{cdnurl}/images/icons/friends.gif" class="ripping" style="position: relative;top: -2px;left: -10px;"> <?php echo mysql_num_rows($getFriends)+mysql_num_rows($getFriends2); ?> Friends!</font></font></h5>
 						<h5><font style="vertical-align: inherit;"><?php
 $getuip = mysql_fetch_assoc(mysql_query("SELECT ip_current FROM users WHERE id ='".$user['id']."' LIMIT 1"));
-$isBanned = mysql_query("SELECT null FROM bans WHERE ip='".$getuip['ip_current']."' OR user_id='".$getuip['id']."' LIMIT 1") or die(mysql_error());
+$isBanned = mysql_query("SELECT null FROM bans WHERE ip='".$getuip['ip_current']."' OR user_id='".$getuip['id']."' LIMIT 1") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 if(mysql_num_rows($isBanned) > 0)
 {
 	echo '<font style="vertical-align: inherit;font-size: 14.5px;margin-left: 15px;"><img src="{cdnurl}/images/icons/x.gif" class="ripping" style="position: relative;top: -2px;left: -10px;"><span style="color:#fb6363"><b>Banned</b>!</span></p>';
@@ -533,10 +533,10 @@ echo "$OnlineStatus ";
 			{
 			if(isset($_POST['post_comment']) && $_SESSION['user']['id'] != null)
 			{
-			$getArticle = mysql_query("SELECT * FROM `profile_comments` WHERE `profile_id` = '".$user['id']."'") or die(mysql_error());
+			$getArticle = mysql_query("SELECT * FROM `profile_comments` WHERE `profile_id` = '".$user['id']."'") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 			if (mysql_num_rows($getArticle) > 0)
 			{
-			$articleInfo = mysql_fetch_array($getArticle) or die(mysql_error());
+			$articleInfo = mysql_fetch_array($getArticle) or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 
 			if (mysql_num_rows($checkBan) > 0)
 			{
@@ -548,14 +548,14 @@ echo "$OnlineStatus ";
 			$errorMessage = 'You have left a field empty.';
 			}else
 			{
-			$checkInfo = mysql_query("SELECT * FROM `profile_comments` WHERE `sender` = '".$_SESSION['user']['id']."' ORDER BY `id` DESC LIMIT 1") or die(mysql_error());
+			$checkInfo = mysql_query("SELECT * FROM `profile_comments` WHERE `sender` = '".$_SESSION['user']['id']."' ORDER BY `id` DESC LIMIT 1") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 			$newsInfo = mysql_fetch_array($checkInfo);
 			if($newsInfo['sender'] == $_SESSION['user']['id'])
 			{
 			$errorMessage = 'Hey! The last comment was from you, let somebody else comment first!';
 			}else
 			{
-			mysql_query("INSERT INTO `profile_comments` (`profile_id`, `sender`, `comment`, `posted_on`) VALUES ('".$user['id']."', '".$_SESSION['user']['id']."', '".filter($_POST['comment'])."', '".date("M j, Y g:i A")."')") or die(mysql_error());
+			mysql_query("INSERT INTO `profile_comments` (`profile_id`, `sender`, `comment`, `posted_on`) VALUES ('".$user['id']."', '".$_SESSION['user']['id']."', '".filter($_POST['comment'])."', '".date("M j, Y g:i A")."')") or die("SQL ERROR at ".__FILE__.":".__LINE__." => ".mysql_error());
 			$successMessage = 'You have successfully left a comment.';
 			}
 			}

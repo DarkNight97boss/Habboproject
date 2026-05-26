@@ -137,7 +137,10 @@ class engine
 	
 	final public function query($sql)
 	{
-		return $this->mysql['query']($sql, $this->connection) or die(mysql_error());
+		// TEMP debug: surface the failing query so we can locate the call site.
+		// Revert to `die(mysql_error())` after the bug is fixed.
+		return $this->mysql['query']($sql, $this->connection)
+			or die("SQL ERROR: " . mysql_error() . " | QUERY: <pre style='white-space:pre-wrap;font-family:monospace;'>" . htmlspecialchars($sql) . "</pre>");
 	}
 	
 	final public function num_rows($sql)

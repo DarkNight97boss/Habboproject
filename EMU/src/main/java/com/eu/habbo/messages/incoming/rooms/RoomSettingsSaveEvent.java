@@ -56,6 +56,10 @@ public class RoomSettingsSaveEvent extends MessageHandler {
                 }
 
                 int usersMax = this.packet.readInt();
+                // Hard-clamp: an attacker could otherwise set Integer.MAX_VALUE
+                // (room accepts unlimited users -> OOM / DoS) or a negative.
+                usersMax = Math.max(0, Math.min(usersMax,
+                        com.eu.habbo.Emulator.getConfig().getInt("hotel.room.users_max.hard_cap", 250)));
                 int categoryId = this.packet.readInt();
                 StringBuilder tags = new StringBuilder();
                 Set<String> uniqueTags = new HashSet<>();

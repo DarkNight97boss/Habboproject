@@ -23,17 +23,19 @@ public class OpenRecycleBoxEvent extends MessageHandler {
             return;
 
         if (room.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER) || room.hasRights(this.client.getHabbo())) {
-            HabboItem item = room.getHabboItem(this.packet.readInt());
+            int itemId = this.packet.readInt();
+            // Atomically claim the item from the room map BEFORE any reward logic.
+            // Two parallel opens (e.g. double click / duplicated socket) would
+            // otherwise both pass getHabboItem != null and both INSERT a reward.
+            HabboItem item = room.removeHabboItemIfPresent(itemId);
 
             if (item == null) return;
             if (item.getUserId() != this.client.getHabbo().getHabboInfo().getId()) return;
 
+            // From this point the item is no longer in room.roomItems, so a
+            // concurrent open of the same itemId will see null and return.
             if (item instanceof InteractionGift) {
-                // Remove the gift from the room up-front so a duplicate/concurrent open can't process it
-                // twice during the OpenGift delay (anti item-duplication).
-                room.removeHabboItem(item);
                 room.sendComposer(new RemoveFloorItemComposer(item).compose());
-
                 Emulator.getThreading().run(new OpenGift(item, this.client.getHabbo(), room), item.getBaseItem().getName().contains("present_wrap") ? 1000 : 0);
             } else {
                 if (item.getExtradata().length() == 0) {
@@ -50,8 +52,6 @@ public class OpenRecycleBoxEvent extends MessageHandler {
                     }
                 }
                 room.sendComposer(new RemoveFloorItemComposer(item).compose());
-                room.removeHabboItem(item);
-
             }
 
             if (item.getRoomId() == 0) {

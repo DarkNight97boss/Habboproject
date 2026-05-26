@@ -23,9 +23,13 @@ public class AnswerPollEvent extends MessageHandler {
         int count = this.packet.readInt();
         if (count < 0 || count > 100) return; // bound client-supplied count to prevent OOM/DoS
         String answers = this.packet.readString();
-        
+        // Amplification fix: even with count<=100, a 400KB `answers` would
+        // allocate ~40MB in the loop below and persist a huge TEXT column.
+        if (answers != null && answers.length() > 256) return;
+
         StringBuilder answer = new StringBuilder();
         for (int i = 0; i < count; i++) {
+            if (answer.length() > 8192) break; // hard cap on the assembled answer
             answer.append(":").append(answers);
         }
 

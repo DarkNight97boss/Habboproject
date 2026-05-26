@@ -156,6 +156,10 @@ public class BotSaveSettingsEvent extends MessageHandler {
 
                     if(motto.length() > Emulator.getConfig().getInt("motto.max_length", 38)) break;
 
+                    // Bot motto is visible to every visitor; case 5 (name) already filters
+                    // through the wordfilter, so apply the same here to plug the bypass.
+                    motto = Emulator.getGameEnvironment().getWordFilter().filter(motto, this.client.getHabbo());
+
                     bot.setMotto(motto);
                     bot.needsUpdate(true);
                     room.sendComposer(new RoomUsersComposer(bot).compose());

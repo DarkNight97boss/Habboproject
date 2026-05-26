@@ -111,10 +111,33 @@ public class ConfigurationManager {
         }
     }
 
+    /**
+     * Security-relevant keys whose value changes are audited so any silent toggle
+     * from `:reload_config` (or a CMS-side SQLi residual) is forensically visible.
+     */
+    private static final String[] SECURITY_AUDITED_KEYS = new String[] {
+            "mfa.staff.enabled", "mfa.staff.min_rank",
+            "fingerprint.enabled", "watchdog.enabled",
+            "rcon.allowed", "rcon.token", "rcon.allow.public",
+            "websockets.whitelist",
+            "io.proxy.protocol.enabled", "io.proxy.protocol.trusted",
+            "sso.ticket.ttl.seconds",
+            "subscriptions.hc.payday.query",
+            "audit.signing.key",
+            "plugins.enforce_allowlist", "plugins.allowed"
+    };
+
     public void loadFromDatabase() {
         LOGGER.info("Loading configuration from database...");
 
         long millis = System.currentTimeMillis();
+
+        // Snapshot before reload — we audit any DELTA on security-relevant keys.
+        java.util.Map<String, String> before = new java.util.HashMap<>();
+        for (String key : SECURITY_AUDITED_KEYS) {
+            before.put(key, this.properties.getProperty(key, ""));
+        }
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); Statement statement = connection.createStatement()) {
             if (statement.execute("SELECT * FROM emulator_settings")) {
                 try (ResultSet set = statement.getResultSet()) {
@@ -125,6 +148,23 @@ public class ConfigurationManager {
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+        }
+
+        // Audit security deltas. Skip on cold start (when `before` is full of empty
+        // strings AND we now have non-empty values) — that's just initial load, not a change.
+        for (String key : SECURITY_AUDITED_KEYS) {
+            String old = before.get(key);
+            String now = this.properties.getProperty(key, "");
+            boolean coldStart = (old == null || old.isEmpty());
+            if (!coldStart && !old.equals(now)) {
+                try {
+                    String redactedOld = key.contains("token") || key.contains("signing.key") ? "***" : old;
+                    String redactedNow = key.contains("token") || key.contains("signing.key") ? "***" : now;
+                    com.eu.habbo.core.AuditLog.record(0, "system", "CONFIG_SECURITY_DELTA",
+                            key, "old=" + redactedOld + " new=" + redactedNow);
+                    LOGGER.warn("Security-relevant config changed: {} (audited)", key);
+                } catch (Throwable ignored) {}
+            }
         }
 
         LOGGER.info("Configuration -> loaded! ({} MS)", System.currentTimeMillis() - millis);

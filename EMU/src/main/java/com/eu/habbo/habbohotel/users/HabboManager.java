@@ -105,17 +105,46 @@ public class HabboManager {
         Habbo habbo;
         int userId = 0;
 
+        // SSO TTL: if the CMS persisted `auth_ticket_issued_at` (column added by
+        // sqlupdates/sso_ticket_ttl.sql), reject tickets older than `sso.ticket.ttl.seconds`
+        // (default 60s). A read-only DB leak / stolen CMS-side ticket therefore expires
+        // before an attacker can race the legitimate login. Column = 0 means the CMS has
+        // not been updated yet — fall back to legacy behaviour (no TTL) to keep this
+        // change deployable without forcing a coordinated CMS release.
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT id FROM users WHERE auth_ticket = ? LIMIT 1")) {
+             PreparedStatement statement = connection.prepareStatement("SELECT id, auth_ticket_issued_at FROM users WHERE auth_ticket = ? LIMIT 1")) {
             statement.setString(1, sso);
             try (ResultSet s = statement.executeQuery()) {
                 if (s.next()) {
+                    int issuedAt;
+                    try {
+                        issuedAt = s.getInt("auth_ticket_issued_at");
+                    } catch (SQLException missingColumn) {
+                        issuedAt = 0;
+                    }
+                    int ttl = Emulator.getConfig().getInt("sso.ticket.ttl.seconds", 60);
+                    if (issuedAt > 0 && ttl > 0 && Emulator.getIntUnixTimestamp() - issuedAt > ttl) {
+                        LOGGER.warn("Rejected stale SSO ticket for user {} (age {}s > ttl {}s)",
+                                s.getInt("id"), Emulator.getIntUnixTimestamp() - issuedAt, ttl);
+                        return null;
+                    }
                     userId = s.getInt("id");
                 }
             }
             statement.close();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            // Fall back to the legacy query if the new column does not yet exist
+            // (DBA hasn't run the migration). Logging at DEBUG only — the user-visible
+            // behaviour is unchanged.
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                 PreparedStatement statement = connection.prepareStatement("SELECT id FROM users WHERE auth_ticket = ? LIMIT 1")) {
+                statement.setString(1, sso);
+                try (ResultSet s = statement.executeQuery()) {
+                    if (s.next()) userId = s.getInt("id");
+                }
+            } catch (SQLException ex) {
+                LOGGER.error("Caught SQL exception", ex);
+            }
         }
 
         habbo = this.cloneCheck(userId);
@@ -142,13 +171,22 @@ public class HabboManager {
                         Emulator.getPluginManager().fireEvent(new UserRegisteredEvent(habbo));
                     }
 
-                    if (!Emulator.debugging) {
+                    // Always blank the ticket — the previous behaviour kept it alive when
+                    // `debug.mode=1`, which is a foot-gun on staging if the build is ever
+                    // exposed. The debug branch was a convenience that masked the security
+                    // property of single-use SSO, so we drop it here.
+                    try (PreparedStatement stmt = connection.prepareStatement("UPDATE users SET auth_ticket = ?, auth_ticket_issued_at = 0 WHERE id = ? LIMIT 1")) {
+                        stmt.setString(1, "");
+                        stmt.setInt(2, habbo.getHabboInfo().getId());
+                        stmt.execute();
+                    } catch (SQLException e) {
+                        // Fall back if the new column isn't present yet.
                         try (PreparedStatement stmt = connection.prepareStatement("UPDATE users SET auth_ticket = ? WHERE id = ? LIMIT 1")) {
                             stmt.setString(1, "");
                             stmt.setInt(2, habbo.getHabboInfo().getId());
                             stmt.execute();
-                        } catch (SQLException e) {
-                            LOGGER.error("Caught SQL exception", e);
+                        } catch (SQLException ex) {
+                            LOGGER.error("Caught SQL exception", ex);
                         }
                     }
                 }

@@ -6,6 +6,8 @@ import com.eu.habbo.habbohotel.modtool.ModToolSanctionItem;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctions;
 import com.eu.habbo.habbohotel.modtool.ScripterManager;
 import com.eu.habbo.habbohotel.permissions.Permission;
+import com.eu.habbo.habbohotel.users.HabboInfo;
+import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import gnu.trove.map.hash.THashMap;
 
@@ -50,6 +52,13 @@ public class ModToolSanctionBanEvent extends MessageHandler {
                 duration = Emulator.getIntUnixTimestamp();
         }
         if (this.client.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL)) {
+            // Refuse to ban a user whose rank is >= the actor's (works for offline targets too).
+            HabboInfo targetInfo = HabboManager.getOfflineHabboInfo(userId);
+            if (targetInfo != null && targetInfo.getRank() != null
+                    && targetInfo.getRank().getId() >= this.client.getHabbo().getHabboInfo().getRank().getId()) {
+                return;
+            }
+
             ModToolSanctions modToolSanctions = Emulator.getGameEnvironment().getModToolSanctions();
 
             if (Emulator.getConfig().getBoolean("hotel.sanctions.enabled")) {

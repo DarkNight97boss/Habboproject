@@ -1,11 +1,13 @@
 package com.eu.habbo.networking;
 
+import com.eu.habbo.Emulator;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.FixedRecvByteBufAllocator;
+import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
@@ -46,6 +48,23 @@ public abstract class Server {
         this.serverBootstrap.childOption(ChannelOption.SO_RCVBUF, 4096);
         this.serverBootstrap.childOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(4096));
         this.serverBootstrap.childOption(ChannelOption.ALLOCATOR, new UnpooledByteBufAllocator(false));
+
+        // Backpressure: cap each channel's outbound buffer. Without this a single
+        // slow-loris-on-read client (TCP window 0, never reads) lets the server
+        // queue megabytes of broadcasts (room/hotel alerts) and eventually OOMs.
+        // When the queue reaches `high`, `isWritable()` flips false; senders check
+        // it and either close or drop. The water marks are configurable.
+        int low = 256 * 1024;
+        int high = 1 << 20;
+        try {
+            low = Emulator.getConfig().getInt("networking.write.low_watermark.bytes", low);
+            high = Emulator.getConfig().getInt("networking.write.high_watermark.bytes", high);
+        } catch (Throwable ignored) {
+            // Config may not be available yet on early bootstrap; fall back to defaults.
+        }
+        if (low < 1024) low = 1024;
+        if (high <= low) high = low * 4;
+        this.serverBootstrap.childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(low, high));
     }
 
     public void connect() {

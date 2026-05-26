@@ -114,7 +114,15 @@ public class CalendarManager {
     public void claimCalendarReward(Habbo habbo, String campaignName, int day, boolean force) {
         CalendarCampaign campaign = calendarCampaigns.values().stream().filter(cc -> Objects.equals(cc.getName(), campaignName)).findFirst().orElse(null);
         if(campaign == null) return;
-        if (habbo.getHabboStats().calendarRewardsClaimed.stream().noneMatch(claimed -> claimed.getCampaignId() == campaign.getId() && claimed.getDay() == day)) {
+
+        // Anti-dupe: check-then-act under a per-user lock so two parallel
+        // packets claiming the same (campaign, day) cannot both pass noneMatch.
+        // The DB-side UNIQUE KEY uq_claim (user_id,campaign_id,day) is the
+        // belt-and-suspenders defence (INSERT IGNORE drops the second row).
+        synchronized (habbo.getHabboStats().calendarRewardsClaimed) {
+            if (!habbo.getHabboStats().calendarRewardsClaimed.stream().noneMatch(claimed -> claimed.getCampaignId() == campaign.getId() && claimed.getDay() == day)) {
+                return;
+            }
 
             Set<Integer> keys = campaign.getRewards().keySet();
             Map<Integer, Integer> rewards = new THashMap<>();
@@ -124,7 +132,7 @@ public class CalendarManager {
             int random = rewards.get(rand);
             CalendarRewardObject object = campaign.getRewards().get(random);
             if (object == null) return;
-                int daysBetween = (int) DAYS.between(new Timestamp(campaign.getStartTimestamp() * 1000L).toInstant(), new Date().toInstant());
+            int daysBetween = (int) DAYS.between(new Timestamp(campaign.getStartTimestamp() * 1000L).toInstant(), new Date().toInstant());
             if(daysBetween >= 0 && daysBetween <= campaign.getTotalDays()) {
                 int diff = (daysBetween - day);
                 if ((((diff <= 2 || !campaign.getLockExpired()) && diff >= 0) || (force && habbo.hasPermission("acc_calendar_force")))) {
@@ -133,19 +141,28 @@ public class CalendarManager {
                         return;
                     }
 
-                    habbo.getHabboStats().calendarRewardsClaimed.add(new CalendarRewardClaimed(habbo.getHabboInfo().getId(), campaign.getId(), day, object.getId(), new Timestamp(System.currentTimeMillis())));
-                    habbo.getClient().sendResponse(new AdventCalendarProductComposer(true, object, habbo));
-                    object.give(habbo);
-                    try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO calendar_rewards_claimed (user_id, campaign_id, day, reward_id, timestamp) VALUES (?, ?, ?, ?, ?)")) {
+                    // Persist FIRST (with INSERT IGNORE so a parallel attempt on
+                    // another node would lose the race); only on success grant
+                    // the reward, so we never give the prize twice.
+                    boolean persisted;
+                    try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                         PreparedStatement statement = connection.prepareStatement(
+                                 "INSERT IGNORE INTO calendar_rewards_claimed (user_id, campaign_id, day, reward_id, timestamp) VALUES (?, ?, ?, ?, ?)")) {
                         statement.setInt(1, habbo.getHabboInfo().getId());
                         statement.setInt(2, campaign.getId());
                         statement.setInt(3, day);
                         statement.setInt(4, object.getId());
                         statement.setInt(5, Emulator.getIntUnixTimestamp());
-                        statement.execute();
+                        persisted = statement.executeUpdate() > 0;
                     } catch (SQLException e) {
                         LOGGER.error("Caught SQL exception", e);
+                        return;
                     }
+                    if (!persisted) return; // someone else won the race
+
+                    habbo.getHabboStats().calendarRewardsClaimed.add(new CalendarRewardClaimed(habbo.getHabboInfo().getId(), campaign.getId(), day, object.getId(), new Timestamp(System.currentTimeMillis())));
+                    habbo.getClient().sendResponse(new AdventCalendarProductComposer(true, object, habbo));
+                    object.give(habbo);
                 }
             }
         }

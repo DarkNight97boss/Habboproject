@@ -567,10 +567,16 @@ public class ModToolManager {
     }
 
     public boolean unban(String username) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE bans INNER JOIN users ON bans.user_id = users.id SET ban_expire = ?, ban_reason = CONCAT('" + Emulator.getTexts().getValue("unbanned") + ": ', ban_reason) WHERE users.username LIKE ? AND ban_expire > ?")) {
+        // SECURITY: the "unbanned" text comes from the `emulator_texts` DB table; if it was
+        // concatenated directly into the SQL string (the previous behaviour) any write
+        // foothold on that table — e.g. a CMS SQLi residual — could pivot to a generic
+        // SQL injection here. Bind it as a parameter so the query template stays static.
+        String prefix = Emulator.getTexts().getValue("unbanned");
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE bans INNER JOIN users ON bans.user_id = users.id SET ban_expire = ?, ban_reason = CONCAT(?, ': ', ban_reason) WHERE users.username LIKE ? AND ban_expire > ?")) {
             statement.setInt(1, Emulator.getIntUnixTimestamp());
-            statement.setString(2, username);
-            statement.setInt(3, Emulator.getIntUnixTimestamp());
+            statement.setString(2, prefix);
+            statement.setString(3, username);
+            statement.setInt(4, Emulator.getIntUnixTimestamp());
             statement.execute();
             return statement.getUpdateCount() > 0;
         } catch (SQLException e) {

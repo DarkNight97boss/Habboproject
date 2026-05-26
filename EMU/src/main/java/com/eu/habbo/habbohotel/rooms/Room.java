@@ -2719,95 +2719,113 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
 
   public void removeHabboItem(HabboItem item) {
+    if (item == null) return;
+    HabboItem i;
+    synchronized (this.roomItems) {
+      i = this.roomItems.remove(item.getId());
+    }
+    if (i != null) {
+      this.performItemRemovalCleanup(item);
+    }
+  }
+
+  /**
+   * Atomically removes an item from the room and returns it if (and only if) the
+   * caller was the one to remove it. Used as an exclusive-claim primitive to prevent
+   * TOCTOU duplications (two concurrent handlers both passing a non-atomic
+   * "if (room.getHabboItem(id) != null)" check and double-granting a reward).
+   */
+  public HabboItem removeHabboItemIfPresent(int id) {
+    HabboItem item;
+    synchronized (this.roomItems) {
+      item = this.roomItems.remove(id);
+    }
     if (item != null) {
+      this.performItemRemovalCleanup(item);
+    }
+    return item;
+  }
 
-      HabboItem i;
-      synchronized (this.roomItems) {
-        i = this.roomItems.remove(item.getId());
-      }
+  private void performItemRemovalCleanup(HabboItem item) {
+    synchronized (this.furniOwnerCount) {
+      synchronized (this.furniOwnerNames) {
+        int count = this.furniOwnerCount.get(item.getUserId());
 
-      if (i != null) {
-        synchronized (this.furniOwnerCount) {
-          synchronized (this.furniOwnerNames) {
-            int count = this.furniOwnerCount.get(i.getUserId());
-
-            if (count > 1) {
-              this.furniOwnerCount.put(i.getUserId(), count - 1);
-            } else {
-              this.furniOwnerCount.remove(i.getUserId());
-              this.furniOwnerNames.remove(i.getUserId());
-            }
-          }
-        }
-
-        if (item instanceof ICycleable) {
-          this.roomSpecialTypes.removeCycleTask((ICycleable) item);
-        }
-
-        if (item instanceof InteractionBattleBanzaiTeleporter) {
-          this.roomSpecialTypes.removeBanzaiTeleporter((InteractionBattleBanzaiTeleporter) item);
-        } else if (item instanceof InteractionWiredTrigger) {
-          this.roomSpecialTypes.removeTrigger((InteractionWiredTrigger) item);
-        } else if (item instanceof InteractionWiredEffect) {
-          this.roomSpecialTypes.removeEffect((InteractionWiredEffect) item);
-        } else if (item instanceof InteractionWiredCondition) {
-          this.roomSpecialTypes.removeCondition((InteractionWiredCondition) item);
-        } else if (item instanceof InteractionWiredExtra) {
-          this.roomSpecialTypes.removeExtra((InteractionWiredExtra) item);
-        } else if (item instanceof InteractionRoller) {
-          this.roomSpecialTypes.removeRoller((InteractionRoller) item);
-        } else if (item instanceof InteractionGameScoreboard) {
-          this.roomSpecialTypes.removeScoreboard((InteractionGameScoreboard) item);
-        } else if (item instanceof InteractionGameGate) {
-          this.roomSpecialTypes.removeGameGate((InteractionGameGate) item);
-        } else if (item instanceof InteractionGameTimer) {
-          this.roomSpecialTypes.removeGameTimer((InteractionGameTimer) item);
-        } else if (item instanceof InteractionFreezeExitTile) {
-          this.roomSpecialTypes.removeFreezeExitTile((InteractionFreezeExitTile) item);
-        } else if (item instanceof InteractionNest) {
-          this.roomSpecialTypes.removeNest((InteractionNest) item);
-        } else if (item instanceof InteractionPetDrink) {
-          this.roomSpecialTypes.removePetDrink((InteractionPetDrink) item);
-        } else if (item instanceof InteractionPetFood) {
-          this.roomSpecialTypes.removePetFood((InteractionPetFood) item);
-        } else if (item instanceof InteractionMoodLight) {
-          this.roomSpecialTypes.removeUndefined(item);
-        } else if (item instanceof InteractionPyramid) {
-          this.roomSpecialTypes.removeUndefined(item);
-        } else if (item instanceof InteractionMusicDisc) {
-          this.roomSpecialTypes.removeUndefined(item);
-        } else if (item instanceof InteractionBattleBanzaiSphere) {
-          this.roomSpecialTypes.removeUndefined(item);
-        } else if (item instanceof InteractionTalkingFurniture) {
-          this.roomSpecialTypes.removeUndefined(item);
-        } else if (item instanceof InteractionWaterItem) {
-          this.roomSpecialTypes.removeUndefined(item);
-        } else if (item instanceof InteractionWater) {
-          this.roomSpecialTypes.removeUndefined(item);
-        } else if (item instanceof InteractionMuteArea) {
-          this.roomSpecialTypes.removeUndefined(item);
-        } else if (item instanceof InteractionTagPole) {
-          this.roomSpecialTypes.removeUndefined(item);
-        } else if (item instanceof InteractionTagField) {
-          this.roomSpecialTypes.removeUndefined(item);
-        } else if (item instanceof InteractionJukeBox) {
-          this.roomSpecialTypes.removeUndefined(item);
-        } else if (item instanceof InteractionPetBreedingNest) {
-          this.roomSpecialTypes.removeUndefined(item);
-        } else if (item instanceof InteractionBlackHole) {
-          this.roomSpecialTypes.removeUndefined(item);
-        } else if (item instanceof InteractionWiredHighscore) {
-          this.roomSpecialTypes.removeUndefined(item);
-        } else if (item instanceof InteractionStickyPole) {
-          this.roomSpecialTypes.removeUndefined(item);
-        } else if (item instanceof WiredBlob) {
-          this.roomSpecialTypes.removeUndefined(item);
-        } else if (item instanceof InteractionTent) {
-          this.roomSpecialTypes.removeUndefined(item);
-        } else if (item instanceof InteractionSnowboardSlope) {
-          this.roomSpecialTypes.removeUndefined(item);
+        if (count > 1) {
+          this.furniOwnerCount.put(item.getUserId(), count - 1);
+        } else {
+          this.furniOwnerCount.remove(item.getUserId());
+          this.furniOwnerNames.remove(item.getUserId());
         }
       }
+    }
+
+    if (item instanceof ICycleable) {
+      this.roomSpecialTypes.removeCycleTask((ICycleable) item);
+    }
+
+    if (item instanceof InteractionBattleBanzaiTeleporter) {
+      this.roomSpecialTypes.removeBanzaiTeleporter((InteractionBattleBanzaiTeleporter) item);
+    } else if (item instanceof InteractionWiredTrigger) {
+      this.roomSpecialTypes.removeTrigger((InteractionWiredTrigger) item);
+    } else if (item instanceof InteractionWiredEffect) {
+      this.roomSpecialTypes.removeEffect((InteractionWiredEffect) item);
+    } else if (item instanceof InteractionWiredCondition) {
+      this.roomSpecialTypes.removeCondition((InteractionWiredCondition) item);
+    } else if (item instanceof InteractionWiredExtra) {
+      this.roomSpecialTypes.removeExtra((InteractionWiredExtra) item);
+    } else if (item instanceof InteractionRoller) {
+      this.roomSpecialTypes.removeRoller((InteractionRoller) item);
+    } else if (item instanceof InteractionGameScoreboard) {
+      this.roomSpecialTypes.removeScoreboard((InteractionGameScoreboard) item);
+    } else if (item instanceof InteractionGameGate) {
+      this.roomSpecialTypes.removeGameGate((InteractionGameGate) item);
+    } else if (item instanceof InteractionGameTimer) {
+      this.roomSpecialTypes.removeGameTimer((InteractionGameTimer) item);
+    } else if (item instanceof InteractionFreezeExitTile) {
+      this.roomSpecialTypes.removeFreezeExitTile((InteractionFreezeExitTile) item);
+    } else if (item instanceof InteractionNest) {
+      this.roomSpecialTypes.removeNest((InteractionNest) item);
+    } else if (item instanceof InteractionPetDrink) {
+      this.roomSpecialTypes.removePetDrink((InteractionPetDrink) item);
+    } else if (item instanceof InteractionPetFood) {
+      this.roomSpecialTypes.removePetFood((InteractionPetFood) item);
+    } else if (item instanceof InteractionMoodLight) {
+      this.roomSpecialTypes.removeUndefined(item);
+    } else if (item instanceof InteractionPyramid) {
+      this.roomSpecialTypes.removeUndefined(item);
+    } else if (item instanceof InteractionMusicDisc) {
+      this.roomSpecialTypes.removeUndefined(item);
+    } else if (item instanceof InteractionBattleBanzaiSphere) {
+      this.roomSpecialTypes.removeUndefined(item);
+    } else if (item instanceof InteractionTalkingFurniture) {
+      this.roomSpecialTypes.removeUndefined(item);
+    } else if (item instanceof InteractionWaterItem) {
+      this.roomSpecialTypes.removeUndefined(item);
+    } else if (item instanceof InteractionWater) {
+      this.roomSpecialTypes.removeUndefined(item);
+    } else if (item instanceof InteractionMuteArea) {
+      this.roomSpecialTypes.removeUndefined(item);
+    } else if (item instanceof InteractionTagPole) {
+      this.roomSpecialTypes.removeUndefined(item);
+    } else if (item instanceof InteractionTagField) {
+      this.roomSpecialTypes.removeUndefined(item);
+    } else if (item instanceof InteractionJukeBox) {
+      this.roomSpecialTypes.removeUndefined(item);
+    } else if (item instanceof InteractionPetBreedingNest) {
+      this.roomSpecialTypes.removeUndefined(item);
+    } else if (item instanceof InteractionBlackHole) {
+      this.roomSpecialTypes.removeUndefined(item);
+    } else if (item instanceof InteractionWiredHighscore) {
+      this.roomSpecialTypes.removeUndefined(item);
+    } else if (item instanceof InteractionStickyPole) {
+      this.roomSpecialTypes.removeUndefined(item);
+    } else if (item instanceof WiredBlob) {
+      this.roomSpecialTypes.removeUndefined(item);
+    } else if (item instanceof InteractionTent) {
+      this.roomSpecialTypes.removeUndefined(item);
+    } else if (item instanceof InteractionSnowboardSlope) {
+      this.roomSpecialTypes.removeUndefined(item);
     }
   }
 

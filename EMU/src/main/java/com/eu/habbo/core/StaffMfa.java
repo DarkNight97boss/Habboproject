@@ -158,50 +158,122 @@ public final class StaffMfa {
      * time) and stores the used counter to block immediate replay. Returns true
      * iff the code is valid. The caller is responsible for setting the session's
      * elevated flag and auditing.
+     *
+     * Hardenings on top of the original implementation:
+     *   <ul>
+     *     <li>Transactional SELECT…FOR UPDATE + UPDATE so two parallel sockets
+     *         submitting the same valid code cannot both elevate (one would have
+     *         observed lastCounter == matched and rejected).</li>
+     *     <li>Per-account failure rate-limit + temporary lockout, so the 6-digit
+     *         code space (≈333k effective entropy with ±1 window) cannot be
+     *         brute-forced by scripting many short-lived sockets.</li>
+     *   </ul>
      */
     public static boolean verify(int userId, String code) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+        int maxFailures = Math.max(1, Emulator.getConfig().getInt("mfa.staff.lockout.max_failures", 5));
+        int windowSec = Math.max(1, Emulator.getConfig().getInt("mfa.staff.lockout.window.seconds", 300));
+        int lockoutSec = Math.max(1, Emulator.getConfig().getInt("mfa.staff.lockout.duration.seconds", 900));
+        int now = Emulator.getIntUnixTimestamp();
+
+        Connection connection = null;
+        try {
+            connection = Emulator.getDatabase().getDataSource().getConnection();
+            connection.setAutoCommit(false);
+
             String secret = null;
             long lastCounter = 0;
-            try (PreparedStatement ps = connection.prepareStatement("SELECT secret, last_counter FROM staff_mfa WHERE user_id = ?")) {
+            int failCount = 0;
+            int failWindowStart = 0;
+            int lockedUntil = 0;
+
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "SELECT secret, last_counter, fail_count, fail_window_start, locked_until FROM staff_mfa WHERE user_id = ? FOR UPDATE")) {
                 ps.setInt(1, userId);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         secret = rs.getString("secret");
                         lastCounter = rs.getLong("last_counter");
+                        failCount = rs.getInt("fail_count");
+                        failWindowStart = rs.getInt("fail_window_start");
+                        lockedUntil = rs.getInt("locked_until");
                     }
                 }
             }
 
             if (secret == null || secret.isEmpty()) {
+                connection.commit();
+                return false;
+            }
+
+            // Honour an active lockout regardless of code validity.
+            if (lockedUntil > now) {
+                connection.commit();
                 return false;
             }
 
             long matched = Totp.verifyAndGetCounter(secret, code);
-            if (matched < 0) {
-                return false;
+            // Single-use code (replay protection).
+            boolean ok = matched >= 0 && matched > lastCounter;
+
+            if (ok) {
+                int affected;
+                try (PreparedStatement ps = connection.prepareStatement(
+                        "UPDATE staff_mfa SET enrolled = 1, enrolled_at = IF(enrolled_at = 0, ?, enrolled_at), " +
+                                "last_counter = ?, last_used_at = ?, fail_count = 0, fail_window_start = 0, locked_until = 0 " +
+                                "WHERE user_id = ? AND last_counter < ?")) {
+                    ps.setInt(1, now);
+                    ps.setLong(2, matched);
+                    ps.setInt(3, now);
+                    ps.setInt(4, userId);
+                    ps.setLong(5, matched);
+                    affected = ps.executeUpdate();
+                }
+                connection.commit();
+                // affected == 0 means a parallel verify won the race for this code → treat as fail.
+                if (affected == 0) {
+                    LOGGER.warn("StaffMfa concurrent code reuse rejected for user {} (counter {})", userId, matched);
+                    return false;
+                }
+                return true;
             }
 
-            // Replay protection: a code (counter) can only be consumed once.
-            if (matched <= lastCounter) {
-                LOGGER.warn("StaffMfa replay/late code rejected for user {} (counter {} <= {})", userId, matched, lastCounter);
-                return false;
-            }
+            // Failure path: increment fail counter; rotate window if it expired; lock if we hit the cap.
+            int newWindowStart = (failWindowStart == 0 || now - failWindowStart > windowSec) ? now : failWindowStart;
+            int newFailCount = (newWindowStart == now) ? 1 : (failCount + 1);
+            int newLockedUntil = (newFailCount >= maxFailures) ? (now + lockoutSec) : lockedUntil;
 
             try (PreparedStatement ps = connection.prepareStatement(
-                    "UPDATE staff_mfa SET enrolled = 1, enrolled_at = IF(enrolled_at = 0, ?, enrolled_at), " +
-                            "last_counter = ?, last_used_at = ? WHERE user_id = ?")) {
-                int now = Emulator.getIntUnixTimestamp();
-                ps.setInt(1, now);
-                ps.setLong(2, matched);
-                ps.setInt(3, now);
+                    "UPDATE staff_mfa SET fail_count = ?, fail_window_start = ?, locked_until = ? WHERE user_id = ?")) {
+                ps.setInt(1, newFailCount);
+                ps.setInt(2, newWindowStart);
+                ps.setInt(3, newLockedUntil);
                 ps.setInt(4, userId);
                 ps.executeUpdate();
             }
-            return true;
+            connection.commit();
+
+            if (newLockedUntil > now) {
+                LOGGER.warn("StaffMfa user {} locked out until {} after {} failures", userId, newLockedUntil, newFailCount);
+                AuditLog.record(userId, "", "STAFF_MFA_LOCKED", "user:" + userId,
+                        "fail_count=" + newFailCount + " until=" + newLockedUntil);
+            }
+            if (matched < 0) {
+                return false;
+            }
+            // matched >= 0 but <= lastCounter: replay attempt.
+            LOGGER.warn("StaffMfa replay/late code rejected for user {} (counter {} <= {})", userId, matched, lastCounter);
+            return false;
         } catch (Exception e) {
+            try { if (connection != null) connection.rollback(); } catch (Exception ignored) {}
             LOGGER.error("StaffMfa.verify failed for user {}", userId, e);
             return false;
+        } finally {
+            try {
+                if (connection != null) {
+                    connection.setAutoCommit(true);
+                    connection.close();
+                }
+            } catch (Exception ignored) {}
         }
     }
 }

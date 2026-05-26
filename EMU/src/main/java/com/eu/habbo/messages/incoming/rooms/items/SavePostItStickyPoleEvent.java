@@ -24,10 +24,18 @@ public class SavePostItStickyPoleEvent extends MessageHandler {
         if (itemId == -1234) {
             if (this.client.getHabbo().hasPermission("cmd_multi")) {
                 String[] commands = this.packet.readString().split("\r");
+                // Cap the number of commands per packet — without this, a malicious
+                // (or compromised) cmd_multi holder can dispatch thousands of commands
+                // synchronously on the netty IO thread, blocking the server.
+                int max = Math.min(commands.length, 20);
 
-                for (String command : commands) {
-                    command = command.replace("<br>", "\r");
+                for (int i = 0; i < max; i++) {
+                    String command = commands[i].replace("<br>", "\r");
                     CommandHandler.handleCommand(this.client, command);
+                }
+                if (commands.length > max) {
+                    LOGGER.warn("cmd_multi truncated: user {} sent {} commands, executed {}",
+                            this.client.getHabbo().getHabboInfo().getUsername(), commands.length, max);
                 }
             } else {
                 LOGGER.info("Scripter Alert! {} | {}", this.client.getHabbo().getHabboInfo().getUsername(), this.packet.readString());

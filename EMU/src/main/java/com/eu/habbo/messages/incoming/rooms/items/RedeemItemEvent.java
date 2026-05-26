@@ -94,10 +94,12 @@ public class RedeemItemEvent extends MessageHandler {
                     if (furniRedeemEvent.amount < 1)
                         return;
 
-                    if (room.getHabboItem(item.getId()) == null) // plugins may cause a lag between which time the item can be removed from the room
+                    // Atomic exclusive-claim — only the winning concurrent handler
+                    // proceeds. Prevents TOCTOU double-credit when the same redeemable
+                    // is double-clicked / replayed in parallel.
+                    if (room.removeHabboItemIfPresent(item.getId()) == null)
                         return;
 
-                    room.removeHabboItem(item);
                     room.sendComposer(new RemoveFloorItemComposer(item).compose());
                     RoomTile t = room.getLayout().getTile(item.getX(), item.getY());
                     t.setStackHeight(room.getStackHeight(item.getX(), item.getY(), false));

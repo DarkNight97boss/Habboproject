@@ -24,7 +24,18 @@ public class GuildConfirmRemoveMemberEvent extends MessageHandler {
 
         if (guild != null) {
             GuildMember member = Emulator.getGameEnvironment().getGuildManager().getGuildMember(guild, this.client.getHabbo());
-            if (userId == this.client.getHabbo().getHabboInfo().getId() || guild.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || (member != null && member.getRank().equals(GuildRank.OWNER) || (member != null && (member.getRank().equals(GuildRank.OWNER) || member.getRank().equals(GuildRank.ADMIN))))) {
+            int callerId = this.client.getHabbo().getHabboInfo().getId();
+            boolean isPriv = userId == callerId
+                    || guild.getOwnerId() == callerId
+                    || (member != null && (member.getRank().equals(GuildRank.OWNER) || member.getRank().equals(GuildRank.ADMIN)));
+            if (isPriv) {
+                // Anti-info-leak: confirm the target IS actually in the guild before
+                // returning its furni count (an admin could otherwise enumerate any
+                // user-id's furni count in their room).
+                GuildMember target = Emulator.getGameEnvironment().getGuildManager().getGuildMember(guildId, userId);
+                if (target == null) {
+                    return;
+                }
                 Room room = Emulator.getGameEnvironment().getRoomManager().loadRoom(guild.getRoomId());
                 int count = 0;
                 if (room != null) {

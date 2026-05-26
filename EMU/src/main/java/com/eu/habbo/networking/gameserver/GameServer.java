@@ -48,6 +48,25 @@ public class GameServer extends Server {
                     ch.pipeline().addLast(new GameClientMessageLogger());
                 }
                 ch.pipeline().addLast("idleEventHandler", new IdleTimeoutHandler(30, 60));
+                // Hard reader-side backstop: if no packet (NOT just pongs) is received
+                // for `networking.idle.read.seconds` (default 600s) the channel is closed.
+                // The existing IdleTimeoutHandler resets on PongEvent and would never trip
+                // against a client sending only synthetic pongs; this catches that case.
+                int readIdle = Emulator.getConfig().getInt("networking.idle.read.seconds", 600);
+                if (readIdle > 0) {
+                    ch.pipeline().addLast("readIdle", new io.netty.handler.timeout.IdleStateHandler(readIdle, 0, 0));
+                    ch.pipeline().addLast("readIdleClose", new io.netty.channel.ChannelInboundHandlerAdapter() {
+                        @Override
+                        public void userEventTriggered(io.netty.channel.ChannelHandlerContext ctx, Object evt) throws Exception {
+                            if (evt instanceof io.netty.handler.timeout.IdleStateEvent &&
+                                    ((io.netty.handler.timeout.IdleStateEvent) evt).state() == io.netty.handler.timeout.IdleState.READER_IDLE) {
+                                ctx.close();
+                                return;
+                            }
+                            super.userEventTriggered(ctx, evt);
+                        }
+                    });
+                }
                 ch.pipeline().addLast(new GameMessageRateLimit());
                 ch.pipeline().addLast(new GameMessageHandler());
 

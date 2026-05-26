@@ -29,8 +29,23 @@ public class CompostMonsterplantEvent extends MessageHandler {
             if (pet instanceof MonsterplantPet) {
                 if (pet.getUserId() == this.client.getHabbo().getHabboInfo().getId()) {
                     if (((MonsterplantPet) pet).isDead()) {
-                        Item baseItem = Emulator.getGameEnvironment().getItemManager().getItem("mnstr_compost");
+                        // Atomic claim — the DELETE acts as our exclusive lock on the
+                        // dead pet so two parallel compost requests cannot each create
+                        // a mnstr_compost (the pet is idempotently deletable but the
+                        // create+addHabboItem branch would run twice).
+                        int affected = 0;
+                        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("DELETE FROM users_pets WHERE id = ? LIMIT 1")) {
+                            statement.setInt(1, pet.getId());
+                            affected = statement.executeUpdate();
+                        } catch (SQLException e) {
+                            LOGGER.error("Caught SQL exception", e);
+                            return;
+                        }
+                        if (affected != 1) {
+                            return; // a concurrent thread already claimed this pet
+                        }
 
+                        Item baseItem = Emulator.getGameEnvironment().getItemManager().getItem("mnstr_compost");
                         if (baseItem != null) {
                             HabboItem compost = Emulator.getGameEnvironment().getItemManager().createItem(pet.getUserId(), baseItem, 0, 0, "");
                             compost.setX(pet.getRoomUnit().getX());
@@ -42,12 +57,6 @@ public class CompostMonsterplantEvent extends MessageHandler {
                         }
 
                         pet.removeFromRoom();
-                        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("DELETE FROM users_pets WHERE id = ? LIMIT 1")) {
-                            statement.setInt(1, pet.getId());
-                            statement.executeUpdate();
-                        } catch (SQLException e) {
-                            LOGGER.error("Caught SQL exception", e);
-                        }
                     }
                 }
             }

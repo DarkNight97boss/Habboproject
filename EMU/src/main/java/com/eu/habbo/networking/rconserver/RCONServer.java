@@ -65,6 +65,25 @@ public class RCONServer extends Server {
         this.addRCONMessage("changeusername", ChangeUsername.class);
 
         Collections.addAll(this.allowedAdresses, Emulator.getConfig().getValue("rcon.allowed", "127.0.0.1").split(";"));
+
+        // SECURITY: shout loudly if RCON is allowed from a non-loopback IP — the protocol
+        // exposes `executecommand` (full hotel RCE), so any wildcard / 0.0.0.0 / public IP
+        // entry is almost certainly a misconfiguration. Refuse to start unless
+        // `rcon.allow.public=true` is explicit.
+        boolean publicOptIn = Emulator.getConfig().getBoolean("rcon.allow.public", false);
+        for (String addr : this.allowedAdresses) {
+            String trimmed = addr == null ? "" : addr.trim();
+            if (trimmed.isEmpty()) continue;
+            boolean isLoopback = trimmed.equals("127.0.0.1") || trimmed.equals("::1") || trimmed.equalsIgnoreCase("localhost");
+            boolean isWildcard = trimmed.equals("0.0.0.0") || trimmed.equals("*") || trimmed.equals("::");
+            if (isWildcard && !publicOptIn) {
+                LOGGER.error("RCON allow-list contains wildcard {} — refusing to start. Set rcon.allow.public=true ONLY if you have a real reason and a firewall in front.", trimmed);
+                throw new IllegalStateException("rcon.allowed contains a wildcard without rcon.allow.public=true");
+            }
+            if (!isLoopback && !isWildcard) {
+                LOGGER.warn("RCON allow-list contains non-loopback IP {} — make sure your firewall restricts the RCON port ({}). executecommand = remote code execution.", trimmed, port);
+            }
+        }
     }
 
     @Override
@@ -97,7 +116,11 @@ public class RCONServer extends Server {
                 result = gson.toJson(rcon, RCONMessage.class);
 
                 if (Emulator.debugging) {
-                    LOGGER.debug("RCON Data {} RCON Result {}", body, result);
+                    // Truncate to keep PII (usernames, motto, look) and credentials-bearing
+                    // bodies (giveCredits/setRank) bounded if logs are ever shipped externally.
+                    String safeBody = body == null ? "" : (body.length() > 256 ? body.substring(0, 256) + "...(truncated)" : body);
+                    String safeResult = result == null ? "" : (result.length() > 256 ? result.substring(0, 256) + "...(truncated)" : result);
+                    LOGGER.debug("RCON Data {} RCON Result {}", safeBody, safeResult);
                 }
 
                 return result;

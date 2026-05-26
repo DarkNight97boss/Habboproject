@@ -27,10 +27,16 @@ public class PurchaseTargetOfferEvent extends MessageHandler {
 
             if (purchase != null) {
                 amount = Math.min(offer.getPurchaseLimit() - purchase.getAmount(), amount);
+                // The purchase-limit clamp can drive `amount` to 0 (or negative) when the
+                // user has already maxed out — must validate BEFORE persisting the counter
+                // and BEFORE looking up the catalog item (which used to NPE on its own).
+                if (amount <= 0) return;
+
                 int now = Emulator.getIntUnixTimestamp();
                 if (offer.getExpirationTime() > now) {
-                    purchase.update(amount, now);
                     CatalogItem item = Emulator.getGameEnvironment().getCatalogManager().getCatalogItem(offer.getCatalogItem());
+                    if (item == null) return;
+                    purchase.update(amount, now);
                     if (item.isLimited()) {
                         amount = 1;
                     }

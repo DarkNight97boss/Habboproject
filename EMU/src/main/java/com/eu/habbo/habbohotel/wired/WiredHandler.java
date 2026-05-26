@@ -387,6 +387,17 @@ public class WiredHandler {
     }
 
     public static boolean getReward(Habbo habbo, WiredEffectGiveReward wiredBox) {
+        // Serialise all reward decisions for a given wired box. Without this,
+        // two concurrent triggers (teleport spam, roller, two-step bot) both
+        // read row_count == 0, both pass LIMIT_ONCE, both INSERT — same user
+        // claims the prize twice. Contention is negligible (a single box
+        // fires at most a handful of times per second).
+        synchronized (wiredBox) {
+            return getRewardLocked(habbo, wiredBox);
+        }
+    }
+
+    private static boolean getRewardLocked(Habbo habbo, WiredEffectGiveReward wiredBox) {
         if (wiredBox.limit > 0) {
             if (wiredBox.limit - wiredBox.given == 0) {
                 habbo.getClient().sendResponse(new WiredRewardAlertComposer(WiredRewardAlertComposer.LIMITED_NO_MORE_AVAILABLE));

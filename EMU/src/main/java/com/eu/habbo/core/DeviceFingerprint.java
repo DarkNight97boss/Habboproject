@@ -77,6 +77,13 @@ public final class DeviceFingerprint {
      * Records the fingerprint for the current session and triggers a
      * multi-account alert (audit log) if the same hash already belongs to a
      * different user inside the alert window.
+     *
+     * Anti-frame-up: the client-supplied fingerprintHash is XOR-mixed with a
+     * server-trusted component (machineId — set by the client at connection time
+     * but persisted server-side and tied to this socket). Replaying a victim's
+     * canvas+UA bundle from a different machine therefore cannot collide with
+     * the victim's stored hash, so the attacker cannot forge a
+     * MULTIACCOUNT_DETECTED alert naming an arbitrary user.
      */
     public static void record(GameClient client, String fingerprintHash, String userAgent) {
         if (client == null || client.getHabbo() == null || client.getHabbo().getHabboInfo() == null) return;
@@ -89,14 +96,54 @@ public final class DeviceFingerprint {
         int now = Emulator.getIntUnixTimestamp();
         String uaTrunc = userAgent == null ? "" : (userAgent.length() > 510 ? userAgent.substring(0, 510) : userAgent);
 
+        // Re-hash including the server-trusted machineId, so a stolen canvas-bundle
+        // cannot replay-match another user's fingerprint.
+        String effectiveHash = mixServerSalt(fingerprintHash, machineId);
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            // Per-user row cap: refuse to insert a brand-new fingerprint if this
+            // user already has too many distinct ones (an attacker rotating one
+            // byte of `screen` per submission would otherwise bloat the table
+            // unboundedly for a single account).
+            int perUserCap = Emulator.getConfig().getInt("fingerprint.max_per_user", 50);
+            boolean rowAlreadyExists;
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "SELECT 1 FROM user_fingerprints WHERE user_id = ? AND fingerprint_hash = ? LIMIT 1")) {
+                ps.setInt(1, userId);
+                ps.setString(2, effectiveHash);
+                try (ResultSet rs = ps.executeQuery()) {
+                    rowAlreadyExists = rs.next();
+                }
+            }
+            if (!rowAlreadyExists) {
+                int distinctRows;
+                try (PreparedStatement ps = connection.prepareStatement(
+                        "SELECT COUNT(*) FROM user_fingerprints WHERE user_id = ?")) {
+                    ps.setInt(1, userId);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        distinctRows = rs.next() ? rs.getInt(1) : 0;
+                    }
+                }
+                if (distinctRows >= perUserCap) {
+                    // Cap reached — update last_seen on the most-recent existing row instead.
+                    try (PreparedStatement ps = connection.prepareStatement(
+                            "UPDATE user_fingerprints SET last_seen = ?, seen_count = seen_count + 1 " +
+                                    "WHERE user_id = ? ORDER BY last_seen DESC LIMIT 1")) {
+                        ps.setInt(1, now);
+                        ps.setInt(2, userId);
+                        ps.executeUpdate();
+                    }
+                    return;
+                }
+            }
+
             try (PreparedStatement ps = connection.prepareStatement(
                     "INSERT INTO user_fingerprints (user_id, fingerprint_hash, ip, machine_id, user_agent, first_seen, last_seen, seen_count) " +
                             "VALUES (?, ?, ?, ?, ?, ?, ?, 1) " +
                             "ON DUPLICATE KEY UPDATE last_seen = VALUES(last_seen), seen_count = seen_count + 1, " +
                             "ip = VALUES(ip), machine_id = VALUES(machine_id), user_agent = VALUES(user_agent)")) {
                 ps.setInt(1, userId);
-                ps.setString(2, fingerprintHash);
+                ps.setString(2, effectiveHash);
                 ps.setString(3, ip == null ? "" : ip);
                 ps.setString(4, machineId);
                 ps.setString(5, uaTrunc);
@@ -109,10 +156,27 @@ public final class DeviceFingerprint {
             int minUsers = Emulator.getConfig().getInt("fingerprint.alert_min_users", 2);
             int cutoff = now - windowDays * 24 * 3600;
 
+            // Threshold check first via COUNT(DISTINCT) so the alert cannot be
+            // hidden by an attacker spawning > LIMIT_50 throwaway rows.
+            int distinct;
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "SELECT COUNT(DISTINCT user_id) FROM user_fingerprints WHERE fingerprint_hash = ? AND last_seen >= ?")) {
+                ps.setString(1, effectiveHash);
+                ps.setInt(2, cutoff);
+                try (ResultSet rs = ps.executeQuery()) {
+                    distinct = rs.next() ? rs.getInt(1) : 0;
+                }
+            }
+            if (distinct < minUsers) {
+                return;
+            }
+
+            // For the audit detail, sample the most recently-seen linked users.
             List<Integer> linked = new ArrayList<>();
             try (PreparedStatement ps = connection.prepareStatement(
-                    "SELECT DISTINCT user_id FROM user_fingerprints WHERE fingerprint_hash = ? AND last_seen >= ? LIMIT 50")) {
-                ps.setString(1, fingerprintHash);
+                    "SELECT user_id, MAX(last_seen) AS ls FROM user_fingerprints WHERE fingerprint_hash = ? AND last_seen >= ? " +
+                            "GROUP BY user_id ORDER BY ls DESC LIMIT 50")) {
+                ps.setString(1, effectiveHash);
                 ps.setInt(2, cutoff);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
@@ -121,13 +185,31 @@ public final class DeviceFingerprint {
                 }
             }
 
-            if (linked.size() >= minUsers) {
-                AuditLog.record(userId, username, "MULTIACCOUNT_DETECTED",
-                        "fp:" + fingerprintHash.substring(0, 16),
-                        "users=" + linked + " ip=" + (ip == null ? "" : ip) + " mid=" + machineId);
-            }
+            AuditLog.record(userId, username, "MULTIACCOUNT_DETECTED",
+                    "fp:" + effectiveHash.substring(0, 16),
+                    "distinct=" + distinct + " sample=" + linked + " ip=" + (ip == null ? "" : ip) + " mid=" + machineId);
         } catch (Exception e) {
             LOGGER.error("DeviceFingerprint.record failed for user {}", userId, e);
+        }
+    }
+
+    /**
+     * Re-hashes the client-supplied fingerprint together with a server-trusted salt
+     * (machineId), so a replayed canvas bundle from a different machine cannot
+     * collide with another user's hash. We use SHA-256 again so the result keeps the
+     * 64-hex-character shape the schema expects.
+     */
+    private static String mixServerSalt(String clientHash, String machineSalt) {
+        try {
+            String composite = clientHash + "|" + (machineSalt == null ? "" : machineSalt);
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(composite.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder(digest.length * 2);
+            for (byte b : digest) {
+                hex.append(String.format("%02x", b & 0xFF));
+            }
+            return hex.toString();
+        } catch (Exception e) {
+            return clientHash;
         }
     }
 

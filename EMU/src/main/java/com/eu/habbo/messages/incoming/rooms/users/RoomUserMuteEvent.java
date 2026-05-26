@@ -22,6 +22,12 @@ public class RoomUserMuteEvent extends MessageHandler {
                 Habbo habbo = room.getHabbo(userId);
 
                 if (habbo != null) {
+                    // Same rank-target guard as ModToolSanctionMuteEvent / MuteCommand:
+                    // a junior staff member must not be able to mute a higher-rank user
+                    // via the per-user mute button.
+                    if (habbo.getHabboInfo().getRank().getId() >= this.client.getHabbo().getHabboInfo().getRank().getId()) {
+                        return;
+                    }
                     room.muteHabbo(habbo, minutes);
                     habbo.getClient().sendResponse(new MutedWhisperComposer(minutes * 60));
                     AchievementManager.progressAchievement(this.client.getHabbo(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("SelfModMuteSeen"));

@@ -29,7 +29,16 @@ public class GuildAcceptMembershipEvent extends MessageHandler {
 
         if (guild != null) {
             GuildMember groupMember = Emulator.getGameEnvironment().getGuildManager().getGuildMember(guild, this.client.getHabbo());
-            if (userId == this.client.getHabbo().getHabboInfo().getId() || guild.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || groupMember.getRank().equals(GuildRank.ADMIN) || groupMember.getRank().equals(GuildRank.OWNER) || this.client.getHabbo().hasPermission(Permission.ACC_GUILD_ADMIN)) {
+            // Restructured so `groupMember.getRank()` only evaluates when groupMember
+            // is non-null. The old expression was a guaranteed NPE when a non-member
+            // (or a stranger) sent this packet against a guild they don't own —
+            // effectively a per-handler crash primitive.
+            int callerId = this.client.getHabbo().getHabboInfo().getId();
+            boolean isPriv = userId == callerId
+                    || guild.getOwnerId() == callerId
+                    || (groupMember != null && (groupMember.getRank().equals(GuildRank.ADMIN) || groupMember.getRank().equals(GuildRank.OWNER)))
+                    || this.client.getHabbo().hasPermission(Permission.ACC_GUILD_ADMIN);
+            if (isPriv) {
                 if (habbo != null) {
                     if (habbo.getHabboStats().hasGuild(guild.getId())) {
                         this.client.sendResponse(new GuildAcceptMemberErrorComposer(guild.getId(), GuildAcceptMemberErrorComposer.ALREADY_ACCEPTED));

@@ -130,9 +130,20 @@ public abstract class InteractionWired extends InteractionDefault {
         this.userExecutionCache.put((long)roomUnitId, timestamp);
     }
 
+    // Hard caps for the two client-driven counts inside a Wired save packet. Legit
+    // wired UIs never set more than a handful of int params or items; the bounds
+    // are deliberately generous. Without them, a `count = Integer.MAX_VALUE` either
+    // immediately OOMs (intParamCount * 4 bytes) or burns CPU/GC on each shot via
+    // NegativeArraySizeException + retry by attackers.
+    private static final int MAX_INT_PARAMS = 256;
+    private static final int MAX_ITEM_IDS = 1000;
+
     public static WiredSettings readSettings(ClientMessage packet, boolean isEffect)
     {
         int intParamCount = packet.readInt();
+        if (intParamCount < 0 || intParamCount > MAX_INT_PARAMS) {
+            return new WiredSettings(new int[0], "", new int[0], -1);
+        }
         int[] intParams = new int[intParamCount];
 
         for(int i = 0; i < intParamCount; i++)
@@ -143,6 +154,9 @@ public abstract class InteractionWired extends InteractionDefault {
         String stringParam = packet.readString();
 
         int itemCount = packet.readInt();
+        if (itemCount < 0 || itemCount > MAX_ITEM_IDS) {
+            return new WiredSettings(intParams, stringParam, new int[0], -1);
+        }
         int[] itemIds = new int[itemCount];
 
         for(int i = 0; i < itemCount; i++)

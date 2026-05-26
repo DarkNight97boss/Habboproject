@@ -1,7 +1,8 @@
 # ============================================================
-#  AVVIO STACK PULITO
+#  ASTERIA CORE — Avvio stack di sviluppo
 #  - MariaDB (XAMPP)        : 3306   (DB: ms)
-#  - Arcturus MS 3.5.5      : 3000 game / 3001 rcon / 2096 WS(nitro)
+#  - Asteria Core 3.5.5     : 3000 game / 3001 rcon / 2096 WS(nitro)
+#    [motore: Arcturus Morningstar 3.5.5, GPL-3.0]
 #  - Client Nitro (statico) : 8090   (cartella client-dist)
 #
 #  Uso:  powershell -ExecutionPolicy Bypass -File start_clean_stack.ps1
@@ -21,10 +22,13 @@ function Test-Port($p){ [bool](Get-NetTCPConnection -State Listen -LocalPort $p 
 if (Test-Port 3306) { Write-Host "[OK] MariaDB gia' attivo" }
 else { Write-Host "[..] Avvio MariaDB..."; Start-Process -FilePath $MYSQLD -ArgumentList '--defaults-file=C:\xampp\mysql\bin\my.ini','--standalone' -WindowStyle Hidden; Start-Sleep 6 }
 
-# --- Emulatore Arcturus MS ---
-if (Test-Port 2096) { Write-Host "[OK] Emulatore gia' attivo (2096)" }
+# --- Server Asteria Core ---
+# La directory $EMU resta "Arcturus-MS" perche' e' il working dir storico
+# del build artifact (Habbo-3.5.5-jar-with-dependencies.jar). Rinominare la
+# dir richiederebbe spostare i log esistenti, config.ini, dumps, plugin.
+if (Test-Port 2096) { Write-Host "[OK] Server Asteria Core gia' attivo (porta 2096)" }
 else {
-    Write-Host "[..] Avvio Arcturus MS 3.5.5 (JDK 11)..."
+    Write-Host "[..] Avvio Asteria Core 3.5.5 (JDK 11)..."
     # JVM tuning production-ready (target: >5k utenti).
     # Razionale di ogni flag in EMU/Dockerfile; di seguito i piu' importanti:
     #   -Xms=-Xmx                 : niente resize pause (alloca subito tutto)

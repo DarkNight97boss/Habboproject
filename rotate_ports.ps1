@@ -1,17 +1,17 @@
 # ============================================================
-#  ROTAZIONE PORTE EMULATORE (security-through-obscurity, layer 1)
+#  ASTERIA CORE — Rotazione porte (security-through-obscurity, layer 1)
 #
-#  Randomizza ad ogni esecuzione le 3 porte non-web dell'emulatore:
+#  Randomizza ad ogni esecuzione le 3 porte non-web del server di gioco:
 #    - game.port     (Netty TCP server, default 3000)
-#    - rcon.port     (admin remote console, default 3001, loopback)
-#    - ws.nitro.port (WebSocket nitro client, default 2096)
+#    - rcon.port     (console amministrativa remota, default 3001, loopback)
+#    - ws.nitro.port (WebSocket client Nitro, default 2096)
 #
 #  Le porte HTTP (8080 CMS, 8090 client-dist) restano fisse perche'
 #  devono essere conosciute dall'utente che apre l'URL nel browser.
 #  La vera difesa di queste sta in Cloudflare Spectrum (vedi SETUP.md).
 #
 #  Coerentemente aggiorna:
-#    - Arcturus-MS\config.ini (game.port + rcon.port)
+#    - Arcturus-MS\config.ini  [working dir storico Asteria Core]
 #    - DB ms.emulator_settings (ws.nitro.port)
 #    - client-dist\renderer-config.json (socket.url)
 #    - Habboproject\CMS\react\renderer-config.json (socket.url)

@@ -2,7 +2,7 @@
 #
 # Servizi:
 #   db     = MariaDB 10.11 LTS (supporto fino a 2028)
-#   emu    = Arcturus EMU 3.5.5 (build da EMU/Dockerfile)
+#   emu    = Asteria Core 3.5.5 (build da EMU/Dockerfile)
 #   caddy  = reverse proxy CMS + API + Nitro client + TLS automatico
 #
 # Avvio:

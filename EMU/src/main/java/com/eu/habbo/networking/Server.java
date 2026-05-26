@@ -119,8 +119,28 @@ public abstract class Server {
     public void stop() {
         LOGGER.info("Stopping {}", this.name);
         try {
-            this.workerGroup.shutdownGracefully(0, 0, TimeUnit.MILLISECONDS).sync();
-            this.bossGroup.shutdownGracefully(0, 0, TimeUnit.MILLISECONDS).sync();
+            // Graceful shutdown: lascia che i client in-flight finiscano i
+            // pacchetti pending prima di staccare la spina. Cruciale per non
+            // perdere trade/purchase committati ma non confermati al client.
+            //
+            // quietPeriod=2s, timeout=15s:
+            //  - durante quietPeriod il gruppo accetta task ancora schedulati
+            //    (drain delle write coda)
+            //  - se entro timeout non si svuota, hard-stop (no infinite block
+            //    su un client malevolo che non legge)
+            //
+            // Override via Emulator config se serve (default = ragionevole).
+            long quiet = 2, deadline = 15;
+            try {
+                quiet = com.eu.habbo.Emulator.getConfig()
+                        .getInt("networking.shutdown.quiet.seconds", 2);
+                deadline = com.eu.habbo.Emulator.getConfig()
+                        .getInt("networking.shutdown.timeout.seconds", 15);
+            } catch (Throwable ignored) {
+                // Config non disponibile su shutdown anomalo — usa default.
+            }
+            this.workerGroup.shutdownGracefully(quiet, deadline, TimeUnit.SECONDS).sync();
+            this.bossGroup.shutdownGracefully(quiet, deadline, TimeUnit.SECONDS).sync();
         } catch(InterruptedException e) {
             LOGGER.error("Exception during {} shutdown... HARD STOP", this.name, e);
         }

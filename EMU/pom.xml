@@ -73,6 +73,27 @@
                     <show>public</show>
                 </configuration>
             </plugin>
+
+            <!--
+                Surefire 3.x e' obbligatorio per JUnit5 (le 2.x non scoprono
+                @Test JUnit Jupiter). 3.2.5 e' l'ultima compatibile Java 8.
+                Failsafe per test "integration" (suffisso IT) e' opzionale e
+                lo aggiungeremo quando avremo testcontainers.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <!-- Niente fork (test puri unit, nessuna risorsa esterna). -->
+                    <forkCount>1</forkCount>
+                    <reuseForks>true</reuseForks>
+                    <!-- Continua a buildare anche se i test falliscono?
+                         NO: se un test sec/concorrenza fallisce e' un bug
+                         critico, deve bloccare il package. -->
+                    <testFailureIgnore>false</testFailureIgnore>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
@@ -194,6 +215,18 @@
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
             <version>2.9.3</version>
+        </dependency>
+
+        <!--
+            JUnit 5 (Jupiter). 5.10.x e' l'ultima minor compatibile col target
+            Java 8; 5.11+ richiede Java 17. Scope=test => non finisce nel JAR
+            production. Aggregator "junit-jupiter" tira API + engine + params.
+        -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

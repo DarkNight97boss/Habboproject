@@ -25,8 +25,37 @@ else { Write-Host "[..] Avvio MariaDB..."; Start-Process -FilePath $MYSQLD -Argu
 if (Test-Port 2096) { Write-Host "[OK] Emulatore gia' attivo (2096)" }
 else {
     Write-Host "[..] Avvio Arcturus MS 3.5.5 (JDK 11)..."
-    # JVM tuning per molti utenti: heap 512MB-2GB (alza -Xmx in base alla RAM) + G1GC a bassa latenza
-    Start-Process -FilePath $JAVA -ArgumentList '-Xms512m','-Xmx2g','-XX:+UseG1GC','-XX:MaxGCPauseMillis=100','-jar','Habbo-3.5.5-jar-with-dependencies.jar' -WorkingDirectory $EMU -RedirectStandardOutput "$EMU\emu.out.log" -RedirectStandardError "$EMU\emu.err.log" -WindowStyle Hidden
+    # JVM tuning production-ready (target: >5k utenti).
+    # Razionale di ogni flag in EMU/Dockerfile; di seguito i piu' importanti:
+    #   -Xms=-Xmx                 : niente resize pause (alloca subito tutto)
+    #   G1GC + MaxGCPauseMillis    : low-pause GC per real-time game
+    #   UseStringDeduplication     : G1 dedupa string duplicate (chat ripetute)
+    #   AlwaysPreTouch             : touch pages all'avvio (boot piu' lento,
+    #                                 ma pause GC piu' prevedibili dopo)
+    #   ExitOnOutOfMemoryError     : crash subito invece di degradare zombico
+    #   HeapDumpOnOutOfMemoryError : dump per post-mortem
+    #   leakDetection=disabled     : Netty leak detector OFF in prod (1-2% CPU)
+    #   allocator=pooled           : ridondante con la config Java in Server.java
+    #                                 ma rinforza il default anche se config viene
+    #                                 letta dopo Netty init.
+    #
+    # Heap default: 2-4GB. Aumenta a -Xmx6g/8g se hai >32GB di RAM e >3k utenti
+    # contemporanei. Lascia almeno 25% RAM all'OS + MariaDB + altri servizi.
+    $dumpDir = "$EMU\dumps"
+    if (-not (Test-Path $dumpDir)) { New-Item -ItemType Directory -Path $dumpDir | Out-Null }
+    $jvmArgs = @(
+        '-Xms2g','-Xmx4g',
+        '-XX:+UseG1GC','-XX:MaxGCPauseMillis=100',
+        '-XX:+UseStringDeduplication','-XX:+AlwaysPreTouch',
+        '-XX:MaxMetaspaceSize=256m',
+        '-XX:+HeapDumpOnOutOfMemoryError', "-XX:HeapDumpPath=$dumpDir",
+        '-XX:+ExitOnOutOfMemoryError',
+        '-Dfile.encoding=UTF-8','-Djava.net.preferIPv4Stack=true',
+        '-Dio.netty.allocator.type=pooled',
+        '-Dio.netty.leakDetection.level=disabled',
+        '-jar','Habbo-3.5.5-jar-with-dependencies.jar'
+    )
+    Start-Process -FilePath $JAVA -ArgumentList $jvmArgs -WorkingDirectory $EMU -RedirectStandardOutput "$EMU\emu.out.log" -RedirectStandardError "$EMU\emu.err.log" -WindowStyle Hidden
     Start-Sleep 28
 }
 

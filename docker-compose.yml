@@ -1,0 +1,149 @@
+# docker-compose.yml — stack staging/produzione per Habboproject.
+#
+# Servizi:
+#   db     = MariaDB 10.11 LTS (supporto fino a 2028)
+#   emu    = Arcturus EMU 3.5.5 (build da EMU/Dockerfile)
+#   caddy  = reverse proxy CMS + API + Nitro client + TLS automatico
+#
+# Avvio:
+#   1. cp .env.example .env       (poi popola valori reali)
+#   2. cp EMU/config.ini.example EMU/config.ini   (popola db/rcon/hmac)
+#   3. docker compose build
+#   4. docker compose up -d
+#   5. docker compose logs -f emu
+#
+# Backup DB:
+#   docker compose exec db mariadb-dump -u root -p$DB_ROOT_PASSWORD habbo \
+#     > backup-$(date +%F).sql
+#
+# Rete: tutto su rete privata "habbo_net". Solo Caddy espone 80/443
+# all'host. EMU game socket (3000) e RCON (3001) restano interni — chi
+# vuole esporre il game socket all'esterno deve fare port-forward su 3000
+# E proteggerlo con Cloudflare Spectrum.
+
+services:
+
+  db:
+    image: mariadb:10.11
+    container_name: habbo-db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in .env}
+      MARIADB_DATABASE: ${DB_NAME:-ms}
+      MARIADB_USER: ${DB_USER:-habbo}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    command:
+      - "--character-set-server=utf8mb4"
+      - "--collation-server=utf8mb4_unicode_ci"
+      - "--innodb-buffer-pool-size=2G"
+      - "--innodb-flush-log-at-trx-commit=2"
+      - "--innodb-io-capacity=2000"
+      - "--max-connections=200"
+      - "--slow-query-log=1"
+      - "--long-query-time=0.5"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./EMU/sqlupdates:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - habbo_net
+    # NON pubblichiamo 3306 sull'host: il DB e' raggiungibile solo dai
+    # servizi sulla rete habbo_net (emu, eventualmente backup-runner).
+
+  emu:
+    build:
+      context: ./EMU
+      dockerfile: Dockerfile
+    image: habboproject/emu:local
+    container_name: habbo-emu
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Forza connessione al servizio DB Compose, non a "localhost".
+      # I valori finiscono in config.ini montato in lettura sotto.
+      JAVA_OPTS: ${EMU_JAVA_OPTS:--Xms2g -Xmx4g -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+UseStringDeduplication -XX:+AlwaysPreTouch -XX:+ExitOnOutOfMemoryError -Dio.netty.allocator.type=pooled}
+    volumes:
+      # Config & HMAC secret iniettati da host. Editarli, riavviare il container.
+      - ./EMU/config.ini:/habbo/config.ini:ro
+      - emu_logs:/habbo/logging
+      - emu_dumps:/habbo/dumps
+    ports:
+      # Game socket esposto sull'host. In prod metti Cloudflare Spectrum
+      # davanti e configura networking.tcp.proxy=true in config.ini.
+      - "${EMU_GAME_PORT:-3000}:3000"
+      # RCON socket: NON esporlo (resta solo su rete interna habbo_net per
+      # parlare con API). Commentare la riga sotto se non serve.
+      # - "127.0.0.1:3001:3001"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- --spider http://127.0.0.1:9090/readyz || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+    networks:
+      - habbo_net
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: habbo-caddy
+    restart: unless-stopped
+    depends_on:
+      - emu
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./CMS:/srv/cms:ro
+      - ./API:/srv/api:ro
+      - ./CMS/react:/srv/client:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - habbo_net
+
+  # Backup runner: cron giornaliero mysqldump -> volume montato sul host.
+  # Disabilitato di default (profilo "backup"); abilita con:
+  #   docker compose --profile backup up -d
+  backup:
+    image: mariadb:10.11
+    container_name: habbo-backup
+    restart: unless-stopped
+    profiles: ["backup"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      DB_NAME: ${DB_NAME:-ms}
+    volumes:
+      - ./deploy/backup.sh:/backup.sh:ro
+      - backup_data:/backups
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          sleep 86400
+          /backup.sh
+        done
+    networks:
+      - habbo_net
+
+volumes:
+  db_data:
+  emu_logs:
+  emu_dumps:
+  caddy_data:
+  caddy_config:
+  backup_data:
+
+networks:
+  habbo_net:
+    driver: bridge

@@ -22,7 +22,16 @@ public class UnmuteCommand extends Command {
         if (habbo == null) {
             gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_unmute.not_found").replace("%user%", params[1]), RoomChatMessageBubbles.ALERT);
             return true;
-        } else {
+        }
+
+        // Symmetric to MuteCommand: a junior staff member must not be able to
+        // undo a higher-rank moderator's mute action.
+        if (habbo.getHabboInfo().getRank().getId() >= gameClient.getHabbo().getHabboInfo().getRank().getId()) {
+            gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.generic.notpermitted"), RoomChatMessageBubbles.ALERT);
+            return true;
+        }
+
+        {
             if (!habbo.getHabboStats().allowTalk() || (habbo.getHabboInfo().getCurrentRoom() != null && habbo.getHabboInfo().getCurrentRoom().isMuted(habbo))) {
                 if (!habbo.getHabboStats().allowTalk()) {
                     habbo.unMute();

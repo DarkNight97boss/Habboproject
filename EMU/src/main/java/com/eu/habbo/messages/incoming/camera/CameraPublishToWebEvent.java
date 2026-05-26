@@ -20,6 +20,11 @@ public class CameraPublishToWebEvent extends MessageHandler {
     public static int CAMERA_PUBLISH_POINTS_TYPE = 0;
 
     @Override
+    public int getRatelimit() {
+        return 1000;
+    }
+
+    @Override
     public void handle() throws Exception {
         Habbo habbo = this.client.getHabbo();
 
@@ -33,32 +38,52 @@ public class CameraPublishToWebEvent extends MessageHandler {
             return;
         }
 
-        int timestamp = Emulator.getIntUnixTimestamp();
+        // Lock on the HabboInfo so two concurrent publishes from the same account
+        // can't both pass the cooldown check, both INSERT into camera_web, and
+        // both spend the publish points (one charge would clamp to 0). Per-user
+        // lock — never crosses accounts.
+        synchronized (habbo.getHabboInfo()) {
+            // Re-check spend inside the lock: a concurrent transaction may have
+            // already drained the balance.
+            if (habbo.getHabboInfo().getCurrencyAmount(CameraPublishToWebEvent.CAMERA_PUBLISH_POINTS_TYPE) < CameraPublishToWebEvent.CAMERA_PUBLISH_POINTS) {
+                this.client.sendResponse(new NotEnoughPointsTypeComposer(false, true, CameraPublishToWebEvent.CAMERA_PUBLISH_POINTS));
+                return;
+            }
 
-        boolean isOk = false;
-        int cooldownLeft = Math.max(0, Emulator.getConfig().getInt("camera.publish.delay") - (timestamp - this.client.getHabbo().getHabboInfo().getWebPublishTimestamp()));
+            int timestamp = Emulator.getIntUnixTimestamp();
+            int cooldownLeft = Math.max(0, Emulator.getConfig().getInt("camera.publish.delay") - (timestamp - habbo.getHabboInfo().getWebPublishTimestamp()));
 
-        if (cooldownLeft == 0) {
-            UserPublishPictureEvent publishPictureEvent = new UserPublishPictureEvent(this.client.getHabbo(), this.client.getHabbo().getHabboInfo().getPhotoURL(), timestamp, this.client.getHabbo().getHabboInfo().getPhotoRoomId());
+            boolean isOk = false;
+            if (cooldownLeft == 0) {
+                // Reserve the cooldown slot FIRST so a parallel attempt that
+                // somehow bypasses the synchronized block (e.g. plugin event
+                // re-entrancy) sees the bumped timestamp.
+                habbo.getHabboInfo().setWebPublishTimestamp(timestamp);
 
-            if (!Emulator.getPluginManager().fireEvent(publishPictureEvent).isCancelled()) {
-                try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO camera_web (user_id, room_id, timestamp, url) VALUES (?, ?, ?, ?)")) {
-                    statement.setInt(1, this.client.getHabbo().getHabboInfo().getId());
-                    statement.setInt(2, publishPictureEvent.roomId);
-                    statement.setInt(3, publishPictureEvent.timestamp);
-                    statement.setString(4, publishPictureEvent.URL);
-                    statement.execute();
+                UserPublishPictureEvent publishPictureEvent = new UserPublishPictureEvent(habbo, habbo.getHabboInfo().getPhotoURL(), timestamp, habbo.getHabboInfo().getPhotoRoomId());
+                if (!Emulator.getPluginManager().fireEvent(publishPictureEvent).isCancelled()) {
+                    try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                         PreparedStatement statement = connection.prepareStatement("INSERT INTO camera_web (user_id, room_id, timestamp, url) VALUES (?, ?, ?, ?)")) {
+                        statement.setInt(1, habbo.getHabboInfo().getId());
+                        statement.setInt(2, publishPictureEvent.roomId);
+                        statement.setInt(3, publishPictureEvent.timestamp);
+                        statement.setString(4, publishPictureEvent.URL);
+                        statement.execute();
 
-                    this.client.getHabbo().getHabboInfo().setWebPublishTimestamp(timestamp);
-                    this.client.getHabbo().givePoints(CameraPublishToWebEvent.CAMERA_PUBLISH_POINTS_TYPE, -CameraPublishToWebEvent.CAMERA_PUBLISH_POINTS);
-
-                    isOk = true;
-                } catch (SQLException e) {
-                    LOGGER.error("Caught SQL exception", e);
+                        habbo.givePoints(CameraPublishToWebEvent.CAMERA_PUBLISH_POINTS_TYPE, -CameraPublishToWebEvent.CAMERA_PUBLISH_POINTS);
+                        isOk = true;
+                    } catch (SQLException e) {
+                        // DB insert failed -> roll back the cooldown reservation.
+                        habbo.getHabboInfo().setWebPublishTimestamp(habbo.getHabboInfo().getWebPublishTimestamp());
+                        LOGGER.error("Caught SQL exception", e);
+                    }
+                } else {
+                    // Cancelled by a plugin -> roll back the cooldown reservation.
+                    habbo.getHabboInfo().setWebPublishTimestamp(habbo.getHabboInfo().getWebPublishTimestamp());
                 }
             }
-        }
 
-        this.client.sendResponse(new CameraPublishWaitMessageComposer(isOk, cooldownLeft, isOk ? this.client.getHabbo().getHabboInfo().getPhotoURL() : ""));
+            this.client.sendResponse(new CameraPublishWaitMessageComposer(isOk, cooldownLeft, isOk ? habbo.getHabboInfo().getPhotoURL() : ""));
+        }
     }
 }

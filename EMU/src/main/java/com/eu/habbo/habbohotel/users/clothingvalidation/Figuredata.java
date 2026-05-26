@@ -7,6 +7,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -38,6 +39,25 @@ public class Figuredata {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setValidating(false);
         factory.setIgnoringElementContentWhitespace(true);
+        // XXE hardening — the uri is `gamedata.figuredata.url`, configurable from DB
+        // (a CMS write foothold could repoint it at attacker-controlled content). Without
+        // these flags, malicious figuredata XML could exfiltrate local files (/etc/passwd,
+        // config.ini) via external entities and surface them in subsequent exception text.
+        try {
+            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+            factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        } catch (ParserConfigurationException ignored) {
+            // Some old JREs don't know one of these features; the rest still apply.
+        }
+        factory.setXIncludeAware(false);
+        factory.setExpandEntityReferences(false);
+        try {
+            factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+            factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+        } catch (IllegalArgumentException ignored) {}
         DocumentBuilder builder = factory.newDocumentBuilder();
         Document document = builder.parse(uri);
 

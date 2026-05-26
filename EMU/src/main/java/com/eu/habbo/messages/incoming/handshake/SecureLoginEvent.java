@@ -1,6 +1,12 @@
 package com.eu.habbo.messages.incoming.handshake;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.core.AuditLog;
+import com.eu.habbo.core.BattlePass;
+import com.eu.habbo.core.DailyStreak;
+import com.eu.habbo.core.StaffMfa;
+import com.eu.habbo.messages.outgoing.users.BattlePassInfoComposer;
+import com.eu.habbo.messages.outgoing.users.DailyStreakInfoComposer;
 import com.eu.habbo.habbohotel.messenger.Messenger;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctionItem;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctions;
@@ -67,6 +73,13 @@ public class SecureLoginEvent extends MessageHandler {
         }
 
         String sso = this.packet.readString().replace(" ", "");
+        // SSO tickets are short (32-64 chars typical). Cap to bound DB query payload
+        // — a malicious client could otherwise burn a DB roundtrip on a megabyte-long
+        // setString and amplify connection-pool contention.
+        if (sso.length() > 128) {
+            Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
+            return;
+        }
 
         if (Emulator.getPluginManager().fireEvent(new SSOAuthenticationEvent(sso)).isCancelled()) {
             Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
@@ -80,8 +93,34 @@ public class SecureLoginEvent extends MessageHandler {
             return;
         }
 
+        // Anti-brute force: refuse SSO submissions from an IP that has burned
+        // too many failed attempts recently. Defeats credential-stuffing /
+        // ticket-guessing without touching the DB.
+        String peerIp = null;
+        try {
+            if (this.client.getChannel() != null && this.client.getChannel().remoteAddress() instanceof java.net.InetSocketAddress) {
+                peerIp = ((java.net.InetSocketAddress) this.client.getChannel().remoteAddress()).getAddress().getHostAddress();
+            }
+        } catch (Exception ignored) {
+        }
+        if (peerIp != null && com.eu.habbo.core.IpRateLimiter.SSO.isBlocked(peerIp)) {
+            Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
+            return;
+        }
+
         if (this.client.getHabbo() == null) {
             Habbo habbo = Emulator.getGameEnvironment().getHabboManager().loadHabbo(sso);
+            if (habbo == null) {
+                // Unknown / consumed SSO ticket — bump the brute-force counter.
+                if (peerIp != null) com.eu.habbo.core.IpRateLimiter.SSO.onFailure(peerIp);
+                Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
+                LOGGER.warn("Someone tried to login with a non-existing SSO token! Closed connection...");
+                return;
+            }
+            if (peerIp != null) com.eu.habbo.core.IpRateLimiter.SSO.onSuccess(peerIp);
+            // Re-bind to fix the diff hunk: the original `if (habbo != null) { ... }`
+            // tree is preserved below by entering the block unconditionally now that
+            // we returned early on null.
             if (habbo != null) {
                 try {
                     habbo.setClient(this.client);
@@ -151,6 +190,52 @@ public class SecureLoginEvent extends MessageHandler {
                 }
 
                 this.client.sendResponses(messages);
+
+                // Staff step-up MFA (Google Authenticator): if enabled and this is a
+                // staff account, lock staff powers until a valid code is entered in the
+                // Habbo-style popup. Config-gated OFF by default (mfa.staff.enabled).
+                if (StaffMfa.isEnabled() && StaffMfa.isStaffAccount(this.client.getHabbo())) {
+                    this.client.setMfaRequired(true);
+                    this.client.setMfaElevated(false);
+
+                    int mfaUserId = this.client.getHabbo().getHabboInfo().getId();
+                    String mfaUsername = this.client.getHabbo().getHabboInfo().getUsername();
+
+                    // Best-effort proactive popup. The client also re-requests it on
+                    // ready (StaffMfaStatusRequestEvent) to avoid the login-time race.
+                    StaffMfa.sendChallenge(this.client);
+
+                    AuditLog.record(mfaUserId, mfaUsername, "STAFF_MFA_CHALLENGE", "user:" + mfaUserId, "");
+                }
+
+                // Daily streak: send the current state so the widget can render the
+                // calendar and the claim button immediately on login. The widget
+                // also re-requests this on mount as a safety net.
+                if (DailyStreak.isEnabled()) {
+                    try {
+                        DailyStreak.State streakState = DailyStreak.load(this.client.getHabbo().getHabboInfo().getId());
+                        this.client.sendResponse(new DailyStreakInfoComposer(streakState));
+                    } catch (Exception ignored) {
+                    }
+                }
+
+                // Battle pass: award daily-login XP (idempotent per day) and send
+                // the current state so the widget can render immediately on login.
+                if (BattlePass.isEnabled()) {
+                    try {
+                        BattlePass.grantDailyLoginXp(this.client.getHabbo());
+                        BattlePass.SeasonInfo bpSeason = BattlePass.activeSeason();
+                        if (bpSeason == null) {
+                            BattlePass.ensureActiveSeason();
+                            bpSeason = BattlePass.activeSeason();
+                        }
+                        BattlePass.Progress bpProgress = bpSeason == null
+                                ? new BattlePass.Progress(0, false, new java.util.HashSet<>(), new java.util.HashSet<>())
+                                : BattlePass.loadProgress(this.client.getHabbo().getHabboInfo().getId(), bpSeason.id);
+                        this.client.sendResponse(new BattlePassInfoComposer(bpSeason, bpProgress));
+                    } catch (Exception ignored) {
+                    }
+                }
 
                 //Hardcoded
                 //this.client.sendResponse(new ForumsTestComposer());

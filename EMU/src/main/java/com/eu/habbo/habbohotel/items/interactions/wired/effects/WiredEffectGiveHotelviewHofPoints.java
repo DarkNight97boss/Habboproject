@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -72,6 +73,13 @@ public class WiredEffectGiveHotelviewHofPoints extends InteractionWiredEffect {
             this.amount = Integer.parseInt(settings.getStringParam());
         } catch (Exception e) {
             return false;
+        }
+
+        // Cap unbounded HofPoints — without ACC_SUPERWIRED any room owner could
+        // award Integer.MAX_VALUE to a triggering user (currency-inflation primitive).
+        if (gameClient == null || !gameClient.getHabbo().hasPermission(Permission.ACC_SUPERWIRED)) {
+            int cap = Emulator.getConfig().getInt("wired.max.hofpoints", 1000);
+            this.amount = Math.max(0, Math.min(this.amount, cap));
         }
 
         this.setDelay(settings.getDelay());

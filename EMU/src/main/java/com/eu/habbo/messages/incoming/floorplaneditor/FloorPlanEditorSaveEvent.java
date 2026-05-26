@@ -40,7 +40,31 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
             String map = this.packet.readString();
             map = map.replace("X", "x");
 
+            // Hard caps that MUST always apply (independent of the user-facing
+            // validation toggle), otherwise an attacker can OOM the server by
+            // posting a multi-MB floorplan or trip an ArrayIndexOutOfBounds on
+            // an empty payload.
+            if (map == null || map.isEmpty() || map.length() > MAXIMUM_FLOORPLAN_SIZE) {
+                this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FLOORPLAN_EDITOR_ERROR.key,
+                        "${notification.floorplan_editor.error.message.too_large_area}"));
+                return;
+            }
+
             String[] mapRows = map.split("\r");
+            if (mapRows.length == 0 || mapRows[0].length() == 0
+                    || mapRows.length > MAXIMUM_FLOORPLAN_WIDTH_LENGTH
+                    || mapRows[0].length() > MAXIMUM_FLOORPLAN_WIDTH_LENGTH) {
+                this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FLOORPLAN_EDITOR_ERROR.key,
+                        "${notification.floorplan_editor.error.message.too_large_width}"));
+                return;
+            }
+            // Defense in depth: reject any byte outside the allowed charset
+            // regardless of the user-facing validation toggle.
+            if (!map.matches("[a-zA-Z0-9\r]+")) {
+                this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FLOORPLAN_EDITOR_ERROR.key,
+                        "${notification.floorplan_editor.error.title}"));
+                return;
+            }
 
             int firstRowSize = mapRows[0].length();
 

@@ -74,6 +74,12 @@ public class CommandHandler {
                             if (s.equalsIgnoreCase(parts[0])) {
                                 boolean succes = false;
                                 if (command.permission == null || gameClient.getHabbo().hasPermission(command.permission, gameClient.getHabbo().getHabboInfo().getCurrentRoom() != null && (gameClient.getHabbo().getHabboInfo().getCurrentRoom().hasRights(gameClient.getHabbo())) || gameClient.getHabbo().hasPermission(Permission.ACC_PLACEFURNI) || (gameClient.getHabbo().getHabboInfo().getCurrentRoom() != null && gameClient.getHabbo().getHabboInfo().getCurrentRoom().getGuildId() > 0 && gameClient.getHabbo().getHabboInfo().getCurrentRoom().getGuildRightLevel(gameClient.getHabbo()).isEqualOrGreaterThan(RoomRightLevels.GUILD_RIGHTS)))) {
+                                    // Staff step-up MFA: block privileged (permission-gated) commands until verified.
+                                    if (command.permission != null && gameClient.isStaffMfaLocked()) {
+                                        gameClient.getHabbo().whisper(Emulator.getTexts().getValue("mfa.staff.locked", "Verify your authenticator code to unlock staff powers."), com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles.ALERT);
+                                        com.eu.habbo.core.StaffMfa.sendChallenge(gameClient);
+                                        return false;
+                                    }
                                     try {
                                         UserExecuteCommandEvent userExecuteCommandEvent = new UserExecuteCommandEvent(gameClient.getHabbo(), command, parts);
                                         Emulator.getPluginManager().fireEvent(userExecuteCommandEvent);

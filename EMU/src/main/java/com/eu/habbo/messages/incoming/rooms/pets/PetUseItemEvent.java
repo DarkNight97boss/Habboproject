@@ -32,6 +32,18 @@ public class PetUseItemEvent extends MessageHandler {
         int petId = this.packet.readInt();
         Pet pet = this.client.getHabbo().getHabboInfo().getCurrentRoom().getPet(petId);
 
+        if (pet == null)
+            return;
+
+        // The supply furniture (horse_dye / mnstr_revival / mnstr_fert / mnstr_rebreed)
+        // is consumed by this handler. Without these checks any visitor could consume
+        // another user's supply furni (item-theft) and/or mutate someone else's pet.
+        int callerId = this.client.getHabbo().getHabboInfo().getId();
+        if (item.getUserId() != callerId)
+            return;
+        if (pet.getUserId() != callerId && !room.hasRights(this.client.getHabbo()))
+            return;
+
         if (pet instanceof HorsePet) {
             if (item.getBaseItem().getName().toLowerCase().startsWith("horse_dye")) {
                 int race = Integer.parseInt(item.getBaseItem().getName().split("_")[2]);

@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.catalog.CatalogPage;
 import com.eu.habbo.habbohotel.catalog.CatalogPageLayouts;
 import com.eu.habbo.habbohotel.catalog.layouts.RoomBundleLayout;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,15 +32,29 @@ public class RoomBundleCommand extends Command {
             return true;
         }
 
-        if (Emulator.getGameEnvironment().getCatalogManager().getCatalogPage("room_bundle_" + gameClient.getHabbo().getHabboInfo().getCurrentRoom().getId()) != null) {
+        // Must be inside a room the caller owns. Without these guards the command
+        // can NPE on hotel-view (`getCurrentRoom() == null`) or create a perma
+        // catalog bundle for someone else's room.
+        Room currentRoom = gameClient.getHabbo().getHabboInfo().getCurrentRoom();
+        if (currentRoom == null || !currentRoom.isOwner(gameClient.getHabbo())) {
+            gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.generic.notpermitted"), RoomChatMessageBubbles.ALERT);
+            return true;
+        }
+
+        if (Emulator.getGameEnvironment().getCatalogManager().getCatalogPage("room_bundle_" + currentRoom.getId()) != null) {
             gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_bundle.duplicate"), RoomChatMessageBubbles.ALERT);
             return true;
         }
 
-        parentId = Integer.parseInt(params[1]);
-        credits = Integer.parseInt(params[2]);
-        points = Integer.parseInt(params[3]);
-        pointsType = Integer.parseInt(params[4]);
+        try {
+            parentId = Integer.parseInt(params[1]);
+            credits = Integer.parseInt(params[2]);
+            points = Integer.parseInt(params[3]);
+            pointsType = Integer.parseInt(params[4]);
+        } catch (NumberFormatException nfe) {
+            gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_bundle.missing_params"), RoomChatMessageBubbles.ALERT);
+            return true;
+        }
 
         CatalogPage page = Emulator.getGameEnvironment().getCatalogManager().createCatalogPage("Room Bundle: " + gameClient.getHabbo().getHabboInfo().getCurrentRoom().getName(), "room_bundle_" + gameClient.getHabbo().getHabboInfo().getCurrentRoom().getId(), gameClient.getHabbo().getHabboInfo().getCurrentRoom().getId(), 0, CatalogPageLayouts.room_bundle, gameClient.getHabbo().getHabboInfo().getRank().getId(), parentId);
 

@@ -25,6 +25,14 @@ public class PetPackageNameEvent extends MessageHandler {
             if (item != null) {
                 if (item.getUserId() == this.client.getHabbo().getHabboInfo().getId()) {
                     if (name.matches("^[a-zA-Z0-9]*$")) {
+                        // Atomically claim the box BEFORE creating the pet — two parallel
+                        // confirmations would otherwise both pass the getHabboItem check and
+                        // both create a pet, then both delete the (single) box.
+                        if (room.removeHabboItemIfPresent(itemId) == null) {
+                            this.client.sendResponse(new PetPackageNameValidationComposer(itemId, PetPackageNameValidationComposer.CLOSE_WIDGET, ""));
+                            return;
+                        }
+
                         Pet pet = null;
 
                         if (item.getBaseItem().getName().equalsIgnoreCase("val11_present")) {
@@ -58,7 +66,6 @@ public class PetPackageNameEvent extends MessageHandler {
                             pet.getRoomUnit().setLocation(room.getLayout().getTile(item.getX(), item.getY()));
                             pet.getRoomUnit().setZ(item.getZ());
                             Emulator.getThreading().run(new QueryDeleteHabboItem(item.getId()));
-                            room.removeHabboItem(item);
                             room.sendComposer(new RemoveFloorItemComposer(item).compose());
                             RoomTile tile = room.getLayout().getTile(item.getX(), item.getY());
                             room.updateTile(room.getLayout().getTile(item.getX(), item.getY()));

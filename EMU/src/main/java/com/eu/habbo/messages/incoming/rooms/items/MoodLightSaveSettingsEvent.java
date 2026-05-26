@@ -20,8 +20,13 @@ public class MoodLightSaveSettingsEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+        if (room == null)
+            return;
 
-        if ((room.getGuildId() <= 0 && room.getGuildRightLevel(this.client.getHabbo()).isLessThan(RoomRightLevels.GUILD_RIGHTS)) && !room.hasRights(this.client.getHabbo()))
+        // Original condition `(getGuildId()<=0 && guildLessThan) && !hasRights` short-circuited
+        // to false in any guild room (getGuildId()>0) -> any visitor could rewrite moodlight.
+        // Correct: deny unless the user has room rights OR guild rights.
+        if (!room.hasRights(this.client.getHabbo()) && room.getGuildRightLevel(this.client.getHabbo()).isLessThan(RoomRightLevels.GUILD_RIGHTS))
             return;
 
         int id = this.packet.readInt();

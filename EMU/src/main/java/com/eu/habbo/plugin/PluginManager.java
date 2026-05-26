@@ -176,7 +176,21 @@ public class PluginManager {
         catch(Exception e) { SubscriptionHabboClub.HC_PAYDAY_NEXT_DATE = Integer.MAX_VALUE; }
 
         SubscriptionHabboClub.HC_PAYDAY_INTERVAL = Emulator.getConfig().getValue("subscriptions.hc.payday.interval");
-        SubscriptionHabboClub.HC_PAYDAY_QUERY = Emulator.getConfig().getValue("subscriptions.hc.payday.query");
+        // SECURITY: the canonical HC payday query is hard-coded in
+        // SubscriptionHabboClub.HC_PAYDAY_QUERY_CANONICAL. We refuse to honour a
+        // DB-supplied override (the previous behaviour) — that key is a
+        // SQL-injection vector for any actor with write access to
+        // emulator_settings (e.g. CMS-side SQLi). If the operator has
+        // legitimately customised the query, update the canonical constant in
+        // source. Warn loudly when the DB value drifts.
+        {
+            String dbQuery = Emulator.getConfig().getValue("subscriptions.hc.payday.query");
+            if (dbQuery != null && !dbQuery.isEmpty() && !dbQuery.equals(SubscriptionHabboClub.HC_PAYDAY_QUERY_CANONICAL)) {
+                LoggerFactory.getLogger(PluginManager.class).warn(
+                        "subscriptions.hc.payday.query in emulator_settings differs from the hard-coded canonical query; the DB value is ignored. Update the constant in source if this is intentional.");
+            }
+            SubscriptionHabboClub.HC_PAYDAY_QUERY = SubscriptionHabboClub.HC_PAYDAY_QUERY_CANONICAL;
+        }
         SubscriptionHabboClub.HC_PAYDAY_CURRENCY = Emulator.getConfig().getValue("subscriptions.hc.payday.currency");
         SubscriptionHabboClub.HC_PAYDAY_KICKBACK_PERCENTAGE = Emulator.getConfig().getInt("subscriptions.hc.payday.percentage", 10) / 100.0;
         SubscriptionHabboClub.HC_PAYDAY_COINSSPENT_RESET_ON_EXPIRE = Emulator.getConfig().getBoolean("subscriptions.hc.payday.creditsspent_reset_on_expire", false);
@@ -246,7 +260,29 @@ public class PluginManager {
             }
         }
 
+        // Optional jar allow-list: `plugins.allowed` in config is a comma-separated
+        // list of `filename=sha256` entries. When set, only jars whose name + SHA-256
+        // appear in the list are loaded. Any other jar dropped into ./plugins is
+        // rejected and logged (and audit-logged). Set `plugins.enforce_allowlist=false`
+        // to skip the check during development.
+        final boolean enforceAllowlist = Emulator.getConfig().getBoolean("plugins.enforce_allowlist", false);
+        final java.util.Map<String, String> allowed = parsePluginAllowlist(Emulator.getConfig().getValue("plugins.allowed", ""));
+
         for (File file : Objects.requireNonNull(loc.listFiles(file -> file.getPath().toLowerCase().endsWith(".jar")))) {
+            if (enforceAllowlist) {
+                String expectedSha = allowed.get(file.getName());
+                String actualSha = sha256OfFile(file);
+                if (expectedSha == null || !expectedSha.equalsIgnoreCase(actualSha)) {
+                    LOGGER.error("Refusing to load plugin {} — not in plugins.allowed (expected={}, actual={})",
+                            file.getName(), expectedSha, actualSha);
+                    try {
+                        com.eu.habbo.core.AuditLog.record(0, "system", "PLUGIN_REJECTED",
+                                file.getName(), "sha256=" + actualSha + " expected=" + expectedSha);
+                    } catch (Throwable ignored) {}
+                    continue;
+                }
+            }
+
             URLClassLoader urlClassLoader;
             InputStream stream;
             try {
@@ -283,6 +319,32 @@ public class PluginManager {
             } catch (Exception e) {
                 LOGGER.error("Caught exception", e);
             }
+        }
+    }
+
+    private static java.util.Map<String, String> parsePluginAllowlist(String raw) {
+        java.util.Map<String, String> out = new java.util.HashMap<>();
+        if (raw == null || raw.isEmpty()) return out;
+        for (String entry : raw.split(",")) {
+            int eq = entry.indexOf('=');
+            if (eq <= 0) continue;
+            out.put(entry.substring(0, eq).trim(), entry.substring(eq + 1).trim());
+        }
+        return out;
+    }
+
+    private static String sha256OfFile(File file) {
+        try (java.io.InputStream in = new java.io.FileInputStream(file)) {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = in.read(buf)) > 0) md.update(buf, 0, n);
+            byte[] digest = md.digest();
+            StringBuilder sb = new StringBuilder(digest.length * 2);
+            for (byte b : digest) sb.append(String.format("%02x", b & 0xFF));
+            return sb.toString();
+        } catch (Exception e) {
+            return "";
         }
     }
 

@@ -87,6 +87,15 @@ public final class DailyStreak {
         }
     }
 
+    /**
+     * Server-side time for streak windows. Forced UTC so a TZ change on the host
+     * (NTP / tzdata update / staff intervention) can't create a rollover window
+     * during which a second claim becomes possible.
+     */
+    private static LocalDate today() {
+        return LocalDate.now(java.time.ZoneOffset.UTC);
+    }
+
     /** Loads the user's state without mutating anything. */
     public static State load(int userId) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
@@ -100,7 +109,7 @@ public final class DailyStreak {
                 int current = rs.getInt("current_streak");
                 int best = rs.getInt("best_streak");
                 Date last = rs.getDate("last_claim_date");
-                LocalDate today = LocalDate.now();
+                LocalDate today = today();
                 boolean canClaim;
                 int effectiveStreak;
                 if (last == null) {
@@ -134,21 +143,37 @@ public final class DailyStreak {
      * {@code null} if the user already claimed today / feature is off / DB fails.
      * The caller should refresh client state and send a {@code DailyStreakClaimed}
      * packet.
+     *
+     * Concurrency: a single conditional UPDATE on a sentinel row carries the
+     * eligibility check (`last_claim_date IS NULL OR last_claim_date < today`).
+     * Two parallel claims (e.g., two devices) issue the UPDATE simultaneously —
+     * the second observes `affectedRows == 0` and bails before granting any
+     * reward. The previous SELECT-FOR-UPDATE-then-INSERT pattern did NOT lock a
+     * non-existing row, so two first-ever claims could both grant day-1 credits.
      */
     public static Reward claim(Habbo habbo) {
         if (habbo == null || habbo.getHabboInfo() == null) return null;
         if (!isEnabled()) return null;
 
         int userId = habbo.getHabboInfo().getId();
-        LocalDate today = LocalDate.now();
+        LocalDate today = today();
+        Date todaySql = Date.valueOf(today);
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            // 1) Ensure a row exists so the conditional UPDATE in step 3 has something to mutate.
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "INSERT IGNORE INTO daily_streak (user_id, current_streak, best_streak, total_claims, last_claim_unix, last_claim_date) " +
+                            "VALUES (?, 0, 0, 0, 0, NULL)")) {
+                ps.setInt(1, userId);
+                ps.executeUpdate();
+            }
+
+            // 2) Read current state (now guaranteed to exist).
             int current = 0;
             int best = 0;
             LocalDate last = null;
-
             try (PreparedStatement ps = connection.prepareStatement(
-                    "SELECT current_streak, best_streak, last_claim_date FROM daily_streak WHERE user_id = ? FOR UPDATE")) {
+                    "SELECT current_streak, best_streak, last_claim_date FROM daily_streak WHERE user_id = ?")) {
                 ps.setInt(1, userId);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
@@ -160,7 +185,6 @@ public final class DailyStreak {
                 }
             }
 
-            // Eligibility & new streak.
             int newStreak;
             if (last == null) {
                 newStreak = 1;
@@ -175,18 +199,23 @@ public final class DailyStreak {
             Reward reward = CYCLE[dayInCycle - 1];
             int newBest = Math.max(best, newStreak);
 
-            // Persist BEFORE granting, so a concurrent double-claim can't win the race.
+            // 3) Atomic conditional UPDATE — only one parallel claim per day wins.
+            int affected;
             try (PreparedStatement ps = connection.prepareStatement(
-                    "INSERT INTO daily_streak (user_id, current_streak, best_streak, total_claims, last_claim_unix, last_claim_date) " +
-                            "VALUES (?, ?, ?, 1, ?, ?) " +
-                            "ON DUPLICATE KEY UPDATE current_streak = VALUES(current_streak), best_streak = VALUES(best_streak), " +
-                            "total_claims = total_claims + 1, last_claim_unix = VALUES(last_claim_unix), last_claim_date = VALUES(last_claim_date)")) {
-                ps.setInt(1, userId);
-                ps.setInt(2, newStreak);
-                ps.setInt(3, newBest);
-                ps.setInt(4, Emulator.getIntUnixTimestamp());
-                ps.setDate(5, Date.valueOf(today));
-                ps.executeUpdate();
+                    "UPDATE daily_streak SET current_streak = ?, best_streak = ?, total_claims = total_claims + 1, " +
+                            "last_claim_unix = ?, last_claim_date = ? " +
+                            "WHERE user_id = ? AND (last_claim_date IS NULL OR last_claim_date < ?)")) {
+                ps.setInt(1, newStreak);
+                ps.setInt(2, newBest);
+                ps.setInt(3, Emulator.getIntUnixTimestamp());
+                ps.setDate(4, todaySql);
+                ps.setInt(5, userId);
+                ps.setDate(6, todaySql);
+                affected = ps.executeUpdate();
+            }
+            if (affected == 0) {
+                // Parallel claim won; do NOT grant the reward.
+                return null;
             }
 
             // Grant the reward.
@@ -220,6 +249,16 @@ public final class DailyStreak {
 
             // Cross-feature hook: grant battle-pass XP for the daily claim.
             try { BattlePass.grantStreakXp(habbo); } catch (Exception ignored) {}
+
+            // Cross-feature hook: progress the ACH_LifetimeLogins achievement.
+            try {
+                com.eu.habbo.habbohotel.achievements.Achievement ach =
+                        Emulator.getGameEnvironment().getAchievementManager().getAchievement("ACH_LifetimeLogins");
+                if (ach != null) {
+                    com.eu.habbo.habbohotel.achievements.AchievementManager.progressAchievement(habbo, ach, 1);
+                }
+            } catch (Exception ignored) {
+            }
             return reward;
         } catch (Exception e) {
             LOGGER.error("DailyStreak.claim failed for user {}", userId, e);

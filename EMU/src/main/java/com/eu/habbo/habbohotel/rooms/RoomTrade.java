@@ -337,6 +337,17 @@ public class RoomTrade {
             com.eu.habbo.core.BattlePass.grantTradeXp(userTwo.getHabbo());
         } catch (Exception ignored) {
         }
+
+        // Cross-feature hook: progress ACH_LifetimeTrades for both sides.
+        try {
+            com.eu.habbo.habbohotel.achievements.Achievement tradeAch =
+                    Emulator.getGameEnvironment().getAchievementManager().getAchievement("ACH_LifetimeTrades");
+            if (tradeAch != null) {
+                com.eu.habbo.habbohotel.achievements.AchievementManager.progressAchievement(userOne.getHabbo(), tradeAch, 1);
+                com.eu.habbo.habbohotel.achievements.AchievementManager.progressAchievement(userTwo.getHabbo(), tradeAch, 1);
+            }
+        } catch (Exception ignored) {
+        }
         return true;
     }
 

@@ -1,5 +1,5 @@
 <?php
-header('Access-Control-Allow-Origin: *');
+require_once __DIR__ . '/_cors.php';
 function generateRandomString($length = 5) {
     $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
     $charactersLength = strlen($characters);

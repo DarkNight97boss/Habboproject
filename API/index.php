@@ -3,7 +3,9 @@ ini_set('display_errors', '0');
 ini_set('display_startup_errors', '0');
 error_reporting(E_ALL);
 ini_set('log_errors', '1');
-header('Access-Control-Allow-Origin: *');
+// CORS centralizzato (whitelist origin invece di "*"). Vedi _cors.php
+// per estendere/restringere la lista. Gestisce anche il preflight OPTIONS.
+require_once __DIR__ . '/_cors.php';
 include_once "config.php";
 include_once "Rcon.php";
 include_once "Database.php";

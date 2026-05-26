@@ -1,5 +1,5 @@
 <?php
-header('Access-Control-Allow-Origin: *');
+require_once __DIR__ . '/_cors.php';
 require_once 'config.php';
 class Database {
     private $con;

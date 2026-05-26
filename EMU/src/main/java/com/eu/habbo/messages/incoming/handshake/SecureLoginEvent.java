@@ -73,6 +73,13 @@ public class SecureLoginEvent extends MessageHandler {
         }
 
         String sso = this.packet.readString().replace(" ", "");
+        // SSO tickets are short (32-64 chars typical). Cap to bound DB query payload
+        // — a malicious client could otherwise burn a DB roundtrip on a megabyte-long
+        // setString and amplify connection-pool contention.
+        if (sso.length() > 128) {
+            Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
+            return;
+        }
 
         if (Emulator.getPluginManager().fireEvent(new SSOAuthenticationEvent(sso)).isCancelled()) {
             Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
@@ -86,8 +93,34 @@ public class SecureLoginEvent extends MessageHandler {
             return;
         }
 
+        // Anti-brute force: refuse SSO submissions from an IP that has burned
+        // too many failed attempts recently. Defeats credential-stuffing /
+        // ticket-guessing without touching the DB.
+        String peerIp = null;
+        try {
+            if (this.client.getChannel() != null && this.client.getChannel().remoteAddress() instanceof java.net.InetSocketAddress) {
+                peerIp = ((java.net.InetSocketAddress) this.client.getChannel().remoteAddress()).getAddress().getHostAddress();
+            }
+        } catch (Exception ignored) {
+        }
+        if (peerIp != null && com.eu.habbo.core.IpRateLimiter.SSO.isBlocked(peerIp)) {
+            Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
+            return;
+        }
+
         if (this.client.getHabbo() == null) {
             Habbo habbo = Emulator.getGameEnvironment().getHabboManager().loadHabbo(sso);
+            if (habbo == null) {
+                // Unknown / consumed SSO ticket — bump the brute-force counter.
+                if (peerIp != null) com.eu.habbo.core.IpRateLimiter.SSO.onFailure(peerIp);
+                Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
+                LOGGER.warn("Someone tried to login with a non-existing SSO token! Closed connection...");
+                return;
+            }
+            if (peerIp != null) com.eu.habbo.core.IpRateLimiter.SSO.onSuccess(peerIp);
+            // Re-bind to fix the diff hunk: the original `if (habbo != null) { ... }`
+            // tree is preserved below by entering the block unconditionally now that
+            // we returned early on null.
             if (habbo != null) {
                 try {
                     habbo.setClient(this.client);

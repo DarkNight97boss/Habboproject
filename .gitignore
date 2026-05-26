@@ -30,3 +30,4 @@ node_modules/
 dist/
 *.jar
 .claude/settings.json
+.ports.current

@@ -181,7 +181,9 @@ public class GameClient {
                 // don't leak it for the lifetime of the process.
                 try {
                     if (this.habbo.getHabboInfo() != null) {
-                        com.eu.habbo.core.ChatSpamGuard.onDisconnect(this.habbo.getHabboInfo().getId());
+                        int uid = this.habbo.getHabboInfo().getId();
+                        com.eu.habbo.core.ChatSpamGuard.onDisconnect(uid);
+                        com.eu.habbo.core.UnknownPacketGuard.onDisconnect(uid);
                     }
                 } catch (Exception ignored) {
                 }

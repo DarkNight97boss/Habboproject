@@ -36,6 +36,13 @@ public class GuildForumModerateMessageEvent extends MessageHandler {
             return;
         }
 
+        // IDOR fix: the thread (and thus its comments) must belong to the
+        // guild whose permissions we are evaluating.
+        if (thread.getGuildId() != guildId) {
+            this.client.sendResponse(new ConnectionErrorComposer(404));
+            return;
+        }
+
         ForumThreadComment comment = thread.getCommentById(messageId);
         if (comment == null) {
             this.client.sendResponse(new ConnectionErrorComposer(404));

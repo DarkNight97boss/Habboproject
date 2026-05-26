@@ -442,25 +442,36 @@ public class RoomManager {
 
     public void voteForRoom(Habbo habbo, Room room) {
         if (habbo.getHabboInfo().getCurrentRoom() != null && room != null && habbo.getHabboInfo().getCurrentRoom() == room) {
-            if (this.hasVotedForRoom(habbo, room))
-                return;
+            // Anti-spam: serialise check+push per user so two parallel vote
+            // packets can't both pass hasVotedForRoom and inflate score by N.
+            // The DB-side UNIQUE KEY uq_vote (user_id, room_id) + INSERT IGNORE
+            // is the second layer; rely on affectedRows to decide whether to
+            // bump the in-memory score, so even racing nodes converge.
+            synchronized (habbo.getHabboStats().votedRooms) {
+                if (this.hasVotedForRoom(habbo, room))
+                    return;
 
-            UserVoteRoomEvent event = new UserVoteRoomEvent(room, habbo);
-            if (Emulator.getPluginManager().fireEvent(event).isCancelled()) return;
+                UserVoteRoomEvent event = new UserVoteRoomEvent(room, habbo);
+                if (Emulator.getPluginManager().fireEvent(event).isCancelled()) return;
 
-            room.setScore(room.getScore() + 1);
-            room.setNeedsUpdate(true);
-            habbo.getHabboStats().votedRooms.push(room.getId());
-            for (Habbo h : room.getHabbos()) {
-                h.getClient().sendResponse(new RoomScoreComposer(room.getScore(), !this.hasVotedForRoom(h, room)));
-            }
+                int inserted;
+                try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                     PreparedStatement statement = connection.prepareStatement("INSERT IGNORE INTO room_votes (user_id, room_id) VALUES (?, ?)")) {
+                    statement.setInt(1, habbo.getHabboInfo().getId());
+                    statement.setInt(2, room.getId());
+                    inserted = statement.executeUpdate();
+                } catch (SQLException e) {
+                    LOGGER.error("Caught SQL exception", e);
+                    return;
+                }
+                if (inserted == 0) return; // already voted (lost the race)
 
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO room_votes VALUES (?, ?)")) {
-                statement.setInt(1, habbo.getHabboInfo().getId());
-                statement.setInt(2, room.getId());
-                statement.execute();
-            } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                room.setScore(room.getScore() + 1);
+                room.setNeedsUpdate(true);
+                habbo.getHabboStats().votedRooms.push(room.getId());
+                for (Habbo h : room.getHabbos()) {
+                    h.getClient().sendResponse(new RoomScoreComposer(room.getScore(), !this.hasVotedForRoom(h, room)));
+                }
             }
         }
     }

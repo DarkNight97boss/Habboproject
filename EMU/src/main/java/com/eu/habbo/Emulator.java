@@ -40,16 +40,22 @@ public final class Emulator {
     public final static int BUILD = 5;
     public final static String PREVIEW = "";
 
-    public static final String version = "Arcturus Morningstar" + " " + MAJOR + "." + MINOR + "." + BUILD + " " + PREVIEW;
+    /**
+     * Brand string. "Asteria Core" e' il nome del prodotto derivato; la versione
+     * 3.5.5 e' ereditata da Arcturus Morningstar upstream e mantenuta per
+     * compatibilita' con le SQL migration / DB schema. Crediti upstream nei
+     * messaggi LOGGER.info() piu' sotto.
+     */
+    public static final String version = "Asteria Core" + " " + MAJOR + "." + MINOR + "." + BUILD + " " + PREVIEW;
     private static final String logo =
             "\n" +
-                    "███╗   ███╗ ██████╗ ██████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗ ███████╗████████╗ █████╗ ██████╗ \n" +
-                    "████╗ ████║██╔═══██╗██╔══██╗████╗  ██║██║████╗  ██║██╔════╝ ██╔════╝╚══██╔══╝██╔══██╗██╔══██╗\n" +
-                    "██╔████╔██║██║   ██║██████╔╝██╔██╗ ██║██║██╔██╗ ██║██║  ███╗███████╗   ██║   ███████║██████╔╝\n" +
-                    "██║╚██╔╝██║██║   ██║██╔══██╗██║╚██╗██║██║██║╚██╗██║██║   ██║╚════██║   ██║   ██╔══██║██╔══██╗\n" +
-                    "██║ ╚═╝ ██║╚██████╔╝██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝███████║   ██║   ██║  ██║██║  ██║\n" +
-                    "╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝\n" +
-                    "Still Rocking in 2026.\n";
+                    "  █████╗ ███████╗████████╗███████╗██████╗ ██╗ █████╗      ██████╗ ██████╗ ██████╗ ███████╗\n" +
+                    " ██╔══██╗██╔════╝╚══██╔══╝██╔════╝██╔══██╗██║██╔══██╗    ██╔════╝██╔═══██╗██╔══██╗██╔════╝\n" +
+                    " ███████║███████╗   ██║   █████╗  ██████╔╝██║███████║    ██║     ██║   ██║██████╔╝█████╗  \n" +
+                    " ██╔══██║╚════██║   ██║   ██╔══╝  ██╔══██╗██║██╔══██║    ██║     ██║   ██║██╔══██╗██╔══╝  \n" +
+                    " ██║  ██║███████║   ██║   ███████╗██║  ██║██║██║  ██║    ╚██████╗╚██████╔╝██║  ██║███████╗\n" +
+                    " ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝\n" +
+                    " Forgiato sul motore Arcturus Morningstar (GPL-3.0).\n";
 
     public static String build = "";
     public static boolean isReady = false;
@@ -112,12 +118,15 @@ public final class Emulator {
 
             // Checks if this is a BETA build before allowing them to continue.
             if (PREVIEW.toLowerCase().contains("beta")) {
-                System.out.println("Warning, this is a beta build, this means that there may be unintended consequences so make sure you take regular backups while using this build. If you notice any issues you should make an issue on the Krews Git.");
+                System.out.println("Attenzione: questa e' una build BETA. Possono verificarsi comportamenti imprevisti — esegui backup frequenti del database mentre la usi. Segnala eventuali problemi sul tracker upstream.");
                 promptEnterKey();
             }
-            LOGGER.info("\nFollow our development at https://git.krews.org/morningstar/Arcturus-Community, ");
-            LOGGER.info("\nThis project is for educational purposes only. This Emulator is an open-source fork of Arcturus created by TheGeneral.");
-            LOGGER.info("Version: {}", version);
+            // Crediti upstream obbligatori (GPL-3.0 NOTICE). Asteria Core e' un
+            // fork ribrandizzato di Arcturus Morningstar; il rebrand riguarda
+            // il prodotto derivato, NON le attribution che la licenza richiede.
+            LOGGER.info("\nProgetto upstream: https://git.krews.org/morningstar/Arcturus-Community");
+            LOGGER.info("Asteria Core e' un fork open-source di Arcturus Morningstar (autore originale: TheGeneral). Distribuito a scopi educativi.");
+            LOGGER.info("Versione: {}", version);
             LOGGER.info("Build: {}", build);
 
             long startTime = System.nanoTime();
@@ -178,7 +187,7 @@ public final class Emulator {
             // di event-loop saturati prima che i client reali se ne accorgano.
             com.eu.habbo.core.SyntheticProbe.start();
 
-            LOGGER.info("Arcturus Morningstar has successfully loaded.");
+            LOGGER.info("Asteria Core avviato correttamente.");
             LOGGER.info("System launched in: {}ms. Using {} threads!", (System.nanoTime() - startTime) / 1e6, Runtime.getRuntime().availableProcessors() * 2);
             LOGGER.info("Memory: {}/{}MB", (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024), (runtime.freeMemory()) / (1024 * 1024));
 
@@ -260,7 +269,7 @@ public final class Emulator {
         Emulator.isShuttingDown = true;
         Emulator.isReady = false;
 
-        LOGGER.info("Stopping Arcturus Morningstar {}", version);
+        LOGGER.info("Arresto in corso: Asteria Core {}", version);
 
         if (Emulator.pluginManager != null) tryShutdown(() -> Emulator.pluginManager.fireEvent(new EmulatorStartShutdownEvent()));
         if (Emulator.cameraClient != null) tryShutdown(() -> Emulator.cameraClient.disconnect());
@@ -271,7 +280,7 @@ public final class Emulator {
         if (Emulator.config != null) tryShutdown(() -> Emulator.config.saveToDatabase());
         if (Emulator.gameServer != null) tryShutdown(() -> Emulator.gameServer.stop());
 
-        LOGGER.info("Stopped Arcturus Morningstar {}", version);
+        LOGGER.info("Arresto completato: Asteria Core {}", version);
 
         if (Emulator.database != null) tryShutdown(() -> Emulator.database.dispose());
         if (Emulator.threading != null) tryShutdown(() -> Emulator.threading.shutDown());

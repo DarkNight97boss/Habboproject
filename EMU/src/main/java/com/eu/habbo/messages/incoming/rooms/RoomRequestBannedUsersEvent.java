@@ -14,7 +14,13 @@ public class RoomRequestBannedUsersEvent extends MessageHandler {
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
         if (room == null) return;
-        if (!room.hasRights(this.client.getHabbo()) || !this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) return;
+        // Original used `||` between the two negations, which by De Morgan
+        // required BOTH room-rights AND ACC_ANYROOMOWNER. The intent is
+        // either-of: room owners must see their own banlist, AND staff with
+        // ACC_ANYROOMOWNER must be able to read any room's banlist. With
+        // the wrong operator legitimate owners were silently denied AND
+        // the achievement-progress block below was unreachable.
+        if (!room.hasRights(this.client.getHabbo()) && !this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) return;
 
         this.client.sendResponse(new RoomBannedUsersComposer(room));
 

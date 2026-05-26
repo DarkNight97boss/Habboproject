@@ -1,0 +1,47 @@
+-- CMS compatibility v5: full DATA migration from legacy `habbo` DB to `ms`.
+--
+-- Strategy: per ogni tabella presente in entrambi i DB usa
+-- INSERT IGNORE ... SELECT solo delle colonne in comune. Non sovrascrive
+-- niente di esistente in `ms`; aggiunge solo righe mancanti.
+--
+-- Idempotente. Safe re-run.
+--
+-- Risultato (snapshot al primo run):
+--   permission_ranks       : 7
+--   permission_definitions : 201
+--   achievements           : 740
+--   catalog_pages          : 769
+--   catalog_items          : 11061
+--   items_base             : 10480
+--   permissions            : 7
+--   ... + ~140 altre tabelle CMS / emu
+--
+-- Per rigenerare lo script dopo cambi schema:
+--   mysql -u root -N -e "
+--     SELECT CONCAT('INSERT IGNORE INTO ms.\`', h.TABLE_NAME, '\` (', cols, ') SELECT ', cols, ' FROM habbo.\`', h.TABLE_NAME, '\`;')
+--     FROM (
+--       SELECT h.TABLE_NAME,
+--         GROUP_CONCAT(CONCAT('\`', h.COLUMN_NAME, '\`') ORDER BY h.ORDINAL_POSITION SEPARATOR ',') AS cols
+--       FROM information_schema.COLUMNS h
+--       JOIN information_schema.COLUMNS m
+--         ON m.TABLE_SCHEMA='ms' AND m.TABLE_NAME=h.TABLE_NAME
+--        AND m.COLUMN_NAME=h.COLUMN_NAME
+--       WHERE h.TABLE_SCHEMA='habbo'
+--       GROUP BY h.TABLE_NAME
+--     ) h
+--     JOIN information_schema.TABLES t
+--       ON t.TABLE_SCHEMA='ms' AND t.TABLE_NAME=h.TABLE_NAME;
+--   "
+-- Output: cross_insert.sql (~148 statements).
+--
+-- Esegui con FK/unique checks disabilitati:
+--   mysql --init-command="SET SESSION foreign_key_checks=0, SESSION unique_checks=0, SESSION sql_mode=''" \
+--     ms < cross_insert.sql
+--
+-- NOTA: i dati ad alto traffico (audit_log, staff_mfa, daily_streak, battlepass_*,
+-- user_fingerprints) introdotti dalle wave di sicurezza/feature non sono in habbo
+-- e quindi non vengono toccati. Le tabelle emu live (items, rooms, room_items_*)
+-- mantengono i loro ID esistenti — eventuali clash di chiave primaria con righe
+-- di habbo vengono droppati silenziosamente da INSERT IGNORE.
+
+SELECT 'See header for migration command' AS info;

@@ -32,7 +32,18 @@ public class GameServer extends Server {
             public void initChannel(SocketChannel ch) throws Exception {
                 // PROXY protocol (Cloudflare Spectrum / L4 proxy): must run first to read the header
                 // and to drop any connection not coming from a trusted (Cloudflare) source.
-                if (Emulator.getConfig().getBoolean("io.proxy.protocol.enabled")) {
+                //
+                // Storicamente questo blocco aveva due flag config equivalenti
+                // (io.proxy.protocol.enabled e networking.tcp.proxy) lette da
+                // posti diversi. Settare solo "networking.tcp.proxy=true" (come
+                // suggerito in config.ini.example) NON attivava il decoder qui:
+                // il pipeline restava nudo, il game server vedeva l'IP del
+                // proxy invece dell'IP reale, e Habbo.java cercava il PROXY
+                // header in attributi mai popolati. Consolidato in OR logico
+                // cosi' BASTA settare una qualsiasi delle due.
+                boolean proxyOn = Emulator.getConfig().getBoolean("io.proxy.protocol.enabled")
+                        || Emulator.getConfig().getBoolean("networking.tcp.proxy");
+                if (proxyOn) {
                     ch.pipeline().addLast("haproxyDecoder", new io.netty.handler.codec.haproxy.HAProxyMessageDecoder());
                     ch.pipeline().addLast("haproxyHandler", new com.eu.habbo.networking.gameserver.handlers.HAProxyIpHandler());
                 }

@@ -109,7 +109,7 @@ public class SecurityMonitor {
      * fails (older engines, restrictive privileges, etc.).
      */
     private long readAuditCount() {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = Emulator.getDatabase().getReadDataSource().getConnection();
              PreparedStatement ps = connection.prepareStatement(
                      "SELECT TABLE_ROWS FROM INFORMATION_SCHEMA.TABLES " +
                      "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'audit_log' LIMIT 1");
@@ -121,7 +121,7 @@ public class SecurityMonitor {
         } catch (Exception ignored) {
             // Fall through to the legacy exact count.
         }
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = Emulator.getDatabase().getReadDataSource().getConnection();
              PreparedStatement ps = connection.prepareStatement("SELECT COUNT(*) FROM audit_log");
              ResultSet rs = ps.executeQuery()) {
             if (rs.next()) return rs.getLong(1);

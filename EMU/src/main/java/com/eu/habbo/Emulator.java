@@ -167,6 +167,9 @@ public final class Emulator {
             new com.eu.habbo.core.HotelEvents();
             new com.eu.habbo.core.DbCleanup();
             new com.eu.habbo.core.SecurityMonitor();
+            // Redis (opzionale, cross-instance state per anti-flood / session).
+            // Se redis.enabled=false (default), no-op.
+            com.eu.habbo.core.RedisClient.init();
             // Health/metrics endpoint per orchestratori (docker, k8s) e
             // scraper Prometheus. Bind di default su 127.0.0.1:9090.
             com.eu.habbo.core.HealthEndpoint.start();

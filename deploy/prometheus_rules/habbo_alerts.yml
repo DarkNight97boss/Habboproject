@@ -1,0 +1,106 @@
+# PromQL alert rules per Habboproject.
+#
+# 8 alert ad alta confidenza, niente "low signal":
+#   - cose visibili a basso effort (target down, crash loop)
+#   - cose che indicano abuse in corso (audit spike, ratelimit storm)
+#   - cose che predicono incidente (heap saturation, threads runaway)
+#
+# Carica via prometheus.yml: rule_files: ["/etc/prometheus/rules/*.yml"]
+# Severity:
+#   critical = pager (chiama qualcuno alle 3 di notte)
+#   warning  = email/Slack (controlla al mattino)
+#   info     = dashboard only, no notifica
+
+groups:
+  - name: habbo-emu-availability
+    interval: 30s
+    rules:
+
+      - alert: EmuDown
+        expr: up{job="habbo-emu"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "EMU instance {{ $labels.instance }} non risponde a /metrics"
+          description: "Il job habbo-emu non viene scrapato da almeno 1 min. Possibili cause: crash, deadlock, OOM-kill. Controlla `docker logs habbo-emu` e gli heap dump in /habbo/dumps/."
+
+      - alert: EmuRestartLoop
+        expr: changes(habbo_process_uptime_seconds[15m]) >= 3
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "EMU crash-loop ({{ $value }} restart in 15 min)"
+          description: "Il process e' ripartito >= 3 volte in 15 min — uptime resettato. Indica un crash ricorrente (OOM, exception non gestita)."
+
+  - name: habbo-emu-resources
+    interval: 30s
+    rules:
+
+      - alert: HeapNearMax
+        expr: habbo_jvm_heap_used_bytes / habbo_jvm_heap_max_bytes > 0.90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "JVM heap > 90% del max per 5 min"
+          description: "Heap used = {{ $value | humanizePercentage }} del max. GC pressure imminente. Verifica leak (esegui jmap -dump) o alza -Xmx."
+
+      - alert: ThreadsRunaway
+        expr: habbo_jvm_threads_active > 2000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "JVM threads runaway ({{ $value }})"
+          description: "Thread count > 2000 da 5 min. Indica thread-pool leak o creazione thread non-pooled. jstack per diagnosi."
+
+      - alert: RoomsExplosion
+        expr: increase(habbo_rooms_active[10m]) > 500
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Loading di stanze anomalo (+{{ $value }} in 10 min)"
+          description: "L'incremento di rooms loaded e' >500 in 10 min — possibile load-storm o bug nel room manager che impedisce l'unload."
+
+  - name: habbo-emu-security
+    interval: 30s
+    rules:
+
+      - alert: AuditSpike
+        expr: rate(habbo_audit_entries_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Audit log spike: {{ $value | humanize }} entry/sec"
+          description: "Sostained audit-write rate sopra soglia. Possibili cause: attacco brute force, scripter farm, fuzzing. Filtra audit_log per actor_id top con: SELECT actor_id, COUNT(*) FROM audit_log WHERE timestamp > UNIX_TIMESTAMP(NOW() - INTERVAL 10 MINUTE) GROUP BY actor_id ORDER BY 2 DESC LIMIT 10;"
+
+      - alert: PacketsRejectedStorm
+        expr: rate(habbo_packets_rejected_total[5m]) > 50
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Packets rejected: {{ $value | humanize }}/sec"
+          description: "Rate di header sconosciuti / oversize alto -> probabile Tanji / G-Earth farm. UnknownPacketGuard sta kickando in serie. Audit log per `PACKET_FUZZ_DETECTED` mostra gli account."
+
+      - alert: RatelimitStorm
+        expr: rate(habbo_ratelimit_hits_total[5m]) > 100
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Ratelimit kicks: {{ $value | humanize }}/sec"
+          description: "Sliding-window ratelimit sta scartando moltissimi pacchetti. Compromesso tra: bot farm in corso O ratelimit troppo stretto per un evento in-game (es. lancio nuova feature). Controlla i pacchetti scartati per header type."
+
+      - alert: SuddenUserDrop
+        expr: (habbo_users_online - habbo_users_online offset 5m) / habbo_users_online offset 5m < -0.30
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Crollo utenti online (-{{ $value | humanizePercentage }})"
+          description: "Online count e' calato >30% in 5 min senza restart. Possibili cause: bug nuovo packet che disconnette di massa, DB latency, network glitch sul proxy. Controlla emu.err.log e Cloudflare status."

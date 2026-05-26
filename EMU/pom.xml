@@ -4,9 +4,20 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <!--
+        groupId + artifactId LASCIATI INVARIATI per non rompere:
+          - il manifest mainClass del jar-with-dependencies
+          - il nome file Habbo-*-jar-with-dependencies.jar referenziato in
+            start_clean_stack.ps1 e EMU/Dockerfile
+          - eventuali plugin Maven esterni che dipendono da com.eu.habbo:Habbo
+        Il rebrand "Asteria Core" e' applicato a <name> e <description> +
+        documentazione + banner di runtime.
+    -->
     <groupId>com.eu.habbo</groupId>
     <artifactId>Habbo</artifactId>
     <version>3.5.5</version>
+    <name>Asteria Core</name>
+    <description>Asteria Core - server di gioco real-time per ambienti virtuali. Fork ribrandizzato di Arcturus Morningstar (GPL-3.0). Mantiene compatibilita' col client e con lo schema database upstream.</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

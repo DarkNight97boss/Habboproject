@@ -409,4 +409,7 @@ public class Incoming {
     // Custom: daily login streak.
     public static final int DailyStreakClaimEvent = 9510;
     public static final int DailyStreakRequestInfoEvent = 9511;
+
+    // Custom: device fingerprint (anti-multiaccount).
+    public static final int SubmitFingerprintEvent = 9520;
 }

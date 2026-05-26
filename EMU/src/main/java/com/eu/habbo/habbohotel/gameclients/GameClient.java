@@ -128,6 +128,16 @@ public class GameClient {
                 response = event.getCustomMessage();
             }
 
+            // Backpressure: when the outbound buffer is above the high water mark
+            // (set in Server.initializePipeline), `isWritable()` returns false. A
+            // slow-loris-on-read client that never drains the socket would otherwise
+            // pin unbounded memory in ChannelOutboundBuffer. Close the channel —
+            // the user reconnects, the server stays alive.
+            if (!this.channel.isWritable()) {
+                this.channel.close();
+                return;
+            }
+
             this.channel.write(response, this.channel.voidPromise());
             this.channel.flush();
         }
@@ -135,6 +145,10 @@ public class GameClient {
 
     public void sendResponses(ArrayList<ServerMessage> responses) {
         if (this.channel.isOpen()) {
+            if (!this.channel.isWritable()) {
+                this.channel.close();
+                return;
+            }
             for (ServerMessage response : responses) {
                 if (response == null || response.getHeader() <= 0) {
                     return;
@@ -163,6 +177,15 @@ public class GameClient {
             this.channel.close();
 
             if (this.habbo != null) {
+                // Drop per-user runtime guard state (anti-flood window etc) so we
+                // don't leak it for the lifetime of the process.
+                try {
+                    if (this.habbo.getHabboInfo() != null) {
+                        com.eu.habbo.core.ChatSpamGuard.onDisconnect(this.habbo.getHabboInfo().getId());
+                    }
+                } catch (Exception ignored) {
+                }
+
                 if (this.habbo.isOnline()) {
                     this.habbo.getHabboInfo().setOnline(false);
                     this.habbo.disconnect();

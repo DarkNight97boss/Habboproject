@@ -129,6 +129,19 @@ public final class Emulator {
                     Emulator.getConfig().getValue("enc.e"),
                     Emulator.getConfig().getValue("enc.n"),
                     Emulator.getConfig().getValue("enc.d"));
+
+            // SECURITY: enc.enabled with the SHIPPED-DEFAULT or weak (<256 hex) RSA
+            // keypair = trivial MITM downgrade of the client<->server handshake.
+            // The default key is published in the Arcturus repo, so anyone can
+            // decrypt the handshake of every retro that hasn't rotated it. Warn
+            // loudly here so an operator who flips enc.enabled cannot miss it.
+            if (Emulator.crypto != null && Emulator.crypto.isEnabled()) {
+                String nKey = Emulator.getConfig().getValue("enc.n");
+                String defaultN = "86851dd364d5c5cece3c883171cc6ddc5760779b992482bd1e20dd296888df91b33b936a7b93f06d29e8870f703a216257dec7c81de0058fea4cc5116f75e6efc4e9113513e45357dc3fd43d4efab5963ef178b78bd61e81a14c603b24c8bcce0a12230b320045498edc29282ff0603bc7b7dae8fc1b05b52b2f301a9dc783b7";
+                if (nKey == null || nKey.length() < 256 || nKey.equalsIgnoreCase(defaultN)) {
+                    LOGGER.error("SECURITY: enc.enabled=true with the shipped-default or weak RSA key — the DH handshake is trivially MITM-able. Rotate enc.e/n/d and update the matching public key in the client, or disable encryption.");
+                }
+            }
             Emulator.database = new Database(Emulator.getConfig());
             Emulator.databaseLogger = new DatabaseLogger();
             Emulator.config.loaded = true;
@@ -151,6 +164,8 @@ public final class Emulator {
             Emulator.rconServer.connect();
             Emulator.badgeImager = new BadgeImager();
             new com.eu.habbo.core.Watchdog();
+            new com.eu.habbo.core.HotelEvents();
+            new com.eu.habbo.core.DbCleanup();
 
             LOGGER.info("Arcturus Morningstar has successfully loaded.");
             LOGGER.info("System launched in: {}ms. Using {} threads!", (System.nanoTime() - startTime) / 1e6, Runtime.getRuntime().availableProcessors() * 2);

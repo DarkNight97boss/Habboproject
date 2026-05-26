@@ -48,6 +48,20 @@ public final class HealthEndpoint {
     public static final AtomicLong PACKETS_REJECTED = new AtomicLong(0);
     public static final AtomicLong RATELIMIT_HITS = new AtomicLong(0);
 
+    /**
+     * Histogram della durata di {@code MessageHandler.handle()} (SLI 3 in SLO.md).
+     * Popolato da PacketManager per ogni dispatch. Quantili (p50/p95/p99) si
+     * calcolano lato PromQL via {@code histogram_quantile()}.
+     */
+    public static final LatencyHistogram PACKET_PROCESSING_SECONDS =
+            new LatencyHistogram("habbo_packet_processing_seconds",
+                    "Time spent inside a packet handler.handle() invocation, including I/O it triggers");
+
+    /** Histogram round-trip TCP del synthetic probe (SLI 1 supplementare). */
+    public static final LatencyHistogram SYNTHETIC_CONNECT_SECONDS =
+            new LatencyHistogram("habbo_synthetic_connect_seconds",
+                    "Self-probe TCP connect duration to the game port");
+
     public static void start() {
         boolean enabled;
         int port;
@@ -146,6 +160,9 @@ public final class HealthEndpoint {
         appendGauge(sb, "habbo_audit_entries_total", "Cumulative audit_log entries written since boot", AUDIT_TOTAL.get());
         appendGauge(sb, "habbo_packets_rejected_total", "Packets rejected (ratelimit / unknown header / oversize)", PACKETS_REJECTED.get());
         appendGauge(sb, "habbo_ratelimit_hits_total", "Sliding-window ratelimit kicks (per-IP, per-user)", RATELIMIT_HITS.get());
+        // Histogram (SLI 3 latency + synthetic probe).
+        PACKET_PROCESSING_SECONDS.appendTo(sb);
+        SYNTHETIC_CONNECT_SECONDS.appendTo(sb);
         return sb.toString();
     }
 

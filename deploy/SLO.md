@@ -57,17 +57,26 @@ avg_over_time(up{job="habbo-emu"}[30d])
 
 ## SLI 3 — Latency packet round-trip
 
-**Definizione**: tempo da arrivo packet a invio risposta < soglia.
+**Definizione**: tempo dentro `MessageHandler.handle()` < soglia.
 
-**TODO**: questo SLI non e' ancora misurato (non esponiamo histogram di
-processing time). Per esporlo in Fase D:
-1. Wrap `PacketManager.handlePacket()` in un `Timer` Micrometer.
-2. Espone `habbo_packet_processing_seconds_bucket{quantile=...}`.
-3. SLO target: **p99 < 100ms** per pacchetti senza-DB; **p99 < 500ms** per
-   pacchetti con-DB.
+**SLI** (p99 calcolato da Prometheus histogram):
+```promql
+histogram_quantile(0.99,
+  sum(rate(habbo_packet_processing_seconds_bucket[5m])) by (le))
+```
 
-Per ora il proxy SLI: `habbo_jvm_threads_active` stabile (no thread starvation)
-+ p95 connect time < 50ms da `tools/loadtest` (eseguito settimanalmente).
+**SLO target**: **p99 < 100ms** misurata su finestra 5-min.
+
+**Misurazione**: `LatencyHistogram` in `core/LatencyHistogram.java` con
+12 bucket fissi (1ms..5s) + `+Inf`. Aggiornato da `PacketManager` per
+ogni packet dispatch. Esposto da `/metrics` come
+`habbo_packet_processing_seconds_{bucket,sum,count}`.
+
+**Alert**: `PacketLatencyP99High` (warning, threshold 500ms da 5min) —
+vedi `habbo_alerts.yml`.
+
+Synthetic complement (`habbo_synthetic_connect_seconds`): probe TCP
+ogni 30s; tempo di accept e' un proxy del freeze del boss event-loop.
 
 ---
 

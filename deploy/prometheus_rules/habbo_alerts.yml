@@ -96,6 +96,24 @@ groups:
           summary: "Ratelimit kicks: {{ $value | humanize }}/sec"
           description: "Sliding-window ratelimit sta scartando moltissimi pacchetti. Compromesso tra: bot farm in corso O ratelimit troppo stretto per un evento in-game (es. lancio nuova feature). Controlla i pacchetti scartati per header type."
 
+      - alert: PacketLatencyP99High
+        expr: histogram_quantile(0.99, sum(rate(habbo_packet_processing_seconds_bucket[5m])) by (le)) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Packet handler p99 latency > 500ms"
+          description: "p99 = {{ $value | humanizeDuration }}. Indica un handler che blocca l'event-loop (DB lento, lock contention). Verifica `slow_query_log` MariaDB + jstack per individuare l'handler."
+
+      - alert: SyntheticProbeStuck
+        expr: absent_over_time(habbo_synthetic_connect_seconds_count[3m])
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Synthetic probe non ha registrato sample da 3 min"
+          description: "Il self-probe TCP non sta arrivando. Possibile cause: boss event-loop bloccato, SyntheticProbe crashed, oppure /metrics non e' aggiornato (HealthEndpoint giu')."
+
       - alert: SuddenUserDrop
         expr: (habbo_users_online - habbo_users_online offset 5m) / habbo_users_online offset 5m < -0.30
         for: 2m

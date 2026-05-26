@@ -11,7 +11,10 @@ public class CheckPetNameEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        String petName = this.packet.readString();
+        // Pet names are capped by `hotel.pets.name.length.max` (default 15)
+        // but we still want a hard ceiling at the parser to keep oversize
+        // input out of the StringUtils.isAlphanumeric scan.
+        String petName = this.packet.readString(64);
 
         if (petName.length() < PET_NAME_LENGTH_MINIMUM) {
             this.client.sendResponse(new PetNameErrorComposer(PetNameErrorComposer.NAME_TO_SHORT, PET_NAME_LENGTH_MINIMUM + ""));

@@ -8,7 +8,9 @@ import com.eu.habbo.messages.outgoing.rooms.items.jukebox.JukeBoxTrackCodeCompos
 public class JukeBoxRequestTrackCodeEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
-        String songName = this.packet.readString();
+        // Song names map to in-game tracks via lookup. Hardware-bounded ID
+        // is < 100 chars; cap the parse to defeat oversize allocation.
+        String songName = this.packet.readString(128);
 
         final SoundTrack track = Emulator.getGameEnvironment().getItemManager().getSoundTrack(songName);
 

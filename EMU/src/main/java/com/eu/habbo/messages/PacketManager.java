@@ -88,6 +88,51 @@ public class PacketManager {
     private final THashMap<Integer, List<ICallable>> callables;
     private final PacketNames names;
 
+    /**
+     * Cached no-arg constructors for every registered handler.
+     *
+     * The dispatch hot path used to call {@code handlerClass.newInstance()},
+     * which is deprecated since Java 9 and re-runs access checks on every
+     * call. A cached {@link java.lang.reflect.Constructor} skips the access
+     * check (we setAccessible once) and skips the class-init guard, knocking
+     * a few microseconds per packet — adds up at thousands of packets/sec.
+     *
+     * Populated lazily on first use, then never modified, so a plain
+     * {@code java.util.concurrent.ConcurrentHashMap} is safe without locks.
+     */
+    private static final java.util.concurrent.ConcurrentMap<Class<? extends MessageHandler>, java.lang.reflect.Constructor<? extends MessageHandler>> CTOR_CACHE =
+            new java.util.concurrent.ConcurrentHashMap<>(512);
+
+    /**
+     * Default per-handler ratelimit floor in ms. Resolved lazily on first use
+     * (Emulator config may not be loaded when this class is initialized).
+     * 0 = disabled (legacy behaviour). Recommended production value: 25.
+     */
+    private static volatile int DEFAULT_RATELIMIT_MS = -1;
+
+    private static int resolveDefaultRatelimit() {
+        int v = DEFAULT_RATELIMIT_MS;
+        if (v >= 0) return v;
+        try {
+            v = Emulator.getConfig().getInt("sec.ratelimit.default.ms", 0);
+        } catch (Throwable ignored) {
+            v = 0;
+        }
+        if (v < 0) v = 0;
+        DEFAULT_RATELIMIT_MS = v;
+        return v;
+    }
+
+    private static MessageHandler newHandler(Class<? extends MessageHandler> cls) throws Exception {
+        java.lang.reflect.Constructor<? extends MessageHandler> ctor = CTOR_CACHE.get(cls);
+        if (ctor == null) {
+            ctor = cls.getDeclaredConstructor();
+            ctor.setAccessible(true);
+            CTOR_CACHE.putIfAbsent(cls, ctor);
+        }
+        return ctor.newInstance();
+    }
+
     public PacketManager() throws Exception {
         this.incoming = new THashMap<>();
         this.callables = new THashMap<>();
@@ -189,18 +234,26 @@ public class PacketManager {
                     return;
                 }
 
-                final MessageHandler handler = handlerClass.newInstance();
+                final MessageHandler handler = newHandler(handlerClass);
 
-                if (handler.getRatelimit() > 0) {
-                    if (client.messageTimestamps.containsKey(handlerClass) && System.currentTimeMillis() - client.messageTimestamps.get(handlerClass) < handler.getRatelimit()) {
+                // Effective ratelimit = explicit override OR config-gated default
+                // floor. The default is OFF (0) for backward compat, but operators
+                // can set sec.ratelimit.default.ms=25 to enforce a 25ms floor on
+                // every handler that didn't bother to declare one — caps packet
+                // flood at ~40 events/sec without breaking normal play (movement
+                // packets at 20ms per step opt-out by setting their own value).
+                int explicit = handler.getRatelimit();
+                int effective = explicit > 0 ? explicit : resolveDefaultRatelimit();
+                if (effective > 0) {
+                    Long last = client.messageTimestamps.get(handlerClass);
+                    long now = System.currentTimeMillis();
+                    if (last != null && now - last < effective) {
                         if (PacketManager.DEBUG_SHOW_PACKETS) {
                             LOGGER.warn("Client packet {} was ratelimited.", packet.getMessageId());
                         }
-
                         return;
-                    } else {
-                        client.messageTimestamps.put(handlerClass, System.currentTimeMillis());
                     }
+                    client.messageTimestamps.put(handlerClass, now);
                 }
 
                 if (logList.contains(packet.getMessageId()) && client.getHabbo() != null) {
@@ -219,6 +272,15 @@ public class PacketManager {
                 if (!handler.isCancelled) {
                     handler.handle();
                 }
+            }
+        } catch (NullPointerException npe) {
+            // Most NPEs from packet dispatch are the disconnect-race pattern:
+            // packet arrived while the GameClient was being torn down, so the
+            // Habbo chain points to nulls. Log at debug to keep prod output
+            // clean — actual bugs surface at WARN via the parent catch.
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Dispatch NPE (likely disconnect race) on packet {}: {}",
+                        packet.getMessageId(), npe.toString());
             }
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);

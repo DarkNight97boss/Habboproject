@@ -184,6 +184,7 @@ public class GameClient {
                         int uid = this.habbo.getHabboInfo().getId();
                         com.eu.habbo.core.ChatSpamGuard.onDisconnect(uid);
                         com.eu.habbo.core.UnknownPacketGuard.onDisconnect(uid);
+                        com.eu.habbo.core.StaffCommandQuota.onDisconnect(uid);
                     }
                 } catch (Exception ignored) {
                 }

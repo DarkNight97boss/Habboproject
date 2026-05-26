@@ -94,7 +94,33 @@ public class SecurityMonitor {
         }
     }
 
+    /**
+     * Read the audit_log row count.
+     *
+     * Originally this ran SELECT COUNT(*) FROM audit_log every 60s, which is
+     * fine when the table has 10k rows but degenerates to a full table scan
+     * once it grows to millions — the tick would burn seconds of DB time and
+     * trigger the connection-leak detector. We now read the optimizer estimate
+     * from INFORMATION_SCHEMA.TABLES (MySQL/MariaDB only), which is O(1).
+     *
+     * The estimate is off by a few percent but that's fine: the only consumer
+     * is the per-window delta + spike heuristic, which cares about relative
+     * change, not exact counts. Falls back to COUNT(*) if the schema query
+     * fails (older engines, restrictive privileges, etc.).
+     */
     private long readAuditCount() {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+             PreparedStatement ps = connection.prepareStatement(
+                     "SELECT TABLE_ROWS FROM INFORMATION_SCHEMA.TABLES " +
+                     "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'audit_log' LIMIT 1");
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                long estimate = rs.getLong(1);
+                if (estimate > 0) return estimate;
+            }
+        } catch (Exception ignored) {
+            // Fall through to the legacy exact count.
+        }
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement ps = connection.prepareStatement("SELECT COUNT(*) FROM audit_log");
              ResultSet rs = ps.executeQuery()) {

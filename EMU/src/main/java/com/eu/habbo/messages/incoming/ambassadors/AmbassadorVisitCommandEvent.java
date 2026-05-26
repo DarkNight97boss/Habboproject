@@ -10,7 +10,9 @@ public class AmbassadorVisitCommandEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         if (this.client.getHabbo().hasPermission(Permission.ACC_AMBASSADOR)) {
-            String username = this.packet.readString();
+            // Habbo usernames are <= 30 chars (CMS-side constraint). Cap defensively
+            // so a malformed packet can't force a multi-KB allocation here.
+            String username = this.packet.readString(64);
 
             Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(username);
 

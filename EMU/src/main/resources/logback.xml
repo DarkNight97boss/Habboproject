@@ -54,6 +54,39 @@
         </encoder>
     </appender>
 
+    <!--
+        Async wrappers around the file appenders. Under load (51 log statements
+        in Room.java fire on every room tick × N rooms × M users) the I/O cost
+        of synchronous disk writes stalls the game-thread tick budget. Async
+        moves the format+write to a dedicated thread, returns immediately, and
+        drops only when the queue is *completely* full. Console stays sync so
+        we don't lose the last few lines on a crash. Discarding policy: drop
+        TRACE/DEBUG/INFO when the queue is 80% full; keep WARN/ERROR always.
+    -->
+    <appender name="AsyncFileDebug" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>4096</queueSize>
+        <discardingThreshold>820</discardingThreshold>
+        <neverBlock>true</neverBlock>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="FileDebug" />
+    </appender>
+
+    <appender name="AsyncFileErrors" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>2048</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>false</neverBlock>
+        <includeCallerData>true</includeCallerData>
+        <appender-ref ref="FileErrors" />
+    </appender>
+
+    <appender name="AsyncFileErrorsSql" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>2048</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>false</neverBlock>
+        <includeCallerData>true</includeCallerData>
+        <appender-ref ref="FileErrorsSql" />
+    </appender>
+
     <logger name="io.netty">
         <level value="info"/>
     </logger>
@@ -62,10 +95,21 @@
         <level value="error"/>
     </logger>
 
+    <!-- Tighten noisy hot-path loggers so they don't dominate the async queue. -->
+    <logger name="com.eu.habbo.habbohotel.rooms.Room">
+        <level value="warn"/>
+    </logger>
+    <logger name="com.eu.habbo.habbohotel.rooms.RoomManager">
+        <level value="warn"/>
+    </logger>
+    <logger name="com.eu.habbo.habbohotel.items.interactions">
+        <level value="warn"/>
+    </logger>
+
     <root level="info">
         <appender-ref ref="Console" />
-        <appender-ref ref="FileDebug" />
-        <appender-ref ref="FileErrors" />
-        <appender-ref ref="FileErrorsSql" />
+        <appender-ref ref="AsyncFileDebug" />
+        <appender-ref ref="AsyncFileErrors" />
+        <appender-ref ref="AsyncFileErrorsSql" />
     </root>
 </configuration>

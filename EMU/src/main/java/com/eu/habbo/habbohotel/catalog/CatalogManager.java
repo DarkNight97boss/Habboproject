@@ -271,6 +271,10 @@ public class CatalogManager {
 
     private synchronized void loadCatalogPages() {
         this.catalogPages.clear();
+        // Invalidate the name -> page cache so the next lookup re-reads the
+        // fresh page set. Without this, a `:reloadcatalog` would leave stale
+        // entries pointing at the old (now-garbage) page objects.
+        com.eu.habbo.core.HotCache.invalidateCatalogPages();
 
         final THashMap<Integer, CatalogPage> pages = new THashMap<>();
         pages.put(-1, new CatalogRootLayout());
@@ -590,9 +594,22 @@ public class CatalogManager {
     }
 
     public CatalogPage getCatalogPage(String captionSafe) {
-        return this.catalogPages.valueCollection().stream()
+        if (captionSafe == null) return null;
+        // Cache the name -> page resolution. The previous stream scan was O(n)
+        // over ~hundreds of pages per call and got hit on every navigator/
+        // catalog interaction. Caffeine TTL = 30 min from HotCache (pages
+        // don't change without a reload, which invalidates the cache).
+        Object cached = com.eu.habbo.core.HotCache.catalogPageByName(captionSafe);
+        if (cached instanceof CatalogPage) {
+            return (CatalogPage) cached;
+        }
+        CatalogPage resolved = this.catalogPages.valueCollection().stream()
                 .filter(p -> p != null && p.getPageName() != null && p.getPageName().equalsIgnoreCase(captionSafe))
                 .findAny().orElse(null);
+        if (resolved != null) {
+            com.eu.habbo.core.HotCache.putCatalogPageByName(captionSafe, resolved);
+        }
+        return resolved;
     }
 
     public CatalogPage getCatalogPageByLayout(String layoutName) {

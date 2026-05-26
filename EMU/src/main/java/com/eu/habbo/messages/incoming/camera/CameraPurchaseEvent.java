@@ -17,22 +17,31 @@ public class CameraPurchaseEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (this.client.getHabbo().getHabboInfo().getCredits() < CameraPurchaseEvent.CAMERA_PURCHASE_CREDITS) {
+        // Hardened: short-circuit if the client is mid-disconnect or the Habbo
+        // session was reaped between dispatch and handle. Avoids NPE-spam on
+        // every camera purchase under churn.
+        com.eu.habbo.habbohotel.users.Habbo me = this.requireHabbo();
+        if (me == null) return;
+        com.eu.habbo.habbohotel.users.HabboInfo info = me.getHabboInfo();
+        com.eu.habbo.habbohotel.rooms.Room currentRoom = info.getCurrentRoom();
+        if (currentRoom == null) return;
+
+        if (info.getCredits() < CameraPurchaseEvent.CAMERA_PURCHASE_CREDITS) {
             this.client.sendResponse(new NotEnoughPointsTypeComposer(true, false, 0));
             return;
         }
 
-        if (this.client.getHabbo().getHabboInfo().getCurrencyAmount(CameraPurchaseEvent.CAMERA_PURCHASE_POINTS_TYPE) < CameraPurchaseEvent.CAMERA_PURCHASE_POINTS) {
+        if (info.getCurrencyAmount(CameraPurchaseEvent.CAMERA_PURCHASE_POINTS_TYPE) < CameraPurchaseEvent.CAMERA_PURCHASE_POINTS) {
             this.client.sendResponse(new NotEnoughPointsTypeComposer(false, true, CameraPurchaseEvent.CAMERA_PURCHASE_POINTS_TYPE));
             return;
         }
 
-        if (this.client.getHabbo().getHabboInfo().getPhotoTimestamp() == 0) return;
-        if (this.client.getHabbo().getHabboInfo().getPhotoJSON().isEmpty()) return;
-        if (!this.client.getHabbo().getHabboInfo().getPhotoJSON().contains(this.client.getHabbo().getHabboInfo().getPhotoTimestamp() + ""))
+        if (info.getPhotoTimestamp() == 0) return;
+        if (info.getPhotoJSON() == null || info.getPhotoJSON().isEmpty()) return;
+        if (!info.getPhotoJSON().contains(info.getPhotoTimestamp() + ""))
             return;
 
-        if (Emulator.getPluginManager().fireEvent(new UserPurchasePictureEvent(this.client.getHabbo(), this.client.getHabbo().getHabboInfo().getPhotoURL(), this.client.getHabbo().getHabboInfo().getCurrentRoom().getId(), this.client.getHabbo().getHabboInfo().getPhotoTimestamp())).isCancelled()) {
+        if (Emulator.getPluginManager().fireEvent(new UserPurchasePictureEvent(me, info.getPhotoURL(), currentRoom.getId(), info.getPhotoTimestamp())).isCancelled()) {
             return;
         }
 

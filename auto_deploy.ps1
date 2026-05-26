@@ -48,20 +48,23 @@ if ($dirty) {
 $shortSha   = Git-Out rev-parse --short HEAD
 $syncBranch = "auto-sync-$shortSha"
 
-Write-Host "[auto-deploy] $ahead commit nuovi -> push su origin/$syncBranch"
+Write-Host "[auto-deploy] $aheadStr commit nuovi -> push su origin/$syncBranch"
 
-# Push (no force: branch fresco, deve esistere solo se non c'era gia')
-$pushOut = git push origin "HEAD:refs/heads/$syncBranch" 2>&1
-if ($LASTEXITCODE -ne 0) {
-    # Se il branch esiste gia' (rilancio idempotente), procedi alla PR
-    if ($pushOut -match 'already exists' -or $pushOut -match 'up-to-date') {
-        Write-Host "[auto-deploy] $syncBranch e' gia' su origin, procedo con PR."
+# Push (no force: branch fresco). In PS 5.1 NON usare 2>&1 su native exe:
+# git scrive info su stderr e PS le tratta come errori. Lasciamo che git
+# stampi direttamente e ci affidiamo al solo $LASTEXITCODE.
+git push origin "HEAD:refs/heads/$syncBranch"
+$pushExit = $LASTEXITCODE
+if ($pushExit -ne 0) {
+    # Probabile: branch gia' presente. Verifichiamo via ls-remote.
+    $remoteSha = (Git-Out ls-remote origin "refs/heads/$syncBranch") -split "`t" | Select-Object -First 1
+    $localSha  = Git-Out rev-parse HEAD
+    if ($remoteSha -eq $localSha) {
+        Write-Host "[auto-deploy] $syncBranch e' gia' aggiornato su origin, procedo con PR."
     } else {
-        Write-Host "[auto-deploy] ERRORE push: $pushOut"
+        Write-Host "[auto-deploy] ERRORE push (exit $pushExit). Vedi messaggi sopra."
         exit 1
     }
-} else {
-    Write-Host $pushOut
 }
 
 # Esiste gia' una PR aperta per questo branch?
@@ -91,11 +94,12 @@ quando sei pronto.
 $tmp = [System.IO.Path]::GetTempFileName()
 $body | Out-File -FilePath $tmp -Encoding utf8
 
-$prUrl = gh pr create --repo DarkNight97boss/Habboproject --base main --head $syncBranch --title $title --body-file $tmp 2>&1
+$prUrl = gh pr create --repo DarkNight97boss/Habboproject --base main --head $syncBranch --title $title --body-file $tmp
+$prExit = $LASTEXITCODE
 Remove-Item $tmp -ErrorAction SilentlyContinue
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "[auto-deploy] ERRORE gh pr create: $prUrl"
+if ($prExit -ne 0) {
+    Write-Host "[auto-deploy] ERRORE gh pr create (exit $prExit). Vedi messaggi sopra."
     exit 1
 }
 

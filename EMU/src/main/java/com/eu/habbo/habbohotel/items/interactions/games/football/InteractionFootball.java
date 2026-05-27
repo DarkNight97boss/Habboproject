@@ -261,31 +261,7 @@ public class InteractionFootball extends InteractionPushable {
     @Override
     public boolean canStillMove(Room room, RoomTile from, RoomTile to, RoomUserRotation direction, RoomUnit kicker, int nextRoll, int currentStep, int totalSteps) {
         HabboItem topItem = room.getTopItemAt(from.x, from.y, this);
-
-        // BUGFIX: il check originale `hasHabbosAt(to)` blocca la palla nel 70%
-        // dei casi se c'e' QUALSIASI habbo nella destinazione, incluso il
-        // KICKER stesso. Risultato: dopo walkOff (avatar appena uscito dalla
-        // palla in tile X, ora in tile Y dove la palla vuole andare), la
-        // palla resta ferma il 70% delle volte -> "passi sopra la palla e
-        // non si muove".
-        //
-        // Adesso escludiamo il kicker dal check: la palla puo' sempre
-        // passare attraverso chi l'ha appena calciata. Altri habbo presenti
-        // continuano a bloccarla con probabilita' 70% (gameplay invariato).
-        boolean blockedByOtherHabbo = false;
-        if (Emulator.getRandom().nextInt(10) >= 3) {
-            java.util.Collection<RoomUnit> unitsAtTarget = room.getRoomUnitsAt(to);
-            if (unitsAtTarget != null) {
-                for (RoomUnit u : unitsAtTarget) {
-                    if (u != kicker) {
-                        blockedByOtherHabbo = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        return !(blockedByOtherHabbo || (topItem != null && topItem.getBaseItem().getName().startsWith("fball_goal_") && currentStep != 1));
+        return !((Emulator.getRandom().nextInt(10) >= 3 && room.hasHabbosAt(to.x, to.y)) || (topItem != null && topItem.getBaseItem().getName().startsWith("fball_goal_") && currentStep != 1));
     }
 
     @Override

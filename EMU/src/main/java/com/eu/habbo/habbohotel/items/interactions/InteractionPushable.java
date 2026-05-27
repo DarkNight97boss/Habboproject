@@ -79,6 +79,19 @@ public abstract class InteractionPushable extends InteractionDefault {
     public void onWalkOn(RoomUnit roomUnit, final Room room, Object[] objects) throws Exception {
         super.onWalkOn(roomUnit, room, objects);
 
+        // BUGFIX (palla doppio-kick): se la palla e' GIA' in movimento (cioe'
+        // sta gia' eseguendo un KickBallAction precedente), non ricalciamola.
+        // Senza questa guard, un avatar che cammina ATTRAVERSO la palla
+        // generava 2 eventi rapidi:
+        //   1) primo onWalkOn: drag kick (palla si muove 1 casella)
+        //   2) avatar avanza, raggiunge di nuovo la palla, secondo onWalkOn:
+        //      kick puro (palla si muove un'altra casella)
+        // Risultato: palla a 2 caselle, avatar a 1 -> "1 casella vuota tra".
+        // Con la guard, il secondo kick e' ignorato finche' la palla non si ferma.
+        if (this.currentThread != null && !this.currentThread.dead) {
+            return;
+        }
+
         int velocity;
         boolean isDrag = false;
         RoomUserRotation direction;
@@ -97,9 +110,6 @@ public abstract class InteractionPushable extends InteractionDefault {
         }
 
         if (velocity > 0) {
-            if (this.currentThread != null)
-                this.currentThread.dead = true;
-
             this.currentThread = new KickBallAction(this, room, roomUnit, direction, velocity, isDrag);
             Emulator.getThreading().run(this.currentThread, 0);
         }

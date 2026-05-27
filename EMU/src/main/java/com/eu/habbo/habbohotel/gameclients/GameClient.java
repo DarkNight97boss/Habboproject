@@ -37,6 +37,16 @@ public class GameClient {
     public final ConcurrentHashMap<Class<? extends MessageHandler>, Long> messageTimestamps = new ConcurrentHashMap<>();
     public long lastPacketCounterCleared = Emulator.getIntUnixTimestamp();
 
+    /**
+     * Conteggio drop consecutivi per backpressure outbound. Quando il client
+     * non drena abbastanza in fretta (slow-loris OR temporaneo picco di
+     * broadcast room), {@code Channel.isWritable()} ritorna false e noi
+     * decidiamo di droppare il packet invece di chiudere subito. Solo dopo
+     * un numero di drop consecutivi sopra soglia chiudiamo (il client e'
+     * davvero non responsive). Reset a 0 al primo write riuscito.
+     */
+    private final java.util.concurrent.atomic.AtomicInteger consecutiveBackpressureDrops = new java.util.concurrent.atomic.AtomicInteger(0);
+
     public GameClient(Channel channel) {
         this.channel = channel;
         this.encryption = Emulator.getCrypto().isEnabled()
@@ -128,15 +138,26 @@ public class GameClient {
                 response = event.getCustomMessage();
             }
 
-            // Backpressure: when the outbound buffer is above the high water mark
-            // (set in Server.initializePipeline), `isWritable()` returns false. A
-            // slow-loris-on-read client that never drains the socket would otherwise
-            // pin unbounded memory in ChannelOutboundBuffer. Close the channel —
-            // the user reconnects, the server stays alive.
+            // Backpressure (REVISED): l'implementazione originale chiudeva la
+            // connessione al primo `!isWritable()`. Troppo aggressivo: un picco
+            // breve di broadcast in stanza affollata (es. wave entra) era
+            // sufficiente per kickare TUTTI gli utenti correntemente in send.
+            //
+            // Nuovo comportamento: DROPPA il packet (con counter), chiudi solo
+            // dopo N drop consecutivi (= il client davvero non drena).
             if (!this.channel.isWritable()) {
-                this.channel.close();
+                int n = this.consecutiveBackpressureDrops.incrementAndGet();
+                int threshold = 50; // ~50 packet skippati consecutivi = slow-loris reale
+                try {
+                    threshold = Emulator.getConfig().getInt("networking.backpressure.drop.threshold", 50);
+                } catch (Throwable ignored) {
+                }
+                if (n >= threshold) {
+                    this.channel.close();
+                }
                 return;
             }
+            this.consecutiveBackpressureDrops.set(0);
 
             this.channel.write(response, this.channel.voidPromise());
             this.channel.flush();
@@ -146,9 +167,20 @@ public class GameClient {
     public void sendResponses(ArrayList<ServerMessage> responses) {
         if (this.channel.isOpen()) {
             if (!this.channel.isWritable()) {
-                this.channel.close();
+                // Same logic as sendResponse(): drop with counter, close only
+                // after N consecutive drops.
+                int n = this.consecutiveBackpressureDrops.incrementAndGet();
+                int threshold = 50;
+                try {
+                    threshold = Emulator.getConfig().getInt("networking.backpressure.drop.threshold", 50);
+                } catch (Throwable ignored) {
+                }
+                if (n >= threshold) {
+                    this.channel.close();
+                }
                 return;
             }
+            this.consecutiveBackpressureDrops.set(0);
             for (ServerMessage response : responses) {
                 if (response == null || response.getHeader() <= 0) {
                     return;

@@ -50,9 +50,14 @@ public final class UnknownPacketGuard {
                 ? client.getHabbo().getHabboInfo().getId() : -1;
         if (userId <= 0) return; // pre-auth garbage is normal during handshake
 
-        int max = Math.max(1, Emulator.getConfig().getInt("sec.unknown_packet.max", 5));
-        int windowSec = Math.max(5, Emulator.getConfig().getInt("sec.unknown_packet.window_sec", 30));
-        boolean kick = Emulator.getConfig().getBoolean("sec.unknown_packet.kick", true);
+        // POLICY: niente kick automatico (vedi Wave "tolerant"). Il client
+        // Nitro moderno manda alcuni header non registrati in Arcturus 3.5.5
+        // che NON sono attacchi; sono solo packet di un protocollo piu' recente.
+        // Default cambiato: kick=false, max=50, window=60s. Manteniamo solo
+        // l'audit log per visibilita' senza mai chiudere connessioni utenti.
+        int max = Math.max(1, Emulator.getConfig().getInt("sec.unknown_packet.max", 50));
+        int windowSec = Math.max(5, Emulator.getConfig().getInt("sec.unknown_packet.window_sec", 60));
+        boolean kick = Emulator.getConfig().getBoolean("sec.unknown_packet.kick", false);
 
         Deque<Long> q = STATE.computeIfAbsent(userId, k -> new ArrayDeque<>());
         long now = System.currentTimeMillis();

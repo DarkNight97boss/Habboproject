@@ -60,13 +60,9 @@ public class KickBallAction implements Runnable {
                     // ad ogni bounce (floor a 1) per simulare la perdita di
                     // momento del rimbalzo. Risultato visivo: dopo il muro la
                     // palla fa 1-2 caselle indietro invece di 6+.
-                    // Damping fisico /3: remaining=6 -> 2, remaining=5 -> 1,
-                    // remaining=4 -> 1, remaining=3 -> 1. Match al comportamento
-                    // Habbo originale: rimbalzo quasi sempre 1 casella, max 2 nel
-                    // caso estremo (palla attaccata al muro con kick massimo).
                     int remaining = this.totalSteps - this.currentStep;
                     if (remaining > 1) {
-                        int damped = Math.max(1, remaining / 3);
+                        int damped = Math.max(1, remaining / 2);
                         this.totalSteps = this.currentStep + damped;
                     }
                 } else {

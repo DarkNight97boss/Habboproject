@@ -30,23 +30,20 @@ public class InteractionFootball extends InteractionPushable {
 
     @Override
     public int getWalkOnVelocity(RoomUnit roomUnit, Room room) {
-        // POLICY: la palla calciata camminandoci sopra DEVE muoversi sempre
-        // di 1 casella sola. Il default storico Arcturus (eredita dal Habbo
-        // classico) ritornava velocity 6 nel caso `tilesWalked==1` (kick
-        // lungo se l'avatar arriva con 1 step solo): comportamento fastidioso
-        // perche' rendeva la palla ingovernabile. Rimossa quella branch.
         if (roomUnit.getPath().isEmpty() && roomUnit.tilesWalked() == 2 && this.getExtradata().equals("1"))
             return 0;
+
+        if (roomUnit.getPath().size() == 0 && roomUnit.tilesWalked() == 1)
+            return 6;
 
         return 1;
     }
 
     @Override
     public int getWalkOffVelocity(RoomUnit roomUnit, Room room) {
-        // POLICY (vedi anche getWalkOnVelocity): rimossa branch velocity=6
-        // del "kick stazionario" (avatar fermo sulla palla che cammina via
-        // -> calcio lungo). Adesso ogni walk-off = 1 step solo, la palla
-        // non vola piu' lontano.
+        if (roomUnit.getPath().size() == 0 && roomUnit.tilesWalked() == 0)
+            return 6;
+
         return 1;
     }
 
@@ -60,10 +57,7 @@ public class InteractionFootball extends InteractionPushable {
 
     @Override
     public int getTackleVelocity(RoomUnit roomUnit, Room room) {
-        // POLICY tolerant: il "tackle" (click sulla palla mentre adiacente)
-        // dava 4 step di kick. Abbassato a 1 per consistenza con walkOn/walkOff.
-        // Ogni interazione con la palla = 1 step in avanti.
-        return 1;
+        return 4;
     }
 
 

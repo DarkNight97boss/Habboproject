@@ -72,7 +72,14 @@ public class InteractionFootball extends InteractionPushable {
 
     @Override
     public RoomUserRotation getWalkOnDirection(RoomUnit roomUnit, Room room) {
-        return roomUnit.getBodyRotation();
+        // POLICY "palla resta indietro" (richiesta utente):
+        // quando l'avatar entra sulla palla, la palla viene spinta nella
+        // direzione OPPOSTA al movimento dell'avatar (= la palla resta
+        // visivamente alle SPALLE dell'avatar, una casella indietro).
+        // Equivalente al "piede che spinge la palla via mentre cammini
+        // sopra" — l'avatar prosegue, la palla resta dietro.
+        int rot = roomUnit.getBodyRotation().getValue();
+        return RoomUserRotation.values()[(rot + 4) % 8];
     }
 
     @Override
@@ -83,7 +90,11 @@ public class InteractionFootball extends InteractionPushable {
     }
 
     public RoomUserRotation getDragDirection(RoomUnit roomUnit, Room room) {
-        return roomUnit.getBodyRotation();
+        // POLICY "palla resta indietro": come getWalkOnDirection. Quando
+        // l'avatar attraversa la palla mentre cammina oltre, la palla
+        // resta alle spalle (direzione opposta al movimento).
+        int rot = roomUnit.getBodyRotation().getValue();
+        return RoomUserRotation.values()[(rot + 4) % 8];
     }
 
     public RoomUserRotation getTackleDirection(RoomUnit roomUnit, Room room) {

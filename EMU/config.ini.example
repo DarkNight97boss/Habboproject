@@ -34,8 +34,22 @@ networking.auth.timeout.seconds=30
 #"ping.seconds" e disconnette il client se NESSUN packet (ping, chat,
 #movimento, ecc.) arriva entro "pong.seconds". Aumenta pong.seconds se i
 #tuoi utenti giocano dietro reti lente o con tab in background.
+#
+#Funzionamento AFK: il client Nitro risponde automaticamente al ping
+#server con un pong -> il pong resetta il timer -> il client AFK resta
+#vivo INDEFINITAMENTE finche' il ping/pong loop funziona.
 networking.idle.ping.seconds=45
 networking.idle.pong.seconds=180
+#Read-idle hard backstop: chiude il channel se NESSUN byte arriva sul
+#socket entro N secondi. Difesa contro scenari in cui il ping/pong loop
+#stesso e' rotto. Tienilo generoso (default 1800s = 30 min) per non
+#kickare i giocatori AFK. Imposta 0 per disabilitare completamente.
+networking.idle.read.seconds=1800
+#Backpressure: dopo quanti packet outbound droppati CONSECUTIVAMENTE per
+#buffer pieno il client viene chiuso. Default 50: tollera picchi
+#transitori di broadcast room senza kickare. Abbassa solo se hai prove
+#che un attaccante abusa di slow-loris.
+networking.backpressure.drop.threshold=50
 #Max connessioni per IP (0 = illimitato). LASCIA 0 se sei dietro proxy/Cloudflare
 #(l'IP del socket sarebbe quello del proxy): in quel caso limita per-IP sul proxy.
 networking.max.connections.per.ip=0

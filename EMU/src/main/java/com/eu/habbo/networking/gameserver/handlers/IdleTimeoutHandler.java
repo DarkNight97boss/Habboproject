@@ -1,10 +1,9 @@
 package com.eu.habbo.networking.gameserver.handlers;
 
-import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.messages.ClientMessage;
-import com.eu.habbo.messages.incoming.Incoming;
 import com.eu.habbo.messages.outgoing.handshake.PingComposer;
 import com.eu.habbo.networking.gameserver.GameServerAttributes;
+import com.eu.habbo.habbohotel.gameclients.GameClient;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 
@@ -139,9 +138,22 @@ public class IdleTimeoutHandler extends ChannelDuplexHandler {
                 return;
             }
 
-            GameClient client = ctx.channel().attr(GameServerAttributes.CLIENT).get();
-            if (client != null) {
-                client.sendResponse(new PingComposer());
+            // BUGFIX: il ping NON deve passare per GameClient.sendResponse(),
+            // perche' quel path adesso droppa su backpressure (>= high water
+            // mark). Se viene droppato il ping, il client non risponde col
+            // pong, e dopo readIdle.seconds il client viene kickato pur
+            // essendo perfettamente vivo. Per AFK in stanza affollata era
+            // proprio questo il vettore di disconnect.
+            //
+            // Scriviamo direttamente sul channel: 4 byte di ping non saturano
+            // nulla, anche col buffer sopra watermark vengono accodati. Skip
+            // plugin OutgoingPacketEvent (un pong non e' interessante per i
+            // plugin) e skip backpressure (keepalive deve sempre uscire).
+            try {
+                ctx.channel().writeAndFlush(new PingComposer().compose(), ctx.channel().voidPromise());
+            } catch (Throwable t) {
+                // se anche questo fallisce, il prossimo PingScheduledTask
+                // riprovera; nel caso peggiore pongTimeout fa pulizia.
             }
 
             pingScheduleFuture = ctx.executor().schedule(this, pingScheduleNanos, TimeUnit.NANOSECONDS);

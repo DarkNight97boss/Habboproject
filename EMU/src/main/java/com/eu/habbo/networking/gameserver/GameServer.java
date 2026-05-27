@@ -73,11 +73,18 @@ public class GameServer extends Server {
                 int pingSec = Emulator.getConfig().getInt("networking.idle.ping.seconds", 45);
                 int pongSec = Emulator.getConfig().getInt("networking.idle.pong.seconds", 180);
                 ch.pipeline().addLast("idleEventHandler", new IdleTimeoutHandler(pingSec, pongSec));
-                // Hard reader-side backstop: if no packet (NOT just pongs) is received
-                // for `networking.idle.read.seconds` (default 600s) the channel is closed.
-                // The existing IdleTimeoutHandler resets on PongEvent and would never trip
-                // against a client sending only synthetic pongs; this catches that case.
-                int readIdle = Emulator.getConfig().getInt("networking.idle.read.seconds", 600);
+                // Hard reader-side backstop: chiude il channel se NESSUN packet
+                // arriva entro N secondi. Defenza vs. scenario in cui il ping/
+                // pong loop e' rotto (es. encoder crash) ma il channel resta
+                // tecnicamente "open".
+                //
+                // Default 1800s (30 min): generoso per giocatori AFK in stanza.
+                // Il loop ping/pong (45s ping, qualsiasi-packet-resetta) deve
+                // mantenerlo sempre rinfrescato; questo timer scatta SOLO se
+                // il ping/pong stesso e' broken. Operatore puo' settare 0 per
+                // disabilitarlo, oppure abbassare a 600 se vuole essere
+                // aggressivo (default storico).
+                int readIdle = Emulator.getConfig().getInt("networking.idle.read.seconds", 1800);
                 if (readIdle > 0) {
                     ch.pipeline().addLast("readIdle", new io.netty.handler.timeout.IdleStateHandler(readIdle, 0, 0));
                     ch.pipeline().addLast("readIdleClose", new io.netty.channel.ChannelInboundHandlerAdapter() {

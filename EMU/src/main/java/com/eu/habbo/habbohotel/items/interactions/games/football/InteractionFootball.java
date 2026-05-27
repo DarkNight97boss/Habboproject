@@ -108,15 +108,23 @@ public class InteractionFootball extends InteractionPushable {
 
     @Override
     public RoomUserRotation getBounceDirection(Room room, RoomUserRotation currentDirection) {
-        // POLICY "1 casella per spinta": niente rimbalzo. Se la casella
-        // davanti e' bloccata (muro/ostacolo/utente), la palla NON si sposta
-        // affatto. Restituendo la stessa direzione corrente, KickBallAction
-        // entra nel branch "currentDirection == oldDirection" -> end sequence
-        // -> palla ferma esattamente dov'era.
+        // POLICY rimbalzo "1 casella indietro": quando la palla colpisce
+        // muro/ostacolo, restituiamo la direzione OPPOSTA (180°).
+        // KickBallAction registra il cambio di direzione, fa onBounce() e
+        // muove la palla di 1 sola casella in quella nuova direzione, poi
+        // si ferma (totalSteps=1 con velocity 1 dalla spinta originale).
         //
-        // Logica di bounce 8-direzioni rimossa (era ereditata dal codice
-        // upstream Arcturus che simulava un calcio "lungo" con rebound).
-        return currentDirection;
+        // Mappa:
+        //   NORTH      <-> SOUTH
+        //   NORTH_EAST <-> SOUTH_WEST
+        //   EAST       <-> WEST
+        //   SOUTH_EAST <-> NORTH_WEST
+        //
+        // Niente piu' la logica 8-direzioni con tentativi NW/NE/SE/SW dello
+        // upstream Arcturus, che era pensata per il "tiro lungo" e poteva
+        // mandare la palla in diagonale.
+        int idx = currentDirection.getValue(); // 0..7
+        return RoomUserRotation.values()[(idx + 4) % 8];
     }
 
 

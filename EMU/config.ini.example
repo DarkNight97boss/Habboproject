@@ -30,6 +30,12 @@ networking.ratelimit.max.violations=10
 #Anti-flood pre-login: max pacchetti e secondi concessi prima di autenticarsi (0 = disattivato).
 networking.auth.max.packets=50
 networking.auth.timeout.seconds=30
+#Idle keepalive (anti-disconnect-too-soon). Il server invia un ping ogni
+#"ping.seconds" e disconnette il client se NESSUN packet (ping, chat,
+#movimento, ecc.) arriva entro "pong.seconds". Aumenta pong.seconds se i
+#tuoi utenti giocano dietro reti lente o con tab in background.
+networking.idle.ping.seconds=45
+networking.idle.pong.seconds=180
 #Max connessioni per IP (0 = illimitato). LASCIA 0 se sei dietro proxy/Cloudflare
 #(l'IP del socket sarebbe quello del proxy): in quel caso limita per-IP sul proxy.
 networking.max.connections.per.ip=0

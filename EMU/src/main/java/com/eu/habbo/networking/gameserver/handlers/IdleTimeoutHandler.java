@@ -104,12 +104,18 @@ public class IdleTimeoutHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        // check if its a pong message
-        if(msg instanceof ClientMessage) {
-            ClientMessage packet = (ClientMessage) msg;
-            if(packet.getMessageId() == Incoming.PongEvent) {
-                this.lastPongTime = System.nanoTime();
-            }
+        // BUGFIX (sessioni che cadono): originariamente questo handler resettava
+        // lastPongTime SOLO su Incoming.PongEvent. Risultato: un client che sta
+        // giocando attivamente (chat, movement, item) ma il cui pong WebSocket
+        // si perde anche solo 1 volta (es. bridge nitro-websockets in load, tab
+        // browser in background) veniva disconnesso dopo `pongTimeoutSeconds`,
+        // pur avendo mandato decine di altri pacchetti.
+        //
+        // Adesso QUALSIASI packet ricevuto (incluso il pong) e' evidenza che il
+        // client e' vivo -> rinfresca il timer. Il PongEvent resta speciale solo
+        // come fallback durante stanze idle (nessun input utente).
+        if (msg instanceof ClientMessage) {
+            this.lastPongTime = System.nanoTime();
         }
         super.channelRead(ctx, msg);
     }

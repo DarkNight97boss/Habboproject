@@ -58,7 +58,21 @@ public class GameServer extends Server {
                 if (PacketManager.DEBUG_SHOW_PACKETS) {
                     ch.pipeline().addLast(new GameClientMessageLogger());
                 }
-                ch.pipeline().addLast("idleEventHandler", new IdleTimeoutHandler(30, 60));
+                // Idle/keepalive: invia ping ogni N secondi, kicka se non si
+                // vede ALCUN packet (ora qualsiasi, vedi BUGFIX in
+                // IdleTimeoutHandler.channelRead) entro M secondi.
+                //
+                // Default (45, 180):
+                //  - Ping schedule 45s: piu' largo del vecchio 30s, riduce
+                //    chatter pingacious con il bridge nitro-websockets.
+                //  - Pong/silence timeout 180s: 3 minuti di silenzio TOTALE
+                //    prima del kick. Il vecchio 60s causava disconnect "dopo
+                //    poco" su client con WS bridge sotto carico o tab in
+                //    background.
+                // Operatore puo' override via config.ini.
+                int pingSec = Emulator.getConfig().getInt("networking.idle.ping.seconds", 45);
+                int pongSec = Emulator.getConfig().getInt("networking.idle.pong.seconds", 180);
+                ch.pipeline().addLast("idleEventHandler", new IdleTimeoutHandler(pingSec, pongSec));
                 // Hard reader-side backstop: if no packet (NOT just pongs) is received
                 // for `networking.idle.read.seconds` (default 600s) the channel is closed.
                 // The existing IdleTimeoutHandler resets on PongEvent and would never trip

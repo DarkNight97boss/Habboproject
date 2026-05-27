@@ -15,6 +15,25 @@ public abstract class InteractionPushable extends InteractionDefault {
 
     private KickBallAction currentThread;
 
+    /**
+     * Timestamp dell'ultimo kick (ms). Usato per applicare un cooldown a
+     * livello "esperienza utente": dopo OGNI calcio della palla (anche se
+     * il KickBallAction termina in pochi ms perche' totalSteps=1), nuove
+     * interazioni vengono ignorate per un breve periodo.
+     *
+     * Perche' serve: la sola guard `currentThread.dead == false` non basta.
+     * Un kick con totalSteps=1 termina in <10ms; quando l'avatar arriva sulla
+     * palla ~500ms dopo (perche' continuava il path), currentThread.dead e'
+     * gia' true, la guard non scatta, e parte un secondo kick.
+     */
+    private volatile long lastKickedAtMs = 0L;
+    /** Durata del cooldown in ms tra un kick e l'altro. */
+    private static final long KICK_COOLDOWN_MS = 1000L;
+
+    private boolean inKickCooldown() {
+        return (System.currentTimeMillis() - this.lastKickedAtMs) < KICK_COOLDOWN_MS;
+    }
+
     public InteractionPushable(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
         this.setExtradata("0");
@@ -39,8 +58,8 @@ public abstract class InteractionPushable extends InteractionDefault {
     public void onWalkOff(RoomUnit roomUnit, final Room room, Object[] objects) throws Exception {
         super.onWalkOff(roomUnit, room, objects);
 
-        if (!(this.currentThread == null || this.currentThread.dead))
-            return;
+        // Cooldown anti-doppio-kick (vedi commento sul campo lastKickedAtMs).
+        if (this.inKickCooldown()) return;
 
         int velocity = this.getWalkOffVelocity(roomUnit, room);
         RoomUserRotation direction = this.getWalkOffDirection(roomUnit, room);
@@ -51,6 +70,7 @@ public abstract class InteractionPushable extends InteractionDefault {
                 this.currentThread.dead = true;
 
             this.currentThread = new KickBallAction(this, room, roomUnit, direction, velocity, false);
+            this.lastKickedAtMs = System.currentTimeMillis();
             Emulator.getThreading().run(this.currentThread, 0);
         }
     }
@@ -60,6 +80,8 @@ public abstract class InteractionPushable extends InteractionDefault {
         super.onClick(client, room, objects);
 
         if (client == null) return;
+        // Cooldown anti-doppio-kick.
+        if (this.inKickCooldown()) return;
         if (RoomLayout.tilesAdjecent(client.getHabbo().getRoomUnit().getCurrentLocation(), room.getLayout().getTile(this.getX(), this.getY()))) {
             int velocity = this.getTackleVelocity(client.getHabbo().getRoomUnit(), room);
             RoomUserRotation direction = this.getWalkOnDirection(client.getHabbo().getRoomUnit(), room);
@@ -70,6 +92,7 @@ public abstract class InteractionPushable extends InteractionDefault {
                     this.currentThread.dead = true;
 
                 this.currentThread = new KickBallAction(this, room, client.getHabbo().getRoomUnit(), direction, velocity, false);
+                this.lastKickedAtMs = System.currentTimeMillis();
                 Emulator.getThreading().run(this.currentThread, 0);
             }
         }
@@ -79,18 +102,14 @@ public abstract class InteractionPushable extends InteractionDefault {
     public void onWalkOn(RoomUnit roomUnit, final Room room, Object[] objects) throws Exception {
         super.onWalkOn(roomUnit, room, objects);
 
-        // BUGFIX (palla doppio-kick): se la palla e' GIA' in movimento (cioe'
-        // sta gia' eseguendo un KickBallAction precedente), non ricalciamola.
-        // Senza questa guard, un avatar che cammina ATTRAVERSO la palla
-        // generava 2 eventi rapidi:
-        //   1) primo onWalkOn: drag kick (palla si muove 1 casella)
-        //   2) avatar avanza, raggiunge di nuovo la palla, secondo onWalkOn:
-        //      kick puro (palla si muove un'altra casella)
-        // Risultato: palla a 2 caselle, avatar a 1 -> "1 casella vuota tra".
-        // Con la guard, il secondo kick e' ignorato finche' la palla non si ferma.
-        if (this.currentThread != null && !this.currentThread.dead) {
-            return;
-        }
+        // BUGFIX (palla doppio-kick): cooldown temporale di KICK_COOLDOWN_MS
+        // dopo OGNI kick. La sola guard `currentThread.dead == false` non
+        // bastava perche' un kick con totalSteps=1 termina in pochi ms; quando
+        // l'avatar raggiungeva la palla ~500ms dopo, currentThread.dead era
+        // gia' true e partiva un secondo kick. Risultato: palla a 2 caselle.
+        // Con il cooldown, anche dopo il completamento del thread, la palla
+        // resta "intoccabile" per 1 secondo. Niente piu' doppio kick.
+        if (this.inKickCooldown()) return;
 
         int velocity;
         boolean isDrag = false;
@@ -111,6 +130,7 @@ public abstract class InteractionPushable extends InteractionDefault {
 
         if (velocity > 0) {
             this.currentThread = new KickBallAction(this, room, roomUnit, direction, velocity, isDrag);
+            this.lastKickedAtMs = System.currentTimeMillis();
             Emulator.getThreading().run(this.currentThread, 0);
         }
     }

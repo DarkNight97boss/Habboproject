@@ -138,23 +138,15 @@ public class GameClient {
                 response = event.getCustomMessage();
             }
 
-            // Backpressure (REVISED): l'implementazione originale chiudeva la
-            // connessione al primo `!isWritable()`. Troppo aggressivo: un picco
-            // breve di broadcast in stanza affollata (es. wave entra) era
-            // sufficiente per kickare TUTTI gli utenti correntemente in send.
-            //
-            // Nuovo comportamento: DROPPA il packet (con counter), chiudi solo
-            // dopo N drop consecutivi (= il client davvero non drena).
+            // Backpressure (POLICY tolerant): se l'outbound buffer e' sopra
+            // l'high water mark, DROPPA il packet ma NON chiudere la connessione.
+            // L'utente preferisce perdere qualche update di stato a essere
+            // kickato. Se il client e' davvero un slow-loris/zombie, sara'
+            // l'IdleTimeoutHandler a pulirlo via pong-timeout (180s), che e'
+            // l'unico path di disconnect "fisiologico" rimasto.
             if (!this.channel.isWritable()) {
-                int n = this.consecutiveBackpressureDrops.incrementAndGet();
-                int threshold = 50; // ~50 packet skippati consecutivi = slow-loris reale
-                try {
-                    threshold = Emulator.getConfig().getInt("networking.backpressure.drop.threshold", 50);
-                } catch (Throwable ignored) {
-                }
-                if (n >= threshold) {
-                    this.channel.close();
-                }
+                // Solo counter incrementato (utile per metrics/audit), niente close.
+                this.consecutiveBackpressureDrops.incrementAndGet();
                 return;
             }
             this.consecutiveBackpressureDrops.set(0);
@@ -167,17 +159,8 @@ public class GameClient {
     public void sendResponses(ArrayList<ServerMessage> responses) {
         if (this.channel.isOpen()) {
             if (!this.channel.isWritable()) {
-                // Same logic as sendResponse(): drop with counter, close only
-                // after N consecutive drops.
-                int n = this.consecutiveBackpressureDrops.incrementAndGet();
-                int threshold = 50;
-                try {
-                    threshold = Emulator.getConfig().getInt("networking.backpressure.drop.threshold", 50);
-                } catch (Throwable ignored) {
-                }
-                if (n >= threshold) {
-                    this.channel.close();
-                }
+                // Stessa policy del sendResponse(): drop, niente close.
+                this.consecutiveBackpressureDrops.incrementAndGet();
                 return;
             }
             this.consecutiveBackpressureDrops.set(0);

@@ -74,16 +74,9 @@ public class InteractionFootball extends InteractionPushable {
 
     @Override
     public RoomUserRotation getWalkOffDirection(RoomUnit roomUnit, Room room) {
-        // BUGFIX: il +4 (modulo 8) della formula originale invertiva la direzione
-        // del calcio di 180°. Risultato: l'avatar si spostava da B in C (EAST),
-        // la palla veniva calciata WEST verso A -> avatar in C, palla in A,
-        // casella B vuota tra loro. Fisicamente assurdo (dribbling = calci la
-        // palla AVANTI mentre cammini, non indietro). Rimosso il +4: la palla
-        // ora rotola NELLA stessa direzione del movimento dell'avatar.
         RoomTile peek = roomUnit.getPath().peek();
         RoomTile nextWalkTile = peek != null ? room.getLayout().getTile(peek.x, peek.y) : roomUnit.getGoal();
-        int rot = Rotation.Calculate(roomUnit.getX(), roomUnit.getY(), nextWalkTile.x, nextWalkTile.y);
-        return RoomUserRotation.values()[((rot % 8) + 8) % 8];
+        return RoomUserRotation.values()[(RoomUserRotation.values().length + Rotation.Calculate(roomUnit.getX(), roomUnit.getY(), nextWalkTile.x, nextWalkTile.y) + 4) % 8];
     }
 
     public RoomUserRotation getDragDirection(RoomUnit roomUnit, Room room) {

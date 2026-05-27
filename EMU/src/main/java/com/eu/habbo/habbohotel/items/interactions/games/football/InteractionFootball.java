@@ -28,22 +28,32 @@ public class InteractionFootball extends InteractionPushable {
     }
 
 
+    //
+    // ====================================================================
+    // POLICY "1 CASELLA PER SPINTA" (richiesta utente)
+    // ====================================================================
+    // Tutti i metodi getXxxVelocity ritornano 1: per ogni contatto utente↔palla
+    // la palla avanza esattamente UNA casella nella direzione del passo
+    // dell'utente, poi si ferma. Niente "tiro lungo" (velocity 6) ne'
+    // "tackle" (velocity 4) ne' rimbalzi multipli — vedi anche
+    // getBounceDirection sotto, che disabilita il rebound.
+    //
+    // L'unica eccezione e' il safety stop quando extradata=="1" e
+    // tilesWalked==2 (ritorno 0): mantiene il comportamento storico per
+    // wired complessi che pongono lock sulla palla. Niente impatto sulla
+    // logica di goal/scoreboard/wired — quei componenti vivono in classi
+    // separate (InteractionFootballGoal*, FootballGame, ecc.) e non
+    // vengono toccati da questo file.
+    //
     @Override
     public int getWalkOnVelocity(RoomUnit roomUnit, Room room) {
         if (roomUnit.getPath().isEmpty() && roomUnit.tilesWalked() == 2 && this.getExtradata().equals("1"))
             return 0;
-
-        if (roomUnit.getPath().size() == 0 && roomUnit.tilesWalked() == 1)
-            return 6;
-
         return 1;
     }
 
     @Override
     public int getWalkOffVelocity(RoomUnit roomUnit, Room room) {
-        if (roomUnit.getPath().size() == 0 && roomUnit.tilesWalked() == 0)
-            return 6;
-
         return 1;
     }
 
@@ -51,13 +61,12 @@ public class InteractionFootball extends InteractionPushable {
     public int getDragVelocity(RoomUnit roomUnit, Room room) {
         if (roomUnit.getPath().isEmpty() && roomUnit.tilesWalked() == 2)
             return 0;
-
         return 1;
     }
 
     @Override
     public int getTackleVelocity(RoomUnit roomUnit, Room room) {
-        return 4;
+        return 1;
     }
 
 
@@ -99,52 +108,15 @@ public class InteractionFootball extends InteractionPushable {
 
     @Override
     public RoomUserRotation getBounceDirection(Room room, RoomUserRotation currentDirection) {
-        switch (currentDirection) {
-            default:
-            case NORTH:
-                return RoomUserRotation.SOUTH;
-
-            case NORTH_EAST:
-                if (this.validMove(room, room.getLayout().getTile(this.getX(), this.getY()), room.getLayout().getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), RoomUserRotation.NORTH_WEST.getValue())))
-                    return RoomUserRotation.NORTH_WEST;
-                else if (this.validMove(room, room.getLayout().getTile(this.getX(), this.getY()), room.getLayout().getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), RoomUserRotation.SOUTH_EAST.getValue())))
-                    return RoomUserRotation.SOUTH_EAST;
-                else
-                    return RoomUserRotation.SOUTH_WEST;
-
-            case EAST:
-                return RoomUserRotation.WEST;
-
-            case SOUTH_EAST:
-                if (this.validMove(room, room.getLayout().getTile(this.getX(), this.getY()), room.getLayout().getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), RoomUserRotation.SOUTH_WEST.getValue())))
-                    return RoomUserRotation.SOUTH_WEST;
-                else if (this.validMove(room, room.getLayout().getTile(this.getX(), this.getY()), room.getLayout().getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), RoomUserRotation.NORTH_EAST.getValue())))
-                    return RoomUserRotation.NORTH_EAST;
-                else
-                    return RoomUserRotation.NORTH_WEST;
-
-            case SOUTH:
-                return RoomUserRotation.NORTH;
-
-            case SOUTH_WEST:
-                if (this.validMove(room, room.getLayout().getTile(this.getX(), this.getY()), room.getLayout().getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), RoomUserRotation.SOUTH_EAST.getValue())))
-                    return RoomUserRotation.SOUTH_EAST;
-                else if (this.validMove(room, room.getLayout().getTile(this.getX(), this.getY()), room.getLayout().getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), RoomUserRotation.NORTH_WEST.getValue())))
-                    return RoomUserRotation.NORTH_WEST;
-                else
-                    return RoomUserRotation.NORTH_EAST;
-
-            case WEST:
-                return RoomUserRotation.EAST;
-
-            case NORTH_WEST:
-                if (this.validMove(room, room.getLayout().getTile(this.getX(), this.getY()), room.getLayout().getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), RoomUserRotation.NORTH_EAST.getValue())))
-                    return RoomUserRotation.NORTH_EAST;
-                else if (this.validMove(room, room.getLayout().getTile(this.getX(), this.getY()), room.getLayout().getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), RoomUserRotation.SOUTH_WEST.getValue())))
-                    return RoomUserRotation.SOUTH_WEST;
-                else
-                    return RoomUserRotation.SOUTH_EAST;
-        }
+        // POLICY "1 casella per spinta": niente rimbalzo. Se la casella
+        // davanti e' bloccata (muro/ostacolo/utente), la palla NON si sposta
+        // affatto. Restituendo la stessa direzione corrente, KickBallAction
+        // entra nel branch "currentDirection == oldDirection" -> end sequence
+        // -> palla ferma esattamente dov'era.
+        //
+        // Logica di bounce 8-direzioni rimossa (era ereditata dal codice
+        // upstream Arcturus che simulava un calcio "lungo" con rebound).
+        return currentDirection;
     }
 
 

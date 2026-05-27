@@ -14,7 +14,11 @@ public class KickBallAction implements Runnable {
     private final InteractionPushable ball; //The item which is moving
     private final Room room; //The room that the item belongs to
     private final RoomUnit kicker; //The Habbo which initiated the move of the item
-    private final int totalSteps; //The total number of steps in the move sequence
+    // BUGFIX: era `final int totalSteps` ma dopo il bounce serve abbassarlo
+    // (damping di energia) per fare arrestare la palla dopo poche caselle
+    // invece che continuare con la stessa energia originale (palla che
+    // attraversava la stanza dopo bounce era il bug riportato).
+    private int totalSteps;
     public boolean dead = false; //When true the run() function will not execute. Used when another user kicks the ball whilst it is arleady moving.
     private RoomUserRotation currentDirection; //The current direction the item is moving in
     private int currentStep; //The current step of the move sequence
@@ -48,6 +52,19 @@ public class KickBallAction implements Runnable {
 
                 if (this.currentDirection != oldDirection) {
                     this.ball.onBounce(this.room, oldDirection, this.currentDirection, this.kicker);
+
+                    // BUGFIX (energia/damping): senza questa riduzione la palla
+                    // rimbalzava col 100% dell'energia residua originale, cioe'
+                    // attraversava tutta la stanza nella direzione opposta dopo
+                    // aver colpito il muro. Adesso dimezziamo gli step residui
+                    // ad ogni bounce (floor a 1) per simulare la perdita di
+                    // momento del rimbalzo. Risultato visivo: dopo il muro la
+                    // palla fa 1-2 caselle indietro invece di 6+.
+                    int remaining = this.totalSteps - this.currentStep;
+                    if (remaining > 1) {
+                        int damped = Math.max(1, remaining / 2);
+                        this.totalSteps = this.currentStep + damped;
+                    }
                 } else {
                     this.currentStep = this.totalSteps; //End the move sequence, the ball can't bounce anywhere
                 }

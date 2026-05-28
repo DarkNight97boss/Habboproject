@@ -32,6 +32,7 @@ public class GameClient {
     // staff powers stay locked until the user verifies a code (mfaElevated = true).
     private boolean mfaRequired = false;
     private boolean mfaElevated = false;
+    private long mfaElevatedAt = 0L; // ms epoch, used to expire the step-up MFA elevation after TTL
 
     public final ConcurrentHashMap<Integer, Integer> incomingPacketCounter = new ConcurrentHashMap<>(25);
     public final ConcurrentHashMap<Class<? extends MessageHandler>, Long> messageTimestamps = new ConcurrentHashMap<>();
@@ -113,16 +114,27 @@ public class GameClient {
     }
 
     public boolean isMfaElevated() {
-        return this.mfaElevated;
+        if (!this.mfaElevated) return false;
+        // TTL expiry: re-challenge staff MFA after staff.mfa.session.ttl.seconds (default 4h, 0 = no expiry).
+        // Self-healing: if expired, demote here so the next privileged command re-prompts MFA.
+        int ttlSec = Emulator.getConfig().getInt("staff.mfa.session.ttl.seconds", 14400);
+        if (ttlSec > 0 && this.mfaElevatedAt > 0
+                && (System.currentTimeMillis() - this.mfaElevatedAt) > (ttlSec * 1000L)) {
+            this.mfaElevated = false;
+            this.mfaElevatedAt = 0L;
+            return false;
+        }
+        return true;
     }
 
     public void setMfaElevated(boolean mfaElevated) {
         this.mfaElevated = mfaElevated;
+        this.mfaElevatedAt = mfaElevated ? System.currentTimeMillis() : 0L;
     }
 
     /** True when staff powers must be blocked: MFA was required but not yet verified this session. */
     public boolean isStaffMfaLocked() {
-        return this.mfaRequired && !this.mfaElevated;
+        return this.mfaRequired && !this.isMfaElevated();
     }
 
     public void sendResponse(MessageComposer composer) {

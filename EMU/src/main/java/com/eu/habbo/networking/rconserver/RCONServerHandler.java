@@ -19,6 +19,11 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RCONServerHandler.class);
 
+    // Anti-replay nonce cache (defense in depth on top of IP allowlist + token).
+    // Keyed by nonce, value = first-seen-at (ms). Pruned opportunistically when size > MAX.
+    private static final java.util.concurrent.ConcurrentHashMap<String, Long> seenNonces = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final int MAX_NONCE_CACHE_SIZE = 10000;
+
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
         String adress = ctx.channel().remoteAddress().toString().split(":")[0].replace("/", "");
@@ -61,6 +66,41 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
                 authorized = MessageDigest.isEqual(
                         requiredToken.getBytes(StandardCharsets.UTF_8),
                         providedToken.getBytes(StandardCharsets.UTF_8));
+            }
+
+            // Anti-replay (defense in depth): require unique nonce + recent timestamp.
+            // Enforced only when rcon.anti_replay.enabled=true (default off → backward compatible).
+            // Protects against capture+replay of a sniffed RCON request (e.g. if the loopback
+            // boundary is ever crossed by a compromised local process / container sidecar).
+            // Note: when enabled, ALL RCON clients (CMS sendMUS, API) must include "nonce" (random hex,
+            // <= 64 chars) and "ts" (unix seconds) in the JSON payload, else the request is rejected.
+            if (authorized && Emulator.getConfig().getBoolean("rcon.anti_replay.enabled", false)) {
+                int windowSec = Emulator.getConfig().getInt("rcon.anti_replay.window.seconds", 30);
+                long nowMs = System.currentTimeMillis();
+                long windowMs = windowSec * 1000L;
+                long ts = (object.has("ts") && !object.get("ts").isJsonNull()) ? object.get("ts").getAsLong() : 0L;
+                String nonce = (object.has("nonce") && !object.get("nonce").isJsonNull()) ? object.get("nonce").getAsString() : "";
+                if (ts == 0L || Math.abs(nowMs - ts * 1000L) > windowMs) {
+                    LOGGER.warn("RCON anti-replay: timestamp out of window from {} (ts={}, now={}s, window={}s)",
+                            ctx.channel().remoteAddress(), ts, nowMs / 1000L, windowSec);
+                    authorized = false;
+                } else if (nonce.isEmpty() || nonce.length() > 64) {
+                    LOGGER.warn("RCON anti-replay: missing/invalid nonce from {}", ctx.channel().remoteAddress());
+                    authorized = false;
+                } else {
+                    Long prev = seenNonces.get(nonce);
+                    if (prev != null && (nowMs - prev) < windowMs) {
+                        LOGGER.warn("RCON anti-replay: nonce reused from {} (nonce={})", ctx.channel().remoteAddress(), nonce);
+                        authorized = false;
+                    } else {
+                        seenNonces.put(nonce, nowMs);
+                        // Opportunistic prune when the cache grows beyond the cap.
+                        if (seenNonces.size() > MAX_NONCE_CACHE_SIZE) {
+                            long cutoff = nowMs - windowMs;
+                            seenNonces.entrySet().removeIf(e -> e.getValue() < cutoff);
+                        }
+                    }
+                }
             }
 
             if (!authorized) {

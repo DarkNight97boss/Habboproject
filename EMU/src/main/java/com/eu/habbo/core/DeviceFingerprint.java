@@ -106,6 +106,7 @@ public final class DeviceFingerprint {
             // byte of `screen` per submission would otherwise bloat the table
             // unboundedly for a single account).
             int perUserCap = Emulator.getConfig().getInt("fingerprint.max_per_user", 50);
+            boolean fireNewDeviceAlert = false; // set true below if this is a NEW fp for an EXISTING user
             boolean rowAlreadyExists;
             try (PreparedStatement ps = connection.prepareStatement(
                     "SELECT 1 FROM user_fingerprints WHERE user_id = ? AND fingerprint_hash = ? LIMIT 1")) {
@@ -135,6 +136,9 @@ public final class DeviceFingerprint {
                     }
                     return;
                 }
+                // Not capped + new fingerprint for an EXISTING user → schedule a new-device alert.
+                // distinctRows == 0 means this is the user's very first fingerprint → no alert.
+                fireNewDeviceAlert = distinctRows > 0;
             }
 
             try (PreparedStatement ps = connection.prepareStatement(
@@ -150,6 +154,12 @@ public final class DeviceFingerprint {
                 ps.setInt(6, now);
                 ps.setInt(7, now);
                 ps.executeUpdate();
+            }
+
+            // New-device alert: tell the user when a fresh device fingerprint joins their account.
+            // Best-effort — never fail the login because of the notification path.
+            if (fireNewDeviceAlert && Emulator.getConfig().getBoolean("fingerprint.alert.new_device.enabled", true)) {
+                notifyNewDevice(client, userId, username, effectiveHash, ip);
             }
 
             int windowDays = Emulator.getConfig().getInt("fingerprint.alert_window_days", 30);
@@ -190,6 +200,31 @@ public final class DeviceFingerprint {
                     "distinct=" + distinct + " sample=" + linked + " ip=" + (ip == null ? "" : ip) + " mid=" + machineId);
         } catch (Exception e) {
             LOGGER.error("DeviceFingerprint.record failed for user {}", userId, e);
+        }
+    }
+
+    /**
+     * Best-effort in-game + audit notification when a brand-new device fingerprint
+     * is registered for an existing user (i.e. the user already had at least one
+     * fingerprint, so this is NOT the user's first ever login). Failures are
+     * swallowed: the fingerprint write is the authoritative step, the alert is
+     * decoration.
+     */
+    private static void notifyNewDevice(GameClient client, int userId, String username, String fpHash, String ip) {
+        try {
+            if (client != null && client.getHabbo() != null) {
+                client.getHabbo().alert(
+                        "[Sicurezza] Login da un NUOVO dispositivo rilevato.\n" +
+                        "Se non sei stato tu, cambia subito la password e contatta lo staff.");
+            }
+        } catch (Throwable t) {
+            LOGGER.warn("new-device alert delivery failed for user {}: {}", userId, t.toString());
+        }
+        try {
+            String fpShort = fpHash != null && fpHash.length() >= 16 ? fpHash.substring(0, 16) : (fpHash == null ? "" : fpHash);
+            AuditLog.record(userId, username, "NEW_DEVICE_LOGIN", "fp:" + fpShort, "ip=" + (ip == null ? "" : ip));
+        } catch (Throwable t) {
+            LOGGER.warn("new-device audit failed for user {}: {}", userId, t.toString());
         }
     }
 

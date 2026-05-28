@@ -318,6 +318,7 @@ public class CommandHandler {
         addCommand(new UpdateChatBubblesCommand());
 
         addCommand(new TestCommand());
+        addCommand(new StaffMfaCodesCommand());
     }
 
     public List<Command> getCommandsForRank(int rankId) {

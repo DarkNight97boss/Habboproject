@@ -8,9 +8,10 @@ import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.FixedRecvByteBufAllocator;
+import io.netty.channel.AdaptiveRecvByteBufAllocator;
 import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.epoll.Epoll;
+import io.netty.channel.epoll.EpollChannelOption;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -65,8 +66,47 @@ public abstract class Server {
         this.serverBootstrap.childOption(ChannelOption.TCP_NODELAY, true);
         this.serverBootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
         this.serverBootstrap.childOption(ChannelOption.SO_REUSEADDR, true);
-        this.serverBootstrap.childOption(ChannelOption.SO_RCVBUF, 4096);
-        this.serverBootstrap.childOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(4096));
+
+        // Inbound buffer sizing. Il precedente SO_RCVBUF=4096 + FixedRecvByteBufAllocator(4096)
+        // forzava una read syscall piccola per ogni pacchetto: ok a 100 utenti, ma a 10k+ diventa
+        // un context-switch storm. AdaptiveRecvByteBufAllocator auto-tuna la dimensione del read
+        // buffer tra min/max in base al pattern reale -> chat/movement letture piccole, ma un
+        // burst camera o inventario drena in una sola syscall.
+        int rcvBuf = 32 * 1024;
+        int rcvMin = 512, rcvInit = 8 * 1024, rcvMax = 64 * 1024;
+        try {
+            rcvBuf  = Emulator.getConfig().getInt("networking.so.rcvbuf.bytes", rcvBuf);
+            rcvMin  = Emulator.getConfig().getInt("networking.recv.allocator.min", rcvMin);
+            rcvInit = Emulator.getConfig().getInt("networking.recv.allocator.initial", rcvInit);
+            rcvMax  = Emulator.getConfig().getInt("networking.recv.allocator.max", rcvMax);
+        } catch (Throwable ignored) {
+            // Config non disponibile su bootstrap precoce -> fallback ai default.
+        }
+        this.serverBootstrap.childOption(ChannelOption.SO_RCVBUF, rcvBuf);
+        this.serverBootstrap.childOption(ChannelOption.RCVBUF_ALLOCATOR,
+                new AdaptiveRecvByteBufAllocator(rcvMin, rcvInit, rcvMax));
+
+        // SO_BACKLOG: profondita' della listen queue del kernel. Default OS ~128 su Linux:
+        // a 10k+ utenti, un restart o un login storm la satura e i client ricevono TCP RST
+        // prima ancora di completare il TCP handshake.
+        int backlog = 4096;
+        try {
+            backlog = Emulator.getConfig().getInt("networking.so.backlog", backlog);
+        } catch (Throwable ignored) {
+        }
+        this.serverBootstrap.option(ChannelOption.SO_BACKLOG, backlog);
+
+        // SO_REUSEPORT (solo Linux epoll): con bossGroup di N thread, Netty bind-a N listen
+        // socket sulla stessa porta e il kernel load-balancia i SYN tra loro. Rimuove il
+        // bottleneck "single accept queue" sotto churn alto (login storm, riconnessioni
+        // dopo blip di rete). No-op su macOS/Windows o transport NIO.
+        if (USE_EPOLL) {
+            try {
+                this.serverBootstrap.option(EpollChannelOption.SO_REUSEPORT, true);
+            } catch (Throwable t) {
+                LOGGER.warn("Unable to enable SO_REUSEPORT for {}: {}", this.name, t.toString());
+            }
+        }
         // Pooled allocator reuses ByteBuf chunks across packets instead of
         // allocating + GCing one per composer write. On a busy room (50
         // users × 30 status broadcasts/sec) that's ~1500 alloc/sec saved

@@ -50,6 +50,31 @@ networking.idle.read.seconds=1800
 #transitori di broadcast room senza kickare. Abbassa solo se hai prove
 #che un attaccante abusa di slow-loris.
 networking.backpressure.drop.threshold=50
+
+#Tuning per alta concorrenza (>3k utenti). Defaults sicuri ed efficaci; alza
+#solo se profili e vedi colli di bottiglia specifici. Su macchine piccole
+#(VPS test) puoi lasciare i valori cosi'.
+#SO_RCVBUF kernel + RCVBUF_ALLOCATOR adattivo (min/initial/max). L'allocator
+#adattivo dimensiona la read syscall in base al traffico (read piccole per
+#chat/movement, drain grande per camera/inventory burst). Sostituisce il
+#vecchio FixedRecvByteBufAllocator(4096) che a 10k+ generava un
+#context-switch storm.
+networking.so.rcvbuf.bytes=32768
+networking.recv.allocator.min=512
+networking.recv.allocator.initial=8192
+networking.recv.allocator.max=65536
+#SO_BACKLOG: listen queue del kernel. Default OS ~128 su Linux -> spesso
+#satura sotto login storm/restart con migliaia di client che si riconnettono
+#contemporaneamente (TCP RST prima ancora del handshake).
+networking.so.backlog=4096
+#Multi-threaded packet handler. ATTIVALO SOLO dopo testing approfondito sotto
+#carico: con true i pacchetti vanno su un thread pool condiviso (non bloccano
+#piu' l'EventLoop su query DB lente), MA due pacchetti dello STESSO client
+#possono essere processati in parallelo -> handler non thread-safe potrebbero
+#esibire race condition (ordini, trade, dupe). Raccomandato per >3k utenti
+#simultanei DOPO aver verificato che gli handler critici siano thread-safe.
+io.client.multithreaded.handler=false
+
 #Max connessioni per IP (0 = illimitato). LASCIA 0 se sei dietro proxy/Cloudflare
 #(l'IP del socket sarebbe quello del proxy): in quel caso limita per-IP sul proxy.
 networking.max.connections.per.ip=0

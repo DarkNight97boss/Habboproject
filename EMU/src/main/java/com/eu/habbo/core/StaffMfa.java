@@ -276,4 +276,137 @@ public final class StaffMfa {
             } catch (Exception ignored) {}
         }
     }
+
+    /**
+     * Genera (e persiste, hashati) un set fresco di N codici di recovery monouso
+     * per lo staff MFA. Invalida TUTTI i codici precedenti di questo utente.
+     * Ritorna i codici IN CHIARO: il caller li deve mostrare UNA volta sola
+     * all'utente, perche' il server da quel momento conosce solo SHA-256.
+     * Config: mfa.staff.recovery.count (default 8).
+     */
+    public static String[] generateAndStoreRecoveryCodes(int userId) {
+        int count = Math.max(1, Emulator.getConfig().getInt("mfa.staff.recovery.count", 8));
+        String[] codes = new String[count];
+        java.security.SecureRandom rng = new java.security.SecureRandom();
+        // Alfabeto senza caratteri ambigui (no 0/O/I/1) -> 32 simboli, ~5 bit per char.
+        final char[] alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".toCharArray();
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "DELETE FROM staff_mfa_recovery_codes WHERE user_id = ?")) {
+                ps.setInt(1, userId);
+                ps.executeUpdate();
+            }
+
+            int now = Emulator.getIntUnixTimestamp();
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "INSERT INTO staff_mfa_recovery_codes (user_id, code_hash, created_at) VALUES (?, ?, ?)")) {
+                for (int i = 0; i < count; i++) {
+                    String code = generateRecoveryCode(rng, alphabet);
+                    codes[i] = code;
+                    ps.setInt(1, userId);
+                    ps.setString(2, sha256Hex(normalizeRecoveryCode(code)));
+                    ps.setInt(3, now);
+                    ps.executeUpdate();
+                }
+            }
+            AuditLog.record(userId, "", "STAFF_MFA_RECOVERY_REGENERATED",
+                    "user:" + userId, "count=" + count);
+            return codes;
+        } catch (Exception e) {
+            LOGGER.error("StaffMfa.generateAndStoreRecoveryCodes failed for user {}", userId, e);
+            return new String[0];
+        }
+    }
+
+    /**
+     * Verifica e CONSUMA un codice di recovery monouso. UPDATE atomico
+     * (WHERE used_at IS NULL) -> due tentativi concorrenti con lo stesso codice
+     * non possono entrambi avere successo. Audit-logga STAFF_MFA_RECOVERY_USED.
+     * Config: mfa.staff.recovery.enabled (default true).
+     */
+    public static boolean verifyRecoveryCode(int userId, String inputCode) {
+        if (!Emulator.getConfig().getBoolean("mfa.staff.recovery.enabled", true)) return false;
+        if (inputCode == null) return false;
+        String normalized = normalizeRecoveryCode(inputCode);
+        // Difesa: rifiuta input troppo corti per evitare match accidentali coi 6 digit TOTP.
+        if (normalized.length() < 8) return false;
+
+        int now = Emulator.getIntUnixTimestamp();
+        String hash = sha256Hex(normalized);
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+             PreparedStatement ps = connection.prepareStatement(
+                     "UPDATE staff_mfa_recovery_codes SET used_at = ? " +
+                             "WHERE user_id = ? AND code_hash = ? AND used_at IS NULL")) {
+            ps.setInt(1, now);
+            ps.setInt(2, userId);
+            ps.setString(3, hash);
+            int affected = ps.executeUpdate();
+            if (affected == 1) {
+                AuditLog.record(userId, "", "STAFF_MFA_RECOVERY_USED", "user:" + userId,
+                        "remaining=" + remainingRecoveryCodes(userId));
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            LOGGER.error("StaffMfa.verifyRecoveryCode failed for user {}", userId, e);
+            return false;
+        }
+    }
+
+    /** Conta i codici di recovery ancora NON utilizzati per questo utente. */
+    public static int remainingRecoveryCodes(int userId) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+             PreparedStatement ps = connection.prepareStatement(
+                     "SELECT COUNT(*) FROM staff_mfa_recovery_codes WHERE user_id = ? AND used_at IS NULL")) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (Exception e) {
+            LOGGER.error("StaffMfa.remainingRecoveryCodes failed for user {}", userId, e);
+            return 0;
+        }
+    }
+
+    private static String generateRecoveryCode(java.security.SecureRandom rng, char[] alphabet) {
+        // 16 char in 4 gruppi di 4 = ~80 bit di entropia: resistenti a brute-force
+        // online anche senza un lockout dedicato sul redeem.
+        StringBuilder sb = new StringBuilder(20);
+        for (int g = 0; g < 4; g++) {
+            if (g > 0) sb.append('-');
+            for (int c = 0; c < 4; c++) {
+                sb.append(alphabet[rng.nextInt(alphabet.length)]);
+            }
+        }
+        return sb.toString();
+    }
+
+    private static String normalizeRecoveryCode(String s) {
+        if (s == null) return "";
+        StringBuilder sb = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (Character.isLetterOrDigit(c)) {
+                sb.append(Character.toUpperCase(c));
+            }
+        }
+        return sb.toString();
+    }
+
+    private static String sha256Hex(String s) {
+        try {
+            byte[] digest = java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(s.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(digest.length * 2);
+            for (byte b : digest) {
+                sb.append(Character.forDigit((b >> 4) & 0xF, 16));
+                sb.append(Character.forDigit(b & 0xF, 16));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            return "";
+        }
+    }
 }

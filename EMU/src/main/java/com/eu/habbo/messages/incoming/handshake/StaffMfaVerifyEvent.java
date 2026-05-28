@@ -42,14 +42,41 @@ public class StaffMfaVerifyEvent extends MessageHandler {
         String username = this.client.getHabbo().getHabboInfo().getUsername();
 
         boolean ok = StaffMfa.verify(userId, code);
+        boolean usedRecoveryCode = false;
+        // Fallback: se il TOTP non matcha, prova il codice come recovery monouso
+        // (per chi ha perso l'autenticatore). Audit-trail separato in entrambi i casi.
+        if (!ok && StaffMfa.verifyRecoveryCode(userId, code)) {
+            ok = true;
+            usedRecoveryCode = true;
+        }
 
         if (ok) {
             this.client.setMfaElevated(true);
-            AuditLog.record(userId, username, "STAFF_MFA_OK", "user:" + userId, "");
-            this.client.sendResponse(new StaffMfaResultComposer(true,
-                    Emulator.getTexts().getValue("mfa.staff.success", "Verification complete. Staff powers unlocked.")));
+            String action = usedRecoveryCode ? "STAFF_MFA_RECOVERY_OK" : "STAFF_MFA_OK";
+            int remaining = usedRecoveryCode ? StaffMfa.remainingRecoveryCodes(userId) : -1;
+            AuditLog.record(userId, username, action, "user:" + userId,
+                    usedRecoveryCode ? "remaining=" + remaining : "");
+            String successMsg;
+            if (usedRecoveryCode) {
+                successMsg = Emulator.getTexts().getValue("mfa.staff.recovery_success",
+                        "Codice di recovery accettato. Codici rimasti: " + remaining
+                                + ". Rigenerali al piu' presto con :mfa_codes.");
+            } else {
+                successMsg = Emulator.getTexts().getValue("mfa.staff.success",
+                        "Verification complete. Staff powers unlocked.");
+            }
+            this.client.sendResponse(new StaffMfaResultComposer(true, successMsg));
             // Refresh permissions/UI now that powers are unlocked.
             this.client.sendResponse(new UserPermissionsComposer(this.client.getHabbo()));
+            // Suggerimento sicurezza: se non ci sono codici di recovery (primo enroll
+            // o tutti consumati), invita lo staff a rigenerarli SUBITO.
+            if (!usedRecoveryCode && StaffMfa.remainingRecoveryCodes(userId) == 0) {
+                try {
+                    this.client.getHabbo().whisper(
+                            "Suggerimento: esegui :mfa_codes per generare i codici di recovery (servono se perdi l'autenticatore).",
+                            com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles.ALERT);
+                } catch (Throwable ignored) {}
+            }
         } else {
             AuditLog.record(userId, username, "STAFF_MFA_FAIL", "user:" + userId, "");
             this.client.sendResponse(new StaffMfaResultComposer(false,

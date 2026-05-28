@@ -38,6 +38,14 @@ public class GameClient {
     public long lastPacketCounterCleared = Emulator.getIntUnixTimestamp();
 
     /**
+     * Conteggio cumulativo dei pacchetti ricevuti PRIMA dell'autenticazione (habbo == null).
+     * Non viene azzerato dal reset della finestra rate-limit (1s) — e' un cap totale sulla
+     * fase pre-login per limitare lo SSO spam / amplificazione DB. Touch solo sull'EventLoop
+     * del channel (GameMessageRateLimit) -> int semplice, niente atomic necessario.
+     */
+    public int preAuthPacketCount = 0;
+
+    /**
      * Conteggio drop consecutivi per backpressure outbound. Quando il client
      * non drena abbastanza in fretta (slow-loris OR temporaneo picco di
      * broadcast room), {@code Channel.isWritable()} ritorna false e noi

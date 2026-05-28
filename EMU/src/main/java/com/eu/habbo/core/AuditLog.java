@@ -74,6 +74,10 @@ public final class AuditLog {
                 }
 
                 lastHash = hash;
+                // Fire async alert to the configured webhook (Discord/Slack/...). The filter and
+                // disable logic lives in AlertSink; this hook just delegates. Best-effort: any
+                // failure inside AlertSink is logged but cannot affect the audit DB write above.
+                AlertSink.postAudit(actorId, actorName, action, target, detail);
                 // Increment Prometheus counter exposed via HealthEndpoint /metrics.
                 // No-op if HealthEndpoint isn't loaded (e.g. in tests).
                 try {

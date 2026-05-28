@@ -73,6 +73,13 @@ rcon.host=127.0.0.1
 rcon.port=3001
 rcon.allowed=127.0.0.1;127.0.0.2
 rcon.token=
+#Anti-replay (defense in depth on top of token): rifiuta i payload con timestamp
+#fuori dalla finestra o con nonce gia' visto. ATTIVALO solo dopo aver aggiornato
+#TUTTI i client RCON: API/Rcon.php e' gia' fatto; per i ~10 sendMUS del CMS
+#bisogna aggiungere 'nonce' => bin2hex(random_bytes(16)) e 'ts' => time() al
+#payload JSON, altrimenti vengono rifiutati.
+rcon.anti_replay.enabled=false
+rcon.anti_replay.window.seconds=30
 
 #Encryption (RSA used in the client<->server Diffie-Hellman handshake).
 #SECURITY: with enc.enabled=false the handshake is unencrypted. The keypair below is the DEFAULT
@@ -82,3 +89,56 @@ enc.enabled=false
 enc.e=3
 enc.n=86851dd364d5c5cece3c883171cc6ddc5760779b992482bd1e20dd296888df91b33b936a7b93f06d29e8870f703a216257dec7c81de0058fea4cc5116f75e6efc4e9113513e45357dc3fd43d4efab5963ef178b78bd61e81a14c603b24c8bcce0a12230b320045498edc29282ff0603bc7b7dae8fc1b05b52b2f301a9dc783b7
 enc.d=59ae13e243392e89ded305764bdd9e92e4eafa67bb6dac7e1415e8c645b0950bccd26246fd0d4af37145af5fa026c0ec3a94853013eaae5ff1888360f4f9449ee023762ec195dff3f30ca0b08b8c947e3859877b5d7dced5c8715c58b53740b84e11fbc71349a27c31745fcefeeea57cff291099205e230e0c7c27e8e1c0512b
+
+#Staff MFA — session TTL (re-challenge MFA dopo timeout)
+#Dopo quanti secondi dalla verifica TOTP la sessione MFA scade: il prossimo
+#comando staff ri-prompta MFA. Default 14400 = 4h. 0 = nessuna scadenza
+#(sessione vive per sempre finche' la connessione resta aperta). Difesa
+#contro l'abuso di sessioni staff lunghe rubate ore dopo il login MFA.
+staff.mfa.session.ttl.seconds=14400
+
+#Staff MFA — codici di recovery monouso (anti-lockout)
+#Lo staff genera i codici via la chat command :mfa_codes (richiede sessione
+#gia' MFA-elevated). Storage SHA-256; i codici in chiaro sono mostrati UNA
+#volta sola in un popup alert. Usabili al posto del TOTP se si perde
+#l'autenticatore. Tabella: staff_mfa_recovery_codes (vedi sqlupdates/).
+mfa.staff.recovery.enabled=1
+mfa.staff.recovery.count=8
+
+#Device fingerprint — alert in-game su login da nuovo dispositivo
+#Quando un fingerprint mai visto si aggiunge a un utente che ne ha gia' altri,
+#l'utente riceve un alert "Login da NUOVO dispositivo rilevato..." e viene
+#registrato un audit NEW_DEVICE_LOGIN (hash-chain firmata). Il primo login
+#assoluto NON genera notifica (no rumore).
+fingerprint.alert.new_device.enabled=true
+
+#Alert webhook — pipeline async Discord/Slack agganciata ad AuditLog
+#Ogni voce di audit critica (MULTIACCOUNT_DETECTED, NEW_DEVICE_LOGIN,
+#PLUGIN_REJECTED, PLUGIN_ALLOWLIST_OFF, STAFF_MFA_LOCKED, STAFF_MFA_RECOVERY_*,
+#RCON, GIVE_*, SET_RANK, ecc.) genera un POST JSON al webhook configurato.
+#Filtro per tipo evento via CSV o "*" = tutti. Vuoto -> nessun alert (zero
+#chiamate HTTP esterne).
+#
+#Esempio per ricevere SOLO gli eventi di sicurezza critici:
+#  alerts.webhook.url    = https://discord.com/api/webhooks/.../slack
+#  alerts.webhook.events = MULTIACCOUNT_DETECTED,NEW_DEVICE_LOGIN,PLUGIN_REJECTED,STAFF_MFA_LOCKED,STAFF_MFA_RECOVERY_OK,RCON
+#
+#alerts.webhook.secret firma il body con HMAC-SHA-256 e lo invia nell'header
+#X-Habbo-Signature: il ricevitore puo' validarlo per essere certo che la
+#chiamata provenga davvero dall'EMU.
+alerts.webhook.url=
+alerts.webhook.events=
+alerts.webhook.timeout.ms=3000
+alerts.webhook.secret=
+
+#Plugin loader — allowlist SHA-256
+#Quando enforce_allowlist=true, solo i jar in ./plugins il cui nome+SHA-256
+#combaciano con la lista plugins.allowed vengono caricati; gli altri sono
+#rifiutati e audit-loggati (PLUGIN_REJECTED). Quando enforce e' false (default)
+#vengono caricati tutti, MA all'avvio l'EMU logga un WARN visibile con gli
+#SHA-256 di ognuno (comodo per popolare poi l'allowlist).
+#Esempio:
+#  plugins.enforce_allowlist=true
+#  plugins.allowed=NitroWebsockets-3.1.jar=<sha256>,Altro.jar=<sha256>
+plugins.enforce_allowlist=false
+plugins.allowed=

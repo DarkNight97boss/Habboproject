@@ -348,6 +348,11 @@ public class Incoming {
     public static final int ReportFriendPrivateChatEvent = 2950;
     public static final int ModToolIssueChangeTopicEvent = 1392;
     public static final int ModToolIssueDefaultSanctionEvent = 2717;
+    // Call For Help — player apre un ticket di supporto. Arcturus 3.5.5 ship-a SENZA questo
+    // header (per design, era da completare). Imposta `packet.header.cfh` in config.ini con
+    // l'header estratto dal tuo client Nitro (CallForHelpMessageComposer.header), oppure cambia
+    // qui il valore. Con -1 il PacketManager non registra il handler e logga un WARN a startup.
+    public static final int CallForHelpEvent = -1;
 
     public static final int TradeCancelEvent = 2341;
     public static final int ChangeChatBubbleEvent = 1030;

@@ -589,6 +589,22 @@ public class PacketManager {
         this.registerHandler(Incoming.ModToolIssueChangeTopicEvent, ModToolIssueChangeTopicEvent.class);
         this.registerHandler(Incoming.ModToolIssueDefaultSanctionEvent, ModToolIssueDefaultSanctionEvent.class);
 
+        // Call For Help (player-side ticket open). Arcturus 3.5.5 non includeva questo handler:
+        // il client mandava il pacchetto, l'EMU lo ignorava, nessun ticket arrivava al mod tool.
+        // L'header puo' essere settato via `packet.header.cfh` in config.ini (override del default
+        // Incoming.CallForHelpEvent = -1, perche' varia per build del client Nitro).
+        int cfhHeader = -1;
+        try {
+            cfhHeader = Emulator.getConfig().getInt("packet.header.cfh", Incoming.CallForHelpEvent);
+        } catch (Throwable ignored) {
+        }
+        if (cfhHeader > 0) {
+            this.registerHandler(cfhHeader, com.eu.habbo.messages.incoming.modtool.CallForHelpEvent.class);
+            LOGGER.info("Registered CallForHelpEvent (player ticket -> mod tool) at packet header {}", cfhHeader);
+        } else {
+            LOGGER.warn("CallForHelp NON registrato: imposta `packet.header.cfh` in config.ini con l'header del tuo client Nitro (CallForHelpMessageComposer.header). Finche' non lo fai, i giocatori NON possono aprire ticket di supporto.");
+        }
+
         this.registerHandler(Incoming.RequestReportRoomEvent, RequestReportRoomEvent.class);
         this.registerHandler(Incoming.RequestReportUserBullyingEvent, RequestReportUserBullyingEvent.class);
         this.registerHandler(Incoming.ReportBullyEvent, ReportBullyEvent.class);

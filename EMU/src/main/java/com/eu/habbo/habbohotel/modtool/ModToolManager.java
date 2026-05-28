@@ -189,6 +189,71 @@ public class ModToolManager {
         Emulator.getGameEnvironment().getModToolManager().updateTicketToMods(issue);
     }
 
+    // Cooldown server-side per i CFH player-side (anti-spam). Keyed by user_id, value = ms epoch.
+    private static final java.util.concurrent.ConcurrentHashMap<Integer, Long> lastCfhAt =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * Anti-spam: max 1 ticket ogni {@code cfh.player.cooldown.seconds} (default 60) per utente.
+     * Ritorna {@code true} se l'utente puo' aprire il ticket adesso (segnando l'istante).
+     * Ritorna {@code false} se deve attendere ancora.
+     */
+    public boolean canOpenCfh(int userId) {
+        int cooldownSec = Emulator.getConfig().getInt("cfh.player.cooldown.seconds", 60);
+        if (cooldownSec <= 0) return true; // disabilitato
+        long now = System.currentTimeMillis();
+        Long last = lastCfhAt.get(userId);
+        if (last != null && (now - last) < (cooldownSec * 1000L)) {
+            return false;
+        }
+        lastCfhAt.put(userId, now);
+        return true;
+    }
+
+    /**
+     * Apre un ticket di supporto a partire da una segnalazione PLAYER-side
+     * (chiamato da {@code CallForHelpEvent}). Usa la stessa pipeline di
+     * {@link #quickTicket}: build {@link ModToolIssue} -> addTicket + notifica
+     * staff online con permesso ACC_SUPPORTTOOL.
+     *
+     * Audit-loggato come {@code CFH_OPENED} con sender/target/topic. Tramite
+     * il hook in {@link com.eu.habbo.core.AuditLog#record}, l'evento arriva
+     * anche sul webhook configurato (AlertSink) -> lo staff vede il ticket
+     * in real-time sul canale Discord/Slack anche se non e' online in-hotel.
+     */
+    public void openCfhTicket(Habbo reporter, int reportedId, String reportedUsername,
+                              int roomId, String message, int category) {
+        if (reporter == null || reporter.getHabboInfo() == null) return;
+        if (message == null) message = "";
+        if (reportedUsername == null) reportedUsername = "";
+
+        ModToolIssue issue = new ModToolIssue(
+                reporter.getHabboInfo().getId(),
+                reporter.getHabboInfo().getUsername(),
+                reportedId,
+                reportedUsername,
+                roomId,
+                message,
+                ModToolTicketType.NORMAL);
+        issue.category = category;
+
+        this.addTicket(issue);
+        this.updateTicketToMods(issue);
+
+        // Audit hash-chain + alert webhook (via hook in AuditLog.record).
+        try {
+            String shortMsg = message.length() > 60 ? message.substring(0, 60) + "..." : message;
+            com.eu.habbo.core.AuditLog.record(
+                    reporter.getHabboInfo().getId(),
+                    reporter.getHabboInfo().getUsername(),
+                    "CFH_OPENED",
+                    "user:" + reportedId,
+                    "cat=" + category + " target=" + reportedUsername + " msg=" + shortMsg);
+        } catch (Throwable ignored) {
+            // Audit failure non deve bloccare il ticket: il record in support_tickets resta autoritativo.
+        }
+    }
+
     public ArrayList<ModToolChatLog> getRoomChatlog(int roomId) {
         ArrayList<ModToolChatLog> chatlogs = new ArrayList<>();
 

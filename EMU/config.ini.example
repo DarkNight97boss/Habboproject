@@ -98,6 +98,18 @@ rcon.host=127.0.0.1
 rcon.port=3001
 rcon.allowed=127.0.0.1;127.0.0.2
 rcon.token=
+
+#Call For Help (segnalazioni player -> mod tool).
+#Arcturus 3.5.5 ship-a SENZA il packet header del CFH player-side -> i giocatori
+#non possono aprire ticket finche' non lo configuri qui. Trova il numero header
+#nel tuo client Nitro (cerca CallForHelpMessageComposer -> header). Esempio
+#tipico per build PROD-2015+: packet.header.cfh=1843. Con -1 il PacketManager
+#non registra il handler e logga WARN a startup.
+packet.header.cfh=-1
+#Cooldown server-side fra ticket consecutivi dello stesso utente (anti-spam).
+#Imposta 0 per disabilitare il cooldown (sconsigliato in produzione).
+cfh.player.cooldown.seconds=60
+
 #Anti-replay (defense in depth on top of token): rifiuta i payload con timestamp
 #fuori dalla finestra o con nonce gia' visto. ATTIVALO solo dopo aver aggiornato
 #TUTTI i client RCON: API/Rcon.php e' gia' fatto; per i ~10 sendMUS del CMS

@@ -268,7 +268,29 @@ public class PluginManager {
         final boolean enforceAllowlist = Emulator.getConfig().getBoolean("plugins.enforce_allowlist", false);
         final java.util.Map<String, String> allowed = parsePluginAllowlist(Emulator.getConfig().getValue("plugins.allowed", ""));
 
-        for (File file : Objects.requireNonNull(loc.listFiles(file -> file.getPath().toLowerCase().endsWith(".jar")))) {
+        File[] jarFiles = loc.listFiles(file -> file.getPath().toLowerCase().endsWith(".jar"));
+        if (jarFiles == null) jarFiles = new File[0];
+
+        // When the allowlist is OFF and there are jars to load, emit a one-time
+        // visible warning. Loading arbitrary code from ./plugins is RCE-by-design;
+        // operators should at least be aware (and ideally flip enforce_allowlist=true).
+        if (!enforceAllowlist && jarFiles.length > 0) {
+            LOGGER.warn("====================================================================");
+            LOGGER.warn("plugins.enforce_allowlist=false: loading {} UNVERIFIED plugin jar(s).", jarFiles.length);
+            LOGGER.warn("Any code dropped into ./plugins runs with full server privileges (RCE by design).");
+            for (File f : jarFiles) {
+                LOGGER.warn("  - {} (sha256={})", f.getName(), sha256OfFile(f));
+            }
+            LOGGER.warn("To enforce: set plugins.enforce_allowlist=true and list approved jars in");
+            LOGGER.warn("plugins.allowed=filename1.jar=<sha256>,filename2.jar=<sha256>,...");
+            LOGGER.warn("====================================================================");
+            try {
+                com.eu.habbo.core.AuditLog.record(0, "system", "PLUGIN_ALLOWLIST_OFF",
+                        "plugins/", "count=" + jarFiles.length);
+            } catch (Throwable ignored) {}
+        }
+
+        for (File file : jarFiles) {
             if (enforceAllowlist) {
                 String expectedSha = allowed.get(file.getName());
                 String actualSha = sha256OfFile(file);

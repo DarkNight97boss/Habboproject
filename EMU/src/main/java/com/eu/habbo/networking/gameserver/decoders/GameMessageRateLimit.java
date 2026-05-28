@@ -24,6 +24,19 @@ public class GameMessageRateLimit extends MessageToMessageDecoder<ClientMessage>
             return;
         }
 
+        // Pre-auth packet cap: cumulative across the whole pre-login window.
+        // Caps how many packets a connection can send BEFORE authentication, to
+        // limit SSO spam / DB amplification on the login path. Compatible with
+        // the "tolerant" policy: we DROP, never close (the auth timeout in
+        // GameClientManager handles the time dimension). Config:
+        // networking.auth.max.packets (default 50, 0 = disabled).
+        if (client.getHabbo() == null) {
+            int maxPreAuth = Emulator.getConfig().getInt("networking.auth.max.packets", 50);
+            if (maxPreAuth > 0 && ++client.preAuthPacketCount > maxPreAuth) {
+                return; // drop, no close
+            }
+        }
+
         // Check if reset time has passed.
         int timestamp = Emulator.getIntUnixTimestamp();
         if (timestamp - client.lastPacketCounterCleared > RESET_TIME) {

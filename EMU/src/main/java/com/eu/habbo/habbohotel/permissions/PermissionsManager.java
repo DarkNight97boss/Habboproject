@@ -29,7 +29,7 @@ public class PermissionsManager {
 
         this.reload();
 
-        LOGGER.info("Permissions Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
+        LOGGER.info("Permissions Manager -> Caricato! ({} MS)", System.currentTimeMillis() - millis);
     }
 
     public void reload() {
@@ -60,7 +60,7 @@ public class PermissionsManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -73,7 +73,7 @@ public class PermissionsManager {
                     this.enables.put(set.getInt("effect_id"), set.getInt("min_rank"));
                 }
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
     }

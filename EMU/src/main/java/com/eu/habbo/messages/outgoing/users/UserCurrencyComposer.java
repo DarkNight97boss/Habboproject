@@ -27,7 +27,7 @@ public class UserCurrencyComposer extends MessageComposer {
             try {
                 type = Integer.parseInt(s);
             } catch (Exception e) {
-                LOGGER.error("Caught exception", e);
+                LOGGER.error("Eccezione intercettata", e);
                 return null;
             }
 

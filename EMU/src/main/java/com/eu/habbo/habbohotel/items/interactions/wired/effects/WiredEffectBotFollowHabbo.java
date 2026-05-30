@@ -71,12 +71,12 @@ public class WiredEffectBotFollowHabbo extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if(settings.getIntParams().length < 1) throw new WiredSaveException("Mode is invalid");
+        if(settings.getIntParams().length < 1) throw new WiredSaveException("Modalità non valida");
 
         int mode = settings.getIntParams()[0];
 
         if(mode != 0 && mode != 1)
-            throw new WiredSaveException("Mode is invalid");
+            throw new WiredSaveException("Modalità non valida");
 
         String botName = settings.getStringParam().replace("\t", "");
         botName = botName.substring(0, Math.min(botName.length(), Emulator.getConfig().getInt("hotel.wired.message.max_length", 100)));
@@ -84,7 +84,7 @@ public class WiredEffectBotFollowHabbo extends InteractionWiredEffect {
         int delay = settings.getDelay();
 
         if(delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
-            throw new WiredSaveException("Delay too long");
+            throw new WiredSaveException("Ritardo troppo lungo");
 
         this.botName = botName;
         this.mode = mode;

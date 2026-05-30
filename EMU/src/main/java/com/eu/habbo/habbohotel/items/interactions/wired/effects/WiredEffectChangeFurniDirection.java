@@ -212,12 +212,12 @@ public class WiredEffectChangeFurniDirection extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if(settings.getIntParams().length < 2) throw new WiredSaveException("Invalid data");
+        if(settings.getIntParams().length < 2) throw new WiredSaveException("Dati non validi");
 
         int startDirectionInt = settings.getIntParams()[0];
 
         if(startDirectionInt < 0 || startDirectionInt > 7 || (startDirectionInt % 2) != 0) {
-            throw new WiredSaveException("Start direction is invalid");
+            throw new WiredSaveException("Direzione iniziale non valida");
         }
 
         RoomUserRotation startDirection = RoomUserRotation.fromValue(startDirectionInt);
@@ -225,13 +225,13 @@ public class WiredEffectChangeFurniDirection extends InteractionWiredEffect {
         int blockedActionInt = settings.getIntParams()[1];
 
         if(blockedActionInt < 0 || blockedActionInt > 6) {
-            throw new WiredSaveException("Blocked action is invalid");
+            throw new WiredSaveException("Azione bloccata non valida");
         }
 
         int itemsCount = settings.getFurniIds().length;
 
         if(itemsCount > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) {
-            throw new WiredSaveException("Too many furni selected");
+            throw new WiredSaveException("Troppi arredi selezionati");
         }
 
         THashMap<HabboItem, WiredChangeDirectionSetting> newItems = new THashMap<>();
@@ -249,7 +249,7 @@ public class WiredEffectChangeFurniDirection extends InteractionWiredEffect {
         int delay = settings.getDelay();
 
         if(delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
-            throw new WiredSaveException("Delay too long");
+            throw new WiredSaveException("Ritardo troppo lungo");
 
         this.items.clear();
         this.items.putAll(newItems);

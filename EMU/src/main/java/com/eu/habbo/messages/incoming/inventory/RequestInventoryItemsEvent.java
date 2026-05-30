@@ -53,7 +53,7 @@ public class RequestInventoryItemsEvent extends MessageHandler {
                     items.put(iterator.key(), iterator.value());
                     count++;
                 } catch (NoSuchElementException e) {
-                    LOGGER.error("Caught exception", e);
+                    LOGGER.error("Eccezione intercettata", e);
                     break;
                 }
 

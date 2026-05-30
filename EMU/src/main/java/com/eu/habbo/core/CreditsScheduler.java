@@ -55,7 +55,7 @@ public class CreditsScheduler extends Scheduler {
                     habbo.giveCredits((int)(habbo.getHabboInfo().getRank().getCreditsTimerAmount() * (habbo.getHabboStats().hasActiveClub() ? HC_MODIFIER : 1.0)));
                 }
             } catch (Exception e) {
-                LOGGER.error("Caught exception", e);
+                LOGGER.error("Eccezione intercettata", e);
             }
         }
     }

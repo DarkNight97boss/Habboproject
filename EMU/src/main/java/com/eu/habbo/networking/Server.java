@@ -51,11 +51,11 @@ public abstract class Server {
         if (USE_EPOLL) {
             this.bossGroup = new EpollEventLoopGroup(bossGroupThreads, new DefaultThreadFactory(threadName + "Boss"));
             this.workerGroup = new EpollEventLoopGroup(workerGroupThreads, new DefaultThreadFactory(threadName + "Worker"));
-            LOGGER.info("Netty transport for {}: epoll (Linux fast path)", name);
+            LOGGER.info("Trasporto Netty per {}: epoll (fast path Linux)", name);
         } else {
             this.bossGroup = new NioEventLoopGroup(bossGroupThreads, new DefaultThreadFactory(threadName + "Boss"));
             this.workerGroup = new NioEventLoopGroup(workerGroupThreads, new DefaultThreadFactory(threadName + "Worker"));
-            LOGGER.info("Netty transport for {}: NIO (portable)", name);
+            LOGGER.info("Trasporto Netty per {}: NIO (portabile)", name);
         }
         this.serverBootstrap = new ServerBootstrap();
     }
@@ -104,7 +104,7 @@ public abstract class Server {
             try {
                 this.serverBootstrap.option(EpollChannelOption.SO_REUSEPORT, true);
             } catch (Throwable t) {
-                LOGGER.warn("Unable to enable SO_REUSEPORT for {}: {}", this.name, t.toString());
+                LOGGER.warn("Impossibile abilitare SO_REUSEPORT per {}: {}", this.name, t.toString());
             }
         }
         // Pooled allocator reuses ByteBuf chunks across packets instead of
@@ -149,15 +149,15 @@ public abstract class Server {
         }
 
         if (!channelFuture.isSuccess()) {
-            LOGGER.info("Failed to connect to the host ({}:{})@{}", this.host, this.port, this.name);
+            LOGGER.info("Connessione all'host fallita ({}:{})@{}", this.host, this.port, this.name);
             System.exit(0);
         } else {
-            LOGGER.info("Started GameServer on {}:{}@{}", this.host, this.port, this.name);
+            LOGGER.info("GameServer avviato su {}:{}@{}", this.host, this.port, this.name);
         }
     }
 
     public void stop() {
-        LOGGER.info("Stopping {}", this.name);
+        LOGGER.info("Arresto {}", this.name);
         try {
             // Graceful shutdown: lascia che i client in-flight finiscano i
             // pacchetti pending prima di staccare la spina. Cruciale per non
@@ -182,9 +182,9 @@ public abstract class Server {
             this.workerGroup.shutdownGracefully(quiet, deadline, TimeUnit.SECONDS).sync();
             this.bossGroup.shutdownGracefully(quiet, deadline, TimeUnit.SECONDS).sync();
         } catch(InterruptedException e) {
-            LOGGER.error("Exception during {} shutdown... HARD STOP", this.name, e);
+            LOGGER.error("Eccezione durante l'arresto di {}... HARD STOP", this.name, e);
         }
-        LOGGER.info("GameServer Stopped!");
+        LOGGER.info("GameServer arrestato!");
     }
 
     public ServerBootstrap getServerBootstrap() {

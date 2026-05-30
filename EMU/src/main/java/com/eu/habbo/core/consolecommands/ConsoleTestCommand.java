@@ -10,13 +10,13 @@ public class ConsoleTestCommand extends ConsoleCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsoleTestCommand.class);
 
     public ConsoleTestCommand() {
-        super("test", "This is just a test.");
+        super("test", "Questo è solo un test.");
     }
 
     @Override
     public void handle(String[] args) throws Exception {
         if (Emulator.debugging) {
-            LOGGER.info("This is a test command for live debugging.");
+            LOGGER.info("Questo è un comando di test per il debug live.");
 
 
             //AchievementManager.progressAchievement(4, Emulator.getGameEnvironment().getAchievementManager().getAchievement("AllTimeHotelPresence"), 30);

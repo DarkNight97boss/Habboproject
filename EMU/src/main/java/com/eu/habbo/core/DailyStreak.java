@@ -133,7 +133,7 @@ public final class DailyStreak {
                 return new State(current, best, canClaim, nextDay);
             }
         } catch (Exception e) {
-            LOGGER.error("DailyStreak.load failed for user {}", userId, e);
+            LOGGER.error("DailyStreak.load fallito per l'utente {}", userId, e);
             return new State(0, 0, false, 1);
         }
     }
@@ -261,7 +261,7 @@ public final class DailyStreak {
             }
             return reward;
         } catch (Exception e) {
-            LOGGER.error("DailyStreak.claim failed for user {}", userId, e);
+            LOGGER.error("DailyStreak.claim fallito per l'utente {}", userId, e);
             return null;
         }
     }

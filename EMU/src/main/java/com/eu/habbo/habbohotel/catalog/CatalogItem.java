@@ -218,7 +218,7 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
 
                     identifier = Integer.parseInt(itemId);
                 } catch (Exception e) {
-                    LOGGER.info("Invalid value ({}) for items_base column for catalog_item id ({}). Value must be integer or of the format of integer:amount;integer:amount", itemId, this.id);
+                    LOGGER.info("Valore non valido ({}) per la colonna items_base del catalog_item id ({}). Il valore deve essere intero o nel formato integer:amount;integer:amount", itemId, this.id);
                     continue;
                 }
                 if (identifier > 0) {
@@ -265,8 +265,8 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
                     }
                 }
             } catch (Exception e) {
-                LOGGER.debug("Failed to load {}", this.itemId);
-                LOGGER.error("Caught exception", e);
+                LOGGER.debug("Caricamento fallito {}", this.itemId);
+                LOGGER.error("Eccezione intercettata", e);
             }
         } else {
             try {
@@ -350,7 +350,7 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
                 statement.setInt(3, this.getId());
                 statement.execute();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
 
             this.needsUpdate = false;

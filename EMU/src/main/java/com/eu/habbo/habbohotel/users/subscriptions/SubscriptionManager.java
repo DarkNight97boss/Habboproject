@@ -32,7 +32,7 @@ public class SubscriptionManager {
 
     public void addSubscriptionType(String type, Class<? extends Subscription> clazz) {
         if(this.types.containsKey(type) || this.types.containsValue(clazz)) {
-            throw new RuntimeException("Subscription Type must be unique. An class with type: " + clazz.getName() + " was already added OR the key: " + type + " is already in use.");
+            throw new RuntimeException("Il tipo di sottoscrizione deve essere univoco. Una classe con tipo: " + clazz.getName() + " was already added OR the key: " + type + " is already in use.");
         }
 
         this.types.put(type, clazz);
@@ -44,7 +44,7 @@ public class SubscriptionManager {
 
     public Class<? extends Subscription> getSubscriptionClass(String type) {
         if(!this.types.containsKey(type)) {
-            LOGGER.debug("Can't find subscription class: {}", type);
+            LOGGER.debug("Impossibile trovare la classe di sottoscrizione: {}", type);
             return Subscription.class;
         }
 
@@ -78,10 +78,10 @@ public class SubscriptionManager {
                 LOGGER.error("InvocationTargetException", e);
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
         catch (NoSuchMethodException e) {
-            LOGGER.error("Caught NoSuchMethodException", e);
+            LOGGER.error("NoSuchMethodException intercettata", e);
         }
 
         return subscriptions;

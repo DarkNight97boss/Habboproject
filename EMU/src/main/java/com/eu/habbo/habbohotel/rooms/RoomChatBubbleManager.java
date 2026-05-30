@@ -32,7 +32,7 @@ public class RoomChatBubbleManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Failed to load chat bubbles from database.", e);
+            LOGGER.error("Caricamento bolle chat dal database fallito.", e);
         }
     }
 }

@@ -41,7 +41,7 @@ public class HabboOfferPurchase {
                 statement.setInt(2, offerId);
                 statement.execute();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
                 return null;
             }
 

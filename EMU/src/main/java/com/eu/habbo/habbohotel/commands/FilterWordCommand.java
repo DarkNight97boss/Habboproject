@@ -39,7 +39,7 @@ public class FilterWordCommand extends Command {
             statement.setString(2, replacement);
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
             gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_filterword.error"));
             return true;
         }

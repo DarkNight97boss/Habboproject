@@ -114,7 +114,7 @@ public class RequestDeleteRoomEvent extends MessageHandler {
                         filter.execute();
                     }
                 } catch (SQLException e) {
-                    LOGGER.error("Caught SQL exception", e);
+                    LOGGER.error("Eccezione SQL intercettata", e);
                 }
             } else {
                 String message = Emulator.getTexts().getValue("scripter.warning.room.delete").replace("%username%", this.client.getHabbo().getHabboInfo().getUsername()).replace("%roomname%", room.getName()).replace("%roomowner%", room.getOwnerName());

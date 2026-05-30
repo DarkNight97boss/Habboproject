@@ -566,5 +566,11 @@ public class Outgoing {
     public static final int BattlePassClaimedComposer = 9531;
     public static final int BattlePassPremiumPurchasedComposer = 9532;
 
+    // Custom: staff Furni Editor (Nitro panel). 4 composers, range 10040-10044.
+    public static final int FurniEditorSearchResultComposer = 10040;
+    public static final int FurniEditorDetailResultComposer = 10041;
+    public static final int FurniEditorInteractionsResultComposer = 10043;
+    public static final int FurniEditorResultComposer = 10044;
+
 
 }

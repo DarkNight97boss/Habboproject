@@ -29,7 +29,7 @@ public class ExecuteCommand extends RCONMessage<ExecuteCommand.JSONExecuteComman
             CommandHandler.handleCommand(habbo.getClient(), json.command);
         } catch (Exception e) {
             this.status = STATUS_ERROR;
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
     }
 

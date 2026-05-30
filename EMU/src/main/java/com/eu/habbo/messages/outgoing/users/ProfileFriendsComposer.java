@@ -50,7 +50,7 @@ public class ProfileFriendsComposer extends MessageComposer {
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
 
         this.userId = habbo.getHabboInfo().getId();
@@ -104,7 +104,7 @@ public class ProfileFriendsComposer extends MessageComposer {
                 this.response.appendString(this.haters.get(hatersIndex).getLook());
             }
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
         return this.response;
     }

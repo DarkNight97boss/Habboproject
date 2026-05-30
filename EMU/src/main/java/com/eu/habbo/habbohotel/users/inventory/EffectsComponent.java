@@ -31,7 +31,7 @@ public class EffectsComponent {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
         if(habbo.getHabboInfo().getRank().getRoomEffect() > 0)
             this.createRankEffect(habbo.getHabboInfo().getRank().getRoomEffect());
@@ -92,7 +92,7 @@ public class EffectsComponent {
                             statement.setInt(5, effect.effect);
                             statement.addBatch();
                         } catch (SQLException e) {
-                            LOGGER.error("Caught SQL exception", e);
+                            LOGGER.error("Eccezione SQL intercettata", e);
                         }
                     }
                     return true;
@@ -100,7 +100,7 @@ public class EffectsComponent {
 
                 statement.executeBatch();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
 
             this.effects.clear();
@@ -208,7 +208,7 @@ public class EffectsComponent {
                 statement.setInt(4, this.duration);
                 statement.execute();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
 
@@ -218,7 +218,7 @@ public class EffectsComponent {
                 statement.setInt(2, this.effect);
                 statement.execute();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
     }

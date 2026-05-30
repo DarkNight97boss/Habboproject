@@ -42,14 +42,14 @@ public class PacketNames {
                     int packetId = field.getInt(null);
                     if (packetId > 0) {
                         if (target.containsKey(packetId)) {
-                            LOGGER.warn("Duplicate packet id found {} for {}.", packetId, clazz.getSimpleName());
+                            LOGGER.warn("Trovato id pacchetto duplicato {} per {}.", packetId, clazz.getSimpleName());
                             continue;
                         }
 
                         target.put(packetId, field.getName());
                     }
                 } catch (IllegalAccessException e) {
-                    LOGGER.error("Failed to read field integer.", e);
+                    LOGGER.error("Lettura del campo intero fallita.", e);
                 }
             }
         }

@@ -48,7 +48,7 @@ public class ButlerBot extends Bot {
                 serveItems.put(ks, set.getInt("item"));
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 

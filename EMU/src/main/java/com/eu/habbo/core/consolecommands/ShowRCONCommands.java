@@ -8,7 +8,7 @@ public class ShowRCONCommands extends ConsoleCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShowRCONCommands.class);
 
     public ShowRCONCommands() {
-        super("rconcommands", "Show a list of all RCON commands");
+        super("rconcommands", "Mostra l'elenco di tutti i comandi RCON");
     }
 
     @Override

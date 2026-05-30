@@ -116,7 +116,7 @@ public final class ChatSpamGuard {
             try {
                 habbo.mute(duration, false);
             } catch (Exception e) {
-                LOGGER.warn("ChatSpamGuard: mute() threw for user {}", userId, e);
+                LOGGER.warn("ChatSpamGuard: mute() ha sollevato un'eccezione per l'utente {}", userId, e);
             }
 
             String reason = rateExceeded ? "rate" : "repeat";

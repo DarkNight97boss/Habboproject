@@ -38,7 +38,7 @@ public class GuildManager {
         this.loadGuildParts();
         this.loadGuildViews();
 
-        LOGGER.info("Guild Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
+        LOGGER.info("Guild Manager -> Caricato! ({} MS)", System.currentTimeMillis() - millis);
     }
 
 
@@ -56,7 +56,7 @@ public class GuildManager {
                 this.guildParts.get(GuildPartType.valueOf(set.getString("type").toUpperCase())).put(set.getInt("id"), new GuildPart(set));
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -70,7 +70,7 @@ public class GuildManager {
                 this.views.add(new ForumView(set));
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -111,7 +111,7 @@ public class GuildManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         habbo.getHabboStats().addGuild(guild.getId());
@@ -159,7 +159,7 @@ public class GuildManager {
                 room.setGuild(0);
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -280,7 +280,7 @@ public class GuildManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -292,7 +292,7 @@ public class GuildManager {
             statement.setInt(3, guild.getId());
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -307,7 +307,7 @@ public class GuildManager {
             statement.setInt(3, guild.getId());
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -329,7 +329,7 @@ public class GuildManager {
             statement.setInt(2, guild.getId());
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -356,7 +356,7 @@ public class GuildManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return member;
@@ -379,7 +379,7 @@ public class GuildManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return guildMembers;
@@ -401,7 +401,7 @@ public class GuildManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return guildMembers;
@@ -420,7 +420,7 @@ public class GuildManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return 0;
@@ -438,7 +438,7 @@ public class GuildManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return guildAdmins;
@@ -470,7 +470,7 @@ public class GuildManager {
                 if (g != null)
                     g.loadMemberCount();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
 
@@ -498,7 +498,7 @@ public class GuildManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return guilds;
@@ -519,7 +519,7 @@ public class GuildManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return guilds;
@@ -539,7 +539,7 @@ public class GuildManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return guilds;
@@ -618,7 +618,7 @@ public class GuildManager {
             statement.setInt(2, furni.getId());
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -653,7 +653,7 @@ public class GuildManager {
 
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 

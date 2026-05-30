@@ -258,7 +258,7 @@ public class HabboStats implements Runnable {
             statement.setInt(1, habboInfo.getId());
             statement.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return load(habboInfo);
@@ -317,7 +317,7 @@ public class HabboStats implements Runnable {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return stats;
@@ -401,7 +401,7 @@ public class HabboStats implements Runnable {
 
             this.navigatorWindowSettings.save(connection);
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -524,12 +524,12 @@ public class HabboStats implements Runnable {
                             return sub;
                         }
                         catch (Exception e) {
-                            LOGGER.error("Caught exception", e);
+                            LOGGER.error("Eccezione intercettata", e);
                         }
                     }
                 }
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
 
@@ -612,7 +612,7 @@ public class HabboStats implements Runnable {
             statement.setInt(2, roomId);
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         this.favoriteRooms.add(roomId);
@@ -626,7 +626,7 @@ public class HabboStats implements Runnable {
                 statement.setInt(2, roomId);
                 statement.execute();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
     }
@@ -656,7 +656,7 @@ public class HabboStats implements Runnable {
             statement.setInt(2, id);
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         this.secretRecipes.add(id);
@@ -756,7 +756,7 @@ public class HabboStats implements Runnable {
                 statement.setInt(2, userId);
                 statement.execute();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
 
@@ -773,7 +773,7 @@ public class HabboStats implements Runnable {
                 statement.setInt(2, userId);
                 statement.execute();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
     }

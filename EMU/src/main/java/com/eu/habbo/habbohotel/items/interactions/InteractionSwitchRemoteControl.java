@@ -40,7 +40,7 @@ public class InteractionSwitchRemoteControl extends InteractionDefault {
                 try {
                     currentState = Integer.parseInt(this.getExtradata());
                 } catch (NumberFormatException e) {
-                    LOGGER.error("Incorrect extradata ({}) for item ID ({}) of type ({})", this.getExtradata(), this.getId(), this.getBaseItem().getName());
+                    LOGGER.error("Extradata non corretto ({}) per oggetto ID ({}) di tipo ({})", this.getExtradata(), this.getId(), this.getBaseItem().getName());
                 }
 
                 this.setExtradata("" + (currentState + 1) % this.getBaseItem().getStateCount());

@@ -24,7 +24,7 @@ public class CalendarManager {
     public CalendarManager() {
         long millis = System.currentTimeMillis();
         this.reload();
-        LOGGER.info("Calendar Manager -> Loaded! ({} MS)", (System.currentTimeMillis() - millis));
+        LOGGER.info("Calendar Manager -> Caricato! ({} MS)", (System.currentTimeMillis() - millis));
     }
 
     public void dispose(){
@@ -40,7 +40,7 @@ public class CalendarManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
             return false;
         }
 
@@ -54,7 +54,7 @@ public class CalendarManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
             return false;
         }
 
@@ -74,18 +74,18 @@ public class CalendarManager {
             int affectedRows = statement.executeUpdate();
 
             if (affectedRows == 0) {
-                throw new SQLException("Creating calendar campaign failed, no rows affected.");
+                throw new SQLException("Creazione della campagna calendario fallita, nessuna riga modificata.");
             }
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     campaign.setId(generatedKeys.getInt(1));
                 } else {
-                    throw new SQLException("Creating calendar campaign failed, no ID found.");
+                    throw new SQLException("Creazione della campagna calendario fallita, nessun ID trovato.");
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         calendarCampaigns.put(campaign.getId(), campaign);
@@ -98,7 +98,7 @@ public class CalendarManager {
             statement.setInt(1, campaign.getId());
             return statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return false;
@@ -155,7 +155,7 @@ public class CalendarManager {
                         statement.setInt(5, Emulator.getIntUnixTimestamp());
                         persisted = statement.executeUpdate() > 0;
                     } catch (SQLException e) {
-                        LOGGER.error("Caught SQL exception", e);
+                        LOGGER.error("Eccezione SQL intercettata", e);
                         return;
                     }
                     if (!persisted) return; // someone else won the race

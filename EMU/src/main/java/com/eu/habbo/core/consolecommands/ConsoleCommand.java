@@ -45,11 +45,11 @@ public abstract class ConsoleCommand {
                     command.handle(message);
                     return true;
                 } catch (Exception e) {
-                    LOGGER.error("Caught exception", e);
+                    LOGGER.error("Eccezione intercettata", e);
                 }
             } else {
-                LOGGER.info("Unknown Console Command {}", message[0]);
-                LOGGER.info("Commands Available ({}): ", commands.size());
+                LOGGER.info("Comando console sconosciuto {}", message[0]);
+                LOGGER.info("Comandi disponibili ({}): ", commands.size());
 
                 for (ConsoleCommand c : commands.values()) {
                     LOGGER.info("{} - {}", c.key, c.usage);

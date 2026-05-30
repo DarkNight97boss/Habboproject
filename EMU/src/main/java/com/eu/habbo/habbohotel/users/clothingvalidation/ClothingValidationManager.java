@@ -38,7 +38,7 @@ public class ClothingValidationManager {
             VALIDATE_ON_MIMIC = false;
             VALIDATE_ON_MANNEQUIN = false;
             VALIDATE_ON_FBALLGATE = false;
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
     }
 
@@ -136,7 +136,7 @@ public class ClothingValidationManager {
                 if (data.length >= 1) {
                     FiguredataSettype settype = FIGUREDATA.settypes.get(data[0]);
                     if (settype == null) {
-                        //throw new Exception("Set type " + data[0] + " does not exist");
+                        //throw new Exception("Imposta tipo " + data[0] + " does not exist");
                         return;
                     }
 
@@ -204,7 +204,7 @@ public class ClothingValidationManager {
                 }
             } catch (Exception e) {
                 //habbo.alert(e.getMessage());
-                LOGGER.error("Error in clothing validation", e);
+                LOGGER.error("Errore nella validazione dei vestiti", e);
             }
         });
 

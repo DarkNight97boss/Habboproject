@@ -45,7 +45,7 @@ public class PrivateRoomsComposer extends MessageComposer {
             this.response.appendString("E");
             return this.response;
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
         return null;
     }

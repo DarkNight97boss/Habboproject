@@ -37,10 +37,10 @@ public class ModToolUserInfoComposer extends MessageComposer {
                        totalBans = set.getInt("amount");
                     }
                 } catch (SQLException e) {
-                    LOGGER.error("Caught SQL exception", e);
+                    LOGGER.error("Eccezione SQL intercettata", e);
                 }
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
 
             this.response.appendInt(this.set.getInt("user_id"));
@@ -80,7 +80,7 @@ public class ModToolUserInfoComposer extends MessageComposer {
 
             return this.response;
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
         return null;
     }

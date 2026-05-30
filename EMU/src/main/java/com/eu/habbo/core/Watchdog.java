@@ -30,7 +30,7 @@ public class Watchdog {
 
     public Watchdog() {
         if ("0".equals(Emulator.getConfig().getValue("watchdog.enabled", "1"))) {
-            LOGGER.info("Watchdog -> disabled");
+            LOGGER.info("Watchdog -> disabilitato");
             return;
         }
 
@@ -44,7 +44,7 @@ public class Watchdog {
         });
         this.scheduler.scheduleAtFixedRate(this::scan, initialDelay, intervalMinutes * 60L, TimeUnit.SECONDS);
 
-        LOGGER.info("Watchdog -> Loaded! (scan every {} min)", intervalMinutes);
+        LOGGER.info("Watchdog -> Caricato! (scansione ogni {} min)", intervalMinutes);
     }
 
     private void scan() {
@@ -93,10 +93,10 @@ public class Watchdog {
             if (anomalies == 0) {
                 LOGGER.info("Watchdog -> scan OK (no anomalies)");
             } else {
-                LOGGER.warn("Watchdog -> scan found {} anomalies (see audit_log action=WATCHDOG)", anomalies);
+                LOGGER.warn("Watchdog -> scansione ha trovato {} anomalie (vedi audit_log action=WATCHDOG)", anomalies);
             }
         } catch (Exception e) {
-            LOGGER.error("Watchdog scan failed", e);
+            LOGGER.error("Scansione Watchdog fallita", e);
         }
     }
 

@@ -32,7 +32,7 @@ public class ServerMessage {
 
     public ServerMessage init(int id) {
         if (this.initialized) {
-            throw new ServerMessageException("ServerMessage was already initialized.");
+            throw new ServerMessageException("ServerMessage era già inizializzato.");
         }
 
         this.initialized = true;

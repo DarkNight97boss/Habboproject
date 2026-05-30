@@ -45,7 +45,7 @@ public class BotManager {
 
         this.reload();
 
-        LOGGER.info("Bot Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
+        LOGGER.info("Bot Manager -> Caricato! ({} MS)", System.currentTimeMillis() - millis);
     }
 
     public static void addBotDefinition(String type, Class<? extends Bot> botClazz) throws Exception {
@@ -60,10 +60,10 @@ public class BotManager {
                 m.setAccessible(true);
                 m.invoke(null);
             } catch (NoSuchMethodException e) {
-                LOGGER.info("Bot Manager -> Failed to execute initialise method upon bot type '{}'. No Such Method!", set.getKey());
+                LOGGER.info("Bot Manager -> Esecuzione del metodo initialise fallita sul tipo bot '{}'. Metodo inesistente!", set.getKey());
                 return false;
             } catch (Exception e) {
-                LOGGER.info("Bot Manager -> Failed to execute initialise method upon bot type '{}'. Error: {}", set.getKey(), e.getMessage());
+                LOGGER.info("Bot Manager -> Esecuzione del metodo initialise fallita sul tipo bot '{}'. Errore: {}", set.getKey(), e.getMessage());
                 return false;
             }
         }
@@ -90,12 +90,12 @@ public class BotManager {
                             }
                         }
                     } catch (SQLException e) {
-                        LOGGER.error("Caught SQL exception", e);
+                        LOGGER.error("Eccezione SQL intercettata", e);
                     }
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return bot;
@@ -151,7 +151,7 @@ public class BotManager {
                     try {
                         topItem.onWalkOn(bot.getRoomUnit(), room, null);
                     } catch (Exception e) {
-                        LOGGER.error("Caught exception", e);
+                        LOGGER.error("Eccezione intercettata", e);
                     }
                 }
 
@@ -209,11 +209,11 @@ public class BotManager {
             if (botClazz != null)
                 return botClazz.getDeclaredConstructor(ResultSet.class).newInstance(set);
             else
-                LOGGER.error("Unknown Bot Type: {}", type);
+                LOGGER.error("Tipo bot sconosciuto: {}", type);
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
 
         return null;
@@ -224,7 +224,7 @@ public class BotManager {
             statement.setInt(1, bot.getId());
             return statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return false;
@@ -237,9 +237,9 @@ public class BotManager {
                 m.setAccessible(true);
                 m.invoke(null);
             } catch (NoSuchMethodException e) {
-                LOGGER.info("Bot Manager -> Failed to execute dispose method upon bot type '{}'. No Such Method!", set.getKey());
+                LOGGER.info("Bot Manager -> Esecuzione del metodo dispose fallita sul tipo bot '{}'. Metodo inesistente!", set.getKey());
             } catch (Exception e) {
-                LOGGER.info("Bot Manager -> Failed to execute dispose method upon bot type '{}'. Error: {}", set.getKey(), e.getMessage());
+                LOGGER.info("Bot Manager -> Esecuzione del metodo dispose fallita sul tipo bot '{}'. Errore: {}", set.getKey(), e.getMessage());
             }
         }
     }

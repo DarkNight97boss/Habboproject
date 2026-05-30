@@ -59,7 +59,7 @@ public class SendGift extends RCONMessage<SendGift.SendGiftJSON> {
                     }
                 }
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         } else {
             username = habbo.getHabboInfo().getUsername();

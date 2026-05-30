@@ -15,7 +15,7 @@ public class HotelViewManager {
         this.hallOfFame = new HallOfFame();
         this.newsList = new NewsList();
 
-        LOGGER.info("Hotelview Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
+        LOGGER.info("Hotelview Manager -> Caricato! ({} MS)", System.currentTimeMillis() - millis);
     }
 
     public HallOfFame getHallOfFame() {

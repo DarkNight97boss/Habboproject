@@ -51,7 +51,7 @@ public class CatalogLimitedConfiguration implements Runnable {
                 statement.setInt(5, item.getLimitedSells());
                 statement.execute();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
     }
@@ -69,7 +69,7 @@ public class CatalogLimitedConfiguration implements Runnable {
 
                 statement.executeBatch();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
 
             this.totalSet += amount;
@@ -102,7 +102,7 @@ public class CatalogLimitedConfiguration implements Runnable {
             statement.setInt(3, this.itemId);
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 }

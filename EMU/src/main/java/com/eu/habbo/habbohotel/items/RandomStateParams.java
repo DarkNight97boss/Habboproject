@@ -25,13 +25,13 @@ public class RandomStateParams {
                     this.delay = Integer.parseInt(keyValue[1]);
                     break;
                 default:
-                    LOGGER.warn("RandomStateParams: unknown key: {}", keyValue[0]);
+                    LOGGER.warn("RandomStateParams: chiave sconosciuta: {}", keyValue[0]);
                     break;
             }
         });
 
-        if (this.states < 0) throw new Exception("RandomStateParams: states not defined");
-        if (this.delay < 0) throw new Exception("RandomStateParams: states not defined");
+        if (this.states < 0) throw new Exception("RandomStateParams: stati non definiti");
+        if (this.delay < 0) throw new Exception("RandomStateParams: stati non definiti");
     }
 
     public int getStates() {

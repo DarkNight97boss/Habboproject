@@ -54,7 +54,7 @@ public final class HotelEvents {
 
     public HotelEvents() {
         if (!isEnabled()) {
-            LOGGER.info("HotelEvents -> disabled");
+            LOGGER.info("HotelEvents -> disabilitato");
             return;
         }
         int initialDelay = Emulator.getConfig().getInt("hotel.events.initial.delay.seconds", 120);
@@ -66,7 +66,7 @@ public final class HotelEvents {
             return t;
         });
         this.scheduler.scheduleAtFixedRate(this::tick, initialDelay, intervalMinutes * 60L, TimeUnit.SECONDS);
-        LOGGER.info("HotelEvents -> Loaded! (tick every {} min)", intervalMinutes);
+        LOGGER.info("HotelEvents -> Caricato! (tick ogni {} min)", intervalMinutes);
     }
 
     public static boolean isEnabled() {
@@ -115,7 +115,7 @@ public final class HotelEvents {
                 case BROADCAST_TIP: runBroadcastTip(online); break;
             }
         } catch (Exception e) {
-            LOGGER.error("HotelEvents tick failed", e);
+            LOGGER.error("Tick HotelEvents fallito", e);
         }
     }
 
@@ -125,10 +125,10 @@ public final class HotelEvents {
     }
 
     private static final String[] TIPS = new String[] {
-            "Tip: complete your daily streak to earn battle pass XP.",
-            "Did you know? Trading completes give you XP for both sides.",
-            "Friends online? Visit their room from the navigator.",
-            "Heads up: a new event is on its way. Stay tuned!"
+            "Suggerimento: completa la tua serie giornaliera per guadagnare ricompense.",
+            "Lo sapevi? Gli scambi completati danno punti a entrambe le parti.",
+            "Amici online? Visita le loro stanze dal Navigatore.",
+            "Attenzione: un nuovo evento sta per arrivare. Resta sintonizzato!"
     };
 
     private void runBroadcastTip(Map<Integer, Habbo> online) {
@@ -143,7 +143,7 @@ public final class HotelEvents {
             if (h == null) continue;
             try { h.giveCredits(amount); } catch (Exception ignored) {}
         }
-        broadcast(online, "🎁 Hotel event: +" + amount + " credits for every online user!");
+        broadcast(online, "🎁 Evento Hotel: +" + amount + " crediti per ogni utente online!");
         AuditLog.record(0, "HotelEvents", "HOTEL_EVENT", "free_credits", "amount=" + amount + " users=" + online.size());
     }
 
@@ -153,7 +153,7 @@ public final class HotelEvents {
             if (h == null) continue;
             try { h.givePixels(amount); } catch (Exception ignored) {}
         }
-        broadcast(online, "🎁 Hotel event: +" + amount + " duckets for every online user!");
+        broadcast(online, "🎁 Evento Hotel: +" + amount + " ducati per ogni utente online!");
         AuditLog.record(0, "HotelEvents", "HOTEL_EVENT", "free_pixels", "amount=" + amount + " users=" + online.size());
     }
 
@@ -163,7 +163,7 @@ public final class HotelEvents {
         int now = Emulator.getIntUnixTimestamp();
         eventXpMultiplier.set(factor);
         eventXpMultiplierExpiresAt.set(now + minutes * 60L);
-        broadcast(online, "⚡ Hotel event: " + String.format("%.1f", factor) + "× battle-pass XP for the next " + minutes + " minutes!");
+        broadcast(online, "⚡ Evento Hotel: XP " + String.format("%.1f", factor) + "× per i prossimi " + minutes + " minuti!");
         AuditLog.record(0, "HotelEvents", "HOTEL_EVENT", "double_xp", "factor=" + factor + " minutes=" + minutes + " users=" + online.size());
     }
 
@@ -179,7 +179,7 @@ public final class HotelEvents {
                 try { h.getClient().sendResponse(msg); } catch (Exception ignored) {}
             }
         } catch (Exception e) {
-            LOGGER.warn("HotelEvents broadcast failed", e);
+            LOGGER.warn("Broadcast HotelEvents fallito", e);
         }
     }
 }

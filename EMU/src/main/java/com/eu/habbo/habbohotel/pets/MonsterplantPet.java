@@ -142,7 +142,7 @@ public class MonsterplantPet extends Pet implements IPetLook {
                 statement.setInt(13, this.id);
                 statement.execute();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
     }

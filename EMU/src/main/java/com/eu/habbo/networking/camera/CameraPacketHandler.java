@@ -41,7 +41,7 @@ public class CameraPacketHandler {
                 message.handle(channel);
                 message.buffer.release();
             } catch (Exception e) {
-                LOGGER.error("Caught exception", e);
+                LOGGER.error("Eccezione intercettata", e);
             }
         }
     }

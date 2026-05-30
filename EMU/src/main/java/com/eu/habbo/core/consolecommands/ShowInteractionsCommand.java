@@ -8,7 +8,7 @@ public class ShowInteractionsCommand extends ConsoleCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShowInteractionsCommand.class);
 
     public ShowInteractionsCommand() {
-        super("interactions", "Show a list of available furniture interactions.");
+        super("interactions", "Mostra l'elenco delle interazioni arredi disponibili.");
     }
 
     @Override

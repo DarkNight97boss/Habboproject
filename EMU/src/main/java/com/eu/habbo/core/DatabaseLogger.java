@@ -39,7 +39,7 @@ public class DatabaseLogger {
 
             }
         } catch (SQLException e) {
-            LOGGER.error("Exception caught while saving loggables to database.", e);
+            LOGGER.error("Eccezione intercettata durante il salvataggio dei loggables nel database.", e);
         }
     }
 

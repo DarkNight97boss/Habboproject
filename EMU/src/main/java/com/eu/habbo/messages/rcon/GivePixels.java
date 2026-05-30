@@ -31,7 +31,7 @@ public class GivePixels extends RCONMessage<GivePixels.JSONGivePixels> {
                 statement.execute();
             } catch (SQLException e) {
                 this.status = RCONMessage.SYSTEM_ERROR;
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
 
             this.message = "offline";

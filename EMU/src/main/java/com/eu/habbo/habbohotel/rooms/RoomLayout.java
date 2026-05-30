@@ -49,7 +49,7 @@ public class RoomLayout {
           Emulator.getConfig().getBoolean("pathfinder.step.allow.falling", true),
           Emulator.getConfig().getBoolean("pathfinder.retro-style.diagonals", false));
     } catch (Exception e) {
-      LOGGER.error("Caught exception", e);
+      LOGGER.error("Eccezione intercettata", e);
     }
   }
 

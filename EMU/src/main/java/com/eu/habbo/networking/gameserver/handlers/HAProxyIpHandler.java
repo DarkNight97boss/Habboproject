@@ -49,7 +49,7 @@ public class HAProxyIpHandler extends ChannelInboundHandlerAdapter {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         String peer = ipOf(ctx);
         if (peer == null || !isTrusted(peer)) {
-            LOGGER.warn("Proxy-protocol: rejected connection from untrusted source {}", peer);
+            LOGGER.warn("Proxy-protocol: connessione rifiutata da sorgente non affidabile {}", peer);
             ctx.close();
             return;
         }

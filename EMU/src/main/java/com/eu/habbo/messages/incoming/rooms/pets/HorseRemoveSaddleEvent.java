@@ -40,12 +40,12 @@ public class HorseRemoveSaddleEvent extends MessageHandler {
                     if (set.next()) {
                         saddleItemId = set.getInt("id");
                     } else {
-                        LOGGER.error("There is no viable fallback saddle item for old horses with no saddle item ID. Horse pet ID: {}", horse.getId());
+                        LOGGER.error("Non esiste un oggetto sella di fallback valido per i vecchi cavalli senza saddle item ID. Pet cavallo ID: {}", horse.getId());
                         return;
                     }
                 }
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
 

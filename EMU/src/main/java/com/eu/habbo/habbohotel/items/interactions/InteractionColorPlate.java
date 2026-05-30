@@ -44,7 +44,7 @@ public class InteractionColorPlate extends InteractionDefault {
         try {
             state = Integer.parseInt(this.getExtradata());
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
 
         state += amount;

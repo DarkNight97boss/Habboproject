@@ -31,6 +31,18 @@ public class RoomUserTalkEvent extends MessageHandler {
                 return;
             }
 
+            // Anti-link: blocca i link per utenti non staff (anche con escamotage tipo
+            // "g o o g l e . c o m", "(dot)", "punto" ecc.). Staff bypassa.
+            if (!message.isCommand && com.eu.habbo.core.LinkFilterGuard.shouldBlock(this.client.getHabbo(), message.getMessage())) {
+                return;
+            }
+
+            // Bot Oracolo: se siamo nella stanza Oracolo, registra il messaggio
+            // come proposta di feature (chat continua normalmente).
+            if (!message.isCommand) {
+                com.eu.habbo.core.OracoloManager.tryRecordRequest(this.client.getHabbo(), message.getMessage());
+            }
+
             if (Emulator.getPluginManager().fireEvent(new UserTalkEvent(this.client.getHabbo(), message, RoomChatType.TALK)).isCancelled()) {
                 return;
             }

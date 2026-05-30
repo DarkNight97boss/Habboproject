@@ -74,7 +74,7 @@ public class ForumThread implements Runnable, ISerialize {
         try {
             this.lastComment = ForumThreadComment.getById(set.getInt("last_comment_id"));
         } catch (SQLException e) {
-            LOGGER.error("ForumThread last_comment_id exception", e);
+            LOGGER.error("Eccezione ForumThread last_comment_id", e);
         }
 
         this.comments = new THashMap<>();
@@ -113,7 +113,7 @@ public class ForumThread implements Runnable, ISerialize {
                 Emulator.getPluginManager().fireEvent(new GuildForumThreadCreated(createdThread));
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return createdThread;
@@ -161,7 +161,7 @@ public class ForumThread implements Runnable, ISerialize {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return threads;
@@ -200,7 +200,7 @@ public class ForumThread implements Runnable, ISerialize {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return foundThread;
@@ -339,7 +339,7 @@ public class ForumThread implements Runnable, ISerialize {
                     addComment(comment);
                 }
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
     }
@@ -463,7 +463,7 @@ public class ForumThread implements Runnable, ISerialize {
 
             this.needsUpdate = false;
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 }

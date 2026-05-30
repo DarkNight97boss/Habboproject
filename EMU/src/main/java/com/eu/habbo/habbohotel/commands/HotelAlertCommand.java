@@ -27,7 +27,7 @@ public class HotelAlertCommand extends Command {
             long now = System.currentTimeMillis();
             Long last = LAST_FIRED.get(actorId);
             if (last != null && now - last < cooldownMs) {
-                gameClient.getHabbo().whisper("Hotel alert cooldown — wait " + ((cooldownMs - (now - last)) / 1000 + 1) + "s.", RoomChatMessageBubbles.ALERT);
+                gameClient.getHabbo().whisper("Cooldown avviso hotel — aspetta " + ((cooldownMs - (now - last)) / 1000 + 1) + "s.", RoomChatMessageBubbles.ALERT);
                 return true;
             }
             LAST_FIRED.put(actorId, now);

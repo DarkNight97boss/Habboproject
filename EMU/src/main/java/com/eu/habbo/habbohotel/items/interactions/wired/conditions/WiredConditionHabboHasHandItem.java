@@ -84,7 +84,7 @@ public class WiredConditionHabboHasHandItem extends InteractionWiredCondition {
                 this.handItem = Integer.parseInt(wiredData);
             }
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
     }
 

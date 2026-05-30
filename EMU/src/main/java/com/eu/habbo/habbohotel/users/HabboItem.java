@@ -111,7 +111,7 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
             //serverMessage.appendString( ? "1.0" : ((this.getBaseItem().allowWalk() || this.getBaseItem().allowSit() && this.roomId != 0) ? Item.getCurrentHeight(this) : ""));
 
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
     }
 
@@ -270,15 +270,15 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
                     statement.setInt(10, this.id);
                     statement.execute();
                 } catch (SQLException e) {
-                    LOGGER.error("Caught SQL exception", e);
-                    LOGGER.error("SQLException trying to save HabboItem: {}", this.toString());
+                    LOGGER.error("Eccezione SQL intercettata", e);
+                    LOGGER.error("SQLException durante il salvataggio di HabboItem: {}", this.toString());
                 }
 
                 this.needsUpdate = false;
             }
 
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 

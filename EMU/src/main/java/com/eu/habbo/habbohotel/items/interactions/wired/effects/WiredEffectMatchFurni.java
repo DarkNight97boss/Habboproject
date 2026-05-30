@@ -125,7 +125,7 @@ public class WiredEffectMatchFurni extends InteractionWiredEffect implements Int
                     }
 
                 } catch (Exception e) {
-                    LOGGER.error("Caught exception", e);
+                    LOGGER.error("Eccezione intercettata", e);
                 }
             }
 
@@ -177,7 +177,7 @@ public class WiredEffectMatchFurni extends InteractionWiredEffect implements Int
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if(settings.getIntParams().length < 3) throw new WiredSaveException("Invalid data");
+        if(settings.getIntParams().length < 3) throw new WiredSaveException("Dati non validi");
         boolean setState = settings.getIntParams()[0] == 1;
         boolean setDirection = settings.getIntParams()[1] == 1;
         boolean setPosition = settings.getIntParams()[2] == 1;
@@ -185,12 +185,12 @@ public class WiredEffectMatchFurni extends InteractionWiredEffect implements Int
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
 
         if (room == null)
-            throw new WiredSaveException("Trying to save wired in unloaded room");
+            throw new WiredSaveException("Tentativo di salvare wired in una stanza non caricata");
 
         int itemsCount = settings.getFurniIds().length;
 
         if(itemsCount > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) {
-            throw new WiredSaveException("Too many furni selected");
+            throw new WiredSaveException("Troppi arredi selezionati");
         }
 
         List<WiredMatchFurniSetting> newSettings = new ArrayList<>();
@@ -208,7 +208,7 @@ public class WiredEffectMatchFurni extends InteractionWiredEffect implements Int
         int delay = settings.getDelay();
 
         if(delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
-            throw new WiredSaveException("Delay too long");
+            throw new WiredSaveException("Ritardo troppo lungo");
 
         this.state = setState;
         this.direction = setDirection;

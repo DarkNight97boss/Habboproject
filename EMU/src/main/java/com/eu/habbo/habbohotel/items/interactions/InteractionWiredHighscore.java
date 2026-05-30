@@ -40,7 +40,7 @@ public class InteractionWiredHighscore extends HabboItem {
             this.scoreType = WiredHighscoreScoreType.valueOf(name);
             this.clearType = WiredHighscoreClearType.values()[ctype];
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
 
         this.reloadData();
@@ -58,7 +58,7 @@ public class InteractionWiredHighscore extends HabboItem {
             this.scoreType = WiredHighscoreScoreType.valueOf(name);
             this.clearType = WiredHighscoreClearType.values()[ctype];
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
 
         this.reloadData();
@@ -93,7 +93,7 @@ public class InteractionWiredHighscore extends HabboItem {
             this.setExtradata(Math.abs(state - 1) + "");
             room.updateItem(this);
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
 
         if(client != null && !(objects.length >= 2 && objects[1] instanceof WiredEffectType)) {

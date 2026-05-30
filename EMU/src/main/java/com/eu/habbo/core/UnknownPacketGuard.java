@@ -80,14 +80,14 @@ public final class UnknownPacketGuard {
             }
             AuditLog.record(userId, username, "PACKET_FUZZ_DETECTED", "user:" + userId,
                     "headers_in_window=" + q.size() + " window_sec=" + windowSec + " last_header=" + headerId + " ip=" + ip);
-            LOGGER.warn("PACKET_FUZZ_DETECTED user={} headers={} last_id={} (kick={})", username, q.size(), headerId, kick);
+            LOGGER.warn("PACKET_FUZZ_RILEVATO utente={} headers={} last_id={} (kick={})", username, q.size(), headerId, kick);
             q.clear(); // reset, so we don't fire every packet after the threshold
 
             if (kick) {
                 try {
                     client.dispose();
                 } catch (Exception e) {
-                    LOGGER.warn("Failed to dispose fuzzing client {}", userId, e);
+                    LOGGER.warn("Smaltimento del client fuzzing fallito {}", userId, e);
                 }
             }
         }

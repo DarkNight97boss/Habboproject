@@ -73,8 +73,8 @@ public abstract class CatalogPage implements Comparable<CatalogPage>, ISerialize
                 try {
                     this.included.add(Integer.valueOf(id));
                 } catch (Exception e) {
-                    LOGGER.error("Caught exception", e);
-                    LOGGER.error("Failed to parse includes column value of ({}) for catalog page ({})", id, this.id);
+                    LOGGER.error("Eccezione intercettata", e);
+                    LOGGER.error("Parsing del valore della colonna includes ({}) fallito per la pagina catalogo ({})", id, this.id);
                 }
             }
         }

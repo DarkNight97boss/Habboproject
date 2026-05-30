@@ -265,7 +265,7 @@ public class FreezeGame extends Game {
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
     }
 

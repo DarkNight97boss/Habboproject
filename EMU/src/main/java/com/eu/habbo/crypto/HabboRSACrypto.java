@@ -80,7 +80,7 @@ public class HabboRSACrypto {
 
     private byte[] DoDecrypt(byte[] data, boolean isPublic, int padType) throws HabboCryptoException {
         if (data.length % this.blockSize != 0) {
-            throw new HabboCryptoException("Decryption data was not in blocks of " + this.blockSize + " bytes, total " + data.length + ".");
+            throw new HabboCryptoException("I dati di decifratura non sono in blocchi di " + this.blockSize + " bytes, total " + data.length + ".");
         }
 
         try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {

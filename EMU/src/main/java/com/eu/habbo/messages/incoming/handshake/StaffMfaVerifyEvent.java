@@ -80,7 +80,7 @@ public class StaffMfaVerifyEvent extends MessageHandler {
         } else {
             AuditLog.record(userId, username, "STAFF_MFA_FAIL", "user:" + userId, "");
             this.client.sendResponse(new StaffMfaResultComposer(false,
-                    Emulator.getTexts().getValue("mfa.staff.failed", "Invalid code. Please try again.")));
+                    Emulator.getTexts().getValue("mfa.staff.failed", "Codice non valido. Riprova.")));
         }
     }
 }

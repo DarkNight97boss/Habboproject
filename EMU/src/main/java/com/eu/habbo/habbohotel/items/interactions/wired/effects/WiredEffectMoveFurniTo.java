@@ -50,7 +50,7 @@ public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
         this.items.clear();
         this.indexOffset.clear();
 
-        if(settings.getIntParams().length < 2) throw new WiredSaveException("invalid data");
+        if(settings.getIntParams().length < 2) throw new WiredSaveException("dati non validi");
         this.direction = settings.getIntParams()[0];
         this.spacing = settings.getIntParams()[1];
 

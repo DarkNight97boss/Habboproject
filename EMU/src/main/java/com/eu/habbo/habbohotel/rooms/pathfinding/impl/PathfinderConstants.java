@@ -11,6 +11,6 @@ public final class PathfinderConstants {
   public static final String CONFIG_TIMEOUT_ENABLED = "pathfinder.max_execution_time.enabled";
 
   private PathfinderConstants() {
-    throw new IllegalStateException("Utility class");
+    throw new IllegalStateException("Classe di utilità");
   }
 }

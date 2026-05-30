@@ -15,6 +15,6 @@ public class Rotation {
 	};
 
 	private Rotation() {
-		throw new IllegalStateException("Utility class");
+		throw new IllegalStateException("Classe di utilità");
 	}
 }

@@ -27,9 +27,9 @@ public class BadgeImager {
     public BadgeImager() {
         if (Emulator.getConfig().getBoolean("imager.internal.enabled")) {
             if (this.reload()) {
-                LOGGER.info("Badge Imager -> Loaded!");
+                LOGGER.info("Badge Imager -> Caricato!");
             } else {
-                LOGGER.warn("Badge Imager -> Disabled! Please check your configuration!");
+                LOGGER.warn("Badge Imager -> Disabilitato! Controlla la tua configurazione!");
             }
         }
     }
@@ -118,7 +118,7 @@ public class BadgeImager {
     public synchronized boolean reload() {
         File file = new File(Emulator.getConfig().getValue("imager.location.badgeparts"));
         if (!file.exists()) {
-            LOGGER.error("BadgeImager output folder: {} does not exist!", Emulator.getConfig().getValue("imager.location.badgeparts"));
+            LOGGER.error("Cartella di output del BadgeImager: {} non esiste!", Emulator.getConfig().getValue("imager.location.badgeparts"));
             return false;
         }
 
@@ -132,7 +132,7 @@ public class BadgeImager {
                                 try {
                                     this.cachedImages.put(part, ImageIO.read(new File(Emulator.getConfig().getValue("imager.location.badgeparts"), "badgepart_" + part.replace(".gif", ".png"))));
                                 } catch (Exception e) {
-                                    LOGGER.info("[Badge Imager] Missing Badge Part: {}/badgepart_{}", Emulator.getConfig().getValue("imager.location.badgeparts"), part.replace(".gif", ".png"));
+                                    LOGGER.info("[Badge Imager] Parte distintivo mancante: {}/badgepart_{}", Emulator.getConfig().getValue("imager.location.badgeparts"), part.replace(".gif", ".png"));
                                 }
                             }
                         }
@@ -141,7 +141,7 @@ public class BadgeImager {
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
             return false;
         }
 
@@ -164,7 +164,7 @@ public class BadgeImager {
             if (outputFile.exists())
                 return;
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
             return;
         }
 
@@ -242,7 +242,7 @@ public class BadgeImager {
         try {
             ImageIO.write(image, "PNG", outputFile);
         } catch (Exception e) {
-            LOGGER.error("Failed to generate guild badge: {}.png Make sure the output folder exists and is writable!", outputFile);
+            LOGGER.error("Generazione distintivo gruppo fallita: {}.png Assicurati che la cartella di output esista e sia scrivibile!", outputFile);
         }
 
         graphics.dispose();

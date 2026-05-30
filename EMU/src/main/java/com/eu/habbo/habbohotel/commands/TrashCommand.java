@@ -10,7 +10,7 @@ public class TrashCommand extends Command {
 
     @Override
     public boolean handle(GameClient gameClient, String[] params) throws Exception {
-        gameClient.getHabbo().whisper("Sorry. Lulz mode removed |");
+        gameClient.getHabbo().whisper("Spiacente. La modalità Lulz è stata rimossa |");
         return false;
     }
 }

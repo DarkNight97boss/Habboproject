@@ -87,7 +87,7 @@ public class TraxManager implements Disposable {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return null;
@@ -119,7 +119,7 @@ public class TraxManager implements Disposable {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -130,7 +130,7 @@ public class TraxManager implements Disposable {
             statement.setInt(2, song_id);
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -144,7 +144,7 @@ public class TraxManager implements Disposable {
             statement_1.execute();
         }
         catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
             return;
         }
 
@@ -162,7 +162,7 @@ public class TraxManager implements Disposable {
             statement_1.execute();
         }
         catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
             return;
         }
 
@@ -264,7 +264,7 @@ public class TraxManager implements Disposable {
                 statement.setInt(2, musicDisc.getId());
                 statement.execute();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
                 return;
             }
 
@@ -349,7 +349,7 @@ public class TraxManager implements Disposable {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 

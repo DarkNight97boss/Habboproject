@@ -46,7 +46,7 @@ public class MarketPlace {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return offers;
@@ -104,7 +104,7 @@ public class MarketPlace {
                     }
                 }
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
                 habbo.getClient().sendResponse(new MarketplaceCancelSaleComposer(offer, false));
             }
         }
@@ -168,7 +168,7 @@ public class MarketPlace {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return offers;
@@ -198,7 +198,7 @@ public class MarketPlace {
             message.appendInt(1);
             message.appendInt(itemId);
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -213,7 +213,7 @@ public class MarketPlace {
                 number = set.getInt("number");
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return number;
@@ -231,7 +231,7 @@ public class MarketPlace {
                 avg = set.getInt("avg");
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return calculateCommision(avg);
@@ -303,7 +303,7 @@ public class MarketPlace {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -330,7 +330,7 @@ public class MarketPlace {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -400,7 +400,7 @@ public class MarketPlace {
             statement.setInt(2, offer.getOfferId());
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 

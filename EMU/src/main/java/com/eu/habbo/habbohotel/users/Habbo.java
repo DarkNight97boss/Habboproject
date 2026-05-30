@@ -162,7 +162,7 @@ public class Habbo implements Runnable {
         this.messenger.connectionChanged(this, true, false);
 
         Emulator.getGameEnvironment().getRoomManager().loadRoomsForHabbo(this);
-        LOGGER.info("{} logged in from IP {} using proxyserver {}", this.habboInfo.getUsername(), this.habboInfo.getIpLogin(), ProxyIP);
+        LOGGER.info("{} connesso dall'IP {} usando proxyserver {}", this.habboInfo.getUsername(), this.habboInfo.getIpLogin(), ProxyIP);
         return true;
     }
 
@@ -189,7 +189,7 @@ public class Habbo implements Runnable {
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
 
         try {
@@ -205,13 +205,13 @@ public class Habbo implements Runnable {
 
             this.habboStats.dispose();
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
             return;
         } finally {
             Emulator.getGameEnvironment().getRoomManager().unloadRoomsForHabbo(this);
             Emulator.getGameEnvironment().getHabboManager().removeHabbo(this);
         }
-        LOGGER.info("{} disconnected.", this.habboInfo.getUsername());
+        LOGGER.info("{} disconnesso.", this.habboInfo.getUsername());
         this.client = null;
     }
 
@@ -422,7 +422,7 @@ public class Habbo implements Runnable {
 
     public void mute(int seconds, boolean isFlood) {
         if (seconds <= 0) {
-            LOGGER.warn("Tried to mute user for {} seconds, which is invalid.", seconds);
+            LOGGER.warn("Tentativo di silenziare l'utente per {} secondi, valore non valido.", seconds);
             return;
         }
 

@@ -68,7 +68,7 @@ public class SecureLoginEvent extends MessageHandler {
 
         if (Emulator.getConfig().getBoolean("encryption.forced", false) && Emulator.getCrypto().isEnabled() && !this.client.isHandshakeFinished()) {
             Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
-            LOGGER.warn("Encryption is forced and TLS Handshake isn't finished! Closed connection...");
+            LOGGER.warn("La crittografia è forzata e l'handshake TLS non è terminato! Connessione chiusa...");
             return;
         }
 
@@ -83,13 +83,13 @@ public class SecureLoginEvent extends MessageHandler {
 
         if (Emulator.getPluginManager().fireEvent(new SSOAuthenticationEvent(sso)).isCancelled()) {
             Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
-            LOGGER.info("SSO Authentication is cancelled by a plugin. Closed connection...");
+            LOGGER.info("Autenticazione SSO annullata da un plugin. Connessione chiusa...");
             return;
         }
 
         if (sso.isEmpty()) {
             Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
-            LOGGER.debug("Client is trying to connect without SSO ticket! Closed connection...");
+            LOGGER.debug("Il client sta tentando di connettersi senza ticket SSO! Connessione chiusa...");
             return;
         }
 
@@ -114,7 +114,7 @@ public class SecureLoginEvent extends MessageHandler {
                 // Unknown / consumed SSO ticket — bump the brute-force counter.
                 if (peerIp != null) com.eu.habbo.core.IpRateLimiter.SSO.onFailure(peerIp);
                 Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
-                LOGGER.warn("Someone tried to login with a non-existing SSO token! Closed connection...");
+                LOGGER.warn("Qualcuno ha tentato di accedere con un token SSO inesistente! Connessione chiusa...");
                 return;
             }
             if (peerIp != null) com.eu.habbo.core.IpRateLimiter.SSO.onSuccess(peerIp);
@@ -142,7 +142,7 @@ public class SecureLoginEvent extends MessageHandler {
                     Emulator.getThreading().run(habbo);
                     Emulator.getGameEnvironment().getHabboManager().addHabbo(habbo);
                 } catch (Exception e) {
-                    LOGGER.error("Caught exception", e);
+                    LOGGER.error("Eccezione intercettata", e);
                     Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
                     return;
                 }
@@ -313,7 +313,7 @@ public class SecureLoginEvent extends MessageHandler {
                 }
             } else {
                 Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
-                LOGGER.warn("Someone tried to login with a non-existing SSO token! Closed connection...");
+                LOGGER.warn("Qualcuno ha tentato di accedere con un token SSO inesistente! Connessione chiusa...");
             }
         } else {
             Emulator.getGameServer().getGameClientManager().disposeClient(this.client);

@@ -45,7 +45,7 @@ public class ModToolManager {
         this.tickets = new THashMap<>();
         this.cfhCategories = new TIntObjectHashMap<>();
         this.loadModTool();
-        LOGGER.info("ModTool Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
+        LOGGER.info("ModTool Manager -> Caricato! ({} MS)", System.currentTimeMillis() - millis);
     }
 
     public static void requestUserInfo(GameClient client, ClientMessage packet) {
@@ -62,9 +62,9 @@ public class ModToolManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
     }
 
@@ -82,7 +82,7 @@ public class ModToolManager {
             this.loadTickets(connection);
             this.loadCfhCategories(connection);
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -101,7 +101,7 @@ public class ModToolManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -112,7 +112,7 @@ public class ModToolManager {
                     this.presets.get(set.getString("type")).add(set.getString("preset"));
                 }
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
     }
@@ -124,7 +124,7 @@ public class ModToolManager {
                     this.tickets.put(set.getInt("id"), new ModToolIssue(set));
                 }
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
     }
@@ -150,7 +150,7 @@ public class ModToolManager {
                 this.cfhCategories.get(set.getInt("support_cfh_category_id")).addTopic(new CfhTopic(set, this.getIssuePreset(set.getInt("default_sanction"))));
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -265,7 +265,7 @@ public class ModToolManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return chatlogs;
@@ -282,7 +282,7 @@ public class ModToolManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return chatlogs;
@@ -302,7 +302,7 @@ public class ModToolManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return chatLogs;
@@ -339,7 +339,7 @@ public class ModToolManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return chatlogs;
@@ -357,7 +357,7 @@ public class ModToolManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return roomVisits;
@@ -415,7 +415,7 @@ public class ModToolManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return roomVisits;
@@ -445,7 +445,7 @@ public class ModToolManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return null;
@@ -573,7 +573,7 @@ public class ModToolManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return ban;
@@ -602,7 +602,7 @@ public class ModToolManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
         return banned;
     }
@@ -625,7 +625,7 @@ public class ModToolManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return false;
@@ -645,7 +645,7 @@ public class ModToolManager {
             statement.execute();
             return statement.getUpdateCount() > 0;
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return false;
@@ -750,7 +750,7 @@ public class ModToolManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return total;

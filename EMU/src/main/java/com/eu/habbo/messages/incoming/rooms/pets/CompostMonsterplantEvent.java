@@ -38,7 +38,7 @@ public class CompostMonsterplantEvent extends MessageHandler {
                             statement.setInt(1, pet.getId());
                             affected = statement.executeUpdate();
                         } catch (SQLException e) {
-                            LOGGER.error("Caught SQL exception", e);
+                            LOGGER.error("Eccezione SQL intercettata", e);
                             return;
                         }
                         if (affected != 1) {

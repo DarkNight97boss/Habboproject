@@ -104,7 +104,7 @@ public class OpenGift implements Runnable {
                 this.habbo.getClient().sendResponse(new PresentItemOpenedComposer(inside, "", false));
             }
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
     }
 }

@@ -48,7 +48,7 @@ public class RoomBundleLayout extends SingleBundle {
                 if (this.room != null)
                     this.room.preventUnloading = true;
             } else {
-                LOGGER.error("No room id specified for room bundle {}({})", this.getPageName(), this.getId());
+                LOGGER.error("Nessun room id specificato per il bundle stanza {}({})", this.getPageName(), this.getId());
             }
         }
 
@@ -190,7 +190,7 @@ public class RoomBundleLayout extends SingleBundle {
                     statement.setInt(3, this.room.getId());
                     statement.execute();
                 } catch (SQLException e) {
-                    LOGGER.error("Caught SQL exception", e);
+                    LOGGER.error("Eccezione SQL intercettata", e);
                 }
             }
 
@@ -224,7 +224,7 @@ public class RoomBundleLayout extends SingleBundle {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         Room r = Emulator.getGameEnvironment().getRoomManager().loadRoom(roomId);

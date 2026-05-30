@@ -50,15 +50,15 @@ public class ItemsComponent {
                         if (item != null) {
                             itemsList.put(set.getInt("id"), item);
                         } else {
-                            LOGGER.error("Failed to load HabboItem: {}", set.getInt("id"));
+                            LOGGER.error("Caricamento HabboItem fallito: {}", set.getInt("id"));
                         }
                     } catch (SQLException e) {
-                        LOGGER.error("Caught SQL exception", e);
+                        LOGGER.error("Eccezione SQL intercettata", e);
                     }
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return itemsList;
@@ -169,7 +169,7 @@ public class ItemsComponent {
             TIntObjectIterator<HabboItem> items = this.items.iterator();
 
             if (items == null) {
-                LOGGER.error("Items is NULL!");
+                LOGGER.error("Items è NULL!");
                 return;
             }
 

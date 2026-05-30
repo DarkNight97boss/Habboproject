@@ -89,7 +89,7 @@ public final class IpRateLimiter {
                             "ip:" + ip, "failures=" + b.failures.size() + " lockout_sec=" + lockoutSec);
                 } catch (Exception ignored) {
                 }
-                LOGGER.warn("IpRateLimiter[{}] -> IP {} locked out for {}s after {} failures",
+                LOGGER.warn("IpRateLimiter[{}] -> IP {} bloccato per {}s dopo {} fallimenti",
                         label, ip, lockoutSec, b.failures.size());
                 return true;
             }

@@ -33,7 +33,7 @@ public class SetMotto extends RCONMessage<SetMotto.SetMottoJSON> {
                     statement.execute();
                 }
             } catch (SQLException e) {
-                LOGGER.error("Caught exception", e);
+                LOGGER.error("Eccezione intercettata", e);
             }
         }
     }

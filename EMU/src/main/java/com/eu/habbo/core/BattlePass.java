@@ -111,7 +111,7 @@ public final class BattlePass {
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("BattlePass.ensureActiveSeason failed", e);
+            LOGGER.error("BattlePass.ensureActiveSeason fallito", e);
         }
         return 0;
     }
@@ -135,7 +135,7 @@ public final class BattlePass {
                 return new SeasonInfo(rs.getInt(1), rs.getString(2), rs.getInt(3), rs.getInt(4));
             }
         } catch (Exception e) {
-            LOGGER.error("BattlePass.activeSeason failed", e);
+            LOGGER.error("BattlePass.activeSeason fallito", e);
         }
         return null;
     }
@@ -189,7 +189,7 @@ public final class BattlePass {
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("BattlePass.loadProgress failed", e);
+            LOGGER.error("BattlePass.loadProgress fallito", e);
         }
         return new Progress(0, false, new HashSet<>(), new HashSet<>());
     }
@@ -240,7 +240,7 @@ public final class BattlePass {
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("BattlePass.addXp failed for user {}", userId, e);
+            LOGGER.error("BattlePass.addXp fallito per l'utente {}", userId, e);
         }
     }
 
@@ -299,7 +299,7 @@ public final class BattlePass {
             int updated = ps.executeUpdate();
             if (updated == 0) return null;
         } catch (Exception e) {
-            LOGGER.error("BattlePass.claim persist failed", e);
+            LOGGER.error("Salvataggio BattlePass.claim fallito", e);
             return null;
         }
 
@@ -346,7 +346,7 @@ public final class BattlePass {
             ps.setInt(2, seasonId);
             ps.executeUpdate();
         } catch (Exception e) {
-            LOGGER.error("BattlePass.buyPremium persist failed", e);
+            LOGGER.error("Salvataggio BattlePass.buyPremium fallito", e);
             // Best-effort refund — emulator currency add cannot fail.
             habbo.givePoints(5, cost);
             return false;

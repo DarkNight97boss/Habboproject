@@ -46,7 +46,7 @@ public class RoomPromotion {
                 statement.setInt(4, this.room.getId());
                 statement.executeUpdate();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
 
             this.needsUpdate = false;

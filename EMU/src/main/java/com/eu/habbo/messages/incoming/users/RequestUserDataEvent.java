@@ -58,7 +58,7 @@ public class RequestUserDataEvent extends MessageHandler {
 
 
         } else {
-            LOGGER.debug("Attempted to request user data where Habbo was null.");
+            LOGGER.debug("Tentativo di richiedere dati utente con Habbo null.");
             Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
         }
     }

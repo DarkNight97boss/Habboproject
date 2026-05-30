@@ -23,11 +23,11 @@ public class CameraUpdateNotification extends CameraIncomingMessage {
         int type = this.readInt();
 
         if (type == 0) {
-            LOGGER.info("Camera update: {}", message);
+            LOGGER.info("Aggiornamento camera: {}", message);
         } else if (type == 1) {
-            LOGGER.warn("Camera update: {}", message);
+            LOGGER.warn("Aggiornamento camera: {}", message);
         } else if (type == 2) {
-            LOGGER.error("Camera update: {}", message);
+            LOGGER.error("Aggiornamento camera: {}", message);
         }
 
         if (alert) {

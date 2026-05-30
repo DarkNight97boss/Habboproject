@@ -52,7 +52,7 @@ public class WiredEffectMuteHabbo extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if(settings.getIntParams().length < 1) throw new WiredSaveException("invalid data");
+        if(settings.getIntParams().length < 1) throw new WiredSaveException("dati non validi");
 
         this.length = settings.getIntParams()[0];
         this.message = settings.getStringParam();

@@ -51,7 +51,7 @@ public class GnomePet extends Pet implements IPetLook {
                 statement.setInt(2, this.id);
                 statement.executeUpdate();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
     }

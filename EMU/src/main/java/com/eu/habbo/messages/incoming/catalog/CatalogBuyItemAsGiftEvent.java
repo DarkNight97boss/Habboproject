@@ -121,7 +121,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                                 }
                             }
                         } catch (SQLException e) {
-                            LOGGER.error("Caught SQL exception", e);
+                            LOGGER.error("Eccezione SQL intercettata", e);
                         }
                     } else {
                         userId = habbo.getHabboInfo().getId();
@@ -297,7 +297,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                                         try {
                                             guildId = Integer.parseInt(extraData);
                                         } catch (Exception e) {
-                                            LOGGER.error("Caught exception", e);
+                                            LOGGER.error("Eccezione intercettata", e);
                                             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
                                             return;
                                         }
@@ -382,7 +382,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
 
                     this.client.sendResponse(new PurchaseOKComposer(item));
                 } catch (Exception e) {
-                    LOGGER.error("Exception caught", e);
+                    LOGGER.error("Eccezione intercettata", e);
                     this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
                 }
             } finally {

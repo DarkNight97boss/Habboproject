@@ -99,7 +99,7 @@ public class GameClient {
 
     public void setMachineId(String machineId) {
         if (machineId == null) {
-            throw new RuntimeException("Cannot set machineID to NULL");
+            throw new RuntimeException("Impossibile impostare machineID a NULL");
         }
 
         this.machineId = machineId;
@@ -232,7 +232,7 @@ public class GameClient {
                 this.habbo = null;
             }
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
     }
 }

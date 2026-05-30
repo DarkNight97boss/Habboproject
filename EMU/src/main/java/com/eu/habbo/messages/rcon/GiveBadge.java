@@ -80,7 +80,7 @@ public class GiveBadge extends RCONMessage<GiveBadge.GiveBadgeJSON> {
                     }
                 }
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
                 this.status = RCONMessage.STATUS_ERROR;
                 this.message = e.getMessage();
             }

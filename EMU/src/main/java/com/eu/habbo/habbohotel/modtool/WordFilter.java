@@ -33,7 +33,7 @@ public class WordFilter {
     public WordFilter() {
         long start = System.currentTimeMillis();
         this.reload();
-        LOGGER.info("WordFilter -> Loaded! ({} MS)", System.currentTimeMillis() - start);
+        LOGGER.info("WordFilter -> Caricato! ({} MS)", System.currentTimeMillis() - start);
     }
 
     private static String stripDiacritics(String str) {
@@ -58,7 +58,7 @@ public class WordFilter {
                     try {
                         word = new WordFilterWord(set);
                     } catch (SQLException e) {
-                        LOGGER.error("Caught SQL exception", e);
+                        LOGGER.error("Eccezione SQL intercettata", e);
                         continue;
                     }
 
@@ -71,7 +71,7 @@ public class WordFilter {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 

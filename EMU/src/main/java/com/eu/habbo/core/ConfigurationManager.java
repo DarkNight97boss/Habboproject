@@ -51,7 +51,7 @@ public class ConfigurationManager {
                 this.properties.load(input);
 
             } catch (IOException ex) {
-                LOGGER.error("Failed to load config file.", ex);
+                LOGGER.error("Caricamento del file di configurazione fallito.", ex);
                 ex.printStackTrace();
             } finally {
                 if (input != null) {
@@ -92,7 +92,7 @@ public class ConfigurationManager {
                 String envValue = System.getenv(entry.getValue());
 
                 if (envValue == null || envValue.length() == 0) {
-                    LOGGER.info("Cannot find environment-value for variable `{}`", entry.getValue());
+                    LOGGER.info("Impossibile trovare il valore d'ambiente per la variabile `{}`", entry.getValue());
                 } else {
                     this.properties.setProperty(entry.getKey(), envValue);
                 }
@@ -104,7 +104,7 @@ public class ConfigurationManager {
         }
 
         this.isLoading = false;
-        LOGGER.info("Configuration Manager -> Loaded!");
+        LOGGER.info("Configuration Manager -> Caricato!");
 
         if (Emulator.getPluginManager() != null) {
             Emulator.getPluginManager().fireEvent(new EmulatorConfigUpdatedEvent());
@@ -128,7 +128,7 @@ public class ConfigurationManager {
     };
 
     public void loadFromDatabase() {
-        LOGGER.info("Loading configuration from database...");
+        LOGGER.info("Caricamento configurazione dal database...");
 
         long millis = System.currentTimeMillis();
 
@@ -147,7 +147,7 @@ public class ConfigurationManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         // Audit security deltas. Skip on cold start (when `before` is full of empty
@@ -167,7 +167,7 @@ public class ConfigurationManager {
             }
         }
 
-        LOGGER.info("Configuration -> loaded! ({} MS)", System.currentTimeMillis() - millis);
+        LOGGER.info("Configurazione -> caricata! ({} MS)", System.currentTimeMillis() - millis);
     }
 
     public void saveToDatabase() {
@@ -178,7 +178,7 @@ public class ConfigurationManager {
                 statement.executeUpdate();
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -193,7 +193,7 @@ public class ConfigurationManager {
             return defaultValue;
 
         if (!this.properties.containsKey(key)) {
-            LOGGER.error("Config key not found {}", key);
+            LOGGER.error("Chiave di configurazione non trovata {}", key);
         }
         return this.properties.getProperty(key, defaultValue);
     }
@@ -209,7 +209,7 @@ public class ConfigurationManager {
         try {
             return (this.getValue(key, "0").equals("1")) || (this.getValue(key, "false").equals("true"));
         } catch (Exception e) {
-            LOGGER.error("Failed to parse key {} with value '{}' to type boolean.", key, this.getValue(key));
+            LOGGER.error("Parsing della chiave {} con valore '{}' al tipo boolean fallito.", key, this.getValue(key));
         }
         return defaultValue;
     }
@@ -225,7 +225,7 @@ public class ConfigurationManager {
         try {
             return Integer.parseInt(this.getValue(key, defaultValue.toString()));
         } catch (Exception e) {
-            LOGGER.error("Failed to parse key {} with value '{}' to type integer.", key, this.getValue(key));
+            LOGGER.error("Parsing della chiave {} con valore '{}' al tipo integer fallito.", key, this.getValue(key));
         }
         return defaultValue;
     }
@@ -241,7 +241,7 @@ public class ConfigurationManager {
         try {
             return Double.parseDouble(this.getValue(key, defaultValue.toString()));
         } catch (Exception e) {
-            LOGGER.error("Failed to parse key {} with value '{}' to type double.", key, this.getValue(key));
+            LOGGER.error("Parsing della chiave {} con valore '{}' al tipo double fallito.", key, this.getValue(key));
         }
 
         return defaultValue;
@@ -260,7 +260,7 @@ public class ConfigurationManager {
             statement.setString(2, value);
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         this.update(key, value);

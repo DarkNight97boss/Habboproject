@@ -28,7 +28,7 @@ public class QueryDeleteHabboItem implements Runnable {
             statement.setInt(1, this.itemId);
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 }

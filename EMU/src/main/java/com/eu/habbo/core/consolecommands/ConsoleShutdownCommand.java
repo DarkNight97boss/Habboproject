@@ -4,7 +4,7 @@ import com.eu.habbo.habbohotel.commands.ShutdownCommand;
 
 public class ConsoleShutdownCommand extends ConsoleCommand {
     public ConsoleShutdownCommand() {
-        super("stop", "Stop the emulator.");
+        super("stop", "Arresta l'emulatore.");
     }
 
     @Override

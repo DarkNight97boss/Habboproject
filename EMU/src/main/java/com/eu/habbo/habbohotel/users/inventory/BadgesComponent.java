@@ -55,7 +55,7 @@ public class BadgesComponent {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return badgesList;
@@ -82,7 +82,7 @@ public class BadgesComponent {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
         return badgesList;
     }
@@ -100,7 +100,7 @@ public class BadgesComponent {
             statement.setString(2, badge);
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 

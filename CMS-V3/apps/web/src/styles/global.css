@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+/**
+ * Design tokens habbo.it — registrati come custom utilities Tailwind 4.
+ * Sintassi @theme è quella di Tailwind 4 beta.
+ */
+@theme {
+    /* Palette habbo.it (estratta via DOM scan) */
+    --color-habbo-page: #0c3a65;
+    --color-habbo-page-text: #7ECAEE;
+    --color-habbo-page-accent: #A1B5C8;
+
+    --color-habbo-header-bg: #0a3b6e;
+    --color-habbo-header-text: #FFFFFF;
+
+    --color-habbo-nav-top-bg: #E8F0F5;
+    --color-habbo-nav-top-text: #0a3b6e;
+    --color-habbo-nav-top-accent: #2A6495;
+
+    --color-habbo-nav-sub-bg: #0A1620;
+    --color-habbo-nav-sub-text: #7ECAEE;
+    --color-habbo-nav-sub-separator: #2A4060;
+
+    --color-habbo-card-bg: #102f4d;
+    --color-habbo-card-header-bg: #2A6495;
+    --color-habbo-card-border: #A1B5C8;
+
+    --color-habbo-sidebar-tip-bg: #1c4575;
+
+    --color-habbo-yellow: #FFB900;
+    --color-habbo-yellow-light: #FFEA00;
+    --color-habbo-green: #8EDA55;
+    --color-habbo-green-dark: #00813E;
+    --color-habbo-orange: #FF8F3A;
+    --color-habbo-red: #923E3A;
+    --color-habbo-red-light: #D37871;
+    --color-habbo-blue: #0F7DBC;
+    --color-habbo-blue-light: #6AA5EC;
+
+    /* Typography */
+    --font-habbo: "Ubuntu", "Trebuchet MS", "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Tahoma, sans-serif;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+}
+
+body {
+    font-family: var(--font-habbo);
+}
+
+/* Bottoni stile habbo.it: bordo spesso colorato, rounded 10px */
+.btn-habbo {
+    @apply inline-block px-3 py-1 font-bold text-white border-[4px] rounded-[10px] transition-transform active:translate-y-[1px];
+}
+.btn-habbo-yellow  { background: var(--color-habbo-yellow);   border-color: var(--color-habbo-yellow-light); }
+.btn-habbo-green   { background: var(--color-habbo-green-dark);  border-color: var(--color-habbo-green); }
+.btn-habbo-orange  { background: var(--color-habbo-orange);   border-color: var(--color-habbo-yellow-light); }
+.btn-habbo-red     { background: var(--color-habbo-red);      border-color: var(--color-habbo-red-light); }
+.btn-habbo-blue    { background: var(--color-habbo-blue);     border-color: var(--color-habbo-blue-light); }
+
+/* Sezione card habbo-style: bordo, header colorato uppercase */
+.card-habbo {
+    @apply bg-habbo-card-bg border border-habbo-card-border;
+}
+.card-habbo-header {
+    @apply bg-habbo-card-header-bg text-white font-bold uppercase px-4 py-2;
+}
+.card-habbo-body {
+    @apply p-4;
+}

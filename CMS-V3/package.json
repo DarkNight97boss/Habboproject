@@ -1,0 +1,27 @@
+{
+    "name": "cms-v3",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Habbo retro CMS v3 — React 19 + Hono (Node 22). Strangler pattern: gira in parallelo al vecchio CMS PHP su porte separate.",
+    "type": "module",
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ],
+    "scripts": {
+        "dev": "concurrently -n api,web -c green,cyan \"yarn workspace @cms-v3/api dev\" \"yarn workspace @cms-v3/web dev\"",
+        "build": "yarn workspaces run build",
+        "start": "concurrently -n api,web -c green,cyan \"yarn workspace @cms-v3/api start\" \"yarn workspace @cms-v3/web preview\"",
+        "lint": "yarn workspaces run lint",
+        "test": "yarn workspaces run test",
+        "typecheck": "yarn workspaces run typecheck"
+    },
+    "devDependencies": {
+        "concurrently": "^9.1.0",
+        "typescript": "^5.7.0"
+    },
+    "packageManager": "yarn@1.22.22",
+    "engines": {
+        "node": ">=22.0.0"
+    }
+}

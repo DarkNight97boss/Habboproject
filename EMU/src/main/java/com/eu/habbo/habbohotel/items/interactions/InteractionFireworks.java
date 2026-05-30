@@ -129,7 +129,7 @@ public class InteractionFireworks extends InteractionDefault {
             try {
                 explodeDuration = Integer.parseInt(this.getBaseItem().getCustomParams());
             } catch (NumberFormatException e) {
-                LOGGER.error("Incorrect customparams ({}) for base item ID ({}) of type ({})", this.getBaseItem().getCustomParams(), this.getBaseItem().getId(), this.getBaseItem().getName());
+                LOGGER.error("customparams non corretti ({}) per l'oggetto base ID ({}) di tipo ({})", this.getBaseItem().getCustomParams(), this.getBaseItem().getId(), this.getBaseItem().getName());
             }
         }
 

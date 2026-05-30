@@ -77,11 +77,11 @@ public class RCONServer extends Server {
             boolean isLoopback = trimmed.equals("127.0.0.1") || trimmed.equals("::1") || trimmed.equalsIgnoreCase("localhost");
             boolean isWildcard = trimmed.equals("0.0.0.0") || trimmed.equals("*") || trimmed.equals("::");
             if (isWildcard && !publicOptIn) {
-                LOGGER.error("RCON allow-list contains wildcard {} — refusing to start. Set rcon.allow.public=true ONLY if you have a real reason and a firewall in front.", trimmed);
-                throw new IllegalStateException("rcon.allowed contains a wildcard without rcon.allow.public=true");
+                LOGGER.error("L'allow-list RCON contiene il wildcard {} — avvio rifiutato. Imposta rcon.allow.public=true SOLO se hai un motivo reale e un firewall davanti.", trimmed);
+                throw new IllegalStateException("rcon.allowed contiene un wildcard senza rcon.allow.public=true");
             }
             if (!isLoopback && !isWildcard) {
-                LOGGER.warn("RCON allow-list contains non-loopback IP {} — make sure your firewall restricts the RCON port ({}). executecommand = remote code execution.", trimmed, port);
+                LOGGER.warn("L'allow-list RCON contiene un IP non-loopback {} — assicurati che il tuo firewall limiti la porta RCON ({}). executecommand = esecuzione di codice remoto.", trimmed, port);
             }
         }
     }
@@ -112,7 +112,7 @@ public class RCONServer extends Server {
                 RCONMessage rcon = message.getDeclaredConstructor().newInstance();
                 Gson gson = this.gsonBuilder.create();
                 rcon.handle(gson, gson.fromJson(body, rcon.type));
-                LOGGER.info("Handled RCON Message: {}", message.getSimpleName());
+                LOGGER.info("Messaggio RCON gestito: {}", message.getSimpleName());
                 result = gson.toJson(rcon, RCONMessage.class);
 
                 if (Emulator.debugging) {
@@ -120,18 +120,18 @@ public class RCONServer extends Server {
                     // bodies (giveCredits/setRank) bounded if logs are ever shipped externally.
                     String safeBody = body == null ? "" : (body.length() > 256 ? body.substring(0, 256) + "...(truncated)" : body);
                     String safeResult = result == null ? "" : (result.length() > 256 ? result.substring(0, 256) + "...(truncated)" : result);
-                    LOGGER.debug("RCON Data {} RCON Result {}", safeBody, safeResult);
+                    LOGGER.debug("Dati RCON {} Risultato RCON {}", safeBody, safeResult);
                 }
 
                 return result;
             } catch (Exception ex) {
-                LOGGER.error("Failed to handle RCONMessage", ex);
+                LOGGER.error("Gestione del RCONMessage fallita", ex);
             }
         } else {
-            LOGGER.error("Couldn't find: {}", key);
+            LOGGER.error("Impossibile trovare: {}", key);
         }
 
-        throw new ArrayIndexOutOfBoundsException("Unhandled RCON Message");
+        throw new ArrayIndexOutOfBoundsException("Messaggio RCON non gestito");
     }
 
     public List<String> getCommands() {

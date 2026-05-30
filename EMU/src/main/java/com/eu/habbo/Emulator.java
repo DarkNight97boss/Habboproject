@@ -90,15 +90,15 @@ public final class Emulator {
 
     public static void promptEnterKey(){
         System.out.println("\n");
-        System.out.println("Press \"ENTER\" if you agree to the terms stated above...");
+        System.out.println("Premi \"INVIO\" se accetti i termini sopra riportati...");
         Scanner scanner = new Scanner(System.in);
         scanner.nextLine();
     }
 
     public static void main(String[] args) throws Exception {
         try {
-            // Check if running on Windows and not in IntelliJ.
-            // If so, we need to reconfigure the console appender and enable Jansi for colors.
+            // Controlla se l'esecuzione è su Windows e non in IntelliJ.
+            // In tal caso riconfiguriamo il console appender e abilitiamo Jansi per i colori.
             if (OS_NAME.startsWith("Windows") && !CLASS_PATH.contains("idea_rt.jar")) {
                 ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
                 ConsoleAppender<ILoggingEvent> appender = (ConsoleAppender<ILoggingEvent>) root.getAppender("Console");
@@ -116,7 +116,7 @@ public final class Emulator {
 
             System.out.println(logo);
 
-            // Checks if this is a BETA build before allowing them to continue.
+            // Controlla se questa è una build BETA prima di consentire di continuare.
             if (PREVIEW.toLowerCase().contains("beta")) {
                 System.out.println("Attenzione: questa e' una build BETA. Possono verificarsi comportamenti imprevisti — esegui backup frequenti del database mentre la usi. Segnala eventuali problemi sul tracker upstream.");
                 promptEnterKey();
@@ -148,7 +148,7 @@ public final class Emulator {
                 String nKey = Emulator.getConfig().getValue("enc.n");
                 String defaultN = "86851dd364d5c5cece3c883171cc6ddc5760779b992482bd1e20dd296888df91b33b936a7b93f06d29e8870f703a216257dec7c81de0058fea4cc5116f75e6efc4e9113513e45357dc3fd43d4efab5963ef178b78bd61e81a14c603b24c8bcce0a12230b320045498edc29282ff0603bc7b7dae8fc1b05b52b2f301a9dc783b7";
                 if (nKey == null || nKey.length() < 256 || nKey.equalsIgnoreCase(defaultN)) {
-                    LOGGER.error("SECURITY: enc.enabled=true with the shipped-default or weak RSA key — the DH handshake is trivially MITM-able. Rotate enc.e/n/d and update the matching public key in the client, or disable encryption.");
+                    LOGGER.error("SICUREZZA: enc.enabled=true con la chiave RSA di default o debole — l'handshake DH è banalmente attaccabile via MITM. Ruota enc.e/n/d e aggiorna la chiave pubblica corrispondente nel client, oppure disabilita la crittografia.");
                 }
             }
             Emulator.database = new Database(Emulator.getConfig());
@@ -188,15 +188,15 @@ public final class Emulator {
             com.eu.habbo.core.SyntheticProbe.start();
 
             LOGGER.info("Asteria Core avviato correttamente.");
-            LOGGER.info("System launched in: {}ms. Using {} threads!", (System.nanoTime() - startTime) / 1e6, Runtime.getRuntime().availableProcessors() * 2);
-            LOGGER.info("Memory: {}/{}MB", (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024), (runtime.freeMemory()) / (1024 * 1024));
+            LOGGER.info("Sistema avviato in: {}ms. Utilizzando {} thread!", (System.nanoTime() - startTime) / 1e6, Runtime.getRuntime().availableProcessors() * 2);
+            LOGGER.info("Memoria: {}/{}MB", (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024), (runtime.freeMemory()) / (1024 * 1024));
 
             Emulator.debugging = Emulator.getConfig().getBoolean("debug.mode");
 
             if (debugging) {
                 ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
                 root.setLevel(Level.DEBUG);
-                LOGGER.debug("Debugging enabled.");
+                LOGGER.debug("Debugging abilitato.");
             }
 
             Emulator.getPluginManager().fireEvent(new EmulatorLoadedEvent());
@@ -204,7 +204,7 @@ public final class Emulator {
             Emulator.timeStarted = getIntUnixTimestamp();
 
             if (Emulator.getConfig().getInt("runtime.threads") < (Runtime.getRuntime().availableProcessors() * 2)) {
-                LOGGER.warn("Emulator settings runtime.threads ({}) can be increased to ({}) to possibly increase performance.",
+                LOGGER.warn("L'impostazione runtime.threads ({}) dell'emulatore può essere aumentata a ({}) per migliorare potenzialmente le prestazioni.",
                         Emulator.getConfig().getInt("runtime.threads"),
                         Runtime.getRuntime().availableProcessors() * 2);
             }
@@ -212,7 +212,7 @@ public final class Emulator {
             Emulator.getThreading().run(() -> {
             }, 1500);
 
-            // Check if console mode is true or false, default is true
+            // Controlla se la modalità console è abilitata, default true
             if (Emulator.getConfig().getBoolean("console.mode", true)) {
 
                 BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
@@ -224,10 +224,10 @@ public final class Emulator {
                         if (line != null) {
                             ConsoleCommand.handle(line);
                         }
-                        System.out.println("Waiting for command: ");
+                        System.out.println("In attesa di un comando: ");
                     } catch (Exception e) {
                         if (!(e instanceof IOException && e.getMessage().equals("Bad file descriptor"))) {
-                            LOGGER.error("Error while reading command", e);
+                            LOGGER.error("Errore durante la lettura del comando", e);
                         }
                     }
                 }
@@ -292,7 +292,7 @@ public final class Emulator {
         try {
             action.run();
         } catch (Exception e) {
-            LOGGER.error("Error during shutdown", e);
+            LOGGER.error("Errore durante l'arresto", e);
         }
     }
 
@@ -329,7 +329,7 @@ public final class Emulator {
     }
 
     /**
-     * @deprecated Do not use. Please use LoggerFactory.getLogger(YourClass.class) to log.
+     * @deprecated Non utilizzare. Usa LoggerFactory.getLogger(YourClass.class) per il logging.
      */
     @Deprecated
     public static Logging getLogging() {
@@ -451,7 +451,7 @@ public final class Emulator {
         try {
             res = format.parse(date);
         } catch (Exception e) {
-            LOGGER.error("Error parsing date", e);
+            LOGGER.error("Errore durante il parsing della data", e);
         }
         return res;
     }

@@ -52,7 +52,7 @@ public class PixelScheduler extends Scheduler {
                     habbo.givePixels((int)(habbo.getHabboInfo().getRank().getPixelsTimerAmount() * (habbo.getHabboStats().hasActiveClub() ? HC_MODIFIER : 1.0)));
                 }
             } catch (Exception e) {
-                LOGGER.error("Caught exception", e);
+                LOGGER.error("Eccezione intercettata", e);
             }
         }
     }

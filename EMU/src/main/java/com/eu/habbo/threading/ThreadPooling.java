@@ -21,7 +21,7 @@ public class ThreadPooling {
         this.threads = threads;
         this.scheduledPool = new HabboExecutorService(this.threads, new DefaultThreadFactory("HabExec"));
         this.canAdd = true;
-        LOGGER.info("Thread Pool -> Loaded!");
+        LOGGER.info("Thread Pool -> Caricato!");
     }
 
     public ScheduledFuture run(Runnable run) {
@@ -34,7 +34,7 @@ public class ThreadPooling {
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
 
         return null;
@@ -47,12 +47,12 @@ public class ThreadPooling {
                     try {
                         run.run();
                     } catch (Exception e) {
-                        LOGGER.error("Caught exception", e);
+                        LOGGER.error("Eccezione intercettata", e);
                     }
                 }, delay, TimeUnit.MILLISECONDS);
             }
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
 
         return null;

@@ -43,7 +43,7 @@ class HopperActionTwo implements Runnable {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         if (targetRoomId != 0 && targetItemId != 0) {

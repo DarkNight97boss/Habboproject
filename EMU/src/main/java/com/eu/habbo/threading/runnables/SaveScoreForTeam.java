@@ -38,7 +38,7 @@ public class SaveScoreForTeam implements Runnable {
 
             statement.executeBatch();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 }

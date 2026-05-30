@@ -87,15 +87,15 @@ public class HabboDiffieHellman {
         this.DHGenerator = decryptBigInteger(signedGenerator);
 
         if (this.DHPrime == null || this.DHGenerator == null) {
-            throw new HabboCryptoException("DHPrime or DHGenerator was null.");
+            throw new HabboCryptoException("DHPrime o DHGenerator era null.");
         }
 
         if (this.DHPrime.compareTo(BigInteger.valueOf(2)) < 1) {
-            throw new HabboCryptoException("Prime cannot be <= 2!\nPrime: " + this.DHPrime.toString());
+            throw new HabboCryptoException("Il Prime non può essere <= 2!\nPrime: " + this.DHPrime.toString());
         }
 
         if (this.DHGenerator.compareTo(this.DHPrime) > -1) {
-            throw new HabboCryptoException("Generator cannot be >= Prime!\nPrime: " + this.DHPrime.toString() + "\nGenerator: " + this.DHGenerator.toString());
+            throw new HabboCryptoException("Il Generator non può essere >= Prime!\nPrime: " + this.DHPrime.toString() + "\nGenerator: " + this.DHGenerator.toString());
         }
 
         generateDHKeys();

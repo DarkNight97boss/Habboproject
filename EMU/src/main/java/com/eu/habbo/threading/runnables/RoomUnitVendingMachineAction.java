@@ -32,7 +32,7 @@ public class RoomUnitVendingMachineAction implements Runnable {
                             try {
                                 this.habboItem.onClick(this.habbo.getClient(), this.room, new Object[]{0});
                             } catch (Exception e) {
-                                LOGGER.error("Caught exception", e);
+                                LOGGER.error("Eccezione intercettata", e);
                             }
                         } else {
                             if (this.room.getLayout().getTile(tile.x, tile.y).isWalkable()) {

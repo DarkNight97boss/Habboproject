@@ -85,7 +85,7 @@ public final class AuditLog {
                 } catch (Throwable ignored) {
                 }
             } catch (Exception e) {
-                LOGGER.error("Failed to write audit log entry", e);
+                LOGGER.error("Scrittura della voce di audit log fallita", e);
             }
         }
     }
@@ -127,7 +127,7 @@ public final class AuditLog {
                         batchTerminator = (seen < batchSize) ? 0 : 1;
                     }
                 } catch (Exception e) {
-                    LOGGER.error("Failed to verify audit log integrity", e);
+                    LOGGER.error("Verifica dell'integrità del log di audit fallita", e);
                     return -1;
                 }
             }
@@ -153,7 +153,7 @@ public final class AuditLog {
             }
 
             if (key == null || key.isEmpty()) {
-                LOGGER.error("audit.signing.key is not configured — the audit log hash chain falls back to unkeyed SHA-256 and a DB write can rewrite history undetected. Set audit.signing.key in config.ini (or the HABBO_AUDIT_SIGNING_KEY env var) to a long random secret.");
+                LOGGER.error("audit.signing.key non è configurato — la catena hash dell'audit log ricade su SHA-256 senza chiave e una scrittura DB può riscrivere la cronologia senza essere rilevata. Imposta audit.signing.key in config.ini (o nella env var HABBO_AUDIT_SIGNING_KEY) con un segreto casuale lungo.");
                 signingKey = null;
             } else {
                 signingKey = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "HmacSHA256");

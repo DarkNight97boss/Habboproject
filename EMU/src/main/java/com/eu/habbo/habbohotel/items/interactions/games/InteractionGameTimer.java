@@ -95,7 +95,7 @@ public class InteractionGameTimer extends HabboItem implements Runnable {
                         }
                     }).toArray();
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
     }
 
@@ -127,7 +127,7 @@ public class InteractionGameTimer extends HabboItem implements Runnable {
                     room.addGame(game);
                     game.initialise();
                 } catch (Exception e) {
-                    LOGGER.error("Caught exception", e);
+                    LOGGER.error("Eccezione intercettata", e);
                 }
             }
         }

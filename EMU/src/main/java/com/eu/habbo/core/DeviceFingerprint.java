@@ -61,7 +61,7 @@ public final class DeviceFingerprint {
             }
             return hex.toString();
         } catch (Exception e) {
-            LOGGER.error("DeviceFingerprint hash failed", e);
+            LOGGER.error("Hash DeviceFingerprint fallito", e);
             return "";
         }
     }
@@ -199,7 +199,7 @@ public final class DeviceFingerprint {
                     "fp:" + effectiveHash.substring(0, 16),
                     "distinct=" + distinct + " sample=" + linked + " ip=" + (ip == null ? "" : ip) + " mid=" + machineId);
         } catch (Exception e) {
-            LOGGER.error("DeviceFingerprint.record failed for user {}", userId, e);
+            LOGGER.error("DeviceFingerprint.record fallito per l'utente {}", userId, e);
         }
     }
 
@@ -218,13 +218,13 @@ public final class DeviceFingerprint {
                         "Se non sei stato tu, cambia subito la password e contatta lo staff.");
             }
         } catch (Throwable t) {
-            LOGGER.warn("new-device alert delivery failed for user {}: {}", userId, t.toString());
+            LOGGER.warn("Consegna dell'avviso nuovo dispositivo fallita per l'utente {}: {}", userId, t.toString());
         }
         try {
             String fpShort = fpHash != null && fpHash.length() >= 16 ? fpHash.substring(0, 16) : (fpHash == null ? "" : fpHash);
             AuditLog.record(userId, username, "NEW_DEVICE_LOGIN", "fp:" + fpShort, "ip=" + (ip == null ? "" : ip));
         } catch (Throwable t) {
-            LOGGER.warn("new-device audit failed for user {}: {}", userId, t.toString());
+            LOGGER.warn("Audit nuovo dispositivo fallito per l'utente {}: {}", userId, t.toString());
         }
     }
 
@@ -269,7 +269,7 @@ public final class DeviceFingerprint {
                 while (rs.next()) out.add(rs.getInt(1));
             }
         } catch (Exception e) {
-            LOGGER.error("DeviceFingerprint.linkedUsers failed", e);
+            LOGGER.error("DeviceFingerprint.linkedUsers fallito", e);
         }
         return out;
     }

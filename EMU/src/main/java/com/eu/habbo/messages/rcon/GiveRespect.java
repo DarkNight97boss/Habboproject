@@ -37,7 +37,7 @@ public class GiveRespect extends RCONMessage<GiveRespect.JSONGiveRespect> {
                 statement.execute();
             } catch (SQLException e) {
                 this.status = RCONMessage.SYSTEM_ERROR;
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
 
             this.message = "offline";

@@ -161,7 +161,7 @@ public class WiredTriggerBotReachedFurni extends InteractionWiredTrigger {
                         if (item != null)
                             this.items.add(item);
                     } catch (Exception e) {
-                        LOGGER.error("Caught exception", e);
+                        LOGGER.error("Eccezione intercettata", e);
                     }
                 }
             }

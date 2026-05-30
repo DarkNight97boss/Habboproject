@@ -20,15 +20,19 @@ import org.slf4j.LoggerFactory;
  * handler player-side -> il client mandava il pacchetto e l'EMU lo
  * ignorava. Questo handler chiude il gap.
  *
- * Wire layout (Habbo PROD-2015+, vedi {@code CallForHelpMessageComposer}
- * del client Nitro):
+ * Wire layout (Nitro V3 / nitro-renderer, vedi
+ * {@code CallForHelpMessageComposer} del client):
  *
- *   int    category    -- support_cfh_topics.id selezionata dal player
- *   int    reportedId  -- user_id segnalato (0 se non specifico)
- *   string message     -- descrizione libera del reporter
+ *   string message       -- descrizione libera del reporter
+ *   int    topic         -- support_cfh_topics.id selezionata dal player
+ *   int    reportedId    -- user_id segnalato (0 se non specifico)
+ *   int    reportedRoom  -- room_id del segnalato (0 se non specifico)
+ *   int    chatCount     -- numero di chat entries allegate
+ *   { int webId, string text } x chatCount  -- chat history opzionale
  *
- * Se il tuo client manda un ordine diverso (alcune build invertono
- * message/reportedId), adatta l'ordine delle read sotto.
+ * NB: alcune build PROD-2015+ ship-avano un layout invertito
+ * (category, reportedId, message). Il Nitro V3 attuale usa l'ordine
+ * sopra. Se cambi build, adatta le read di seguito.
  *
  * Difese:
  *   - {@link MessageHandler#getRatelimit()} = 15s (cap dal framework).
@@ -52,9 +56,16 @@ public class CallForHelpEvent extends MessageHandler {
         Habbo reporter = this.client.getHabbo();
         int reporterId = reporter.getHabboInfo().getId();
 
+        // Wire order (Nitro V3): string(message), int(topic), int(reportedId), int(roomId), int(chatCount), ...chat pairs
+        String message = this.packet.readString();
         int category   = this.packet.readInt();
         int reportedId = this.packet.readInt();
-        String message = this.packet.readString();
+        int wireRoomId = 0;
+        try {
+            wireRoomId = this.packet.readInt(); // reportedRoomId (best-effort: not all builds send it)
+        } catch (Throwable ignored) {
+        }
+        // We don't currently consume the chatCount + chat pairs server-side; the data is in `message`.
 
         if (message == null) message = "";
         if (message.length() > 512) message = message.substring(0, 512);
@@ -63,7 +74,7 @@ public class CallForHelpEvent extends MessageHandler {
         // category=99999 va rifiutato senza creare ticket fantasma.
         CfhTopic topic = Emulator.getGameEnvironment().getModToolManager().getCfhTopic(category);
         if (topic == null) {
-            LOGGER.warn("CallForHelp refused: unknown topic id {} from user {}", category, reporterId);
+            LOGGER.warn("CallForHelp rifiutato: topic id sconosciuto {} dall'utente {}", category, reporterId);
             return;
         }
 
@@ -93,6 +104,10 @@ public class CallForHelpEvent extends MessageHandler {
                     reportedUsername = offlineTarget.getUsername();
                 }
             }
+        }
+        // Fallback al wire room id (utile per ticket generici: reporter in stanza X, niente target user).
+        if (roomId <= 0 && wireRoomId > 0) {
+            roomId = wireRoomId;
         }
 
         Emulator.getGameEnvironment().getModToolManager().openCfhTicket(

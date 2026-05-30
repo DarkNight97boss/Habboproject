@@ -56,7 +56,7 @@ public class HabboNavigatorWindowSettings {
                 statement.setString(4, displayMode.name().toLowerCase());
                 statement.execute();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
 
             this.displayModes.put(category, new HabboNavigatorPersonalDisplayMode(listMode, displayMode));
@@ -117,7 +117,7 @@ public class HabboNavigatorWindowSettings {
                 statement.execute();
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 }

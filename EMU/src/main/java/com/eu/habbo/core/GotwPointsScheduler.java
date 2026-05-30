@@ -68,7 +68,7 @@ public class GotwPointsScheduler extends Scheduler {
                     }
                 }
             } catch (Exception e) {
-                LOGGER.error("Caught exception", e);
+                LOGGER.error("Eccezione intercettata", e);
             }
         }
     }

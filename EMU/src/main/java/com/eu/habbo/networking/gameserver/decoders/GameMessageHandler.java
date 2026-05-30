@@ -51,7 +51,7 @@ public class GameMessageHandler extends ChannelInboundHandlerAdapter {
 
             handler.run();
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
     }
 
@@ -68,31 +68,31 @@ public class GameMessageHandler extends ChannelInboundHandlerAdapter {
         }
         if (Emulator.getConfig().getBoolean("debug.mode")) {
             if (cause instanceof NotSslRecordException) {
-                LOGGER.error("Plaintext received instead of ssl, closing channel");
+                LOGGER.error("Ricevuto plaintext invece di ssl, chiusura del canale");
             }
             else if (cause instanceof DecoderException) {
-                LOGGER.error("Plaintext received instead of ssl, closing channel");
+                LOGGER.error("Ricevuto plaintext invece di ssl, chiusura del canale");
             }
             else if (cause instanceof TooLongFrameException) {
-                LOGGER.error("Disconnecting client, reason {}", cause.getMessage());
+                LOGGER.error("Disconnessione del client, motivo {}", cause.getMessage());
             }
             else if (cause instanceof SSLHandshakeException) {
-                LOGGER.error("URL Request error from source {}", ctx.channel().remoteAddress());
+                LOGGER.error("Errore richiesta URL dalla sorgente {}", ctx.channel().remoteAddress());
             }
             else if (cause instanceof NoSuchAlgorithmException) {
-                LOGGER.error("Invalid SSL algorithm, only TLSv1.2 supported in the request");
+                LOGGER.error("Algoritmo SSL non valido, nella richiesta è supportato solo TLSv1.2");
             }
             else if (cause instanceof KeyManagementException) {
-                LOGGER.error("Invalid SSL algorithm, only TLSv1.2 supported in the request");
+                LOGGER.error("Algoritmo SSL non valido, nella richiesta è supportato solo TLSv1.2");
             }
             else if (cause instanceof UnsupportedMessageTypeException) {
-                LOGGER.error("There was an illegal SSL request from (X-forwarded-for/CF-Connecting-IP has not being injected yet!) {}", ctx.channel().remoteAddress());
+                LOGGER.error("Ricevuta una richiesta SSL illegale da (X-forwarded-for/CF-Connecting-IP non ancora iniettato!) {}", ctx.channel().remoteAddress());
             }
             else if (cause instanceof SSLException) {
                 LOGGER.error("SSL Problem: {}{}", cause.getMessage(), cause);
             }
             else {
-                LOGGER.error("Disconnecting client, exception in GameMessageHandler.", cause);
+                LOGGER.error("Disconnessione del client, eccezione in GameMessageHandler.", cause);
             }
         }
         ctx.channel().close();

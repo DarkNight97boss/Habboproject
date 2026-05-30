@@ -15,7 +15,7 @@ public class Logging {
      */
     @Deprecated
     public void logStart(Object line) {
-        LOGGER.info("[LOADING] {}", line);
+        LOGGER.info("[CARICAMENTO] {}", line);
     }
 
     /**
@@ -31,7 +31,7 @@ public class Logging {
      */
     @Deprecated
     public void logUserLine(Object line) {
-        LOGGER.info("[USER] {}", line);
+        LOGGER.info("[UTENTE] {}", line);
     }
 
     /**
@@ -67,7 +67,7 @@ public class Logging {
      */
     @Deprecated
     public void logErrorLine(Object line) {
-        LOGGER.error("[ERROR] {}", line);
+        LOGGER.error("[ERRORE] {}", line);
     }
 
     /**
@@ -75,7 +75,7 @@ public class Logging {
      */
     @Deprecated
     public void logSQLException(SQLException e) {
-        LOGGER.error("[ERROR] SQLException", e);
+        LOGGER.error("[ERRORE] SQLException", e);
     }
 
     /**
@@ -83,7 +83,7 @@ public class Logging {
      */
     @Deprecated
     public void logPacketError(Object e) {
-        LOGGER.error("[ERROR] PacketError {}", e);
+        LOGGER.error("[ERRORE] PacketError {}", e);
     }
 
     /**
@@ -91,7 +91,7 @@ public class Logging {
      */
     @Deprecated
     public void handleException(Exception e) {
-        LOGGER.error("[ERROR] Exception", e);
+        LOGGER.error("[ERRORE] Eccezione", e);
     }
 
 }

@@ -33,7 +33,7 @@ public class RoomUnitTeleportWalkToAction implements Runnable {
                             try {
                                 this.habboItem.onClick(this.habbo.getClient(), this.room, new Object[]{0});
                             } catch (Exception e) {
-                                LOGGER.error("Caught exception", e);
+                                LOGGER.error("Eccezione intercettata", e);
                             }
                         } else {
                             if (tile.isWalkable()) {

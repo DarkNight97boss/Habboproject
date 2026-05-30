@@ -36,7 +36,7 @@ public class RedeemItemEvent extends MessageHandler {
                         try {
                             credits = Integer.parseInt(item.getBaseItem().getName().split("_")[1]);
                         } catch (Exception e) {
-                            LOGGER.error("Failed to parse redeemable furniture: {}. Must be in format of CF_<amount>", item.getBaseItem().getName());
+                            LOGGER.error("Parsing arredo riscattabile fallito: {}. Deve essere nel formato CF_<amount>", item.getBaseItem().getName());
                             return;
                         }
 
@@ -47,7 +47,7 @@ public class RedeemItemEvent extends MessageHandler {
                         try {
                             pixels = Integer.parseInt(item.getBaseItem().getName().split("_")[1]);
                         } catch (Exception e) {
-                            LOGGER.error("Failed to parse redeemable pixel furniture: {}. Must be in format of PF_<amount>", item.getBaseItem().getName());
+                            LOGGER.error("Parsing arredo pixel riscattabile fallito: {}. Deve essere nel formato PF_<amount>", item.getBaseItem().getName());
                             return;
                         }
 
@@ -59,14 +59,14 @@ public class RedeemItemEvent extends MessageHandler {
                         try {
                             pointsType = Integer.parseInt(item.getBaseItem().getName().split("_")[1]);
                         } catch (Exception e) {
-                            LOGGER.error("Failed to parse redeemable points furniture: {}. Must be in format of DF_<pointstype>_<amount> where <pointstype> equals integer representation of seasonal currency.", item.getBaseItem().getName());
+                            LOGGER.error("Parsing dell'arredo punti riscattabile fallito: {}. Deve essere nel formato DF_<pointstype>_<amount> dove <pointstype> è la rappresentazione intera della valuta stagionale.", item.getBaseItem().getName());
                             return;
                         }
 
                         try {
                             points = Integer.parseInt(item.getBaseItem().getName().split("_")[2]);
                         } catch (Exception e) {
-                            LOGGER.error("Failed to parse redeemable points furniture: {}. Must be in format of DF_<pointstype>_<amount> where <pointstype> equals integer representation of seasonal currency.", item.getBaseItem().getName());
+                            LOGGER.error("Parsing dell'arredo punti riscattabile fallito: {}. Deve essere nel formato DF_<pointstype>_<amount> dove <pointstype> è la rappresentazione intera della valuta stagionale.", item.getBaseItem().getName());
                             return;
                         }
 
@@ -77,7 +77,7 @@ public class RedeemItemEvent extends MessageHandler {
                         try {
                             points = Integer.parseInt(item.getBaseItem().getName().split("_")[2]);
                         } catch (Exception e) {
-                            LOGGER.error("Failed to parse redeemable diamonds furniture: {}. Must be in format of CF_diamond_<amount>", item.getBaseItem().getName());
+                            LOGGER.error("Parsing arredo diamanti riscattabile fallito: {}. Deve essere nel formato CF_diamond_<amount>", item.getBaseItem().getName());
                             return;
                         }
 

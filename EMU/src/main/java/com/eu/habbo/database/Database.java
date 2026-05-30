@@ -40,7 +40,7 @@ public class Database {
         try {
             this.databasePool = new DatabasePool();
             if (!this.databasePool.getStoragePooling(config)) {
-                LOGGER.info("Failed to connect to the database. Please check config.ini and make sure the MySQL process is running. Shutting down...");
+                LOGGER.info("Connessione al database fallita. Controlla config.ini e assicurati che il processo MySQL sia in esecuzione. Arresto in corso...");
                 SQLException = true;
                 return;
             }
@@ -53,23 +53,23 @@ public class Database {
             if (replicaHost != null && !replicaHost.trim().isEmpty()) {
                 try {
                     this.readDataSource = DatabasePool.buildReadReplica(config);
-                    LOGGER.info("Database -> read replica configured at {}", replicaHost);
+                    LOGGER.info("Database -> read replica configurata su {}", replicaHost);
                 } catch (Exception e) {
-                    LOGGER.warn("Database -> failed to init read replica '{}', falling back to primary: {}",
+                    LOGGER.warn("Database -> inizializzazione read replica '{}' fallita, fallback al primario: {}",
                             replicaHost, e.toString());
                     this.readDataSource = null;
                 }
             }
         } catch (Exception e) {
             SQLException = true;
-            LOGGER.error("Failed to connect to your database.", e);
+            LOGGER.error("Connessione al database fallita.", e);
         } finally {
             if (SQLException) {
                 Emulator.prepareShutdown();
             }
         }
 
-        LOGGER.info("Database -> Connected! ({} MS)", System.currentTimeMillis() - millis);
+        LOGGER.info("Database -> Connesso! ({} MS)", System.currentTimeMillis() - millis);
     }
 
     public void dispose() {

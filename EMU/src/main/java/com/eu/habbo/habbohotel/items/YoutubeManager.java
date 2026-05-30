@@ -86,7 +86,7 @@ public class YoutubeManager {
         Emulator.getThreading().run(() -> {
             ExecutorService youtubeDataLoaderPool = Executors.newFixedThreadPool(10);
 
-            LOGGER.info("YouTube Manager -> Loading...");
+            LOGGER.info("YouTube Manager -> Caricamento...");
 
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM youtube_playlists")) {
                 try (ResultSet set = statement.executeQuery()) {
@@ -102,13 +102,13 @@ public class YoutubeManager {
                                     this.addPlaylistToItem(itemId, playlist);
                                 }
                             } catch (IOException e) {
-                                LOGGER.error("Failed to load YouTube playlist {} ERROR: {}", playlistId, e);
+                                LOGGER.error("Caricamento della playlist YouTube {} fallito ERRORE: {}", playlistId, e);
                             }
                         });
                     }
                 }
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
 
             youtubeDataLoaderPool.shutdown();
@@ -118,7 +118,7 @@ public class YoutubeManager {
                 e.printStackTrace();
             }
 
-            LOGGER.info("YouTube Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
+            LOGGER.info("YouTube Manager -> Caricato! ({} MS)", System.currentTimeMillis() - millis);
         });
     }
 
@@ -135,7 +135,7 @@ public class YoutubeManager {
             BufferedReader playlistBR = new BufferedReader(playlistISR);
             JsonObject errorObj = JsonParser.parseReader(playlistBR).getAsJsonObject();
             String message = errorObj.get("error").getAsJsonObject().get("message").getAsString();
-            LOGGER.error("Failed to load YouTube playlist {} ERROR: {}", playlistId, message);
+            LOGGER.error("Caricamento della playlist YouTube {} fallito ERRORE: {}", playlistId, message);
             return null;
         }
         InputStream playlistInputStream = playlistCon.getInputStream();
@@ -146,7 +146,7 @@ public class YoutubeManager {
 
         JsonArray playlists = playlistData.get("items").getAsJsonArray();
         if (playlists.size() == 0) {
-            LOGGER.error("Playlist {} not found!", playlistId);
+            LOGGER.error("Playlist {} non trovata!", playlistId);
             return null;
         }
         JsonObject playlistItem = playlists.get(0).getAsJsonObject().get("snippet").getAsJsonObject();
@@ -209,7 +209,7 @@ public class YoutubeManager {
         } while (nextPageToken != null);
 
         if (videos.isEmpty()) {
-            LOGGER.warn("Playlist {} has no videos!", playlistId);
+            LOGGER.warn("La playlist {} non contiene video!", playlistId);
             return null;
         }
         playlist = new YoutubePlaylist(playlistId, name, description, videos);

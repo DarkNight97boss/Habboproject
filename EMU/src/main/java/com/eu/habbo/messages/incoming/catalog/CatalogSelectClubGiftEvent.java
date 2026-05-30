@@ -22,13 +22,13 @@ public class CatalogSelectClubGiftEvent extends MessageHandler {
         String itemName = this.packet.readString();
 
         if(itemName.isEmpty()) {
-            LOGGER.error("itemName is empty");
+            LOGGER.error("itemName è vuoto");
             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
             return;
         }
 
         if(this.client.getHabbo().getHabboStats().getRemainingClubGifts() < 1) {
-            LOGGER.error("User has no remaining club gifts");
+            LOGGER.error("L'utente non ha più regali club disponibili");
             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
             return;
         }
@@ -36,7 +36,7 @@ public class CatalogSelectClubGiftEvent extends MessageHandler {
         CatalogPage page = Emulator.getGameEnvironment().getCatalogManager().getCatalogPageByLayout(CatalogPageLayouts.club_gift.name().toLowerCase());
 
         if(page == null) {
-            LOGGER.error("Catalog page not found");
+            LOGGER.error("Pagina catalogo non trovata");
             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
             return;
         }
@@ -44,7 +44,7 @@ public class CatalogSelectClubGiftEvent extends MessageHandler {
         CatalogItem catalogItem = page.getCatalogItems().valueCollection().stream().filter(x -> x.getName().equalsIgnoreCase(itemName)).findAny().orElse(null);
 
         if(catalogItem == null) {
-            LOGGER.error("Catalog item not found");
+            LOGGER.error("Oggetto del catalogo non trovato");
             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
             return;
         }
@@ -56,7 +56,7 @@ public class CatalogSelectClubGiftEvent extends MessageHandler {
         catch (NumberFormatException ignored) { }
 
         if(daysRequired > (int) Math.floor(this.client.getHabbo().getHabboStats().getPastTimeAsClub() / 86400.0)) {
-            LOGGER.error("Not been member for long enough");
+            LOGGER.error("Non sei membro da abbastanza tempo");
             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
             return;
         }

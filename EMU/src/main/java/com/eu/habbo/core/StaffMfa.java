@@ -71,7 +71,7 @@ public final class StaffMfa {
                 return rs.next() && rs.getInt("enrolled") == 1;
             }
         } catch (Exception e) {
-            LOGGER.error("StaffMfa.isEnrolled failed for user {}", userId, e);
+            LOGGER.error("StaffMfa.isEnrolled fallito per l'utente {}", userId, e);
             return false;
         }
     }
@@ -105,7 +105,7 @@ public final class StaffMfa {
             }
             return secret;
         } catch (Exception e) {
-            LOGGER.error("StaffMfa.getOrCreateSecret failed for user {}", userId, e);
+            LOGGER.error("StaffMfa.getOrCreateSecret fallito per l'utente {}", userId, e);
             return "";
         }
     }
@@ -123,7 +123,7 @@ public final class StaffMfa {
         sendChallenge(client);
         if (client.getHabbo() != null) {
             client.getHabbo().whisper(
-                    Emulator.getTexts().getValue("mfa.staff.locked", "Verify your authenticator code to unlock staff powers."),
+                    Emulator.getTexts().getValue("mfa.staff.locked", "Verifica il codice del tuo authenticator per sbloccare i poteri staff."),
                     com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles.ALERT);
         }
         return true;
@@ -231,7 +231,7 @@ public final class StaffMfa {
                 connection.commit();
                 // affected == 0 means a parallel verify won the race for this code → treat as fail.
                 if (affected == 0) {
-                    LOGGER.warn("StaffMfa concurrent code reuse rejected for user {} (counter {})", userId, matched);
+                    LOGGER.warn("Riutilizzo concorrente del codice StaffMfa rifiutato per l'utente {} (counter {})", userId, matched);
                     return false;
                 }
                 return true;
@@ -253,7 +253,7 @@ public final class StaffMfa {
             connection.commit();
 
             if (newLockedUntil > now) {
-                LOGGER.warn("StaffMfa user {} locked out until {} after {} failures", userId, newLockedUntil, newFailCount);
+                LOGGER.warn("Utente StaffMfa {} bloccato fino a {} dopo {} fallimenti", userId, newLockedUntil, newFailCount);
                 AuditLog.record(userId, "", "STAFF_MFA_LOCKED", "user:" + userId,
                         "fail_count=" + newFailCount + " until=" + newLockedUntil);
             }
@@ -261,11 +261,11 @@ public final class StaffMfa {
                 return false;
             }
             // matched >= 0 but <= lastCounter: replay attempt.
-            LOGGER.warn("StaffMfa replay/late code rejected for user {} (counter {} <= {})", userId, matched, lastCounter);
+            LOGGER.warn("Codice StaffMfa replay/in ritardo rifiutato per l'utente {} (counter {} <= {})", userId, matched, lastCounter);
             return false;
         } catch (Exception e) {
             try { if (connection != null) connection.rollback(); } catch (Exception ignored) {}
-            LOGGER.error("StaffMfa.verify failed for user {}", userId, e);
+            LOGGER.error("StaffMfa.verify fallito per l'utente {}", userId, e);
             return false;
         } finally {
             try {
@@ -314,7 +314,7 @@ public final class StaffMfa {
                     "user:" + userId, "count=" + count);
             return codes;
         } catch (Exception e) {
-            LOGGER.error("StaffMfa.generateAndStoreRecoveryCodes failed for user {}", userId, e);
+            LOGGER.error("StaffMfa.generateAndStoreRecoveryCodes fallito per l'utente {}", userId, e);
             return new String[0];
         }
     }
@@ -350,7 +350,7 @@ public final class StaffMfa {
             }
             return false;
         } catch (Exception e) {
-            LOGGER.error("StaffMfa.verifyRecoveryCode failed for user {}", userId, e);
+            LOGGER.error("StaffMfa.verifyRecoveryCode fallito per l'utente {}", userId, e);
             return false;
         }
     }
@@ -365,7 +365,7 @@ public final class StaffMfa {
                 return rs.next() ? rs.getInt(1) : 0;
             }
         } catch (Exception e) {
-            LOGGER.error("StaffMfa.remainingRecoveryCodes failed for user {}", userId, e);
+            LOGGER.error("StaffMfa.remainingRecoveryCodes fallito per l'utente {}", userId, e);
             return 0;
         }
     }

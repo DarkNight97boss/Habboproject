@@ -123,27 +123,27 @@ public class WiredEffectGiveScoreToTeam extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if(settings.getIntParams().length < 3) throw  new WiredSaveException("Invalid data");
+        if(settings.getIntParams().length < 3) throw  new WiredSaveException("Dati non validi");
 
         int points = settings.getIntParams()[0];
 
         if(points < 1 || points > 100)
-            throw new WiredSaveException("Points is invalid");
+            throw new WiredSaveException("Punti non validi");
 
         int timesPerGame = settings.getIntParams()[1];
 
         if(timesPerGame < 1 || timesPerGame > 10)
-            throw new WiredSaveException("Times per game is invalid");
+            throw new WiredSaveException("Volte per partita non valido");
 
         int team = settings.getIntParams()[2];
 
         if(team < 1 || team > 4)
-            throw new WiredSaveException("Team is invalid");
+            throw new WiredSaveException("Team non valido");
 
         int delay = settings.getDelay();
 
         if(delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
-            throw new WiredSaveException("Delay too long");
+            throw new WiredSaveException("Ritardo troppo lungo");
 
         this.points = points;
         this.count = timesPerGame;

@@ -72,8 +72,8 @@ public class HabboInfo implements Runnable {
             this.rank = Emulator.getGameEnvironment().getPermissionsManager().getRank(set.getInt("rank"));
 
             if (this.rank == null) {
-                LOGGER.error("No existing rank found with id {}. Make sure an entry in the permissions table exists.", set.getInt("rank"));
-                LOGGER.warn("{} has an invalid rank with id {}. Make sure an entry in the permissions table exists.", this.username, set.getInt("rank"));
+                LOGGER.error("Nessun rank trovato con id {}. Assicurati che esista una voce nella tabella permissions.", set.getInt("rank"));
+                LOGGER.warn("{} ha un rank non valido con id {}. Assicurati che esista una voce nella tabella permissions.", this.username, set.getInt("rank"));
                 this.rank = Emulator.getGameEnvironment().getPermissionsManager().getRank(1);
             }
 
@@ -85,7 +85,7 @@ public class HabboInfo implements Runnable {
             this.online = false;
             this.currentRoom = null;
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         this.loadCurrencies();
@@ -104,7 +104,7 @@ public class HabboInfo implements Runnable {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -120,14 +120,14 @@ public class HabboInfo implements Runnable {
                         statement.setInt(4, b);
                         statement.addBatch();
                     } catch (SQLException e) {
-                        LOGGER.error("Caught SQL exception", e);
+                        LOGGER.error("Eccezione SQL intercettata", e);
                     }
                     return true;
                 }
             });
             statement.executeBatch();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -142,7 +142,7 @@ public class HabboInfo implements Runnable {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -156,18 +156,18 @@ public class HabboInfo implements Runnable {
             int affectedRows = statement.executeUpdate();
 
             if (affectedRows == 0) {
-                throw new SQLException("Creating saved search failed, no rows affected.");
+                throw new SQLException("Creazione della ricerca salvata fallita, nessuna riga modificata.");
             }
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     search.setId(generatedKeys.getInt(1));
                 } else {
-                    throw new SQLException("Creating saved search failed, no ID found.");
+                    throw new SQLException("Creazione della ricerca salvata fallita, nessun ID trovato.");
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -178,7 +178,7 @@ public class HabboInfo implements Runnable {
             statement.setInt(1, search.getId());
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -193,7 +193,7 @@ public class HabboInfo implements Runnable {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -206,18 +206,18 @@ public class HabboInfo implements Runnable {
             int affectedRows = statement.executeUpdate();
 
             if (affectedRows == 0) {
-                throw new SQLException("Creating messenger category failed, no rows affected.");
+                throw new SQLException("Creazione della categoria messenger fallita, nessuna riga modificata.");
             }
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     category.setId(generatedKeys.getInt(1));
                 } else {
-                    throw new SQLException("Creating messenger category failed, no ID found.");
+                    throw new SQLException("Creazione della categoria messenger fallita, nessun ID trovato.");
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -228,7 +228,7 @@ public class HabboInfo implements Runnable {
             statement.setInt(1, category.getId());
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -558,7 +558,7 @@ public class HabboInfo implements Runnable {
             statement.setInt(13, this.id);
             statement.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 

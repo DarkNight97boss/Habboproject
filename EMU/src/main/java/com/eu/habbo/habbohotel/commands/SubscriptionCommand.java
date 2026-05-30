@@ -55,7 +55,7 @@ public class SubscriptionCommand extends Command {
                 }
                 
                 if(!Emulator.getGameEnvironment().getSubscriptionManager().types.containsKey(subscription)) {
-                    gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_subscription.type_not_found", "%subscription% is not a valid subscription type").replace("%subscription%", subscription), RoomChatMessageBubbles.ALERT);
+                    gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_subscription.type_not_found", "%subscription% non è un tipo di sottoscrizione valido").replace("%subscription%", subscription), RoomChatMessageBubbles.ALERT);
                     return true;
                 }
 
@@ -63,18 +63,18 @@ public class SubscriptionCommand extends Command {
                     int timeToAdd = Emulator.timeStringToSeconds(message.toString());
 
                     if(timeToAdd < 1) {
-                        gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_subscription.invalid_params_time", "Invalid time span, try: x minutes/days/weeks/months"), RoomChatMessageBubbles.ALERT);
+                        gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_subscription.invalid_params_time", "Periodo non valido, prova: x minutes/days/weeks/months"), RoomChatMessageBubbles.ALERT);
                         return true;
                     }
 
                     stats.createSubscription(subscription, timeToAdd);
-                    gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_subscription.success_add_time", "Successfully added %time% seconds to %subscription% on %user%").replace("%time%", timeToAdd + "").replace("%user%", params[1]).replace("%subscription%", subscription), RoomChatMessageBubbles.ALERT);
+                    gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_subscription.success_add_time", "Aggiunti con successo %time% secondi alla sottoscrizione %subscription% su %user%").replace("%time%", timeToAdd + "").replace("%user%", params[1]).replace("%subscription%", subscription), RoomChatMessageBubbles.ALERT);
                 }
                 else if(action.equalsIgnoreCase("remove") || action.equalsIgnoreCase("-") || action.equalsIgnoreCase("r")) {
                     Subscription s = stats.getSubscription(subscription);
 
                     if (s == null) {
-                        gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_subscription.user_not_have", "%user% does not have the %subscription% subscription").replace("%user%", params[1]).replace("%subscription%", subscription), RoomChatMessageBubbles.ALERT);
+                        gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_subscription.user_not_have", "%user% non ha la sottoscrizione %subscription%").replace("%user%", params[1]).replace("%subscription%", subscription), RoomChatMessageBubbles.ALERT);
                         return true;
                     }
 
@@ -82,27 +82,27 @@ public class SubscriptionCommand extends Command {
                         int timeToRemove = Emulator.timeStringToSeconds(message.toString());
 
                         if (timeToRemove < 1) {
-                            gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_subscription.invalid_params_time", "Invalid time span, try: x minutes/days/weeks/months"), RoomChatMessageBubbles.ALERT);
+                            gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_subscription.invalid_params_time", "Periodo non valido, prova: x minutes/days/weeks/months"), RoomChatMessageBubbles.ALERT);
                             return true;
                         }
 
                         s.addDuration(-timeToRemove);
-                        gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_subscription.success_remove_time", "Successfully removed %time% seconds from %subscription% on %user%").replace("%time%", timeToRemove + "").replace("%user%", params[1]).replace("%subscription%", subscription), RoomChatMessageBubbles.ALERT);
+                        gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_subscription.success_remove_time", "Rimossi con successo %time% secondi dalla sottoscrizione %subscription% su %user%").replace("%time%", timeToRemove + "").replace("%user%", params[1]).replace("%subscription%", subscription), RoomChatMessageBubbles.ALERT);
                     }
                     else {
                         s.addDuration(-s.getRemaining());
-                        gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_subscription.success_remove_sub", "Successfully removed %subscription% sub from %user%").replace("%user%", params[1]).replace("%subscription%", subscription), RoomChatMessageBubbles.ALERT);
+                        gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_subscription.success_remove_sub", "Sottoscrizione %subscription% rimossa con successo da %user%").replace("%user%", params[1]).replace("%subscription%", subscription), RoomChatMessageBubbles.ALERT);
                     }
                 }
                 else {
-                    gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_subscription.invalid_action", "Invalid action specified. Must be add, +, remove or -"), RoomChatMessageBubbles.ALERT);
+                    gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_subscription.invalid_action", "Azione non valida. Deve essere add, +, remove o -"), RoomChatMessageBubbles.ALERT);
                 }
 
             } else {
-                gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_subscription.user_not_found", "%user% was not found").replace("%user%", params[1]), RoomChatMessageBubbles.ALERT);
+                gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_subscription.user_not_found", "%user% non è stato trovato").replace("%user%", params[1]), RoomChatMessageBubbles.ALERT);
             }
         } else {
-            gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_subscription.invalid_params", "Invalid command format"), RoomChatMessageBubbles.ALERT);
+            gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_subscription.invalid_params", "Formato del comando non valido"), RoomChatMessageBubbles.ALERT);
         }
         return true;
     }

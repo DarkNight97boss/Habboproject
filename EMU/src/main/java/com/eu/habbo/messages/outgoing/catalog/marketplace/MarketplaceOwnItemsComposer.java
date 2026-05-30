@@ -58,7 +58,7 @@ public class MarketplaceOwnItemsComposer extends MessageComposer {
 
                 this.response.appendInt(0);
             } catch (Exception e) {
-                LOGGER.error("Caught exception", e);
+                LOGGER.error("Eccezione intercettata", e);
             }
         }
 

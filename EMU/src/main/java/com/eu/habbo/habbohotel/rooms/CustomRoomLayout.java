@@ -34,7 +34,7 @@ public class CustomRoomLayout extends RoomLayout implements Runnable {
                 statement.setInt(5, this.roomId);
                 statement.execute();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
     }

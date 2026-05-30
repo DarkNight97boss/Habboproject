@@ -56,14 +56,14 @@ public class CraftingManager {
                                 recipe.addIngredient(ingredientItem, set.getInt("crafting_recipes_ingredients.amount"));
                                 altar.addIngredient(ingredientItem);
                             } else {
-                                LOGGER.error("Unknown ingredient item {}", set.getInt("crafting_recipes_ingredients.item_id"));
+                                LOGGER.error("Ingrediente sconosciuto {}", set.getInt("crafting_recipes_ingredients.item_id"));
                             }
                         }
                     }
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -117,7 +117,7 @@ public class CraftingManager {
             }
             statement.executeBatch();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         this.altars.clear();

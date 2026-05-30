@@ -41,7 +41,7 @@ public class HabboManager {
 
         this.onlineHabbos = new ConcurrentHashMap<>();
 
-        LOGGER.info("Habbo Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
+        LOGGER.info("Habbo Manager -> Caricato! ({} MS)", System.currentTimeMillis() - millis);
     }
 
     public static HabboInfo getOfflineHabboInfo(int id) {
@@ -54,7 +54,7 @@ public class HabboManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return info;
@@ -72,7 +72,7 @@ public class HabboManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return info;
@@ -124,7 +124,7 @@ public class HabboManager {
                     }
                     int ttl = Emulator.getConfig().getInt("sso.ticket.ttl.seconds", 60);
                     if (issuedAt > 0 && ttl > 0 && Emulator.getIntUnixTimestamp() - issuedAt > ttl) {
-                        LOGGER.warn("Rejected stale SSO ticket for user {} (age {}s > ttl {}s)",
+                        LOGGER.warn("Ticket SSO scaduto rifiutato per l'utente {} (età {}s > ttl {}s)",
                                 s.getInt("id"), Emulator.getIntUnixTimestamp() - issuedAt, ttl);
                         return null;
                     }
@@ -143,7 +143,7 @@ public class HabboManager {
                     if (s.next()) userId = s.getInt("id");
                 }
             } catch (SQLException ex) {
-                LOGGER.error("Caught SQL exception", ex);
+                LOGGER.error("Eccezione SQL intercettata", ex);
             }
         }
 
@@ -186,15 +186,15 @@ public class HabboManager {
                             stmt.setInt(2, habbo.getHabboInfo().getId());
                             stmt.execute();
                         } catch (SQLException ex) {
-                            LOGGER.error("Caught SQL exception", ex);
+                            LOGGER.error("Eccezione SQL intercettata", ex);
                         }
                     }
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         } catch (Exception ex) {
-            LOGGER.error("Caught exception", ex);
+            LOGGER.error("Eccezione intercettata", ex);
         }
 
         return habbo;
@@ -253,7 +253,7 @@ public class HabboManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return habboInfo;
@@ -271,7 +271,7 @@ public class HabboManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return nameChanges;
@@ -282,7 +282,7 @@ public class HabboManager {
         Habbo habbo = this.getHabbo(userId);
 
         if (!Emulator.getGameEnvironment().getPermissionsManager().rankExists(rankId)) {
-            throw new Exception("Rank ID (" + rankId + ") does not exist");
+            throw new Exception("Il Rank ID (" + rankId + ") non esiste");
         }
         Rank newRank = Emulator.getGameEnvironment().getPermissionsManager().getRank(rankId);
         if (habbo != null && habbo.getHabboStats() != null) {
@@ -325,7 +325,7 @@ public class HabboManager {
                 statement.setInt(2, userId);
                 statement.execute();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
 
@@ -342,7 +342,7 @@ public class HabboManager {
                 statement.setInt(2, userId);
                 statement.execute();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
     }

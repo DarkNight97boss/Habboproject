@@ -174,22 +174,22 @@ public class WiredEffectGiveScore extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if(settings.getIntParams().length < 2) throw new WiredSaveException("Invalid data");
+        if(settings.getIntParams().length < 2) throw new WiredSaveException("Dati non validi");
 
         int score = settings.getIntParams()[0];
 
         if(score < 1 || score > 100)
-            throw new WiredSaveException("Score is invalid");
+            throw new WiredSaveException("Punteggio non valido");
 
         int timesPerGame = settings.getIntParams()[1];
 
         if(timesPerGame < 1 || timesPerGame > 10)
-            throw new WiredSaveException("Times per game is invalid");
+            throw new WiredSaveException("Volte per partita non valido");
 
         int delay = settings.getDelay();
 
         if(delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
-            throw new WiredSaveException("Delay too long");
+            throw new WiredSaveException("Ritardo troppo lungo");
 
         this.score = score;
         this.count = timesPerGame;

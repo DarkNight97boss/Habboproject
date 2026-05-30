@@ -27,7 +27,7 @@ class QueryDeleteHabboBadge implements Runnable {
             statement.setString(2, this.name);
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 }

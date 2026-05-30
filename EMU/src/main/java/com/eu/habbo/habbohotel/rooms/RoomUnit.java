@@ -372,7 +372,7 @@ public class RoomUnit {
       return false;
 
     } catch (Exception e) {
-      LOGGER.error("Caught exception", e);
+      LOGGER.error("Eccezione intercettata", e);
       return false;
     }
   }

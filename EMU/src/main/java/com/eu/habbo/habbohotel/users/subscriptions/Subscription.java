@@ -79,7 +79,7 @@ public class Subscription {
                 statement.executeUpdate();
             }
         } catch (SQLException e) {
-            SubscriptionManager.LOGGER.error("Caught SQL exception", e);
+            SubscriptionManager.LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -97,7 +97,7 @@ public class Subscription {
                 statement.executeUpdate();
             }
         } catch (SQLException e) {
-            SubscriptionManager.LOGGER.error("Caught SQL exception", e);
+            SubscriptionManager.LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 

@@ -60,7 +60,7 @@ public class GameEnvironment {
     private RoomChatBubbleManager roomChatBubbleManager;
 
     public void load() throws Exception {
-        LOGGER.info("GameEnvironment -> Loading...");
+        LOGGER.info("GameEnvironment -> Caricamento...");
 
         this.permissionsManager = new PermissionsManager();
         this.habboManager = new HabboManager();
@@ -74,6 +74,11 @@ public class GameEnvironment {
         this.roomManager = new RoomManager();
         this.navigatorManager = new NavigatorManager();
         this.commandHandler = new CommandHandler();
+
+        // Carica override per-palla del mode di calcio (long/short).
+        // Tabella football_ball_modes, popolata dal comando :ballmode.
+        com.eu.habbo.habbohotel.items.interactions.games.football.FootballBallModes.loadAll();
+
         this.modToolManager = new ModToolManager();
         this.modToolSanctions = new ModToolSanctions();
         this.achievementManager = new AchievementManager();
@@ -103,7 +108,7 @@ public class GameEnvironment {
         this.subscriptionScheduler = new SubscriptionScheduler();
         Emulator.getThreading().run(this.subscriptionScheduler);
 
-        LOGGER.info("GameEnvironment -> Loaded!");
+        LOGGER.info("GameEnvironment -> Caricato!");
     }
 
     public void dispose() {

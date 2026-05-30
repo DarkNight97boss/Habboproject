@@ -38,7 +38,7 @@ public class ErrorLog implements DatabaseLoggable {
             pw.close();
             sw.close();
         } catch (IOException e1) {
-            LOGGER.error("Exception caught", e1);
+            LOGGER.error("Eccezione intercettata", e1);
         }
     }
 

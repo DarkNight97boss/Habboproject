@@ -44,7 +44,7 @@ public class HorsePet extends RideablePet {
                 statement.setInt(6, super.getId());
                 statement.execute();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
 
             super.run();

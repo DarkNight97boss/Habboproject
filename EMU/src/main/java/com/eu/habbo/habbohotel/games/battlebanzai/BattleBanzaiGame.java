@@ -165,7 +165,7 @@ public class BattleBanzaiGame extends Game {
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
     }
 

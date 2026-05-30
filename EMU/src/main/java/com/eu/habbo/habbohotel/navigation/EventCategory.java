@@ -16,7 +16,7 @@ public class EventCategory {
     public EventCategory(String serialized) throws Exception {
         String[] parts = serialized.split(",");
 
-        if (parts.length != 3) throw new Exception("A serialized event category should contain 3 fields");
+        if (parts.length != 3) throw new Exception("Una categoria evento serializzata deve contenere 3 campi");
 
         this.id = Integer.parseInt(parts[0]);
         this.caption = parts[1];

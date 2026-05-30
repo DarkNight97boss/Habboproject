@@ -40,7 +40,7 @@ public class RoomBan {
             statement.setInt(3, this.endTimestamp);
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -51,7 +51,7 @@ public class RoomBan {
             statement.setInt(2, this.userId);
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 }

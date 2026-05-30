@@ -30,7 +30,7 @@ public class GiveUserClothing extends RCONMessage<GiveUserClothing.JSONGiveUserC
             statement.setInt(2, object.clothing_id);
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         if (habbo != null) {

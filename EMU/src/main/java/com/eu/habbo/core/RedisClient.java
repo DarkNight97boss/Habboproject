@@ -59,7 +59,7 @@ public final class RedisClient {
             want = false;
         }
         if (!want) {
-            LOGGER.info("RedisClient -> disabled (redis.enabled=false)");
+            LOGGER.info("RedisClient -> disabilitato (redis.enabled=false)");
             return;
         }
         try {
@@ -90,14 +90,14 @@ public final class RedisClient {
                 String pong = j.ping();
                 if ("PONG".equalsIgnoreCase(pong)) {
                     enabled = true;
-                    LOGGER.info("RedisClient -> connected to {}:{}/{} (prefix='{}')", host, port, db, prefix);
+                    LOGGER.info("RedisClient -> connesso a {}:{}/{} (prefisso='{}')", host, port, db, prefix);
                 } else {
-                    LOGGER.error("RedisClient -> unexpected ping reply '{}', staying disabled", pong);
+                    LOGGER.error("RedisClient -> risposta ping inattesa '{}', resta disabilitato", pong);
                     closeQuietly();
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("RedisClient -> init failed, staying disabled: {}", e.toString());
+            LOGGER.error("RedisClient -> init fallito, resta disabilitato: {}", e.toString());
             closeQuietly();
         }
     }
@@ -113,7 +113,7 @@ public final class RedisClient {
 
     /** Borrow una connessione dal pool. SEMPRE in try-with-resources. */
     public static Jedis borrow() {
-        if (!isEnabled()) throw new IllegalStateException("RedisClient is disabled");
+        if (!isEnabled()) throw new IllegalStateException("RedisClient è disabilitato");
         return pool.getResource();
     }
 

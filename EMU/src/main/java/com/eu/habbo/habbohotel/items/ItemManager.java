@@ -106,7 +106,7 @@ public class ItemManager {
         this.highscoreManager.load();
         this.loadNewUserGifts();
 
-        LOGGER.info("Item Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
+        LOGGER.info("Item Manager -> Caricato! ({} MS)", System.currentTimeMillis() - millis);
     }
 
     protected void loadItemInteractions() {
@@ -353,7 +353,7 @@ public class ItemManager {
             if (interaction.getType() == itemInteraction.getType() ||
                     interaction.getName().equalsIgnoreCase(itemInteraction.getName()))
 
-                throw new RuntimeException("Interaction Types must be unique. An class with type: " + interaction.getClass().getName() + " was already added OR the key: " + interaction.getName() + " is already in use.");
+                throw new RuntimeException("I tipi di interazione devono essere univoci. Una classe con tipo: " + interaction.getClass().getName() + " was already added OR the key: " + interaction.getName() + " is already in use.");
         }
 
         this.interactionsList.add(itemInteraction);
@@ -366,7 +366,7 @@ public class ItemManager {
                 return interaction;
         }
 
-        LOGGER.debug("Can't find interaction class: {}", type.getName());
+        LOGGER.debug("Impossibile trovare la classe di interazione: {}", type.getName());
         return this.getItemInteraction(InteractionDefault.class);
     }
 
@@ -396,12 +396,12 @@ public class ItemManager {
                     else
                         this.items.get(id).update(set);
                 } catch (Exception e) {
-                    LOGGER.error("Failed to load Item ({})", set.getInt("id"));
-                    LOGGER.error("Caught exception", e);
+                    LOGGER.error("Caricamento dell'oggetto fallito ({})", set.getInt("id"));
+                    LOGGER.error("Eccezione intercettata", e);
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -414,16 +414,16 @@ public class ItemManager {
                 try {
                     reward = new CrackableReward(set);
                 } catch (Exception e) {
-                    LOGGER.error("Failed to load items_crackable item_id = {}", set.getInt("item_id"));
-                    LOGGER.error("Caught exception", e);
+                    LOGGER.error("Caricamento items_crackable fallito item_id = {}", set.getInt("item_id"));
+                    LOGGER.error("Eccezione intercettata", e);
                     continue;
                 }
                 this.crackableRewards.put(set.getInt("item_id"), reward);
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
     }
 
@@ -457,7 +457,7 @@ public class ItemManager {
                 this.soundTracks.put(set.getString("code"), new SoundTrack(set));
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -490,16 +490,16 @@ public class ItemManager {
                         try {
                             return itemClass.getDeclaredConstructor(int.class, int.class, Item.class, String.class, int.class, int.class).newInstance(set.getInt(1), habboId, item, extraData, limitedStack, limitedSells);
                         } catch (Exception e) {
-                            LOGGER.error("Caught exception", e);
+                            LOGGER.error("Eccezione intercettata", e);
                             return new InteractionDefault(set.getInt(1), habboId, item, extraData, limitedStack, limitedSells);
                         }
                     }
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
         return null;
     }
@@ -514,7 +514,7 @@ public class ItemManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -539,7 +539,7 @@ public class ItemManager {
             statement.setInt(1, item.getId());
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -566,7 +566,7 @@ public class ItemManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return item;
@@ -606,9 +606,9 @@ public class ItemManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
 
         return item;
@@ -620,7 +620,7 @@ public class ItemManager {
             statement.setInt(2, itemTwoId);
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -630,7 +630,7 @@ public class ItemManager {
             statement.setInt(2, hopper.getBaseItem().getId());
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -645,7 +645,7 @@ public class ItemManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return a;
@@ -661,9 +661,9 @@ public class ItemManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
 
         return item;
@@ -684,7 +684,7 @@ public class ItemManager {
 
                 return (HabboItem) c.newInstance(set, baseItem);
             } catch (Exception e) {
-                LOGGER.error("Caught exception", e);
+                LOGGER.error("Eccezione intercettata", e);
             }
         }
 
@@ -708,7 +708,7 @@ public class ItemManager {
                     }
                 }
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
 
@@ -724,7 +724,7 @@ public class ItemManager {
             return null;
 
         if (extraData.length() > 1000) {
-            LOGGER.error("Extradata exceeds maximum length of 1000 characters: {}", extraData);
+            LOGGER.error("Extradata supera la lunghezza massima di 1000 caratteri: {}", extraData);
             extraData = extraData.substring(0, 1000);
         }
 

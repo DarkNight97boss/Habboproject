@@ -78,7 +78,7 @@ public class GuildForumDataComposer extends MessageComposer {
                 newComments = set.getInt(1);
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         response.appendInt(guild.getId());

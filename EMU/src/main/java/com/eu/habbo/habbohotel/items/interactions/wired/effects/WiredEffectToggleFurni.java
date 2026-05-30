@@ -147,7 +147,7 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
         int itemsCount = settings.getFurniIds().length;
 
         if(itemsCount > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) {
-            throw new WiredSaveException("Too many furni selected");
+            throw new WiredSaveException("Troppi arredi selezionati");
         }
 
         List<HabboItem> newItems = new ArrayList<>();
@@ -165,7 +165,7 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
         int delay = settings.getDelay();
 
         if(delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
-            throw new WiredSaveException("Delay too long");
+            throw new WiredSaveException("Ritardo troppo lungo");
 
         this.items.clear();
         this.items.addAll(newItems);
@@ -200,7 +200,7 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
                     item.onClick(habbo != null && !(item instanceof InteractionGameTimer) ? habbo.getClient() : null, room, new Object[]{state, this.getType()});
                 }
             } catch (Exception e) {
-                LOGGER.error("Caught exception", e);
+                LOGGER.error("Eccezione intercettata", e);
             }
         }
 

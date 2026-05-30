@@ -59,7 +59,7 @@ public abstract class InteractionWired extends InteractionDefault {
                 statement.setInt(2, this.getId());
                 statement.execute();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
         super.run();

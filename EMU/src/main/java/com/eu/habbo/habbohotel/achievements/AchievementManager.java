@@ -59,7 +59,7 @@ public class AchievementManager {
                     statement.setInt(4, amount);
                     statement.execute();
                 } catch (SQLException e) {
-                    LOGGER.error("Caught SQL exception", e);
+                    LOGGER.error("Eccezione SQL intercettata", e);
                 }
             }
         }
@@ -141,7 +141,7 @@ public class AchievementManager {
                 try {
                     badge = habbo.getInventory().getBadgesComponent().getBadge(("ACH_" + achievement.name + oldLevel.level).toLowerCase());
                 } catch (Exception e) {
-                    LOGGER.error("Caught exception", e);
+                    LOGGER.error("Eccezione intercettata", e);
                     return;
                 }
             }
@@ -209,7 +209,7 @@ public class AchievementManager {
             statement.setInt(3, 1);
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -223,7 +223,7 @@ public class AchievementManager {
             }
             statement.executeBatch();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -237,7 +237,7 @@ public class AchievementManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return 0;
@@ -260,9 +260,9 @@ public class AchievementManager {
                         }
                     }
                 } catch (SQLException e) {
-                    LOGGER.error("Caught SQL exception", e);
+                    LOGGER.error("Eccezione SQL intercettata", e);
                 } catch (Exception e) {
-                    LOGGER.error("Caught exception", e);
+                    LOGGER.error("Eccezione intercettata", e);
                 }
 
 
@@ -282,13 +282,13 @@ public class AchievementManager {
                     }
                 }
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
-                LOGGER.error("Achievement Manager -> Failed to load!");
+                LOGGER.error("Eccezione SQL intercettata", e);
+                LOGGER.error("Achievement Manager -> Caricamento fallito!");
                 return;
             }
         }
 
-        LOGGER.info("Achievement Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
+        LOGGER.info("Achievement Manager -> Caricato! ({} MS)", System.currentTimeMillis() - millis);
     }
 
     public Achievement getAchievement(String name) {

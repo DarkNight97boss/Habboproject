@@ -362,7 +362,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
       this.loadBans(connection);
     } catch (SQLException e) {
-      LOGGER.error("Caught SQL exception", e);
+      LOGGER.error("Eccezione SQL intercettata", e);
     }
 
     this.tradeMode = set.getInt("trade_mode");
@@ -411,49 +411,49 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         try {
           this.loadLayout();
         } catch (Exception e) {
-          LOGGER.error("Caught exception", e);
+          LOGGER.error("Eccezione intercettata", e);
         }
 
         try {
           this.loadRights(connection);
         } catch (Exception e) {
-          LOGGER.error("Caught exception", e);
+          LOGGER.error("Eccezione intercettata", e);
         }
 
         try {
           this.loadItems(connection);
         } catch (Exception e) {
-          LOGGER.error("Caught exception", e);
+          LOGGER.error("Eccezione intercettata", e);
         }
 
         try {
           this.loadHeightmap();
         } catch (Exception e) {
-          LOGGER.error("Caught exception", e);
+          LOGGER.error("Eccezione intercettata", e);
         }
 
         try {
           this.loadBots(connection);
         } catch (Exception e) {
-          LOGGER.error("Caught exception", e);
+          LOGGER.error("Eccezione intercettata", e);
         }
 
         try {
           this.loadPets(connection);
         } catch (Exception e) {
-          LOGGER.error("Caught exception", e);
+          LOGGER.error("Eccezione intercettata", e);
         }
 
         try {
           this.loadWordFilter(connection);
         } catch (Exception e) {
-          LOGGER.error("Caught exception", e);
+          LOGGER.error("Eccezione intercettata", e);
         }
 
         try {
           this.loadWiredData(connection);
         } catch (Exception e) {
-          LOGGER.error("Caught exception", e);
+          LOGGER.error("Eccezione intercettata", e);
         }
 
         this.idleCycles = 0;
@@ -463,7 +463,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         this.roomCycleTask = Emulator.getThreading().getService()
             .scheduleAtFixedRate(this, 500, 500, TimeUnit.MILLISECONDS);
       } catch (Exception e) {
-        LOGGER.error("Caught exception", e);
+        LOGGER.error("Eccezione intercettata", e);
       }
 
       this.traxManager = new TraxManager(this);
@@ -507,7 +507,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         }
       }
     } else {
-      LOGGER.error("Unknown Room Layout for Room (ID: {})", this.id);
+      LOGGER.error("Layout sconosciuto per la stanza (ID: {})", this.id);
     }
   }
 
@@ -523,11 +523,11 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         }
       }
     } catch (SQLException e) {
-      LOGGER.error("Caught SQL exception", e);
+      LOGGER.error("Eccezione SQL intercettata", e);
     }
 
     if (this.itemCount() > Room.MAXIMUM_FURNI) {
-      LOGGER.error("Room ID: {} has exceeded the furniture limit ({} > {}).", this.getId(),
+      LOGGER.error("Stanza ID: {} ha superato il limite arredi ({} > {}).", this.getId(),
           this.itemCount(), Room.MAXIMUM_FURNI);
     }
   }
@@ -546,14 +546,14 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
               ((InteractionWired) item).loadWiredData(set, this);
             }
           } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
           }
         }
       }
     } catch (SQLException e) {
-      LOGGER.error("Caught SQL exception", e);
+      LOGGER.error("Eccezione SQL intercettata", e);
     } catch (Exception e) {
-      LOGGER.error("Caught exception", e);
+      LOGGER.error("Eccezione intercettata", e);
     }
   }
 
@@ -592,7 +592,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         }
       }
     } catch (SQLException e) {
-      LOGGER.error("Caught SQL exception", e);
+      LOGGER.error("Eccezione SQL intercettata", e);
     }
   }
 
@@ -625,12 +625,12 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
             this.getFurniOwnerNames().put(pet.getUserId(), set.getString("pet_owner_name"));
           } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
           }
         }
       }
     } catch (SQLException e) {
-      LOGGER.error("Caught SQL exception", e);
+      LOGGER.error("Eccezione SQL intercettata", e);
     }
   }
 
@@ -646,7 +646,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         }
       }
     } catch (SQLException e) {
-      LOGGER.error("Caught SQL exception", e);
+      LOGGER.error("Eccezione SQL intercettata", e);
     }
   }
 
@@ -1120,7 +1120,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
               botIterator.value().needsUpdate(true);
               Emulator.getThreading().run(botIterator.value());
             } catch (NoSuchElementException e) {
-              LOGGER.error("Caught exception", e);
+              LOGGER.error("Eccezione intercettata", e);
               break;
             }
           }
@@ -1128,7 +1128,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
           this.currentBots.clear();
           this.currentPets.clear();
         } catch (Exception e) {
-          LOGGER.error("Caught exception", e);
+          LOGGER.error("Eccezione intercettata", e);
         }
       }
 
@@ -1140,7 +1140,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         this.preLoaded = true;
         this.layout = null;
       } catch (Exception e) {
-        LOGGER.error("Caught exception", e);
+        LOGGER.error("Eccezione intercettata", e);
       }
     }
 
@@ -1229,7 +1229,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         try {
           Emulator.getThreading().run(Room.this::cycle);
         } catch (Exception e) {
-          LOGGER.error("Caught exception", e);
+          LOGGER.error("Eccezione intercettata", e);
         }
       }
     }
@@ -1294,7 +1294,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         statement.executeUpdate();
         this.needsUpdate = false;
       } catch (SQLException e) {
-        LOGGER.error("Caught SQL exception", e);
+        LOGGER.error("Eccezione SQL intercettata", e);
       }
     }
   }
@@ -1307,7 +1307,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
       statement.setInt(2, this.id);
       statement.executeUpdate();
     } catch (SQLException e) {
-      LOGGER.error("Caught SQL exception", e);
+      LOGGER.error("Eccezione SQL intercettata", e);
     }
   }
 
@@ -1366,7 +1366,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
             foundRightHolder[0] = habbo.getRoomUnit().getRightsLevel() != RoomRightLevels.NONE;
           }
 
-          // The handitem is no longer automatically removed from a user. We can set `Room.HAND_ITEM_TIME` to `0` as a configuration option to prevent it from being removed. (verified on Oct 15, 2024)
+          // L'oggetto in mano non viene più rimosso automaticamente da un utente. Possiamo impostare `Room.HAND_ITEM_TIME` a `0` come opzione di configurazione per evitare che venga rimosso. (verificato il 15 ott 2024)
           if (Room.HAND_ITEM_TIME > 0 && habbo.getRoomUnit().getHandItem() > 0
               && millis - habbo.getRoomUnit().getHandItemTimestamp() > (Room.HAND_ITEM_TIME
               * 1000L)) {
@@ -1425,7 +1425,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
                 new RoomUserIgnoredComposer(habbo, RoomUserIgnoredComposer.UNIGNORED).compose());
           }
 
-          // Substract 1 from the chatCounter every odd cycle, which is every (500ms * 2).
+          // Sottrae 1 al chatCounter ad ogni ciclo dispari, cioè ogni (500ms * 2).
           if (this.cycleOdd && habbo.getHabboStats().chatCounter.get() > 0) {
             habbo.getHabboStats().chatCounter.decrementAndGet();
           }
@@ -1467,7 +1467,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
 
             } catch (NoSuchElementException e) {
-              LOGGER.error("Caught exception", e);
+              LOGGER.error("Eccezione intercettata", e);
               break;
             }
           }
@@ -1480,7 +1480,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
               try {
                 petIterator.advance();
               } catch (NoSuchElementException e) {
-                LOGGER.error("Caught exception", e);
+                LOGGER.error("Eccezione intercettata", e);
                 break;
               }
 
@@ -1707,7 +1707,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
                         try {
                           item.onWalkOn(unit, room, new Object[]{rollerTile, tileInFront});
                         } catch (Exception e) {
-                          LOGGER.error("Caught exception", e);
+                          LOGGER.error("Eccezione intercettata", e);
                         }
                       }
                     }, this.getRollerSpeed() == 0 ? 250 : InteractionRoller.DELAY);
@@ -2254,7 +2254,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
           }
 
         } catch (NoSuchElementException e) {
-          LOGGER.error("Caught exception", e);
+          LOGGER.error("Eccezione intercettata", e);
           break;
         }
       }
@@ -2387,7 +2387,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
       statement.setInt(10, this.promotion.getCategory());
       statement.execute();
     } catch (SQLException e) {
-      LOGGER.error("Caught SQL exception", e);
+      LOGGER.error("Eccezione SQL intercettata", e);
     }
 
     this.needsUpdate = true;
@@ -2430,7 +2430,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         game = gameType.getDeclaredConstructor(Room.class).newInstance(this);
         this.addGame(game);
       } catch (Exception e) {
-        LOGGER.error("Error getting game {}", gameType.getName(), e);
+        LOGGER.error("Errore nel recupero del gioco {}", gameType.getName(), e);
       }
     }
 
@@ -2495,7 +2495,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         return this.habboQueue.remove(habbo.getHabboInfo().getId()) != null;
       }
     } catch (Exception e) {
-      LOGGER.error("Caught exception", e);
+      LOGGER.error("Eccezione intercettata", e);
     }
 
     return true;
@@ -2569,7 +2569,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         if (habbo != null) {
           this.furniOwnerNames.put(item.getUserId(), habbo.getUsername());
         } else {
-          LOGGER.error("Failed to find username for item (ID: {}, UserID: {})", item.getId(),
+          LOGGER.error("Impossibile trovare lo username per l'oggetto (ID: {}, UserID: {})", item.getId(),
               item.getUserId());
         }
       }
@@ -2944,7 +2944,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         try {
           item.onWalkOff(habbo.getRoomUnit(), this, new Object[]{});
         } catch (Exception e) {
-          LOGGER.error("Caught exception", e);
+          LOGGER.error("Eccezione intercettata", e);
         }
       }
     }
@@ -3002,7 +3002,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         try {
           iterator.advance();
         } catch (NoSuchElementException e) {
-          LOGGER.error("Caught exception", e);
+          LOGGER.error("Eccezione intercettata", e);
           break;
         }
 
@@ -3023,7 +3023,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         try {
           iterator.advance();
         } catch (NoSuchElementException e) {
-          LOGGER.error("Caught exception", e);
+          LOGGER.error("Eccezione intercettata", e);
           break;
         }
 
@@ -3046,7 +3046,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         try {
           iterator.advance();
         } catch (NoSuchElementException e) {
-          LOGGER.error("Caught exception", e);
+          LOGGER.error("Eccezione intercettata", e);
           break;
         }
 
@@ -3090,7 +3090,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
       try {
         petIterator.advance();
       } catch (NoSuchElementException e) {
-        LOGGER.error("Caught exception", e);
+        LOGGER.error("Eccezione intercettata", e);
         break;
       }
 
@@ -3173,7 +3173,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         try {
           petIterator.advance();
         } catch (NoSuchElementException e) {
-          LOGGER.error("Caught exception", e);
+          LOGGER.error("Eccezione intercettata", e);
           break;
         }
 
@@ -3377,7 +3377,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
       try {
         doorTileTopItem.onWalkOn(habbo.getRoomUnit(), this, new Object[]{});
       } catch (Exception e) {
-        LOGGER.error("Caught exception", e);
+        LOGGER.error("Eccezione intercettata", e);
       }
     }
   }
@@ -3594,16 +3594,16 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
           }
           continue;
         }
-        // Staff should be able to see the tent chat anyhow
+        // Lo staff dovrebbe comunque poter vedere la chat della tenda
         showTentChatMessageOutsideTentIfPermitted(h, roomChatMessage, tentRectangle);
       }
     } else if (chatType == RoomChatType.SHOUT) {
       ServerMessage message = new RoomUserShoutComposer(roomChatMessage).compose();
 
       for (Habbo h : this.getHabbos()) {
-        // Show the message
-        // If the receiving Habbo has not ignored the sending Habbo
-        // AND the sending Habbo is NOT in a tent OR the receiving Habbo is in the same tent as the sending Habbo
+        // Mostra il messaggio
+        // Se l'Habbo ricevente non ha ignorato l'Habbo mittente
+        // E l'Habbo mittente NON è in una tenda OPPURE l'Habbo ricevente è nella stessa tenda dell'Habbo mittente
         if (!h.getHabboStats().userIgnored(habbo.getHabboInfo().getId()) && (tentRectangle == null
             || RoomLayout.tileInSquare(tentRectangle, h.getRoomUnit().getCurrentLocation()))) {
           if (prefixMessage != null && !h.getHabboStats().preferOldChat) {
@@ -3615,7 +3615,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
           }
           continue;
         }
-        // Staff should be able to see the tent chat anyhow, even when not in the same tent
+        // Lo staff dovrebbe comunque poter vedere la chat della tenda, anche se non è nella stessa tenda
         showTentChatMessageOutsideTentIfPermitted(h, roomChatMessage, tentRectangle);
       }
     }
@@ -3631,7 +3631,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
             bot.onUserSay(roomChatMessage);
 
           } catch (NoSuchElementException e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
             break;
           }
         }
@@ -3672,7 +3672,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
                 break;
               } catch (Exception e) {
-                LOGGER.error("Caught exception", e);
+                LOGGER.error("Eccezione intercettata", e);
               }
             }
           }
@@ -4283,7 +4283,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         }
       }
     } catch (SQLException e) {
-      LOGGER.error("Caught SQL exception", e);
+      LOGGER.error("Eccezione SQL intercettata", e);
     }
   }
 
@@ -4304,7 +4304,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         }
       }
     } catch (SQLException e) {
-      LOGGER.error("Caught SQL exception", e);
+      LOGGER.error("Eccezione SQL intercettata", e);
     }
   }
 
@@ -4363,7 +4363,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         statement.setInt(2, userId);
         statement.execute();
       } catch (SQLException e) {
-        LOGGER.error("Caught SQL exception", e);
+        LOGGER.error("Eccezione SQL intercettata", e);
       }
     }
 
@@ -4407,7 +4407,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         statement.setInt(2, userId);
         statement.execute();
       } catch (SQLException e) {
-        LOGGER.error("Caught SQL exception", e);
+        LOGGER.error("Eccezione SQL intercettata", e);
       }
     }
 
@@ -4432,7 +4432,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
       statement.setInt(1, this.id);
       statement.execute();
     } catch (SQLException e) {
-      LOGGER.error("Caught SQL exception", e);
+      LOGGER.error("Eccezione SQL intercettata", e);
     }
 
     this.refreshRightsInRoom();
@@ -4494,7 +4494,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
           }
         }
       } catch (SQLException e) {
-        LOGGER.error("Caught SQL exception", e);
+        LOGGER.error("Eccezione SQL intercettata", e);
       }
     }
 
@@ -4839,7 +4839,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         statement.setString(2, word);
         statement.execute();
       } catch (SQLException e) {
-        LOGGER.error("Caught SQL exception", e);
+        LOGGER.error("Eccezione SQL intercettata", e);
         return;
       }
 
@@ -4858,7 +4858,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         statement.setString(2, word);
         statement.execute();
       } catch (SQLException e) {
-        LOGGER.error("Caught SQL exception", e);
+        LOGGER.error("Eccezione SQL intercettata", e);
       }
     }
   }

@@ -39,7 +39,7 @@ public class CommandHandler {
     public CommandHandler() {
         long millis = System.currentTimeMillis();
         this.reloadCommands();
-        LOGGER.info("Command Handler -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
+        LOGGER.info("Command Handler -> Caricato! ({} MS)", System.currentTimeMillis() - millis);
     }
 
     public static void addCommand(Command command) {
@@ -56,7 +56,7 @@ public class CommandHandler {
             addCommand(command.newInstance());
             LOGGER.debug("Added command: {}", command.getName());
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
     }
 
@@ -76,7 +76,7 @@ public class CommandHandler {
                                 if (command.permission == null || gameClient.getHabbo().hasPermission(command.permission, gameClient.getHabbo().getHabboInfo().getCurrentRoom() != null && (gameClient.getHabbo().getHabboInfo().getCurrentRoom().hasRights(gameClient.getHabbo())) || gameClient.getHabbo().hasPermission(Permission.ACC_PLACEFURNI) || (gameClient.getHabbo().getHabboInfo().getCurrentRoom() != null && gameClient.getHabbo().getHabboInfo().getCurrentRoom().getGuildId() > 0 && gameClient.getHabbo().getHabboInfo().getCurrentRoom().getGuildRightLevel(gameClient.getHabbo()).isEqualOrGreaterThan(RoomRightLevels.GUILD_RIGHTS)))) {
                                     // Staff step-up MFA: block privileged (permission-gated) commands until verified.
                                     if (command.permission != null && gameClient.isStaffMfaLocked()) {
-                                        gameClient.getHabbo().whisper(Emulator.getTexts().getValue("mfa.staff.locked", "Verify your authenticator code to unlock staff powers."), com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles.ALERT);
+                                        gameClient.getHabbo().whisper(Emulator.getTexts().getValue("mfa.staff.locked", "Verifica il codice del tuo authenticator per sbloccare i poteri staff."), com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles.ALERT);
                                         com.eu.habbo.core.StaffMfa.sendChallenge(gameClient);
                                         return false;
                                     }
@@ -111,7 +111,7 @@ public class CommandHandler {
 
                                         succes = event.succes;
                                     } catch (Exception e) {
-                                        LOGGER.error("Caught exception", e);
+                                        LOGGER.error("Eccezione intercettata", e);
                                     }
 
                                     if (gameClient.getHabbo().getHabboInfo().getRank().isLogCommands()) {
@@ -196,11 +196,13 @@ public class CommandHandler {
     }
 
     public void reloadCommands() {
+        addCommand(new OracoloCommand());
         addCommand(new AboutCommand());
         addCommand(new AlertCommand());
         addCommand(new AllowTradingCommand());
         addCommand(new ArcturusCommand());
         addCommand(new BadgeCommand());
+        addCommand(new BallmodeCommand());
         addCommand(new BanCommand());
         addCommand(new BlockAlertCommand());
         addCommand(new BotsCommand());

@@ -98,7 +98,7 @@ public class PluginManager {
         BotManager.MAXIMUM_CHAT_LENGTH = Emulator.getConfig().getInt("hotel.bot.max.chatlength");
         BotManager.MAXIMUM_NAME_LENGTH = Emulator.getConfig().getInt("hotel.bot.max.namelength");
         BotManager.MAXIMUM_CHAT_SPEED = Emulator.getConfig().getInt("hotel.bot.max.chatdelay");
-        Bot.PLACEMENT_MESSAGES = Emulator.getConfig().getValue("hotel.bot.placement.messages", "Yo!;Hello I'm a real party animal!;Hello!").split(";");
+        Bot.PLACEMENT_MESSAGES = Emulator.getConfig().getValue("hotel.bot.placement.messages", "Ehilà!;Ciao, sono un vero animale da festa!;Ciao!").split(";");
         Bot.BOT_LIMIT_WALKING_DISTANCE = Emulator.getConfig().getBoolean("hotel.bot.limit.walking.distance", true);
         Bot.BOT_WALKING_DISTANCE_RADIUS = Emulator.getConfig().getInt("hotel.bot.limit.walking.distance.radius", 5);
 
@@ -130,7 +130,7 @@ public class PluginManager {
             try {
                 RoomChatMessage.BANNED_BUBBLES[i] = Integer.parseInt(bannedBubbles[i]);
             } catch (Exception e) {
-                LOGGER.error("Caught exception", e);
+                LOGGER.error("Eccezione intercettata", e);
             }
         }
 
@@ -256,7 +256,7 @@ public class PluginManager {
 
         if (!loc.exists()) {
             if (loc.mkdirs()) {
-                LOGGER.info("Created plugins directory!");
+                LOGGER.info("Directory plugins creata!");
             }
         }
 
@@ -276,12 +276,12 @@ public class PluginManager {
         // operators should at least be aware (and ideally flip enforce_allowlist=true).
         if (!enforceAllowlist && jarFiles.length > 0) {
             LOGGER.warn("====================================================================");
-            LOGGER.warn("plugins.enforce_allowlist=false: loading {} UNVERIFIED plugin jar(s).", jarFiles.length);
-            LOGGER.warn("Any code dropped into ./plugins runs with full server privileges (RCE by design).");
+            LOGGER.warn("plugins.enforce_allowlist=false: caricamento di {} jar plugin NON VERIFICATI.", jarFiles.length);
+            LOGGER.warn("Qualsiasi codice rilasciato in ./plugins viene eseguito con privilegi server completi (RCE by design).");
             for (File f : jarFiles) {
                 LOGGER.warn("  - {} (sha256={})", f.getName(), sha256OfFile(f));
             }
-            LOGGER.warn("To enforce: set plugins.enforce_allowlist=true and list approved jars in");
+            LOGGER.warn("Per applicare: imposta plugins.enforce_allowlist=true ed elenca i jar approvati in");
             LOGGER.warn("plugins.allowed=filename1.jar=<sha256>,filename2.jar=<sha256>,...");
             LOGGER.warn("====================================================================");
             try {
@@ -295,7 +295,7 @@ public class PluginManager {
                 String expectedSha = allowed.get(file.getName());
                 String actualSha = sha256OfFile(file);
                 if (expectedSha == null || !expectedSha.equalsIgnoreCase(actualSha)) {
-                    LOGGER.error("Refusing to load plugin {} — not in plugins.allowed (expected={}, actual={})",
+                    LOGGER.error("Rifiuto di caricare il plugin {} — non è in plugins.allowed (atteso={}, effettivo={})",
                             file.getName(), expectedSha, actualSha);
                     try {
                         com.eu.habbo.core.AuditLog.record(0, "system", "PLUGIN_REJECTED",
@@ -312,7 +312,7 @@ public class PluginManager {
                 stream = urlClassLoader.getResourceAsStream("plugin.json");
 
                 if (stream == null) {
-                    throw new RuntimeException("Invalid Jar! Missing plugin.json in: " + file.getName());
+                    throw new RuntimeException("Jar non valido! plugin.json mancante in: " + file.getName());
                 }
 
                 byte[] content = new byte[stream.available()];
@@ -334,12 +334,12 @@ public class PluginManager {
                         this.plugins.add(plugin);
                         plugin.onEnable();
                     } catch (Exception e) {
-                        LOGGER.error("Could not load plugin {}!", pluginConfigurtion.name);
-                        LOGGER.error("Caught exception", e);
+                        LOGGER.error("Impossibile caricare il plugin {}!", pluginConfigurtion.name);
+                        LOGGER.error("Eccezione intercettata", e);
                     }
                 }
             } catch (Exception e) {
-                LOGGER.error("Caught exception", e);
+                LOGGER.error("Eccezione intercettata", e);
             }
         }
     }
@@ -398,8 +398,8 @@ public class PluginManager {
                 try {
                     method.invoke(null, event);
                 } catch (Exception e) {
-                    LOGGER.error("Could not pass default event {} to {}: {}!", event.getClass().getName(), method.getClass().getName(), method.getName());
-                    LOGGER.error("Caught exception", e);
+                    LOGGER.error("Impossibile passare l'evento default {} a {}: {}!", event.getClass().getName(), method.getClass().getName(), method.getName());
+                    LOGGER.error("Eccezione intercettata", e);
                 }
             }
         }
@@ -417,8 +417,8 @@ public class PluginManager {
                             try {
                                 method.invoke(plugin, event);
                             } catch (Exception e) {
-                                LOGGER.error("Could not pass event {} to {}", event.getClass().getName(), plugin.configuration.name);
-                                LOGGER.error("Caught exception", e);
+                                LOGGER.error("Impossibile passare l'evento {} a {}", event.getClass().getName(), plugin.configuration.name);
+                                LOGGER.error("Eccezione intercettata", e);
                             }
                         }
                     }
@@ -473,9 +473,9 @@ public class PluginManager {
                         p.stream.close();
                         p.classLoader.close();
                     } catch (IOException e) {
-                        LOGGER.error("Caught exception", e);
+                        LOGGER.error("Eccezione intercettata", e);
                     } catch (Exception ex) {
-                        LOGGER.error("Failed to disable {} because of an exception.", p.configuration.name, ex);
+                        LOGGER.error("Disabilitazione di {} fallita a causa di un'eccezione.", p.configuration.name, ex);
                     }
                 }
             } catch (NoSuchElementException e) {
@@ -492,7 +492,7 @@ public class PluginManager {
 
         this.loadPlugins();
 
-        LOGGER.info("Plugin Manager -> Loaded! {} plugins! ({} MS)", this.plugins.size(), System.currentTimeMillis() - millis);
+        LOGGER.info("Plugin Manager -> Caricato! {} plugin! ({} MS)", this.plugins.size(), System.currentTimeMillis() - millis);
 
         this.registerDefaultEvents();
     }
@@ -511,8 +511,8 @@ public class PluginManager {
             this.methods.add(PluginManager.class.getMethod("globalOnConfigurationUpdated", EmulatorConfigUpdatedEvent.class));
             this.methods.add(WiredHighscoreManager.class.getMethod("onEmulatorLoaded", EmulatorLoadedEvent.class));
         } catch (NoSuchMethodException e) {
-            LOGGER.info("Failed to define default events!");
-            LOGGER.error("Caught exception", e);
+            LOGGER.info("Definizione degli eventi default fallita!");
+            LOGGER.error("Eccezione intercettata", e);
         }
     }
 

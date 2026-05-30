@@ -42,7 +42,7 @@ public class DbCleanup {
 
     public DbCleanup() {
         if (!isEnabled()) {
-            LOGGER.info("DbCleanup -> disabled");
+            LOGGER.info("DbCleanup -> disabilitato");
             return;
         }
         int initialDelay = Emulator.getConfig().getInt("db.cleanup.initial.delay.seconds", 300);
@@ -53,7 +53,7 @@ public class DbCleanup {
             return t;
         });
         this.scheduler.scheduleAtFixedRate(this::tick, initialDelay, intervalHours * 3600L, TimeUnit.SECONDS);
-        LOGGER.info("DbCleanup -> Loaded! (sweep every {}h)", intervalHours);
+        LOGGER.info("DbCleanup -> Caricato! (sweep ogni {}h)", intervalHours);
     }
 
     public static boolean isEnabled() {
@@ -90,14 +90,14 @@ public class DbCleanup {
                         cap);
             }
         } catch (Exception e) {
-            LOGGER.error("DbCleanup tick failed", e);
+            LOGGER.error("Tick DbCleanup fallito", e);
             AuditLog.record(0, "DbCleanup", "DB_CLEANUP_FAIL", "", e.getMessage() == null ? "" : e.getMessage());
             return;
         }
         if (totalChanges > 0) {
             LOGGER.info("DbCleanup -> {} orphan rows reconciled", totalChanges);
         } else {
-            LOGGER.info("DbCleanup -> nothing to clean");
+            LOGGER.info("DbCleanup -> niente da pulire");
         }
     }
 
@@ -116,7 +116,7 @@ public class DbCleanup {
             if (msg.contains("doesn't exist") || msg.contains("Unknown table")) {
                 return 0;
             }
-            LOGGER.warn("DbCleanup sweep '{}' failed: {}", label, msg);
+            LOGGER.warn("Sweep DbCleanup '{}' fallito: {}", label, msg);
             return 0;
         }
     }

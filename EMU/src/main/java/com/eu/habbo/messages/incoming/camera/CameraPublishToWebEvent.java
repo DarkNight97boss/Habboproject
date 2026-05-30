@@ -75,7 +75,7 @@ public class CameraPublishToWebEvent extends MessageHandler {
                     } catch (SQLException e) {
                         // DB insert failed -> roll back the cooldown reservation.
                         habbo.getHabboInfo().setWebPublishTimestamp(habbo.getHabboInfo().getWebPublishTimestamp());
-                        LOGGER.error("Caught SQL exception", e);
+                        LOGGER.error("Eccezione SQL intercettata", e);
                     }
                 } else {
                     // Cancelled by a plugin -> roll back the cooldown reservation.

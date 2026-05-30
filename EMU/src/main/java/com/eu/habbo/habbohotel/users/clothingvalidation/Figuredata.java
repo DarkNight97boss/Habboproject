@@ -67,7 +67,7 @@ public class Figuredata {
             StringWriter writer = new StringWriter();
             TransformerFactory.newInstance().newTransformer().transform(new DOMSource(document), new StreamResult(writer));
             String documentString = writer.getBuffer().toString();
-            throw new Exception("The passed file is not in figuredata format. Received " + documentString.substring(0, Math.min(documentString.length(), 200)));
+            throw new Exception("Il file passato non è nel formato figuredata. Ricevuto " + documentString.substring(0, Math.min(documentString.length(), 200)));
         }
 
         NodeList palettesList = document.getElementsByTagName("colors").item(0).getChildNodes();

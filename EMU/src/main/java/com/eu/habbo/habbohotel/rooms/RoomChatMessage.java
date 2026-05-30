@@ -137,7 +137,7 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
             try {
                 this.message = this.message.substring(0, RoomChatMessage.MAXIMUM_LENGTH - 1);
             } catch (Exception e) {
-                LOGGER.error("Caught exception", e);
+                LOGGER.error("Eccezione intercettata", e);
             }
         }
 
@@ -199,7 +199,7 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
             message.appendInt(0);
             message.appendInt(this.getMessage().length());
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
     }
 
@@ -222,7 +222,7 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
                     if (muteTime > 0) {
                         this.habbo.mute(muteTime, false);
                     } else {
-                        LOGGER.error("Invalid hotel.wordfilter.automute defined in emulator_settings ({}).", muteTime);
+                        LOGGER.error("hotel.wordfilter.automute non valido definito in emulator_settings ({}).", muteTime);
                     }
                 }
 

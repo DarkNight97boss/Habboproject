@@ -76,7 +76,7 @@ public class RoomUnitOnRollerComposer extends MessageComposer {
                         try {
                             topItem.onWalkOff(this.roomUnit, this.room, new Object[]{this});
                         } catch (Exception e) {
-                            LOGGER.error("Caught exception", e);
+                            LOGGER.error("Eccezione intercettata", e);
                         }
                     }
 
@@ -88,7 +88,7 @@ public class RoomUnitOnRollerComposer extends MessageComposer {
                         try {
                             topItemNewLocation.onWalkOn(this.roomUnit, this.room, new Object[]{this});
                         } catch (Exception e) {
-                            LOGGER.error("Caught exception", e);
+                            LOGGER.error("Eccezione intercettata", e);
                         }
                     }
                 }
@@ -108,7 +108,7 @@ public class RoomUnitOnRollerComposer extends MessageComposer {
                         try {
                             topItem.onWalkOff(this.roomUnit, this.room, new Object[]{this});
                         } catch (Exception e) {
-                            LOGGER.error("Caught exception", e);
+                            LOGGER.error("Eccezione intercettata", e);
                         }
                     }
                 }

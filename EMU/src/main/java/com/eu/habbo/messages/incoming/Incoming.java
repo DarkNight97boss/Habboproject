@@ -422,4 +422,12 @@ public class Incoming {
     public static final int BattlePassRequestInfoEvent = 9530;
     public static final int BattlePassClaimEvent = 9531;
     public static final int BattlePassBuyPremiumEvent = 9532;
+
+    // Custom: staff Furni Editor (Nitro panel). 6 packets, range 10040-10045.
+    public static final int FurniEditorSearchEvent = 10040;
+    public static final int FurniEditorDetailEvent = 10041;
+    public static final int FurniEditorBySpriteEvent = 10042;
+    public static final int FurniEditorInteractionsEvent = 10043;
+    public static final int FurniEditorUpdateEvent = 10044;
+    public static final int FurniEditorDeleteEvent = 10045;
 }

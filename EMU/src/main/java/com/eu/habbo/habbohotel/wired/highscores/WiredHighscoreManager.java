@@ -38,7 +38,7 @@ public class WiredHighscoreManager {
         this.data.clear();
         this.loadHighscoreData();
 
-        LOGGER.info("Highscore Manager -> Loaded! ({} MS, {} items)", System.currentTimeMillis() - millis, this.data.size());
+        LOGGER.info("Highscore Manager -> Caricato! ({} MS, {} oggetti)", System.currentTimeMillis() - millis, this.data.size());
     }
 
     @EventHandler
@@ -72,7 +72,7 @@ public class WiredHighscoreManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -92,7 +92,7 @@ public class WiredHighscoreManager {
 
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 

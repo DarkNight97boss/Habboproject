@@ -60,7 +60,7 @@ public final class RedisRateLimiter {
         try (Jedis j = RedisClient.borrow()) {
             return Boolean.TRUE.equals(j.exists(RedisClient.key("rl:lock:" + label + ":" + ip)));
         } catch (Exception e) {
-            LOGGER.warn("Redis isBlocked failed, falling back in-memory: {}", e.toString());
+            LOGGER.warn("Redis isBlocked fallito, fallback in-memory: {}", e.toString());
             return fallback.isBlocked(ip);
         }
     }
@@ -76,7 +76,7 @@ public final class RedisRateLimiter {
             j.del(RedisClient.key("rl:" + label + ":" + ip));
             j.del(RedisClient.key("rl:lock:" + label + ":" + ip));
         } catch (Exception e) {
-            LOGGER.warn("Redis onSuccess failed: {}", e.toString());
+            LOGGER.warn("Redis onSuccess fallito: {}", e.toString());
             fallback.onSuccess(ip);
         }
     }
@@ -118,14 +118,14 @@ public final class RedisRateLimiter {
                                         + " lockout_sec=" + lockoutSec + " mode=redis");
                     } catch (Exception ignored) {
                     }
-                    LOGGER.warn("RedisRateLimiter[{}] -> IP {} locked for {}s after {} failures",
+                    LOGGER.warn("RedisRateLimiter[{}] -> IP {} bloccato per {}s dopo {} fallimenti",
                             label, ip, lockoutSec, failuresInWindow);
                     return true;
                 }
             }
             return false;
         } catch (Exception e) {
-            LOGGER.warn("Redis onFailure failed, falling back in-memory: {}", e.toString());
+            LOGGER.warn("Redis onFailure fallito, fallback in-memory: {}", e.toString());
             return fallback.onFailure(ip);
         }
     }

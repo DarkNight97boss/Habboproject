@@ -256,7 +256,7 @@ public class WiredHandler {
                             if (!effect.execute(roomUnit, room, stuff)) return;
                             effect.setCooldown(millis);
                         } catch (Exception e) {
-                            LOGGER.error("Caught exception", e);
+                            LOGGER.error("Eccezione intercettata", e);
                         }
 
                         effect.activateBox(room, roomUnit, millis);
@@ -298,7 +298,7 @@ public class WiredHandler {
             statement.setInt(1, wiredId);
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -313,7 +313,7 @@ public class WiredHandler {
             statement.setInt(4, Emulator.getIntUnixTimestamp());
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         if (reward.badge) {
@@ -481,7 +481,7 @@ public class WiredHandler {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return false;

@@ -27,7 +27,7 @@ public class ControlCommand extends Command {
                 }
 
                 if (target.getHabboInfo().getRank().getId() >= gameClient.getHabbo().getHabboInfo().getRank().getId()) {
-                    gameClient.getHabbo().whisper("You cannot control a user of equal or higher rank.", RoomChatMessageBubbles.ALERT);
+                    gameClient.getHabbo().whisper("Non puoi controllare un utente di rango uguale o superiore.", RoomChatMessageBubbles.ALERT);
                     return true;
                 }
 

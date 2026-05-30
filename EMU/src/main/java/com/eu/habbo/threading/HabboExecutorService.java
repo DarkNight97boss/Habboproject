@@ -19,7 +19,7 @@ public class HabboExecutorService extends ScheduledThreadPoolExecutor {
         super.afterExecute(r, t);
 
         if (t != null && !(t instanceof IOException)) {
-            LOGGER.error("Error in HabboExecutorService", t);
+            LOGGER.error("Errore in HabboExecutorService", t);
         }
     }
 }

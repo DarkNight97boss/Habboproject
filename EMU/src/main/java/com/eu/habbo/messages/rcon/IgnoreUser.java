@@ -30,7 +30,7 @@ public class IgnoreUser extends RCONMessage<IgnoreUser.JSONIgnoreUser> {
                 statement.setInt(2, object.target_id);
                 statement.execute();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
 
             this.message = "offline";

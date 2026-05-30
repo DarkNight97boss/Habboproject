@@ -51,7 +51,7 @@ public final class SyntheticProbe {
         if (scheduler != null) return;
         boolean enabled = Emulator.getConfig().getBoolean("synthetic.probe.enabled", true);
         if (!enabled) {
-            LOGGER.info("SyntheticProbe -> disabled");
+            LOGGER.info("SyntheticProbe -> disabilitato");
             return;
         }
         int interval = Math.max(5, Emulator.getConfig().getInt("synthetic.probe.interval_sec", 30));
@@ -63,7 +63,7 @@ public final class SyntheticProbe {
         });
         // Initial delay 30s: lascia all'EMU il tempo di completare il bootstrap.
         scheduler.scheduleAtFixedRate(SyntheticProbe::tick, 30, interval, TimeUnit.SECONDS);
-        LOGGER.info("SyntheticProbe -> probing every {}s", interval);
+        LOGGER.info("SyntheticProbe -> probing ogni {}s", interval);
     }
 
     public static synchronized void stop() {
@@ -91,7 +91,7 @@ public final class SyntheticProbe {
                 long dt = System.nanoTime() - t0;
                 HealthEndpoint.SYNTHETIC_CONNECT_SECONDS.record(dt);
                 if (consecutiveFailures > 0) {
-                    LOGGER.info("SyntheticProbe -> recovered after {} failed attempts", consecutiveFailures);
+                    LOGGER.info("SyntheticProbe -> ripristinato dopo {} tentativi falliti", consecutiveFailures);
                 }
                 consecutiveFailures = 0;
             }
@@ -100,11 +100,11 @@ public final class SyntheticProbe {
             // Solo i primi 3 fallimenti vengono loggati per non spammare; dopo
             // ci pensa l'alert PromQL (assenza di sample nel bucket).
             if (consecutiveFailures <= 3) {
-                LOGGER.warn("SyntheticProbe -> connect failed ({}): {}",
+                LOGGER.warn("SyntheticProbe -> connect fallito ({}): {}",
                         consecutiveFailures, e.toString());
             }
         } catch (Throwable t) {
-            LOGGER.warn("SyntheticProbe -> unexpected error", t);
+            LOGGER.warn("SyntheticProbe -> errore inatteso", t);
         }
     }
 }

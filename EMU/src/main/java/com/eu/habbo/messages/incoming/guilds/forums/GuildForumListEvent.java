@@ -69,7 +69,7 @@ public class GuildForumListEvent extends MessageHandler {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
             this.client.sendResponse(new ConnectionErrorComposer(500));
         }
 
@@ -93,7 +93,7 @@ public class GuildForumListEvent extends MessageHandler {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
             this.client.sendResponse(new ConnectionErrorComposer(500));
         }
 

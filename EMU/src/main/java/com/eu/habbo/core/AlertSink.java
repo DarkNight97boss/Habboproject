@@ -59,7 +59,7 @@ public final class AlertSink {
                     t.setDaemon(true);
                     return t;
                 },
-                (r, e) -> LOGGER.warn("AlertSink queue full, dropping event"));
+                (r, e) -> LOGGER.warn("Coda AlertSink piena, evento scartato"));
     }
 
     private AlertSink() {}
@@ -75,7 +75,7 @@ public final class AlertSink {
             fields.addProperty("detail", detail == null ? "" : detail);
             post(action, fields);
         } catch (Throwable t) {
-            LOGGER.warn("AlertSink.postAudit failed: {}", t.toString());
+            LOGGER.warn("AlertSink.postAudit fallito: {}", t.toString());
         }
     }
 
@@ -91,7 +91,7 @@ public final class AlertSink {
 
             EXECUTOR.execute(() -> doPost(url, event, fields));
         } catch (Throwable t) {
-            LOGGER.warn("AlertSink.post failed for event {}: {}", event, t.toString());
+            LOGGER.warn("AlertSink.post fallito per l'evento {}: {}", event, t.toString());
         }
     }
 
@@ -134,10 +134,10 @@ public final class AlertSink {
             }
             int code = conn.getResponseCode();
             if (code < 200 || code >= 300) {
-                LOGGER.warn("AlertSink: webhook returned {} for event {}", code, event);
+                LOGGER.warn("AlertSink: il webhook ha restituito {} per l'evento {}", code, event);
             }
         } catch (Throwable t) {
-            LOGGER.warn("AlertSink: POST failed for event {}: {}", event, t.toString());
+            LOGGER.warn("AlertSink: POST fallito per l'evento {}: {}", event, t.toString());
         } finally {
             if (conn != null) conn.disconnect();
         }

@@ -34,7 +34,7 @@ public class SavePostItStickyPoleEvent extends MessageHandler {
                     CommandHandler.handleCommand(this.client, command);
                 }
                 if (commands.length > max) {
-                    LOGGER.warn("cmd_multi truncated: user {} sent {} commands, executed {}",
+                    LOGGER.warn("cmd_multi troncato: l'utente {} ha inviato {} comandi, eseguiti {}",
                             this.client.getHabbo().getHabboInfo().getUsername(), commands.length, max);
                 }
             } else {

@@ -38,7 +38,7 @@ public class NavigatorManager {
         this.filters.put(NavigatorUserFilter.name, new NavigatorUserFilter());
         this.filters.put(NavigatorFavoriteFilter.name, new NavigatorFavoriteFilter());
 
-        LOGGER.info("Navigator Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
+        LOGGER.info("Navigator Manager -> Caricato! ({} MS)", System.currentTimeMillis() - millis);
     }
 
     public void loadNavigator() {
@@ -51,7 +51,7 @@ public class NavigatorManager {
                         this.publicCategories.put(set.getInt("id"), new NavigatorPublicCategory(set));
                     }
                 } catch (SQLException e) {
-                    LOGGER.error("Caught SQL exception", e);
+                    LOGGER.error("Eccezione SQL intercettata", e);
                 }
 
                 try (Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT * FROM navigator_publics WHERE visible = '1'")) {
@@ -64,12 +64,12 @@ public class NavigatorManager {
                             if (room != null) {
                                 category.addRoom(room);
                             } else {
-                                LOGGER.error("Public room (ID: {} defined in navigator_publics does not exist!", set.getInt("room_id"));
+                                LOGGER.error("La stanza pubblica (ID: {} definita in navigator_publics non esiste!", set.getInt("room_id"));
                             }
                         }
                     }
                 } catch (SQLException e) {
-                    LOGGER.error("Caught SQL exception", e);
+                    LOGGER.error("Eccezione SQL intercettata", e);
                 }
             }
 
@@ -85,7 +85,7 @@ public class NavigatorManager {
                                     field = clazz.getDeclaredMethod(s);
                                     clazz = field.getReturnType();
                                 } catch (Exception e) {
-                                    LOGGER.error("Caught exception", e);
+                                    LOGGER.error("Eccezione intercettata", e);
                                     break;
                                 }
                             }
@@ -93,7 +93,7 @@ public class NavigatorManager {
                             try {
                                 field = clazz.getDeclaredMethod(set.getString("field"));
                             } catch (Exception e) {
-                                LOGGER.error("Caught exception", e);
+                                LOGGER.error("Eccezione intercettata", e);
                                 continue;
                             }
                         }
@@ -103,11 +103,11 @@ public class NavigatorManager {
                         }
                     }
                 } catch (SQLException e) {
-                    LOGGER.error("Caught SQL exception", e);
+                    LOGGER.error("Eccezione SQL intercettata", e);
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         List<Room> staffPromotedRooms = Emulator.getGameEnvironment().getRoomManager().getRoomsStaffPromoted();

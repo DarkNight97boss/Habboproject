@@ -75,7 +75,7 @@ public abstract class Game implements Runnable {
                 return true;
             }
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
 
         return false;

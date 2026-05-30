@@ -106,14 +106,14 @@ public class WiredBlob extends InteractionDefault {
         String[] params = this.getBaseItem().getCustomParams().split(",");
 
         if (params.length != 2) {
-            LOGGER.error("Wired blobs should have customparams with two parameters (points,resetsWithGame)");
+            LOGGER.error("I wired blob devono avere customparams con due parametri (points,resetsWithGame)");
             return;
         }
 
         try {
             this.POINTS_REWARD = Integer.parseInt(params[0]);
         } catch (NumberFormatException e) {
-            LOGGER.error("Wired blobs should have customparams with the first parameter being the amount of points (number)");
+            LOGGER.error("I wired blob devono avere customparams con il primo parametro come quantità di punti (numero)");
             return;
         }
 

@@ -74,26 +74,26 @@ public class WiredEffectBotTalkToHabbo extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if(settings.getIntParams().length < 1) throw new WiredSaveException("Missing mode");
+        if(settings.getIntParams().length < 1) throw new WiredSaveException("Modalità mancante");
         int mode = settings.getIntParams()[0];
 
         if(mode != 0 && mode != 1)
-            throw new WiredSaveException("Mode is invalid");
+            throw new WiredSaveException("Modalità non valida");
 
         String dataString = settings.getStringParam();
         String splitBy = "\t";
         if(!dataString.contains(splitBy))
-            throw new WiredSaveException("Malformed data string");
+            throw new WiredSaveException("Stringa dati malformata");
 
         String[] data = dataString.split(Pattern.quote(splitBy));
 
         if (data.length != 2)
-            throw new WiredSaveException("Malformed data string. Invalid data length");
+            throw new WiredSaveException("Stringa dati malformata. Lunghezza dati non valida");
 
         int delay = settings.getDelay();
 
         if(delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
-            throw new WiredSaveException("Delay too long");
+            throw new WiredSaveException("Ritardo troppo lungo");
 
         this.botName = data[0].substring(0, Math.min(data[0].length(), Emulator.getConfig().getInt("hotel.wired.message.max_length", 100)));
         this.message = data[1].substring(0, Math.min(data[1].length(), Emulator.getConfig().getInt("hotel.wired.message.max_length", 100)));

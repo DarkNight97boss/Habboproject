@@ -54,7 +54,7 @@ public class InteractionRentableSpace extends HabboItem {
                                 }
                             }
                         } catch (SQLException e) {
-                            LOGGER.error("Caught SQL exception", e);
+                            LOGGER.error("Eccezione SQL intercettata", e);
                         }
                     }
                 } else {
@@ -184,7 +184,7 @@ public class InteractionRentableSpace extends HabboItem {
                 statement.setInt(1, zero);
                 statement.setInt(2, zero);
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
 

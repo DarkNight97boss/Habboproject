@@ -122,7 +122,7 @@ public class RoomTrade {
             this.sendMessageToUsers(new TradeAcceptedComposer(user));
             try {
                 habbo.whisper(
-                        Emulator.getTexts().getValue("trade.safety.cooldown", "Wait a moment before accepting — the trade just changed."),
+                        Emulator.getTexts().getValue("trade.safety.cooldown", "Aspetta un momento prima di accettare — lo scambio è appena cambiato."),
                         RoomChatMessageBubbles.ALERT);
             } catch (Exception ignored) {
             }
@@ -282,7 +282,7 @@ public class RoomTrade {
                 statement.executeBatch();
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         THashSet<HabboItem> itemsUserOne = new THashSet<>(userOne.getItems());

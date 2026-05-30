@@ -53,7 +53,7 @@ public class AchievementListComposer extends MessageComposer {
 
             this.response.appendString("");
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
 
         return this.response;

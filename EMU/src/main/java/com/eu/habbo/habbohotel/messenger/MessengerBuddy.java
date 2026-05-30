@@ -49,7 +49,7 @@ public class MessengerBuddy implements Runnable, ISerialize {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -62,7 +62,7 @@ public class MessengerBuddy implements Runnable, ISerialize {
             this.userOne = 0;
             this.online = set.getInt("online");
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -157,7 +157,7 @@ public class MessengerBuddy implements Runnable, ISerialize {
             statement.setInt(3, this.id);
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 

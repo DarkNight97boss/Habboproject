@@ -26,7 +26,7 @@ public class MannequinSaveNameEvent extends MessageHandler {
             name = name.replace(":", "").replace("\r", "").replace("\n", "");
         }
         if (name == null || name.length() < 3 || name.length() > 15) {
-            name = Emulator.getTexts().getValue("hotel.mannequin.name.default", "My look");
+            name = Emulator.getTexts().getValue("hotel.mannequin.name.default", "Il mio look");
         }
 
         if (data.length == 3) {

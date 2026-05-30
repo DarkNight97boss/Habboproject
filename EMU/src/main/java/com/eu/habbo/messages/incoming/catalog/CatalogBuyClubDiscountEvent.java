@@ -66,7 +66,7 @@ public class CatalogBuyClubDiscountEvent extends MessageHandler {
 
                         if(this.client.getHabbo().getHabboStats().createSubscription(Subscription.HABBO_CLUB, (totalDays * 86400)) == null) {
                             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
-                            throw new Exception("Unable to create or extend subscription");
+                            throw new Exception("Impossibile creare o estendere la sottoscrizione");
                         }
 
                         this.client.sendResponse(new PurchaseOKComposer(null));

@@ -51,10 +51,10 @@ public class CameraClient {
         if (CameraClient.channelFuture.isSuccess()) {
             CameraClient.attemptReconnect = false;
             CameraClient.channel = channelFuture.channel();
-            LOGGER.info("Connected to the Camera Server. Attempting to login.");
+            LOGGER.info("Connesso al Camera Server. Tentativo di login.");
             this.sendMessage(new CameraLoginComposer());
         } else {
-            LOGGER.error("Failed to connect to the Camera Server. Server unreachable.");
+            LOGGER.error("Connessione al Camera Server fallita. Server irraggiungibile.");
             CameraClient.channel = null;
             CameraClient.channelFuture.channel().close();
             CameraClient.channelFuture = null;
@@ -75,7 +75,7 @@ public class CameraClient {
         channel = null;
         isLoggedIn = false;
 
-        LOGGER.info("Disconnected from the camera server.");
+        LOGGER.info("Disconnesso dal camera server.");
     }
 
     public void sendMessage(CameraOutgoingMessage outgoingMessage) {

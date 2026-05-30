@@ -54,7 +54,7 @@ public class RedeemClothingEvent extends MessageHandler {
                                 statement.setInt(2, clothing.id);
                                 statement.execute();
                             } catch (SQLException e) {
-                                LOGGER.error("Caught SQL exception", e);
+                                LOGGER.error("Eccezione SQL intercettata", e);
                             }
 
                             this.client.getHabbo().getInventory().getWardrobeComponent().getClothing().add(clothing.id);
@@ -66,7 +66,7 @@ public class RedeemClothingEvent extends MessageHandler {
                             this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FIGURESET_OWNED_ALREADY.key));
                         }
                     } else {
-                        LOGGER.error("[Catalog] No definition in catalog_clothing found for clothing name {}. Could not redeem clothing!", item.getBaseItem().getName());
+                        LOGGER.error("[Catalog] Nessuna definizione in catalog_clothing trovata per il nome vestito {}. Impossibile riscattare il vestito!", item.getBaseItem().getName());
                     }
                 }
             }

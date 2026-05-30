@@ -22,6 +22,7 @@ import com.eu.habbo.messages.incoming.floorplaneditor.FloorPlanEditorRequestBloc
 import com.eu.habbo.messages.incoming.floorplaneditor.FloorPlanEditorRequestDoorSettingsEvent;
 import com.eu.habbo.messages.incoming.floorplaneditor.FloorPlanEditorSaveEvent;
 import com.eu.habbo.messages.incoming.friends.*;
+import com.eu.habbo.messages.incoming.furnieditor.*;
 import com.eu.habbo.messages.incoming.gamecenter.*;
 import com.eu.habbo.messages.incoming.guardians.GuardianAcceptRequestEvent;
 import com.eu.habbo.messages.incoming.guardians.GuardianNoUpdatesWantedEvent;
@@ -162,6 +163,7 @@ public class PacketManager {
         this.registerCrafting();
         this.registerCamera();
         this.registerGameCenter();
+        this.registerFurniEditor();
     }
 
     public PacketNames getNames() {
@@ -186,7 +188,7 @@ public class PacketManager {
             return;
 
         if (this.incoming.containsKey(header)) {
-            throw new Exception("Header already registered. Failed to register " + handler.getName() + " with header " + header);
+            throw new Exception("Header già registrato. Registrazione fallita " + handler.getName() + " with header " + header);
         }
 
         this.incoming.putIfAbsent(header, handler);
@@ -224,11 +226,11 @@ public class PacketManager {
             {
                 Class<? extends MessageHandler> handlerClass = this.incoming.get(packet.getMessageId());
 
-                if (handlerClass == null) throw new Exception("Unknown message " + packet.getMessageId());
+                if (handlerClass == null) throw new Exception("Messaggio sconosciuto " + packet.getMessageId());
 
                 if (client.getHabbo() == null && !handlerClass.isAnnotationPresent(NoAuthMessage.class)) {
                     if (DEBUG_SHOW_PACKETS) {
-                        LOGGER.warn("Client packet {} requires an authenticated session.", packet.getMessageId());
+                        LOGGER.warn("Il pacchetto client {} richiede una sessione autenticata.", packet.getMessageId());
                     }
 
                     return;
@@ -249,7 +251,7 @@ public class PacketManager {
                     long now = System.currentTimeMillis();
                     if (last != null && now - last < effective) {
                         if (PacketManager.DEBUG_SHOW_PACKETS) {
-                            LOGGER.warn("Client packet {} was ratelimited.", packet.getMessageId());
+                            LOGGER.warn("Il pacchetto client {} è stato ratelimited.", packet.getMessageId());
                         }
                         // Bump del counter Prometheus: serve a vedere quanto
                         // spesso il floor sta scartando packet sotto carico.
@@ -263,7 +265,7 @@ public class PacketManager {
                 }
 
                 if (logList.contains(packet.getMessageId()) && client.getHabbo() != null) {
-                    LOGGER.info("User {} sent packet {} with body {}", client.getHabbo().getHabboInfo().getUsername(), packet.getMessageId(), packet.getMessageBody());
+                    LOGGER.info("L'utente {} ha inviato il pacchetto {} con body {}", client.getHabbo().getHabboInfo().getUsername(), packet.getMessageId(), packet.getMessageBody());
                 }
 
                 handler.client = client;
@@ -297,11 +299,11 @@ public class PacketManager {
             // Habbo chain points to nulls. Log at debug to keep prod output
             // clean — actual bugs surface at WARN via the parent catch.
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Dispatch NPE (likely disconnect race) on packet {}: {}",
+                LOGGER.debug("NPE di dispatch (probabile race di disconnessione) sul pacchetto {}: {}",
                         packet.getMessageId(), npe.toString());
             }
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
     }
 
@@ -589,22 +591,6 @@ public class PacketManager {
         this.registerHandler(Incoming.ModToolIssueChangeTopicEvent, ModToolIssueChangeTopicEvent.class);
         this.registerHandler(Incoming.ModToolIssueDefaultSanctionEvent, ModToolIssueDefaultSanctionEvent.class);
 
-        // Call For Help (player-side ticket open). Arcturus 3.5.5 non includeva questo handler:
-        // il client mandava il pacchetto, l'EMU lo ignorava, nessun ticket arrivava al mod tool.
-        // L'header puo' essere settato via `packet.header.cfh` in config.ini (override del default
-        // Incoming.CallForHelpEvent = -1, perche' varia per build del client Nitro).
-        int cfhHeader = -1;
-        try {
-            cfhHeader = Emulator.getConfig().getInt("packet.header.cfh", Incoming.CallForHelpEvent);
-        } catch (Throwable ignored) {
-        }
-        if (cfhHeader > 0) {
-            this.registerHandler(cfhHeader, com.eu.habbo.messages.incoming.modtool.CallForHelpEvent.class);
-            LOGGER.info("Registered CallForHelpEvent (player ticket -> mod tool) at packet header {}", cfhHeader);
-        } else {
-            LOGGER.warn("CallForHelp NON registrato: imposta `packet.header.cfh` in config.ini con l'header del tuo client Nitro (CallForHelpMessageComposer.header). Finche' non lo fai, i giocatori NON possono aprire ticket di supporto.");
-        }
-
         this.registerHandler(Incoming.RequestReportRoomEvent, RequestReportRoomEvent.class);
         this.registerHandler(Incoming.RequestReportUserBullyingEvent, RequestReportUserBullyingEvent.class);
         this.registerHandler(Incoming.ReportBullyEvent, ReportBullyEvent.class);
@@ -613,6 +599,32 @@ public class PacketManager {
         this.registerHandler(Incoming.ReportThreadEvent, ReportThreadEvent.class);
         this.registerHandler(Incoming.ReportCommentEvent, ReportCommentEvent.class);
         this.registerHandler(Incoming.ReportPhotoEvent, ReportPhotoEvent.class);
+
+        // Call For Help (player-side ticket open). Arcturus 3.5.5 non includeva questo handler:
+        // il client mandava il pacchetto, l'EMU lo ignorava, nessun ticket arrivava al mod tool.
+        // L'header puo' essere settato via `packet.header.cfh` in config.ini (override del default
+        // Incoming.CallForHelpEvent = -1, perche' varia per build del client Nitro).
+        //
+        // ATTENZIONE: l'header CFH del Nitro V3 (1691) COINCIDE con Incoming.ReportEvent.
+        // Su quelle build il vecchio ReportEvent era gia` morto (il client Nitro non manda piu`
+        // il legacy report; lo manda come CFH). Registriamo CFH per ULTIMO e in modalita`
+        // override (put diretto sulla mappa, no throw), cosi` CFH "vince" sul legacy ReportEvent.
+        int cfhHeader = -1;
+        try {
+            cfhHeader = Emulator.getConfig().getInt("packet.header.cfh", Incoming.CallForHelpEvent);
+        } catch (Throwable ignored) {
+        }
+        if (cfhHeader > 0) {
+            Class<? extends com.eu.habbo.messages.incoming.MessageHandler> previous = this.incoming.get(cfhHeader);
+            this.incoming.put(cfhHeader, com.eu.habbo.messages.incoming.modtool.CallForHelpEvent.class);
+            if (previous != null && previous != com.eu.habbo.messages.incoming.modtool.CallForHelpEvent.class) {
+                LOGGER.warn("Header CFH {} in conflitto con l'handler legacy {} -> CFH ora attivo (supersede del path report legacy).", cfhHeader, previous.getSimpleName());
+            } else {
+                LOGGER.info("CallForHelpEvent registrato (ticket giocatore -> mod tool) all'header pacchetto {}", cfhHeader);
+            }
+        } else {
+            LOGGER.warn("CallForHelp NON registrato: imposta `packet.header.cfh` in config.ini con l'header del tuo client Nitro (CallForHelpMessageComposer.header). Finche' non lo fai, i giocatori NON possono aprire ticket di supporto.");
+        }
     }
 
     void registerTrading() throws Exception {
@@ -754,5 +766,14 @@ public class PacketManager {
         this.registerHandler(Incoming.GameCenterLeaveGameEvent, GameCenterLeaveGameEvent.class);
         this.registerHandler(Incoming.GameCenterEvent, GameCenterEvent.class);
         this.registerHandler(Incoming.GameCenterRequestGameStatusEvent, GameCenterRequestGameStatusEvent.class);
+    }
+
+    private void registerFurniEditor() throws Exception {
+        this.registerHandler(Incoming.FurniEditorSearchEvent, FurniEditorSearchEvent.class);
+        this.registerHandler(Incoming.FurniEditorDetailEvent, FurniEditorDetailEvent.class);
+        this.registerHandler(Incoming.FurniEditorBySpriteEvent, FurniEditorBySpriteEvent.class);
+        this.registerHandler(Incoming.FurniEditorInteractionsEvent, FurniEditorInteractionsEvent.class);
+        this.registerHandler(Incoming.FurniEditorUpdateEvent, FurniEditorUpdateEvent.class);
+        this.registerHandler(Incoming.FurniEditorDeleteEvent, FurniEditorDeleteEvent.class);
     }
 }

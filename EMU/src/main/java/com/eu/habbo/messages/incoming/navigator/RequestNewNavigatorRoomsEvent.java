@@ -99,7 +99,7 @@ public class RequestNewNavigatorRoomsEvent extends MessageHandler {
             resultLists = toQueryResults(resultLists);
             this.client.sendResponse(new NewNavigatorSearchResultsComposer(view, query, resultLists));
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
 
         /*
@@ -114,7 +114,7 @@ public class RequestNewNavigatorRoomsEvent extends MessageHandler {
         }
         catch (Exception e)
         {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
         */
     }

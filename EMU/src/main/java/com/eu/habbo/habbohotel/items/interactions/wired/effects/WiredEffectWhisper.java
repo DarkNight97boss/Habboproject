@@ -80,7 +80,7 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
         int delay = settings.getDelay();
 
         if(delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
-            throw new WiredSaveException("Delay too long");
+            throw new WiredSaveException("Ritardo troppo lungo");
 
         this.message = message;
         this.setDelay(delay);

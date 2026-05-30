@@ -15,7 +15,7 @@ import java.util.Set;
 public class TileValidator {
 
   private TileValidator() {
-    throw new IllegalStateException("Utility class");
+    throw new IllegalStateException("Classe di utilità");
   }
 
   public static boolean isWalkableOrGoal(PathfinderContext context, RoomTile temp) {

@@ -90,7 +90,7 @@ public class ModifyUserSubscription extends RCONMessage<ModifyUserSubscription.J
         catch (Exception e) {
             this.status = RCONMessage.SYSTEM_ERROR;
             this.message = "Exception occurred";
-            LOGGER.error("Exception occurred", e);
+            LOGGER.error("Si è verificata un'eccezione", e);
         }
     }
 

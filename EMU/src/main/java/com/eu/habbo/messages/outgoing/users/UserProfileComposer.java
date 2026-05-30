@@ -64,7 +64,7 @@ public class UserProfileComposer extends MessageComposer {
                     }
                 }
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
         this.response.appendInt(achievementScore);

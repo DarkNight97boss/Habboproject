@@ -21,7 +21,7 @@ public class TextsManager {
         try {
             this.reload();
 
-            LOGGER.info("Texts Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
+            LOGGER.info("Texts Manager -> Caricato! ({} MS)", System.currentTimeMillis() - millis);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -37,7 +37,7 @@ public class TextsManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -47,7 +47,7 @@ public class TextsManager {
 
     public String getValue(String key, String defaultValue) {
         if (!this.texts.containsKey(key)) {
-            LOGGER.error("Text key not found: {}", key);
+            LOGGER.error("Chiave di testo non trovata: {}", key);
         }
         return this.texts.getProperty(key, defaultValue);
     }
@@ -60,7 +60,7 @@ public class TextsManager {
         try {
             return (this.getValue(key, "0").equals("1")) || (this.getValue(key, "false").equals("true"));
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
         return defaultValue;
     }
@@ -73,7 +73,7 @@ public class TextsManager {
         try {
             return Integer.parseInt(this.getValue(key, defaultValue.toString()));
         } catch (NumberFormatException e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
         return defaultValue;
     }
@@ -91,7 +91,7 @@ public class TextsManager {
             statement.setString(2, value);
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         this.update(key, value);

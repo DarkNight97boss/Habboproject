@@ -42,7 +42,7 @@ public class SecurityMonitor {
 
     public SecurityMonitor() {
         if (!isEnabled()) {
-            LOGGER.info("SecurityMonitor -> disabled");
+            LOGGER.info("SecurityMonitor -> disabilitato");
             return;
         }
         int delay = Math.max(5, Emulator.getConfig().getInt("sec.monitor.initial.delay.seconds", 30));
@@ -53,7 +53,7 @@ public class SecurityMonitor {
             return t;
         });
         this.scheduler.scheduleAtFixedRate(this::tick, delay, interval, TimeUnit.SECONDS);
-        LOGGER.info("SecurityMonitor -> Loaded! (tick every {}s)", interval);
+        LOGGER.info("SecurityMonitor -> Caricato! (tick ogni {}s)", interval);
     }
 
     public static boolean isEnabled() {
@@ -84,13 +84,13 @@ public class SecurityMonitor {
             // Anomaly heuristic: more than 100 audit rows / minute is suspicious.
             int threshold = Emulator.getConfig().getInt("sec.monitor.audit_spike_threshold", 100);
             if (deltaAudit > threshold) {
-                LOGGER.warn("[SECMON] AUDIT SPIKE: {} rows in last window (threshold {})",
+                LOGGER.warn("[SECMON] PICCO AUDIT: {} righe nell'ultima finestra (soglia {})",
                         deltaAudit, threshold);
                 AuditLog.record(0, "SecurityMonitor", "AUDIT_SPIKE", "",
                         "rows=" + deltaAudit + " threshold=" + threshold);
             }
         } catch (Exception e) {
-            LOGGER.error("SecurityMonitor tick failed", e);
+            LOGGER.error("Tick SecurityMonitor fallito", e);
         }
     }
 

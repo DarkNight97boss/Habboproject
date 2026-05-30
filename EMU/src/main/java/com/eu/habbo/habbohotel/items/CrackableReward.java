@@ -48,7 +48,7 @@ public class CrackableReward {
                     itemId = Integer.parseInt(prize.split(":")[0]);
                     chance = Integer.parseInt(prize.split(":")[1]);
                 } else if (prize.contains(":")) {
-                    LOGGER.error("Invalid configuration of crackable prizes (item id: {}). '{}' format should be itemId:chance.", this.itemId, prize);
+                    LOGGER.error("Configurazione non valida dei premi crackable (item id: {}). Il formato '{}' dovrebbe essere itemId:chance.", this.itemId, prize);
                 } else {
                     itemId = Integer.parseInt(prize.replace(":", ""));
                 }
@@ -56,7 +56,7 @@ public class CrackableReward {
                 this.prizes.put(itemId, new AbstractMap.SimpleEntry<>(this.totalChance, this.totalChance + chance));
                 this.totalChance += chance;
             } catch (Exception e) {
-                LOGGER.error("Caught exception", e);
+                LOGGER.error("Eccezione intercettata", e);
             }
         }
     }

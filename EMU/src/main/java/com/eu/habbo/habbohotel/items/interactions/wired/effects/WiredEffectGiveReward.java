@@ -178,7 +178,7 @@ public class WiredEffectGiveReward extends InteractionWiredEffect {
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         if (gameClient.getHabbo().hasPermission(Permission.ACC_SUPERWIRED)) {
-            if(settings.getIntParams().length < 4) throw new WiredSaveException("Invalid data");
+            if(settings.getIntParams().length < 4) throw new WiredSaveException("Dati non validi");
             this.rewardTime = settings.getIntParams()[0];
             this.uniqueRewards = settings.getIntParams()[1] == 1;
             this.limit = settings.getIntParams()[2];
@@ -212,7 +212,7 @@ public class WiredEffectGiveReward extends InteractionWiredEffect {
             return true;
         }
 
-        gameClient.getHabbo().whisper("U cannot do this.", RoomChatMessageBubbles.ALERT);
+        gameClient.getHabbo().whisper("Non puoi farlo.", RoomChatMessageBubbles.ALERT);
         return false;
     }
 

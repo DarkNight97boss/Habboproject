@@ -8,12 +8,12 @@ public class ConsoleReconnectCameraCommand extends ConsoleCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsoleReconnectCameraCommand.class);
 
     public ConsoleReconnectCameraCommand() {
-        super("camera", "Attempt to reconnect to the camera server.");
+        super("camera", "Tenta di riconnettersi al server camera.");
     }
 
     @Override
     public void handle(String[] args) throws Exception {
-        LOGGER.info("Connecting to the camera...");
+        LOGGER.info("Connessione alla camera in corso...");
         CameraClient.attemptReconnect = true;
     }
 }

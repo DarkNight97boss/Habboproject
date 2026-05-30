@@ -32,7 +32,7 @@ public class InteractionGift extends HabboItem {
         try {
             this.loadData();
         } catch (Exception e) {
-            LOGGER.warn("Incorrect extradata for gift with ID {}", this.getId());
+            LOGGER.warn("Extradata non corretto per il regalo con ID {}", this.getId());
         }
     }
 
@@ -42,7 +42,7 @@ public class InteractionGift extends HabboItem {
         try {
             this.loadData();
         } catch (Exception e) {
-            LOGGER.warn("Incorrect extradata for gift with ID {}", this.getId());
+            LOGGER.warn("Extradata non corretto per il regalo con ID {}", this.getId());
         }
     }
 
@@ -116,7 +116,7 @@ public class InteractionGift extends HabboItem {
             this.colorId = 0;
             this.ribbonId = 0;
             this.showSender = false;
-            this.message = "Please delete this present. Thanks!";
+            this.message = "Per favore elimina questo regalo. Grazie!";
         }
     }
 

@@ -50,7 +50,7 @@ public class RoomUnitTeleport implements Runnable {
             try {
                 topItem.onWalkOff(this.roomUnit, this.room, new Object[]{this});
             } catch (Exception e) {
-                LOGGER.error("Caught exception", e);
+                LOGGER.error("Eccezione intercettata", e);
             }
         }
         this.roomUnit.setPath(new LinkedList<>());

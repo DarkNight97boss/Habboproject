@@ -83,7 +83,7 @@ public class PetManager {
 
         reloadPetData();
 
-        LOGGER.info("Pet Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
+        LOGGER.info("Pet Manager -> Caricato! ({} MS)", System.currentTimeMillis() - millis);
     }
 
     public static int getLevel(int experience) {
@@ -154,8 +154,8 @@ public class PetManager {
             this.loadPetCommands(connection);
             this.loadPetBreeding(connection);
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
-            LOGGER.error("Pet Manager -> Failed to load!");
+            LOGGER.error("Eccezione SQL intercettata", e);
+            LOGGER.error("Pet Manager -> Caricamento fallito!");
         }
     }
 
@@ -170,7 +170,7 @@ public class PetManager {
                 this.petRaces.get(set.getInt("race")).add(new PetRace(set));
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -180,7 +180,7 @@ public class PetManager {
                 this.petData.put(set.getInt("pet_type"), new PetData(set));
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         this.loadPetItems(connection);
@@ -220,7 +220,7 @@ public class PetManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -234,10 +234,10 @@ public class PetManager {
                         if (petVocalsType != null) {
                             this.petData.get(set.getInt("pet_id")).petVocals.get(petVocalsType).add(new PetVocal(set.getString("message")));
                         } else {
-                            LOGGER.error("Unknown pet vocal type {}", set.getString("type"));
+                            LOGGER.error("Tipo vocale cucciolo sconosciuto {}", set.getString("type"));
                         }
                     } else {
-                        LOGGER.error("Missing pet_actions table entry for pet id {}", set.getInt("pet_id"));
+                        LOGGER.error("Voce della tabella pet_actions mancante per pet id {}", set.getInt("pet_id"));
                     }
                 } else {
                     if (!PetData.generalPetVocals.containsKey(PetVocalsType.valueOf(set.getString("type").toUpperCase())))
@@ -247,7 +247,7 @@ public class PetManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -258,7 +258,7 @@ public class PetManager {
                 commandsList.put(set.getInt("command_id"), new PetCommand(set, this.petActions.get(set.getInt("command_id"))));
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         try (Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT * FROM pet_commands ORDER BY pet_id ASC")) {
@@ -270,7 +270,7 @@ public class PetManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -280,7 +280,7 @@ public class PetManager {
                 this.breedingPetType.put(set.getInt("pet_id"), set.getInt("offspring_id"));
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         try (Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT * FROM pet_breeding_races")) {
@@ -297,13 +297,13 @@ public class PetManager {
                 this.breedingReward.get(reward.petType).get(reward.rarityLevel).add(reward);
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
     public THashSet<PetRace> getBreeds(String petName) {
         if (!petName.matches("a0 pet\\d{1,3}")) {
-            LOGGER.error("Pet data '{}' not found. Expected format: a0 pet<0-999>", petName);
+            LOGGER.error("Dati cucciolo '{}' non trovati. Formato atteso: a0 pet<0-999>", petName);
             return null;
         }
 
@@ -343,7 +343,7 @@ public class PetManager {
                 return this.petData.get(type);
             } else {
                 try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-                    LOGGER.error("Missing petdata for type {}. Adding this to the database...", type);
+                    LOGGER.error("petdata mancanti per il tipo {}. Inserimento nel database in corso...", type);
                     try (PreparedStatement statement = connection.prepareStatement("INSERT INTO pet_actions (pet_type) VALUES (?)")) {
                         statement.setInt(1, type);
                         statement.execute();
@@ -355,13 +355,13 @@ public class PetManager {
                             if (set.next()) {
                                 PetData petData = new PetData(set);
                                 this.petData.put(type, petData);
-                                LOGGER.error("Missing petdata for type {} added to the database!", type);
+                                LOGGER.error("petdata mancanti per il tipo {} inseriti nel database!", type);
                                 return petData;
                             }
                         }
                     }
                 } catch (SQLException e) {
-                    LOGGER.error("Caught SQL exception", e);
+                    LOGGER.error("Eccezione SQL intercettata", e);
                 }
             }
         }
@@ -508,7 +508,7 @@ public class PetManager {
             statement.setInt(1, pet.getId());
             return statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         return false;

@@ -108,7 +108,7 @@ public class UpdateUser extends RCONMessage<UpdateUser.JSON> {
                         }
                     }
                 } catch (SQLException e) {
-                    LOGGER.error("Caught SQL exception", e);
+                    LOGGER.error("Eccezione SQL intercettata", e);
                 }
             }
         }

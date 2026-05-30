@@ -75,7 +75,7 @@ public class WiredEffectBotGiveHandItem extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if(settings.getIntParams().length < 1) throw new WiredSaveException("Missing item id");
+        if(settings.getIntParams().length < 1) throw new WiredSaveException("Item id mancante");
 
         int itemId = settings.getIntParams()[0];
 
@@ -87,7 +87,7 @@ public class WiredEffectBotGiveHandItem extends InteractionWiredEffect {
         int delay = settings.getDelay();
 
         if(delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
-            throw new WiredSaveException("Delay too long");
+            throw new WiredSaveException("Ritardo troppo lungo");
 
         this.itemId = itemId;
         this.botName = botName.substring(0, Math.min(botName.length(), Emulator.getConfig().getInt("hotel.wired.message.max_length", 100)));

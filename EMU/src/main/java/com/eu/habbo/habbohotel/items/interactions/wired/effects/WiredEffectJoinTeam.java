@@ -136,17 +136,17 @@ public class WiredEffectJoinTeam extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if(settings.getIntParams().length < 1) throw new WiredSaveException("invalid data");
+        if(settings.getIntParams().length < 1) throw new WiredSaveException("dati non validi");
 
         int team = settings.getIntParams()[0];
 
         if(team < 1 || team > 4)
-            throw new WiredSaveException("Team is invalid");
+            throw new WiredSaveException("Team non valido");
 
         int delay = settings.getDelay();
 
         if(delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
-            throw new WiredSaveException("Delay too long");
+            throw new WiredSaveException("Ritardo troppo lungo");
 
         this.teamColor = GameTeamColors.values()[team];
         this.setDelay(delay);

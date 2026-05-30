@@ -179,7 +179,7 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
                 layout.parse();
 
                 if (layout.getDoorTile() == null) {
-                    this.client.getHabbo().alert("Error");
+                    this.client.getHabbo().alert("Errore");
                     ((CustomRoomLayout) layout).needsUpdate(false);
                     Emulator.getGameEnvironment().getRoomManager().unloadRoom(room);
                     return;

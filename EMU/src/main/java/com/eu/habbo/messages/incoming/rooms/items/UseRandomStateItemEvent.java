@@ -26,7 +26,7 @@ public class UseRandomStateItemEvent extends MessageHandler {
             InteractionRandomState randomStateItem = (InteractionRandomState)item;
             randomStateItem.onRandomStateClick(this.client, room);
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            LOGGER.error("Eccezione intercettata", e);
         }
     }
 }

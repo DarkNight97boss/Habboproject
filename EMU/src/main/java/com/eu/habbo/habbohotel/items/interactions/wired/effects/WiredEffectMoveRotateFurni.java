@@ -193,7 +193,7 @@ public class WiredEffectMoveRotateFurni extends InteractionWiredEffect implement
         if (room == null)
             return false;
 
-        if(settings.getIntParams().length < 2) throw new WiredSaveException("invalid data");
+        if(settings.getIntParams().length < 2) throw new WiredSaveException("dati non validi");
 
         this.direction = settings.getIntParams()[0];
         this.rotation = settings.getIntParams()[1];

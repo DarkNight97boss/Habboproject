@@ -75,7 +75,7 @@ public final class HealthEndpoint {
             return;
         }
         if (!enabled) {
-            LOGGER.info("HealthEndpoint -> disabled");
+            LOGGER.info("HealthEndpoint -> disabilitato");
             return;
         }
         try {
@@ -92,7 +92,7 @@ public final class HealthEndpoint {
             server.start();
             LOGGER.info("HealthEndpoint -> http://{}:{}/{{healthz,readyz,metrics}}", host, port);
         } catch (Exception e) {
-            LOGGER.error("HealthEndpoint failed to start", e);
+            LOGGER.error("Avvio HealthEndpoint fallito", e);
         }
     }
 

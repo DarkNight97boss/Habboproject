@@ -26,7 +26,7 @@ public class ModToolSanctions {
         this.sanctionLevelsHashmap = new THashMap<>();
         this.loadModSanctions();
 
-        LOGGER.info("Sanctions Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
+        LOGGER.info("Sanctions Manager -> Caricato! ({} MS)", System.currentTimeMillis() - millis);
     }
 
     public synchronized void loadModSanctions() {
@@ -44,7 +44,7 @@ public class ModToolSanctions {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -71,7 +71,7 @@ public class ModToolSanctions {
                     }
                 }
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
 
             return this.sanctionHashmap;
@@ -90,7 +90,7 @@ public class ModToolSanctions {
 
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -101,7 +101,7 @@ public class ModToolSanctions {
 
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -112,7 +112,7 @@ public class ModToolSanctions {
 
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 
@@ -123,7 +123,7 @@ public class ModToolSanctions {
 
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
     }
 

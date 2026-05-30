@@ -128,10 +128,10 @@ public class CleanerThread implements Runnable {
                 statement.execute("DELETE FROM users_effects WHERE total <= 0");
             }
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
-        LOGGER.info("Database -> Cleaned!");
+        LOGGER.info("Database -> Pulito!");
     }
 
     public void refillDailyRespects() {
@@ -140,7 +140,7 @@ public class CleanerThread implements Runnable {
             statement.setInt(2, Emulator.getConfig().getInt("hotel.daily.respect.pets"));
             statement.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
+            LOGGER.error("Eccezione SQL intercettata", e);
         }
 
         if (Emulator.isReady) {
@@ -162,7 +162,7 @@ public class CleanerThread implements Runnable {
                     habbo.clearCaches();
                 }
             } catch (Exception e) {
-                LOGGER.error("Caught exception", e);
+                LOGGER.error("Eccezione intercettata", e);
             }
         }
     }

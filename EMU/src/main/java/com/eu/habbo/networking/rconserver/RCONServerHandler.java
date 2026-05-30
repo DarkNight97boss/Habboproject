@@ -36,7 +36,7 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
 
         ctx.channel().close();
 
-        LOGGER.warn("RCON Remote connection closed: {}. IP not allowed!", adress);
+        LOGGER.warn("Connessione remota RCON chiusa: {}. IP non consentito!", adress);
     }
 
     @Override
@@ -81,16 +81,16 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
                 long ts = (object.has("ts") && !object.get("ts").isJsonNull()) ? object.get("ts").getAsLong() : 0L;
                 String nonce = (object.has("nonce") && !object.get("nonce").isJsonNull()) ? object.get("nonce").getAsString() : "";
                 if (ts == 0L || Math.abs(nowMs - ts * 1000L) > windowMs) {
-                    LOGGER.warn("RCON anti-replay: timestamp out of window from {} (ts={}, now={}s, window={}s)",
+                    LOGGER.warn("RCON anti-replay: timestamp fuori finestra da {} (ts={}, now={}s, window={}s)",
                             ctx.channel().remoteAddress(), ts, nowMs / 1000L, windowSec);
                     authorized = false;
                 } else if (nonce.isEmpty() || nonce.length() > 64) {
-                    LOGGER.warn("RCON anti-replay: missing/invalid nonce from {}", ctx.channel().remoteAddress());
+                    LOGGER.warn("RCON anti-replay: nonce mancante/non valido da {}", ctx.channel().remoteAddress());
                     authorized = false;
                 } else {
                     Long prev = seenNonces.get(nonce);
                     if (prev != null && (nowMs - prev) < windowMs) {
-                        LOGGER.warn("RCON anti-replay: nonce reused from {} (nonce={})", ctx.channel().remoteAddress(), nonce);
+                        LOGGER.warn("RCON anti-replay: nonce riutilizzato da {} (nonce={})", ctx.channel().remoteAddress(), nonce);
                         authorized = false;
                     } else {
                         seenNonces.put(nonce, nowMs);
@@ -104,7 +104,7 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
             }
 
             if (!authorized) {
-                LOGGER.warn("RCON request rejected (invalid token) from {}", ctx.channel().remoteAddress());
+                LOGGER.warn("Richiesta RCON rifiutata (token non valido) da {}", ctx.channel().remoteAddress());
                 response = "ERROR";
             } else {
                 key = object.get("key").getAsString();
@@ -113,9 +113,9 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
                 com.eu.habbo.core.AuditLog.record(0, "RCON", key, "", dataStr); // tamper-evident audit trail
             }
         } catch (ArrayIndexOutOfBoundsException e) {
-            LOGGER.error("Unknown RCON Message: {}", key);
+            LOGGER.error("Messaggio RCON sconosciuto: {}", key);
         } catch (Exception e) {
-            LOGGER.error("Invalid RCON Message: {}", message);
+            LOGGER.error("Messaggio RCON non valido: {}", message);
             e.printStackTrace();
         }
 

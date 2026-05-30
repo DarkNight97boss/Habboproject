@@ -28,7 +28,7 @@ public class CancelPollEvent extends MessageHandler {
                 statement.setString(4, "");
                 statement.execute();
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                LOGGER.error("Eccezione SQL intercettata", e);
             }
         }
     }

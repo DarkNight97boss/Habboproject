@@ -13,7 +13,7 @@ public class CameraClientAutoReconnect implements Runnable {
     public void run() {
         if (CameraClient.attemptReconnect && !Emulator.isShuttingDown) {
             if (!(CameraClient.channelFuture != null && CameraClient.channelFuture.channel().isRegistered())) {
-                LOGGER.info("Attempting to connect to the Camera server.");
+                LOGGER.info("Tentativo di connessione al Camera server.");
                 if (Emulator.getCameraClient() != null) {
                     Emulator.getCameraClient().disconnect();
                 } else {
@@ -23,11 +23,11 @@ public class CameraClientAutoReconnect implements Runnable {
                 try {
                     Emulator.getCameraClient().connect();
                 } catch (Exception e) {
-                    LOGGER.error("Failed to start the camera client.", e);
+                    LOGGER.error("Avvio del client camera fallito.", e);
                 }
             } else {
                 CameraClient.attemptReconnect = false;
-                LOGGER.info("Already connected to the camera. Reconnecting not needed!");
+                LOGGER.info("Già connesso alla camera. Riconnessione non necessaria!");
             }
         }
 

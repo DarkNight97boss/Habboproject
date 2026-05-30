@@ -23,6 +23,21 @@ Thumbs.db
 *.swp
 *~
 
+# Eclipse IDE (presenti accidentalmente sotto EMU/src/)
+.classpath
+.project
+.settings/
+.metadata/
+
+# Env files in sotto-progetti (CMS-V3/apps/*/.env, ...)
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Vite/Yarn caches in sotto-progetti
+**/.vite/
+**/.yarn/cache
+
 # Docker / compose env (credenziali!)
 .env
 

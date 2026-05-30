@@ -1,0 +1,14 @@
+{
+    "name": "@cms-v3/design-tokens",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "build": "echo 'no build needed (consumed as TS source)'",
+        "typecheck": "tsc --noEmit",
+        "lint": "echo 'skip'",
+        "test": "echo 'skip'"
+    }
+}

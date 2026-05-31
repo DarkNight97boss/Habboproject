@@ -186,7 +186,11 @@ function RegistrationForm(): ReactNode
             }
             else
             {
-                window.location.href = '/me';
+                // Registrazione + auto-login OK → vai alla home autenticata.
+                // Hard navigation (non React Router push) per garantire che
+                // l'intero providers tree rilegga il cookie cms_v3_access
+                // appena settato e useAuth() ritorni il nuovo utente.
+                window.location.href = '/';
             }
         }
         catch

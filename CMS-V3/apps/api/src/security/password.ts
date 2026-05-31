@@ -1,4 +1,5 @@
 import { Algorithm, hash, verify } from '@node-rs/argon2';
+import bcrypt from 'bcryptjs';
 import { env } from '../env.js';
 
 /**
@@ -27,11 +28,36 @@ export async function hashPassword(plain: string): Promise<string>
     return hash(plain, ARGON_OPTIONS);
 }
 
+/**
+ * Verifica password contro hash di formato:
+ *  - Argon2id (`$argon2id$...`) — preferito, nuovi utenti CMS-V3
+ *  - bcrypt (`$2a$`, `$2b$`, `$2y$`) — formato Arcturus EMU legacy
+ *  - SHA-512 raw (lunghezza 128 hex) — fallback per setup molto vecchi
+ *
+ * Il chiamante deve poi controllare isArgon2Hash() e ri-hashare con
+ * hashPassword() per la migrazione trasparente al login successivo.
+ */
 export async function verifyPassword(hashed: string, plain: string): Promise<boolean>
 {
     try
     {
-        return await verify(hashed, plain);
+        if(hashed.startsWith('$argon2'))
+        {
+            return await verify(hashed, plain);
+        }
+        if(hashed.startsWith('$2a$') || hashed.startsWith('$2b$') || hashed.startsWith('$2y$'))
+        {
+            return await bcrypt.compare(plain, hashed);
+        }
+        // Fallback SHA-512 raw esadecimale (alcuni setup PHP molto vecchi).
+        if(/^[a-f0-9]{128}$/i.test(hashed))
+        {
+            const enc = new TextEncoder();
+            const buf = await crypto.subtle.digest('SHA-512', enc.encode(plain));
+            const hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+            return hex.toLowerCase() === hashed.toLowerCase();
+        }
+        return false;
     }
     catch
     {

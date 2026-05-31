@@ -101,26 +101,54 @@ public class HabboManager {
         return null;
     }
 
+    /** @deprecated usare {@link #loadHabbo(String, String)} per abilitare il binding IP. */
+    @Deprecated
     public Habbo loadHabbo(String sso) {
+        return loadHabbo(sso, null);
+    }
+
+    /**
+     * Carica un Habbo a partire dal ticket SSO emesso dal CMS-V3.
+     *
+     * Controlli di sicurezza applicati (in ordine):
+     *   1. TTL: ticket emesso da più di `sso.ticket.ttl.seconds` (default 60s) → rifiuto.
+     *   2. IP binding: se `sso.ticket.bind_ip.enabled=true` (default true) e la
+     *      colonna `auth_ticket_bound_ip` è popolata, deve coincidere con
+     *      `peerIp` (IP del WebSocket peer). Mismatch → rifiuto.
+     *   3. Single-use atomico: UPDATE con WHERE auth_ticket=? LIMIT 1.
+     *      Solo un worker concorrente vince (rowsAffected==1).
+     *   4. SELECT del profilo per id (ticket già consumato).
+     *
+     * @param sso     valore del ticket inviato dal client al SecureLoginEvent
+     * @param peerIp  IP del peer WebSocket (può essere null per backward-compat con
+     *                chiamate vecchie; il binding IP è effettivo solo se non-null)
+     */
+    public Habbo loadHabbo(String sso, String peerIp) {
         Habbo habbo;
         int userId = 0;
 
-        // SSO TTL: if the CMS persisted `auth_ticket_issued_at` (column added by
-        // sqlupdates/sso_ticket_ttl.sql), reject tickets older than `sso.ticket.ttl.seconds`
-        // (default 60s). A read-only DB leak / stolen CMS-side ticket therefore expires
-        // before an attacker can race the legitimate login. Column = 0 means the CMS has
-        // not been updated yet — fall back to legacy behaviour (no TTL) to keep this
-        // change deployable without forcing a coordinated CMS release.
+        // SSO TTL + IP binding: leggiamo issued_at e bound_ip in un'unica query.
+        // Se il CMS non ha ancora popolato bound_ip (deploy intermedio), il check
+        // IP è skippato (bound_ip == "") per evitare lock-out durante rollout.
+        boolean ipBindEnabled = Emulator.getConfig().getBoolean("sso.ticket.bind_ip.enabled", true);
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT id, auth_ticket_issued_at FROM users WHERE auth_ticket = ? LIMIT 1")) {
+             PreparedStatement statement = connection.prepareStatement(
+                     "SELECT id, auth_ticket_issued_at, auth_ticket_bound_ip FROM users WHERE auth_ticket = ? LIMIT 1")) {
             statement.setString(1, sso);
             try (ResultSet s = statement.executeQuery()) {
                 if (s.next()) {
                     int issuedAt;
+                    String boundIp;
                     try {
                         issuedAt = s.getInt("auth_ticket_issued_at");
                     } catch (SQLException missingColumn) {
                         issuedAt = 0;
+                    }
+                    try {
+                        boundIp = s.getString("auth_ticket_bound_ip");
+                        if (boundIp == null) boundIp = "";
+                    } catch (SQLException missingColumn) {
+                        boundIp = "";
                     }
                     int ttl = Emulator.getConfig().getInt("sso.ticket.ttl.seconds", 60);
                     if (issuedAt > 0 && ttl > 0 && Emulator.getIntUnixTimestamp() - issuedAt > ttl) {
@@ -128,14 +156,21 @@ public class HabboManager {
                                 s.getInt("id"), Emulator.getIntUnixTimestamp() - issuedAt, ttl);
                         return null;
                     }
+                    // IP binding check: mismatch tra peer-IP del WebSocket e
+                    // IP scritto dal CMS al momento del /play → rifiuto.
+                    if (ipBindEnabled && !boundIp.isEmpty() && peerIp != null && !peerIp.equals(boundIp)) {
+                        LOGGER.warn("Ticket SSO IP-mismatch per l'utente {} (bound={}, peer={}) — rifiutato",
+                                s.getInt("id"), boundIp, peerIp);
+                        return null;
+                    }
                     userId = s.getInt("id");
                 }
             }
             statement.close();
         } catch (SQLException e) {
-            // Fall back to the legacy query if the new column does not yet exist
-            // (DBA hasn't run the migration). Logging at DEBUG only — the user-visible
-            // behaviour is unchanged.
+            // Fall back to the legacy query if the new columns do not yet exist
+            // (DBA hasn't run sqlupdates/sso_ticket_binding.sql). Logging at DEBUG only
+            // — la migration è idempotente e raccomandata, ma il flusso resta funzionante.
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                  PreparedStatement statement = connection.prepareStatement("SELECT id FROM users WHERE auth_ticket = ? LIMIT 1")) {
                 statement.setString(1, sso);

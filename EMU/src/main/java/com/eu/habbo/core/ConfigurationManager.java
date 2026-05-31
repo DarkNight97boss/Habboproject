@@ -122,6 +122,7 @@ public class ConfigurationManager {
             "websockets.whitelist",
             "io.proxy.protocol.enabled", "io.proxy.protocol.trusted",
             "sso.ticket.ttl.seconds",
+            "sso.ticket.bind_ip.enabled",
             "subscriptions.hc.payday.query",
             "audit.signing.key",
             "plugins.enforce_allowlist", "plugins.allowed"

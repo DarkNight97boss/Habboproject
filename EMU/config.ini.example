@@ -118,6 +118,20 @@ cfh.player.cooldown.seconds=60
 rcon.anti_replay.enabled=false
 rcon.anti_replay.window.seconds=30
 
+#SSO ticket hardening (Wave 18).
+#TTL del ticket emesso dal CMS-V3 alla pressione di GIOCA. L'EMU rifiuta
+#i ticket piu' vecchi di N secondi. Il bootstrap Nitro consuma il ticket
+#in <1s al primo handshake → 60s e' margine generoso. Abbassa a 30s in
+#produzione ad alta sensibilita'. 0 = nessun TTL (NON raccomandato).
+sso.ticket.ttl.seconds=60
+#Bind del ticket all'IP del client che ha richiesto /play. L'EMU confronta
+#l'IP del peer WebSocket con users.auth_ticket_bound_ip (popolato dal CMS).
+#Mismatch → ticket rifiutato (anche se TTL e single-use ok).
+#Difesa contro: leak DB read-only, XSS+exfil, MITM su rete diversa.
+#Disabilita SOLO se sei dietro un proxy che cambia l'IP tra CMS e EMU
+#(es. CGNAT mobile con rotazione IP rapida). Default true.
+sso.ticket.bind_ip.enabled=true
+
 #Encryption (RSA used in the client<->server Diffie-Hellman handshake).
 #SECURITY: with enc.enabled=false the handshake is unencrypted. The keypair below is the DEFAULT
 #Arcturus keypair shipped with every install and is therefore PUBLIC - it provides no real secrecy.

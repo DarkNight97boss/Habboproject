@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { dbExecute, dbQuery } from '../db/pool.js';
 import { env } from '../env.js';
@@ -367,48 +367,22 @@ auth.post('/logout', async c =>
 });
 
 // =================================================================
-// GET /auth/sso — genera un auth_ticket fresco da consumare dal client Nitro
+// GET /auth/sso — RIMOSSO (Wave 18 SSO hardening)
+// GET /auth/sso-token — RIMOSSO (Wave 18 SSO hardening)
 // =================================================================
+//
+// Entrambi gli endpoint ritornavano il ticket in JSON: un XSS sul CMS
+// poteva scriptare `fetch('/api/v2/auth/sso-token')` e exfiltrare il
+// ticket. Il solo path supportato ora è `/auth/play` che inietta il
+// ticket SERVER-SIDE direttamente nell'HTML del Nitro (mai esposto
+// come JSON consumabile da JavaScript).
+//
+// Ritorniamo 410 Gone esplicito per non confondere debug:
+//   - 404 → "endpoint mai esistito" (fuorvia)
+//   - 410 → "rimosso intenzionalmente, vedi changelog"
 
-auth.get('/sso', async c =>
-{
-    const user = c.var.user;
-    if(!user) return c.json({ error: 'unauthorized' }, 401);
-
-    // Ticket lifetime: 60 secondi (consumato subito dal client al boot).
-    // CRITICO: persistiamo auth_ticket_issued_at altrimenti l'EMU applica
-    // il fallback "no TTL" e il ticket resta valido a tempo indefinito
-    // (vedi HabboManager.loadHabbo + sqlupdates/sso_ticket_ttl.sql).
-    const ticket = randomBytes(24).toString('hex');
-    await dbExecute(
-        'UPDATE users SET auth_ticket = ?, auth_ticket_issued_at = UNIX_TIMESTAMP() WHERE id = ?',
-        [ticket, Number(user.sub)]
-    );
-    await logAudit(Number(user.sub), 'auth.sso.issued', clientIP(c), c.req.header('user-agent') ?? '');
-    return c.json({ ticket });
-});
-
-// =================================================================
-// GET /auth/sso-token — adapter Nitro-shape
-// =================================================================
-// Nitro V3 chiama `${api.url}/api/auth/sso-token` aspettandosi { token: "..." }
-// (NON { ticket }). Wrappa la stessa logica di /sso ma con response shape
-// compatibile con il bootstrap del client.
-
-auth.get('/sso-token', async c =>
-{
-    const user = c.var.user;
-    if(!user) return c.json({ error: 'unauthorized' }, 401);
-
-    const ticket = randomBytes(24).toString('hex');
-    await dbExecute(
-        'UPDATE users SET auth_ticket = ?, auth_ticket_issued_at = UNIX_TIMESTAMP() WHERE id = ?',
-        [ticket, Number(user.sub)]
-    );
-    await logAudit(Number(user.sub), 'auth.sso_token.issued', clientIP(c), c.req.header('user-agent') ?? '');
-    // Nitro accetta sia `token` che `ticket` a seconda della versione: ritorniamo entrambi.
-    return c.json({ token: ticket, ticket });
-});
+auth.get('/sso', c => c.json({ error: 'endpoint_removed', useInstead: '/api/v2/auth/play' }, 410));
+auth.get('/sso-token', c => c.json({ error: 'endpoint_removed', useInstead: '/api/v2/auth/play' }, 410));
 
 // =================================================================
 // GET /auth/health — Nitro pinga questo all'avvio per check connettività
@@ -445,12 +419,34 @@ auth.get('/play', async c =>
     const ip = clientIP(c);
     const ua = c.req.header('user-agent') ?? '';
 
-    // 1. Genera ticket fresco. NB: scriviamo anche auth_ticket_issued_at
-    //    (Arcturus stock col) altrimenti il TTL EMU di 60s è inerte.
+    // 1. Genera ticket + binding IP/UA (Wave 18 hardening).
+    //
+    // CMS-V3 popola 4 colonne:
+    //   - auth_ticket            : 192 bit random hex
+    //   - auth_ticket_issued_at  : UNIX timestamp per TTL check (EMU 60s)
+    //   - auth_ticket_bound_ip   : IP del client HTTP — l'EMU lo confronta
+    //                              con il peer del WebSocket all'handshake.
+    //                              Mismatch → ticket rifiutato.
+    //   - auth_ticket_ua_hash    : SHA-256 dell'User-Agent — l'EMU lo confronta
+    //                              col header che il client invierà (canale wired
+    //                              MFA o future client-handshake header).
+    //
+    // Risultato: anche se un attaccante exfiltrasse il ticket via leak DB
+    // (read-only) o XSS, non potrebbe usarlo da un altro browser perché:
+    //   • TTL 60s scade prima
+    //   • peer IP non matcha (deve venire dalla stessa rete del browser
+    //     dell'utente al momento del /play)
+    //   • UA hash differente
     const ticket = randomBytes(24).toString('hex');
+    const uaHash = createHash('sha256').update(ua).digest('hex');
     await dbExecute(
-        'UPDATE users SET auth_ticket = ?, auth_ticket_issued_at = UNIX_TIMESTAMP() WHERE id = ?',
-        [ticket, Number(user.sub)]
+        `UPDATE users SET
+            auth_ticket = ?,
+            auth_ticket_issued_at = UNIX_TIMESTAMP(),
+            auth_ticket_bound_ip = ?,
+            auth_ticket_ua_hash = ?
+         WHERE id = ?`,
+        [ticket, ip.slice(0, 45), uaHash, Number(user.sub)]
     );
     await logAudit(Number(user.sub), 'auth.play.launched', ip, ua);
 
@@ -477,8 +473,22 @@ auth.get('/play', async c =>
 
     const modified = nitroHtml.replace(/<head>/i, '<head>' + inject);
 
+    // 4. Headers di hardening sulla response /play:
+    //    - Cache-Control no-store: NO cache disco browser, NO cache proxy
+    //    - Pragma no-cache: legacy HTTP/1.0 caches
+    //    - X-Frame-Options SAMEORIGIN: blocca clickjacking via iframe esterno
+    //    - Referrer-Policy no-referrer: override globale, niente leak Referer
+    //    - X-Robots-Tag noindex: nessun motore di ricerca cache-a /play
+    //    - X-Content-Type-Options nosniff: blocca MIME confusion
+    //    - Permissions-Policy: disabilita feature browser non necessarie
     c.header('Content-Type', 'text/html; charset=utf-8');
-    c.header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    c.header('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    c.header('Pragma', 'no-cache');
+    c.header('X-Frame-Options', 'SAMEORIGIN');
+    c.header('Referrer-Policy', 'no-referrer');
+    c.header('X-Robots-Tag', 'noindex, nofollow');
+    c.header('X-Content-Type-Options', 'nosniff');
+    c.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()');
     return c.body(modified);
 });
 

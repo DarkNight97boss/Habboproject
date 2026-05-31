@@ -19,6 +19,7 @@ import { ProfilePage } from './routes/ProfilePage';
 import { RegistrationPage } from './routes/RegistrationPage';
 import { SettingsPage } from './routes/SettingsPage';
 import { ShopPage } from './routes/ShopPage';
+import { StaffPanelPage } from './routes/StaffPanelPage';
 import { ShopPrepaidPage } from './routes/ShopPrepaidPage';
 import { ShopPurchasesPage } from './routes/ShopPurchasesPage';
 import { StaticInfoPage } from './routes/StaticInfoPage';
@@ -63,6 +64,7 @@ createRoot(root).render(
                     <Route path="/settings" element={<Navigate to="/settings/privacy" replace />} />
                     <Route path="/settings/:section" element={<SettingsPage />} />
                     <Route path="/help" element={<HelpPage />} />
+                    <Route path="/admin" element={<StaffPanelPage />} />
                     <Route path="*" element={<NotFoundPage />} />
                 </Routes>
             </BrowserRouter>

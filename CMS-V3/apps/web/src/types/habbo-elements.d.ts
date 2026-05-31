@@ -51,6 +51,9 @@ declare module 'react' {
             'habbo-card': HabboEl;
             'habbo-like': HabboEl;
             'habbo-avatar': HabboEl;
+            'habbo-category-filter': HabboEl;
+            'habbo-inventory': HabboEl;
+            'habbo-accordion-grid': HabboEl;
         }
     }
 }

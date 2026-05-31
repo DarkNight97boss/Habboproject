@@ -65,6 +65,7 @@ export function StaffPanelPage(): ReactNode
                         {section === 'iptool'     && <IpToolSection />}
                         {section === 'wordfilter' && <WordfilterSection />}
                         {section === 'vouchers'   && <VouchersSection />}
+                        {section === 'news'       && <NewsSection />}
                         {section === 'staff'      && <StaffListSection />}
                         {section === 'actions'    && <ActionsSection />}
                     </main>
@@ -105,6 +106,11 @@ function Sidebar(): ReactNode
                 {item('/admin/logs', '☷', 'Log')}
                 {item('/admin/iptool', '◧', 'IP / Clone')}
                 {item('/admin/wordfilter', '◊', 'Word filter')}
+            </ul>
+
+            <div className="admin-sidebar__group">Contenuti</div>
+            <ul className="admin-sidebar__nav">
+                {item('/admin/news', '▤', 'News')}
             </ul>
 
             <div className="admin-sidebar__group">Economia</div>
@@ -1070,6 +1076,279 @@ function VouchersSection(): ReactNode
                             ))}
                         </tbody>
                     </table>
+                </div>
+            </section>
+        </>
+    );
+}
+
+// =====================================================================
+// NEWS MANAGEMENT (porting news.php + editnews.php)
+// =====================================================================
+interface NewsRow {
+    id: number; slug: string; title: string;
+    category: string; categoryLabel: string;
+    summary: string; bodyHtml: string; image: string;
+    authorId: number | null; authorUsername: string | null;
+    published: boolean; createdAt: number; updatedAt: number;
+    date: string; href: string;
+}
+
+const NEWS_CATEGORIES: { value: string; label: string }[] = [
+    { value: 'aggiornamenti-su-habbo', label: 'Aggiornamenti su Habbo' },
+    { value: 'campagne-attivita',      label: 'Campagne & Attività' },
+    { value: 'nuove-funzionalita',     label: 'Nuove funzionalità' },
+    { value: 'eventi-community',       label: 'Eventi community' },
+    { value: 'avvisi-importanti',      label: 'Avvisi importanti' }
+];
+
+function NewsSection(): ReactNode
+{
+    const [editingId, setEditingId] = useState<number | null>(null);
+    const [creating, setCreating] = useState(false);
+
+    if(editingId !== null) return <NewsEditor newsId={editingId} onClose={() => setEditingId(null)} />;
+    if(creating) return <NewsEditor newsId={null} onClose={() => setCreating(false)} />;
+
+    return <NewsList onEdit={setEditingId} onCreate={() => setCreating(true)} />;
+}
+
+function NewsList({ onEdit, onCreate }: { onEdit: (id: number) => void; onCreate: () => void }): ReactNode
+{
+    const qc = useQueryClient();
+    const q = useQuery<{ news: NewsRow[] }>({
+        queryKey: ['staff', 'news'],
+        queryFn: () => apiGet('/news')
+    });
+
+    const togglePublish = useMutation<{ ok: boolean }, Error, { id: number; published: boolean }>({
+        mutationFn: ({ id, published }) => apiSend(`/news/${id}`, 'PATCH', { published }),
+        onSuccess: () => void qc.invalidateQueries({ queryKey: ['staff', 'news'] })
+    });
+
+    const delMut = useMutation<{ ok: boolean }, Error, number>({
+        mutationFn: (id) => apiSend(`/news/${id}`, 'DELETE'),
+        onSuccess: () =>
+        {
+            void qc.invalidateQueries({ queryKey: ['staff', 'news'] });
+            void qc.invalidateQueries({ queryKey: ['staff', 'audit-log'] });
+        }
+    });
+
+    function confirmDelete(id: number, title: string): void
+    {
+        if(window.confirm(`Eliminare definitivamente l'articolo «${title}»? L'azione non è reversibile.`))
+        {
+            delMut.mutate(id);
+        }
+    }
+
+    return (
+        <section className="admin-card">
+            <h2 className="admin-card__title">
+                Articoli ({q.data?.news.length ?? 0})
+                <button type="button" onClick={onCreate} className="admin-btn admin-btn--small admin-btn--primary">
+                    + Nuovo articolo
+                </button>
+            </h2>
+            <div className="admin-table-wrap">
+                <table className="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Titolo</th>
+                            <th>Categoria</th>
+                            <th>Slug</th>
+                            <th>Autore</th>
+                            <th>Stato</th>
+                            <th>Creato</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {(q.data?.news ?? []).length === 0 && (
+                            <tr><td colSpan={8} className="admin-table__empty">
+                                {q.isLoading ? 'Caricamento…' : 'Nessuna news. Clicca "Nuovo articolo" per crearne uno.'}
+                            </td></tr>
+                        )}
+                        {q.data?.news.map(n => (
+                            <tr key={n.id}>
+                                <td className="admin-table__id">#{n.id}</td>
+                                <td><b>{n.title}</b></td>
+                                <td><span className="admin-tag admin-tag--info">{n.categoryLabel}</span></td>
+                                <td className="admin-table__mono">{n.slug}</td>
+                                <td>{n.authorUsername ?? '—'}</td>
+                                <td>
+                                    {n.published
+                                        ? <span className="admin-tag admin-tag--success">pubblicato</span>
+                                        : <span className="admin-tag admin-tag--warning">bozza</span>}
+                                </td>
+                                <td>{fmtDate(n.createdAt)}</td>
+                                <td style={{ whiteSpace: 'nowrap' }}>
+                                    <button type="button" className="admin-btn admin-btn--small admin-btn--ghost" onClick={() => onEdit(n.id)}>Modifica</button>{' '}
+                                    <button type="button" className="admin-btn admin-btn--small admin-btn--ghost" onClick={() => togglePublish.mutate({ id: n.id, published: !n.published })} disabled={togglePublish.isPending}>
+                                        {n.published ? 'Bozza' : 'Pubblica'}
+                                    </button>{' '}
+                                    <button type="button" className="admin-btn admin-btn--small admin-btn--danger" onClick={() => confirmDelete(n.id, n.title)} disabled={delMut.isPending}>
+                                        Elimina
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    );
+}
+
+function NewsEditor({ newsId, onClose }: { newsId: number | null; onClose: () => void }): ReactNode
+{
+    const qc = useQueryClient();
+    const isNew = newsId === null;
+
+    // Per la modifica scarico l'articolo via /staff/news/:slug → ho solo l'id.
+    // Lookup via lista (già cached): seleziono dalla query 'staff news'.
+    const listQ = useQuery<{ news: NewsRow[] }>({
+        queryKey: ['staff', 'news'],
+        queryFn: () => apiGet('/news'),
+        enabled: !isNew
+    });
+    const existing = isNew ? null : listQ.data?.news.find(n => n.id === newsId);
+
+    const [slug, setSlug] = useState(existing?.slug ?? '');
+    const [title, setTitle] = useState(existing?.title ?? '');
+    const [category, setCategory] = useState(existing?.category ?? NEWS_CATEGORIES[0]!.value);
+    const [summary, setSummary] = useState(existing?.summary ?? '');
+    const [bodyHtml, setBodyHtml] = useState(existing?.bodyHtml ?? '');
+    const [image, setImage] = useState(existing?.image ?? '');
+    const [published, setPublished] = useState(existing?.published ?? true);
+
+    // Se l'articolo arriva dopo (lista caricata in async), ripopola gli stati.
+    // Trick: usiamo un effect — qui niente useEffect import perché preferisco
+    // mantenere il file leggero; basta una key sul componente.
+    // → l'unica via pulita resta: condiziona il rendering finché 'existing' non è disponibile.
+    if(!isNew && !existing) return <div style={{ padding: 20 }}>Caricamento articolo…</div>;
+
+    const saveMut = useMutation<{ ok: boolean; id?: number; error?: string }, Error, void>({
+        mutationFn: () =>
+        {
+            const cat = NEWS_CATEGORIES.find(c => c.value === category) ?? NEWS_CATEGORIES[0]!;
+            const payload = {
+                title, category, categoryLabel: cat.label,
+                summary, bodyHtml, image, published,
+                ...(slug ? { slug } : {})
+            };
+            if(isNew) return apiSend('/news', 'POST', payload);
+            return apiSend(`/news/${newsId}`, 'PATCH', payload);
+        },
+        onSuccess: (r) =>
+        {
+            if(r.error)
+            {
+                window.alert(`Errore: ${r.error}`);
+                return;
+            }
+            void qc.invalidateQueries({ queryKey: ['staff', 'news'] });
+            void qc.invalidateQueries({ queryKey: ['staff', 'audit-log'] });
+            onClose();
+        }
+    });
+
+    function submit(e: FormEvent<HTMLFormElement>): void
+    {
+        e.preventDefault();
+        saveMut.mutate();
+    }
+
+    const cat = NEWS_CATEGORIES.find(c => c.value === category) ?? NEWS_CATEGORIES[0]!;
+
+    return (
+        <>
+            <section className="admin-card">
+                <h2 className="admin-card__title">
+                    {isNew ? 'Nuovo articolo' : `Modifica articolo #${newsId}`}
+                    <button type="button" className="admin-btn admin-btn--small admin-btn--ghost" onClick={onClose}>← Torna alla lista</button>
+                </h2>
+
+                <form onSubmit={submit}>
+                    <div className="admin-row admin-row--2">
+                        <label className="admin-field">
+                            <span className="admin-field__label">Titolo</span>
+                            <input className="admin-input" value={title} onChange={e => setTitle(e.target.value)} minLength={3} maxLength={200} required />
+                        </label>
+                        <label className="admin-field">
+                            <span className="admin-field__label">Slug URL {isNew && <em style={{ fontWeight: 400, color: '#4f6680' }}>— omettere per auto-generare dal titolo</em>}</span>
+                            <input className="admin-input" value={slug} onChange={e => setSlug(e.target.value)} maxLength={80} pattern="[a-z0-9](?:[a-z0-9\-]*[a-z0-9])?" placeholder="es. note-sulla-mega-patch" style={{ fontFamily: 'monospace', fontSize: 13 }} />
+                        </label>
+                        <label className="admin-field">
+                            <span className="admin-field__label">Categoria</span>
+                            <select className="admin-select" value={category} onChange={e => setCategory(e.target.value)}>
+                                {NEWS_CATEGORIES.map(c => (
+                                    <option key={c.value} value={c.value}>{c.label}</option>
+                                ))}
+                            </select>
+                        </label>
+                        <label className="admin-field">
+                            <span className="admin-field__label">Immagine (URL relativo o assoluto)</span>
+                            <input className="admin-input" value={image} onChange={e => setImage(e.target.value)} maxLength={255} placeholder="/assets/habbo/web_images/..." style={{ fontFamily: 'monospace', fontSize: 12 }} />
+                        </label>
+                    </div>
+
+                    <label className="admin-field">
+                        <span className="admin-field__label">Sommario <em style={{ fontWeight: 400, color: '#4f6680' }}>— testo mostrato nella card di anteprima (max 500 char)</em></span>
+                        <textarea className="admin-textarea" value={summary} onChange={e => setSummary(e.target.value)} minLength={10} maxLength={500} required rows={3} />
+                    </label>
+
+                    <label className="admin-field">
+                        <span className="admin-field__label">
+                            Corpo articolo HTML
+                            <em style={{ fontWeight: 400, color: '#4f6680' }}> — usa &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;strong&gt;, &lt;code&gt;…</em>
+                        </span>
+                        <textarea
+                            className="admin-textarea"
+                            value={bodyHtml}
+                            onChange={e => setBodyHtml(e.target.value)}
+                            minLength={10}
+                            required
+                            rows={14}
+                            style={{ fontFamily: 'monospace', fontSize: 13, lineHeight: 1.5 }}
+                        />
+                    </label>
+
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 12, fontSize: 14 }}>
+                        <input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)} />
+                        <span>Pubblicato (visibile su /community/news)</span>
+                    </label>
+
+                    <div style={{ display: 'flex', gap: 8 }}>
+                        <button type="submit" disabled={saveMut.isPending} className="admin-btn admin-btn--primary">
+                            {saveMut.isPending ? 'Salvataggio…' : isNew ? 'Crea articolo' : 'Salva modifiche'}
+                        </button>
+                        <button type="button" onClick={onClose} className="admin-btn admin-btn--ghost">Annulla</button>
+                    </div>
+                    {saveMut.error && <Alert kind="error">{saveMut.error.message}</Alert>}
+                </form>
+            </section>
+
+            <section className="admin-card">
+                <h2 className="admin-card__title">
+                    Anteprima
+                    <span className="admin-card__hint">come apparirà su /community/article/{slug || '…'}</span>
+                </h2>
+                <div style={{ background: '#fff', border: '1px solid #c5d2e1', borderRadius: 8, padding: 20 }}>
+                    <div style={{ marginBottom: 10 }}>
+                        <span className="admin-tag admin-tag--info">{cat.label}</span>
+                    </div>
+                    <h1 style={{ margin: '8px 0 6px', fontSize: 22, color: '#0c3a65' }}>{title || '— titolo —'}</h1>
+                    <p style={{ margin: '0 0 14px', color: '#4f6680', fontStyle: 'italic' }}>{summary || '— sommario —'}</p>
+                    {image && (
+                        <img src={image} alt="" style={{ maxWidth: '100%', borderRadius: 6, marginBottom: 14, display: 'block' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    )}
+                    <div
+                        style={{ color: '#11243a', lineHeight: 1.55 }}
+                        dangerouslySetInnerHTML={{ __html: bodyHtml || '<em style="color:#4f6680">— corpo articolo —</em>' }}
+                    />
                 </div>
             </section>
         </>

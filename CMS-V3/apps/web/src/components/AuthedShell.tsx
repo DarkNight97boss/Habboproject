@@ -199,15 +199,21 @@ export function HomeTabs({ active }: { active: 'novita' | 'messaggi' }): ReactNo
     );
 }
 
-type CommunityTab = 'foto' | 'stanze' | 'fansite' | 'notizie';
+type CommunityTab = 'foto' | 'stanze' | 'forum' | 'notizie';
 
-/** Tabs sezione Community: Foto | Stanze | Fansite | Notizie. */
+/**
+ * Tabs sezione Community: Foto | Stanze | Forum | Notizie.
+ *
+ * NB: l'ufficiale habbo.it ha "Fansite" come terzo tab, ma la pagina è
+ * 404 (link morto da anni). Habboproject sostituisce con "Forum" che
+ * punta a /community/forum — sezione discussion board interna.
+ */
 export function CommunityTabs({ active }: { active: CommunityTab }): ReactNode
 {
     const items: { key: CommunityTab; label: string; href: string }[] = [
         { key: 'foto', label: 'Foto', href: '/community/photos' },
         { key: 'stanze', label: 'Stanze', href: '/community/rooms' },
-        { key: 'fansite', label: 'Fansite', href: '/community/fansite' },
+        { key: 'forum', label: 'Forum', href: '/community/forum' },
         { key: 'notizie', label: 'Notizie', href: '/community/category/all' }
     ];
     const activeLabel = items.find(i => i.key === active)?.label ?? 'Foto';

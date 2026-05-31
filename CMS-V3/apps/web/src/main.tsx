@@ -3,7 +3,10 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { StrictMode, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
+import { CommunityForumPage } from './routes/CommunityForumPage';
+import { CommunityNewsPage } from './routes/CommunityNewsPage';
 import { CommunityPhotosPage } from './routes/CommunityPhotosPage';
+import { CommunityRoomsPage } from './routes/CommunityRoomsPage';
 import { HomePage } from './routes/HomePage';
 import { MessagingPage } from './routes/MessagingPage';
 import { RegistrationPage } from './routes/RegistrationPage';
@@ -31,6 +34,10 @@ createRoot(root).render(
                     <Route path="/messaging" element={<MessagingPage />} />
                     <Route path="/community" element={<Navigate to="/community/photos" replace />} />
                     <Route path="/community/photos" element={<CommunityPhotosPage />} />
+                    <Route path="/community/rooms" element={<CommunityRoomsPage />} />
+                    <Route path="/community/forum" element={<CommunityForumPage />} />
+                    <Route path="/community/category" element={<Navigate to="/community/category/all" replace />} />
+                    <Route path="/community/category/:category" element={<CommunityNewsPage />} />
                     <Route path="/shop" element={<Placeholder name="Shop" />} />
                     <Route path="/playing-habbo" element={<Placeholder name="Il Mondo di Habbo" />} />
                     <Route path="/habbo-nft" element={<Placeholder name="Collezionabili" />} />

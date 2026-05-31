@@ -1,5 +1,5 @@
 import { type MouseEvent, type ReactNode, useState } from 'react';
-import { type AuthUser, avatarUrl } from '../hooks/useAuth';
+import { type AuthUser, avatarUrl, broadcastAuth, useNotifications } from '../hooks/useAuth';
 
 /**
  * Chrome layout per le pagine authenticated del CMS-V3 — mirrora 1:1
@@ -51,12 +51,20 @@ function HeaderSmall({ user }: { user: AuthUser }): ReactNode
 function UserMenu({ user }: { user: AuthUser }): ReactNode
 {
     const [open, setOpen] = useState(false);
+    const { data: notif } = useNotifications(true);
+    const notifCount = notif?.total ?? 0;
 
     async function handleLogout(ev: MouseEvent): Promise<void>
     {
         ev.preventDefault();
         try { await fetch('/api/v2/auth/logout', { method: 'POST', credentials: 'include' }); }
-        finally { window.location.href = '/'; }
+        finally
+        {
+            // Broadcast a tutte le altre tab CMS aperte: si invalideranno
+            // automaticamente via useAuth → re-fetch /me → 401 → anonima.
+            broadcastAuth('logout');
+            window.location.href = '/';
+        }
     }
 
     return (
@@ -71,12 +79,40 @@ function UserMenu({ user }: { user: AuthUser }): ReactNode
                         <div className="user-menu__name__wrapper">
                             <div className={`user-menu__name${open ? ' user-menu__name--open' : ''}`}>{user.username}</div>
                         </div>
-                        <habbo-imager className="user-menu__avatar">
+                        <habbo-imager className="user-menu__avatar" style={{ position: 'relative' }}>
                             <img
                                 src={avatarUrl(user.look, { headOnly: true, size: 'm' })}
                                 alt={user.username}
                                 className="imager"
                             />
+                            {/* Badge notifiche live: red-dot con contatore
+                                quando ci sono messaggi non letti o richieste
+                                amicizia pending. Polled ogni 15s. */}
+                            {notifCount > 0 && (
+                                <span
+                                    aria-label={`${notifCount} notifiche`}
+                                    title={`${notif?.unreadMessages ?? 0} messaggi · ${notif?.friendRequests ?? 0} richieste amicizia`}
+                                    style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        right: -4,
+                                        background: '#ff3333',
+                                        color: '#fff',
+                                        fontSize: 11,
+                                        fontWeight: 'bold',
+                                        minWidth: 18,
+                                        height: 18,
+                                        borderRadius: 9,
+                                        textAlign: 'center',
+                                        lineHeight: '18px',
+                                        boxShadow: '0 1px 2px rgba(0,0,0,.5)',
+                                        zIndex: 10,
+                                        pointerEvents: 'none'
+                                    }}
+                                >
+                                    {notifCount > 99 ? '99+' : notifCount}
+                                </span>
+                            )}
                         </habbo-imager>
                     </a>
                 </div>
@@ -111,7 +147,12 @@ function NavigationBar(): ReactNode
                 <li className="navigation__item"><a id="ga-linkid-habbo-nft" href="/habbo-nft" className="navigation__link navigation__link--habbo-nft">COLLEZIONABILI</a></li>
                 <li className="navigation__item navigation__item--hotel">
                     <habbo-hotel-native-button>
-                        <a id="ga-linkid-native" href="/gioca" className="hotel-button-native">
+                        {/* target="_blank" → Nitro si apre in nuova tab, così
+                            l'utente può tornare al CMS senza perdere lo stato
+                            di gioco (il client Nitro mantiene la WS aperta).
+                            Anche, evita di "killare" la SPA CMS quando l'utente
+                            esce dal gioco. */}
+                        <a id="ga-linkid-native" href="/gioca" target="_blank" rel="noopener" className="hotel-button-native">
                             <span className="hotel-button-native__text hotel-button-native__text--play">Gioca</span>
                         </a>
                     </habbo-hotel-native-button>

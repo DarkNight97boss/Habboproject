@@ -6,21 +6,32 @@ import { avatarUrl, useAuth } from '../hooks/useAuth';
 import { NotFoundPage } from './NotFoundPage';
 
 /**
- * Pagina /profile/:username — replica fedele habbo.it/profile.
+ * Pagina /profile/:username — replica DOM fedele habbo.it/profile/<user>.
  *
- * Struttura DOM ufficiale:
+ * Struttura ufficiale ispezionata (es. habbo.it/profile/Avaren):
+ *
+ *   <habbo-header-small class="profile__header">
+ *     <header.header__wrapper.wrapper>                                 ← logo + user-menu
+ *     <habbo-navigation>                                               ← nav HOME/COMMUNITY/…
+ *     <habbo-profile-header>                                           ← BANNER PROFILO
+ *       <div.profile-header__avatar>
+ *         <div.profile-header__link>
+ *           <habbo-imager.profile-header__image>
+ *             <img.imager>                                             ← avatar head-only round
+ *       <div.profile-header__details>
+ *         <div><h1>{username}</h1><div.profile__motto>{motto}</div></div>
+ *
  *   <main.wrapper--content>
- *     <header.profile__header>            (banner BG isometric pattern)
- *       <habbo-avatar.profile__avatar>
- *         <img class=imager (full body, size=l)>
- *       <h1.profile__title>{username}
  *     <div.profile__section>
- *       <div.profile__card__wrapper--rooms>      (se ha stanze)
- *       <div.profile__card__wrapper--groups>     (se in gruppi)
- *       <div.profile__card__wrapper--friends>    (se ha amici)
- *       <div.profile__card__wrapper--badges>     (badges visibili in slot)
- *       <div.profile__card__wrapper--achievements> (top achievements)
- *     <p.profile__registered>Registrato su Habbo il {date}
+ *       <div.profile__card__wrapper--badges>   <h2>Distintivi
+ *       <div.profile__card__wrapper--friends>  <h2><span>Amici</span>
+ *                                                    <span.profile__friends__count>(N di 1000)</span>
+ *       <div.profile__card__wrapper--rooms>    <h2>Stanze
+ *       <div.profile__card__wrapper--groups>   <h2>Gruppi
+ *
+ * Layout 2-col floated via CSS ufficiale (.profile__card__wrapper--*
+ * { float:left; width:50% }). Ogni card ha un teaser ::before
+ * (illustration profilo specifica) sopra.
  */
 export function ProfilePage(): ReactNode
 {
@@ -49,19 +60,14 @@ export function ProfilePage(): ReactNode
         ? new Date(data.user.accountCreated * 1000).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })
         : '—';
 
-    // La CSS ufficiale habbo.it ha regole `.profile__card__wrapper--rooms/
-    // --groups/--friends/--badges` (float:left, width:50%, teaser image
-    // ::before in cima alla card) ma NON include una variante --achievements.
-    // Sull'ufficiale gli achievement sono dentro il client, non nel profilo
-    // web pubblico. Non li mostriamo qui per rispettare la fedeltà 1:1.
+    // Order ufficiale habbo.it Avaren: Distintivi, Amici, Stanze, Gruppi.
     const body = (
         <main className="wrapper wrapper--content">
-            <ProfileBanner user={data.user} />
             <div className="profile__section">
+                {data.badges.length > 0 && <BadgesCard badges={data.badges} totalCount={data.counts.badges} />}
+                {data.friends.length > 0 && <FriendsCard friends={data.friends} totalCount={data.counts.friends} />}
                 {data.rooms.length > 0 && <RoomsCard rooms={data.rooms} totalCount={data.counts.rooms} />}
                 {data.groups.length > 0 && <GroupsCard groups={data.groups} totalCount={data.counts.groups} />}
-                {data.friends.length > 0 && <FriendsCard friends={data.friends} totalCount={data.counts.friends} />}
-                {data.badges.length > 0 && <BadgesCard badges={data.badges} totalCount={data.counts.badges} />}
                 {data.rooms.length === 0 && data.groups.length === 0 && data.friends.length === 0 && data.badges.length === 0 && (
                     <habbo-empty-results>
                         <span>Questo profilo non ha ancora attività pubbliche.</span>
@@ -74,7 +80,24 @@ export function ProfilePage(): ReactNode
         </main>
     );
 
-    if(authUser) return <AuthedShell user={authUser}>{body}</AuthedShell>;
+    // Inietta il banner profilo come <habbo-profile-header> dentro l'header
+    // chrome (vedi AuthedShell.extraHeaderContent). La class 'profile__header'
+    // applica il bg isometric pattern via CSS ufficiale.
+    const profileBanner = <ProfileHeader user={data.user} />;
+
+    if(authUser)
+    {
+        return (
+            <AuthedShell
+                user={authUser}
+                extraHeaderClass="profile__header"
+                extraHeaderContent={profileBanner}
+            >
+                {body}
+            </AuthedShell>
+        );
+    }
+
     return (
         <>
             <div className="content">
@@ -83,6 +106,7 @@ export function ProfilePage(): ReactNode
                         <h1 className="header__habbo__name">Habbo</h1>
                     </a>
                 </header>
+                {profileBanner}
                 {body}
             </div>
         </>
@@ -90,7 +114,7 @@ export function ProfilePage(): ReactNode
 }
 
 // ============================================================
-// PROFILE BANNER
+// PROFILE HEADER (dentro <habbo-header-small.profile__header>)
 // ============================================================
 
 interface ProfileUser
@@ -105,52 +129,38 @@ interface ProfileUser
     online: boolean;
 }
 
-function ProfileBanner({ user }: { user: ProfileUser }): ReactNode
+function ProfileHeader({ user }: { user: ProfileUser }): ReactNode
 {
-    // Layout banner mirror habbo.it/profile/<user>:
-    //   <header.profile__header>            ← CSS ufficiale applica bg
-    //                                         profile.69262798.png + height
-    //     <div.profile__header__content.wrapper>
-    //       <habbo-avatar.profile__header__avatar>
-    //         <img/>                        ← avatar fullbody size=l
-    //       <div.profile__header__user>
-    //         <h1.profile__header__name>{username}
-    //         <p.profile__header__motto>{motto}
     return (
-        <header className="profile__header">
-            <div className="profile__header__content wrapper" style={{ display: 'flex', alignItems: 'center', gap: 24, padding: '20px 12px', minHeight: 130 }}>
-                <habbo-avatar className="profile__header__avatar">
-                    <img
-                        src={avatarUrl(user.look, { headOnly: false, size: 'l' })}
-                        alt={user.username}
-                        style={{ imageRendering: 'pixelated' }}
-                    />
-                </habbo-avatar>
-                <div className="profile__header__user" style={{ flex: 1, color: '#fff', textShadow: '0 2px 4px rgba(0,0,0,.5)' }}>
-                    <h1 className="profile__header__name" style={{ margin: 0, fontSize: 32, textTransform: 'uppercase' }}>
-                        {user.username}
-                    </h1>
-                    {user.motto && (
-                        <p className="profile__header__motto" style={{ margin: '6px 0', fontStyle: 'italic', fontSize: 14 }}>
-                            "{user.motto}"
-                        </p>
-                    )}
-                    <p style={{ margin: '4px 0 0', fontSize: 12, opacity: 0.85 }}>
-                        {user.online ? '🟢 Online' : '⚪ Offline'}
-                    </p>
+        <habbo-profile-header>
+            <div className="profile-header__avatar">
+                <div className="profile-header__link">
+                    <habbo-imager className="profile-header__image">
+                        <img
+                            src={avatarUrl(user.look, { headOnly: true, size: 'l' })}
+                            alt={user.username}
+                            className="imager"
+                        />
+                    </habbo-imager>
                 </div>
             </div>
-        </header>
+            <div className="profile-header__details">
+                <div>
+                    <h1>{user.username}</h1>
+                    {user.motto && <div className="profile__motto">{user.motto}</div>}
+                </div>
+            </div>
+        </habbo-profile-header>
     );
 }
 
 // ============================================================
-// CARDS (Stanze / Gruppi / Amici / Badge / Achievement)
+// CARDS
 // ============================================================
 
 function Card({ wrapperClass, title, children, footer }: {
     wrapperClass: string;
-    title: string;
+    title: ReactNode;
     children: ReactNode;
     footer?: ReactNode;
 }): ReactNode
@@ -181,10 +191,78 @@ function VediTutto({ href }: { href: string }): ReactNode
     );
 }
 
+function BadgesCard({ badges, totalCount }: { badges: Badge[]; totalCount: number }): ReactNode
+{
+    return (
+        <Card
+            wrapperClass="badges"
+            title="Distintivi"
+            footer={totalCount > badges.length ? <VediTutto href="#" /> : null}
+        >
+            <habbo-badge-list className="item-list--grid">
+                <ul style={{ display: 'flex', gap: 10, listStyle: 'none', padding: 0, margin: 0, justifyContent: 'center', flexWrap: 'wrap' }}>
+                    {badges.map(b => (
+                        <li key={b.code} title={b.code} style={{ textAlign: 'center' }}>
+                            <img
+                                src={`https://images.habbo.com/c_images/album1584/${b.code}.gif`}
+                                alt={b.code}
+                                style={{ imageRendering: 'pixelated', display: 'block', margin: '0 auto' }}
+                                onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                            />
+                        </li>
+                    ))}
+                </ul>
+            </habbo-badge-list>
+        </Card>
+    );
+}
+
+function FriendsCard({ friends, totalCount }: { friends: Friend[]; totalCount: number }): ReactNode
+{
+    // Title con count come ufficiale: "Amici (5 di 1000)" — 1000 è il max
+    // friend slot Arcturus standard. Sostituirlo con env var se diverso.
+    return (
+        <Card
+            wrapperClass="friends"
+            title={<>
+                <span>Amici</span>
+                <span className="profile__friends__count"> ({totalCount} di 1000)</span>
+            </>}
+            footer={totalCount > friends.length ? <VediTutto href="#" /> : null}
+        >
+            <habbo-friend-list className="item-list--grid">
+                <ul style={{ display: 'flex', flexWrap: 'wrap', gap: 12, listStyle: 'none', padding: 0, margin: 0, justifyContent: 'center' }}>
+                    {friends.slice(0, 6).map(f => (
+                        <li key={f.id} style={{ textAlign: 'center' }}>
+                            <a href={`/profile/${encodeURIComponent(f.username)}`} style={{ display: 'block', textDecoration: 'none' }}>
+                                <habbo-imager>
+                                    <img
+                                        src={avatarUrl(f.look, { headOnly: false, size: 'm' })}
+                                        alt={f.username}
+                                        style={{ imageRendering: 'pixelated' }}
+                                    />
+                                </habbo-imager>
+                                <div style={{ fontSize: 12, color: '#fff', marginTop: 4 }}>
+                                    {f.online && <span style={{ color: '#5fde5f' }}>● </span>}
+                                    {f.username}
+                                </div>
+                            </a>
+                        </li>
+                    ))}
+                </ul>
+            </habbo-friend-list>
+        </Card>
+    );
+}
+
 function RoomsCard({ rooms, totalCount }: { rooms: Room[]; totalCount: number }): ReactNode
 {
     return (
-        <Card wrapperClass="rooms" title="Stanze" footer={totalCount > rooms.length ? <VediTutto href="#" /> : null}>
+        <Card
+            wrapperClass="rooms"
+            title="Stanze"
+            footer={totalCount > rooms.length ? <VediTutto href="#" /> : null}
+        >
             <habbo-room-list className="item-list--grid">
                 <ul>
                     {rooms.slice(0, 6).map(r => (
@@ -204,8 +282,12 @@ function RoomsCard({ rooms, totalCount }: { rooms: Room[]; totalCount: number })
 function GroupsCard({ groups, totalCount }: { groups: Group[]; totalCount: number }): ReactNode
 {
     return (
-        <Card wrapperClass="groups" title="Gruppi" footer={totalCount > groups.length ? <VediTutto href="#" /> : null}>
-            <div className="item-list--grid">
+        <Card
+            wrapperClass="groups"
+            title="Gruppi"
+            footer={totalCount > groups.length ? <VediTutto href="#" /> : null}
+        >
+            <habbo-group-list className="item-list--grid">
                 <ul>
                     {groups.slice(0, 6).map(g => (
                         <li key={g.id} className="item item--group">
@@ -216,70 +298,7 @@ function GroupsCard({ groups, totalCount }: { groups: Group[]; totalCount: numbe
                         </li>
                     ))}
                 </ul>
-            </div>
-        </Card>
-    );
-}
-
-function FriendsCard({ friends, totalCount }: { friends: Friend[]; totalCount: number }): ReactNode
-{
-    return (
-        <Card wrapperClass="friends" title="Amici" footer={totalCount > friends.length ? <VediTutto href="#" /> : null}>
-            <ul style={{ display: 'flex', flexWrap: 'wrap', gap: 12, listStyle: 'none', padding: 0, margin: 0, justifyContent: 'center' }}>
-                {friends.slice(0, 6).map(f => (
-                    <li key={f.id} style={{ textAlign: 'center' }}>
-                        <a href={`/profile/${encodeURIComponent(f.username)}`} style={{ display: 'block', textDecoration: 'none' }}>
-                            <habbo-imager>
-                                <img
-                                    src={avatarUrl(f.look, { headOnly: true, size: 'b' })}
-                                    alt={f.username}
-                                    style={{ imageRendering: 'pixelated' }}
-                                />
-                            </habbo-imager>
-                            <div style={{ fontSize: 12, color: '#fff', marginTop: 4 }}>
-                                {f.online && <span style={{ color: '#5fde5f' }}>● </span>}
-                                {f.username}
-                            </div>
-                        </a>
-                    </li>
-                ))}
-            </ul>
-        </Card>
-    );
-}
-
-function BadgesCard({ badges, totalCount }: { badges: Badge[]; totalCount: number }): ReactNode
-{
-    return (
-        <Card wrapperClass="badges" title="Badge" footer={totalCount > badges.length ? <VediTutto href="#" /> : null}>
-            <ul style={{ display: 'flex', gap: 10, listStyle: 'none', padding: 0, margin: 0, justifyContent: 'center', flexWrap: 'wrap' }}>
-                {badges.map(b => (
-                    <li key={b.code} title={b.code}>
-                        <img
-                            src={`https://images.habbo.com/c_images/album1584/${b.code}.gif`}
-                            alt={b.code}
-                            style={{ imageRendering: 'pixelated' }}
-                            onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                        />
-                    </li>
-                ))}
-            </ul>
-        </Card>
-    );
-}
-
-function AchievementsCard({ achievements, totalCount }: { achievements: Achievement[]; totalCount: number }): ReactNode
-{
-    return (
-        <Card wrapperClass="achievements" title="Achievement" footer={totalCount > achievements.length ? <VediTutto href="#" /> : null}>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: '#fff' }}>
-                {achievements.slice(0, 6).map(a => (
-                    <li key={a.achievement_name} style={{ padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.1)', fontSize: 13 }}>
-                        <strong>{a.achievement_name.replace(/^ACH_/, '').replace(/_/g, ' ')}</strong>
-                        <span style={{ opacity: 0.7, marginLeft: 8 }}>livello {a.progress}</span>
-                    </li>
-                ))}
-            </ul>
+            </habbo-group-list>
         </Card>
     );
 }
@@ -320,12 +339,6 @@ interface Badge
     slot: number;
 }
 
-interface Achievement
-{
-    achievement_name: string;
-    progress: number;
-}
-
 interface ProfileResponse
 {
     user: ProfileUser;
@@ -333,7 +346,6 @@ interface ProfileResponse
     friends: Friend[];
     groups: Group[];
     badges: Badge[];
-    achievements: Achievement[];
     counts: {
         photos: number;
         rooms: number;

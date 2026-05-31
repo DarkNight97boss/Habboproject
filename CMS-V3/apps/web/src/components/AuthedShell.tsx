@@ -15,12 +15,21 @@ import { type AuthUser, avatarUrl, broadcastAuth, useNotifications } from '../ho
  *          Novità|Messaggi o Foto|Stanze|Fansite|Notizie)
  *  - children: contenuto della pagina (di solito <main class="wrapper--content">)
  */
-export function AuthedShell({ user, tabs, children }: { user: AuthUser; tabs?: ReactNode; children: ReactNode }): ReactNode
+export function AuthedShell({ user, tabs, children, extraHeaderClass, extraHeaderContent }: {
+    user: AuthUser;
+    tabs?: ReactNode;
+    children: ReactNode;
+    /** Aggiunto come className extra a <habbo-header-small> — es. 'profile__header'
+     *  per applicare il bg isometric pattern alla pagina profilo. */
+    extraHeaderClass?: string;
+    /** Renderizzato dentro l'header dopo nav — es. <habbo-profile-header> per profilo. */
+    extraHeaderContent?: ReactNode;
+}): ReactNode
 {
     return (
         <>
             <div className="content">
-                <HeaderSmall user={user} />
+                <HeaderSmall user={user} extraClass={extraHeaderClass} extraContent={extraHeaderContent} />
                 {tabs}
                 {children}
             </div>
@@ -29,10 +38,10 @@ export function AuthedShell({ user, tabs, children }: { user: AuthUser; tabs?: R
     );
 }
 
-function HeaderSmall({ user }: { user: AuthUser }): ReactNode
+function HeaderSmall({ user, extraClass, extraContent }: { user: AuthUser; extraClass?: string; extraContent?: ReactNode }): ReactNode
 {
     return (
-        <habbo-header-small>
+        <habbo-header-small className={extraClass}>
             <header className="header__wrapper wrapper">
                 <a href="/" className="header__habbo__logo">
                     <h1 className="header__habbo__name">Habbo</h1>
@@ -43,6 +52,7 @@ function HeaderSmall({ user }: { user: AuthUser }): ReactNode
                 <NavigationBar />
                 <habbo-landing-menu />
             </habbo-navigation>
+            {extraContent}
             <div className="wrapper" />
         </habbo-header-small>
     );

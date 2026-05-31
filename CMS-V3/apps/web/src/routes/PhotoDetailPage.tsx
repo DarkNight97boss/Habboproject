@@ -28,7 +28,7 @@ export function PhotoDetailPage(): ReactNode
             const r = await fetch(`/api/v2/community/photos/${encodeURIComponent(id ?? '')}`);
             if(r.status === 404) return null;
             if(!r.ok) throw new Error('photo_failed');
-            return (await r.json() as { photo: Photo }).photo;
+            return (await r.json() as { photo: Photo; otherPhotos: OtherPhoto[] });
         },
         enabled: !!id,
         retry: false
@@ -38,7 +38,8 @@ export function PhotoDetailPage(): ReactNode
     if(photoQuery.data === null) return <NotFoundPage />;
     if(!photoQuery.data) return null;
 
-    const photo = photoQuery.data;
+    const photo = photoQuery.data.photo;
+    const otherPhotos = photoQuery.data.otherPhotos;
     const date = formatPhotoDate(photo.timestamp);
     const profileHref = `/profile/${encodeURIComponent(photo.username)}`;
 
@@ -99,7 +100,35 @@ export function PhotoDetailPage(): ReactNode
                                 </div>
                             </habbo-like>
                         </div>
-                        <div className="news-footer" style={{ marginTop: 16 }}>
+                        {otherPhotos.length > 0 && (
+                            <section style={{ marginTop: 24 }}>
+                                <h3 style={{ color: '#fff', textTransform: 'uppercase', marginBottom: 12 }}>
+                                    Altri scatti di {photo.username}
+                                </h3>
+                                <ul style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+                                    gap: 8,
+                                    padding: 0,
+                                    listStyle: 'none',
+                                    margin: 0
+                                }}>
+                                    {otherPhotos.map(p => (
+                                        <li key={p.id}>
+                                            <a href={`/profile/${encodeURIComponent(photo.username)}/photo/${p.id}`} style={{ display: 'block' }}>
+                                                <img
+                                                    src={p.url}
+                                                    alt=""
+                                                    loading="lazy"
+                                                    style={{ width: '100%', height: 'auto', borderRadius: 3 }}
+                                                />
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </section>
+                        )}
+                        <div className="news-footer" style={{ marginTop: 24 }}>
                             <a href={pathUser ? `/profile/${encodeURIComponent(pathUser)}` : '/community/photos'}>
                                 ← Torna a tutte le foto
                             </a>
@@ -136,6 +165,13 @@ interface Photo
     timestamp: number;
     url: string;
     likes: number;
+}
+
+interface OtherPhoto
+{
+    id: number;
+    timestamp: number;
+    url: string;
 }
 
 function formatPhotoDate(ts: number): string

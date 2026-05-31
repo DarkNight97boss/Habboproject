@@ -52,3 +52,14 @@ dist/
 *.jar
 .claude/settings.json
 .ports.current
+
+# strumenti/ — escludi binari/output convertitore (rigenerabili dal source)
+strumenti/all-in-1-converter/Compiled/
+strumenti/**/*.swf
+strumenti/**/*.zip
+strumenti/**/*.tar.gz
+strumenti/**/build/
+strumenti/**/target/
+strumenti/**/dist/
+strumenti/**/node_modules/
+strumenti/**/.gradle/

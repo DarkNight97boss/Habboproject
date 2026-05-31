@@ -35,6 +35,10 @@ declare module 'react' {
             'habbo-birthdate': HabboEl;
             'habbo-profile-visibility': HabboEl;
             'habbo-policies': HabboEl;
+            'habbo-user-menu': HabboEl;
+            'habbo-imager': HabboEl;
+            'habbo-hotel-native-button': HabboEl;
+            'habbo-moderation-notification': HabboEl;
         }
     }
 }

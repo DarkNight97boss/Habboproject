@@ -71,13 +71,20 @@ export function CommunityArticlePage(): ReactNode
         <AuthedShell user={user} tabs={<CommunityTabs active="notizie" />}>
             <main>
                 <section className="wrapper wrapper--content">
-                    <div className="main main--fixed">
-                        <habbo-compile>
-                            {articleQuery.isLoading || !articleQuery.data
-                                ? <p>Caricamento…</p>
-                                : <ArticleContent article={articleQuery.data} />}
-                        </habbo-compile>
-                    </div>
+                    {/* Layout 2-col: habbo-compile (.main.main--fixed) a sinistra,
+                        habbo-web-pages (.aside.aside--box.aside--fixed) a destra.
+                        Stessa struttura di habbo.it/community/article/<id>. */}
+                    <habbo-compile className="main main--fixed">
+                        {articleQuery.isLoading || !articleQuery.data
+                            ? <p>Caricamento…</p>
+                            : <ArticleContent article={articleQuery.data} />}
+                    </habbo-compile>
+                    <habbo-web-pages className="aside aside--box aside--fixed">
+                        <aside className="static-content">
+                            <h3>Consigli di sicurezza</h3>
+                            <p>Sentiti sempre al sicuro su internet! Impara come <a href="/playing-habbo/safety">navigare in sicurezza</a>.</p>
+                        </aside>
+                    </habbo-web-pages>
                 </section>
             </main>
         </AuthedShell>
@@ -126,6 +133,9 @@ function ArticleContent({ article }: { article: Article }): ReactNode
                 className="news-article"
                 dangerouslySetInnerHTML={{ __html: article.bodyHtml }}
             />
+            <div className="news-footer">
+                <a href="/community/category/all">← Torna a tutte le notizie</a>
+            </div>
         </article>
     );
 }

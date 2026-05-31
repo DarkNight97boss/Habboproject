@@ -19,20 +19,23 @@ Fuori scope (per ora):
 ## Difese implementate
 
 ### Authentication
-- **Argon2id** per password hashing (memory 64MB, time 3, parallelism 4) — OWASP 2024
+- **bcrypt cost 12** per password hashing (OWASP 2024 min cost 10) — vincolo VARCHAR(64) nella tabella `users` (Argon2id ~96char overflowa, vedi memory `cms-v3-pwhash-overflow`)
 - **JWT access token** HS256, vita **15 min**, claims: sub, username, rank, jti, iss, aud
 - **Refresh token** HS256 con secret SEPARATO da JWT, vita **14 giorni**, salvato in DB
 - **Rotation** automatica refresh: ad ogni uso emette nuovo + invalida vecchio
 - **Reuse detection**: se un refresh token già "used_at" viene ripresentato → revoca dell'**intera family** (signal di furto)
-- **Migrazione trasparente**: la prima login con hash legacy (bcrypt/md5) genera nuovo Argon2 e salva
+- **verifyPassword multi-formato**: legge bcrypt (`$2*$`), Argon2id (`$argon2*`), SHA-512 raw (128 hex) — zero-downtime per migrazioni future
 
 ### Cookies
 - `cms_v3_access` e `cms_v3_refresh`: **HttpOnly**, **Secure** (in prod), **SameSite=Lax**
 - Path=/, Max-Age esplicito, no Domain leak
 
-### CSRF
-- Double-submit cookie pattern: cookie `cms_v3_csrf` + header `X-CSRF-Token` ad ogni stato-mutating
-- SameSite=Lax sui cookie come secondo livello
+### CSRF (parziale)
+- **NON enforced** al momento (env definito ma middleware mancante). Mitigazioni attuali:
+  - **CORS whitelist** esplicita su `ALLOWED_ORIGINS` (no wildcard)
+  - **SameSite=Lax** sui cookie auth → form/img cross-site NON inviano cookie
+  - **Content-Type: application/json** su PATCH/POST → preflight CORS richiesto → origini fuori whitelist bloccate dal browser
+- **Verdetto**: rischio basso per uso normale, ma defense-in-depth merita middleware double-submit cookie. TODO pre-deploy pubblico.
 
 ### Rate limiting
 - Sliding window in-memory (per ora — produzione: Redis)
@@ -84,6 +87,13 @@ Fuori scope (per ora):
 - Generato per-request, lifetime **60 secondi**
 - 24 byte random hex, stored in `users.auth_ticket`
 - EMU lo consuma una sola volta (consumed-or-expired)
+
+### RCON/MUS bridge
+- TCP loopback **127.0.0.1:3001** (rcon.allowed whitelist IP)
+- **Anti-replay built-in**: ogni request include `nonce` (12-byte hex) + `ts` (unix seconds)
+- **rcon.token** opzionale (env `RCON_TOKEN`) per defense-in-depth — costant-time compare lato EMU
+- `executecommand` (full RCE) **non esposto** dal nostro `services/rcon.ts` helper map
+- Tutti gli endpoint `/api/v2/staff/*` richiedono `requireRank(5)` + audit log HMAC
 
 ### Logging
 - **pino** strutturato JSON

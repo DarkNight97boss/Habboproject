@@ -30,6 +30,15 @@ import { fileURLToPath } from 'node:url';
 const CDN_BASE = 'https://images.habbo.com/habbo-web/america/it/';
 const CSS_VERSION = 'app.a8ea7435.css';
 
+// Asset extra mirrorati anche da percorsi NON sotto CDN_BASE (es. images
+// promo articoli sotto /web_images/). Path relativo `web_images/...` finisce
+// in public/assets/habbo/web_images/... preservato.
+const EXTRA_CDN_PATHS = [
+    'web_images/habbo-web-articles/lpromo_jonas_may26.png',
+    'web_images/habbo-web-articles/lpromo_rollerdiscoFL_may26.png',
+    'web_images/habbo-web-articles/lpromo_HabboPulse.png'
+];
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT_ROOT = path.resolve(__dirname, '../public/assets/habbo');
 
@@ -53,9 +62,11 @@ async function fetchText(url)
  * Scarica `relPath` (resolved against CDN_BASE) in `OUT_ROOT/relPath`.
  * Skip se file già esiste (idempotente).
  */
-async function downloadAsset(relPath, force = false)
+async function downloadAsset(relPath, force = false, baseOverride = null)
 {
-    const url = new URL(relPath, CDN_BASE).toString();
+    const url = baseOverride
+        ? new URL(relPath, baseOverride).toString()
+        : new URL(relPath, CDN_BASE).toString();
     const dest = path.join(OUT_ROOT, relPath);
     if(!force && existsSync(dest))
     {
@@ -168,6 +179,15 @@ async function main()
     for(const rel of EXTRA)
     {
         try { await downloadAsset(rel); downloaded.push(rel); }
+        catch(e) { failed.push({ relPath: rel, error: String(e.message) }); }
+    }
+
+    // Asset extra fuori dal CDN_BASE (es. web_images promo articoli).
+    // Base = https://images.habbo.com/ (root, no locale prefix).
+    const ROOT_BASE = 'https://images.habbo.com/';
+    for(const rel of EXTRA_CDN_PATHS)
+    {
+        try { await downloadAsset(rel, false, ROOT_BASE); downloaded.push(rel); }
         catch(e) { failed.push({ relPath: rel, error: String(e.message) }); }
     }
 

@@ -99,7 +99,7 @@ const NEWS: NewsItem[] = [
     {
         slug: 'welcome',
         href: '/community/article/welcome',
-        image: 'https://images.habbo.com/web_images/habbo-web-articles/lpromo_jonas_may26.png',
+        image: '/assets/habbo/web_images/habbo-web-articles/lpromo_jonas_may26.png',
         title: 'BENVENUTO SU HABBO',
         date: '31 mag 2026',
         category: 'aggiornamenti-su-habbo',
@@ -122,7 +122,7 @@ const NEWS: NewsItem[] = [
     {
         slug: 'roller-disco',
         href: '/community/article/roller-disco',
-        image: 'https://images.habbo.com/web_images/habbo-web-articles/lpromo_rollerdiscoFL_may26.png',
+        image: '/assets/habbo/web_images/habbo-web-articles/lpromo_rollerdiscoFL_may26.png',
         title: 'LIVE ORA: Roller Disco!',
         date: '01 mag 2026',
         category: 'campagne-attivita',
@@ -138,7 +138,7 @@ const NEWS: NewsItem[] = [
     {
         slug: 'comandi-italiani',
         href: '/community/article/comandi-italiani',
-        image: 'https://images.habbo.com/web_images/habbo-web-articles/lpromo_jonas_may26.png',
+        image: '/assets/habbo/web_images/habbo-web-articles/lpromo_jonas_may26.png',
         title: 'COMANDI ITALIANI',
         date: '29 mag 2026',
         category: 'aggiornamenti-su-habbo',
@@ -160,7 +160,7 @@ const NEWS: NewsItem[] = [
     {
         slug: 'oracolo',
         href: '/community/article/oracolo',
-        image: 'https://images.habbo.com/web_images/habbo-web-articles/lpromo_HabboPulse.png',
+        image: '/assets/habbo/web_images/habbo-web-articles/lpromo_HabboPulse.png',
         title: 'BOT ORACOLO ATTIVO',
         date: '30 mag 2026',
         category: 'nuove-funzionalita',

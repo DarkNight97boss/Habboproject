@@ -138,10 +138,11 @@ function NavigationBarAuthed(): ReactNode
                 <li className="navigation__item"><a id="ga-linkid-habbo-nft" href="/habbo-nft" className="navigation__link navigation__link--habbo-nft">COLLEZIONABILI</a></li>
                 <li className="navigation__item navigation__item--hotel">
                     <habbo-hotel-native-button>
-                        {/* /api/v2/auth/play = launcher Nitro con SSO ticket
-                            pre-iniettato (vedi auth.ts → `auth.get('/play')`).
-                            Apre il client nella stessa tab. */}
-                        <a id="ga-linkid-native" href="/api/v2/auth/play" className="hotel-button-native">
+                        {/* /gioca = alias amichevole proxato dal Vite verso
+                            /api/v2/auth/play (vedi vite.config.ts + auth.ts).
+                            URL pulito e leggibile dall'utente nella barra
+                            indirizzi mentre Nitro fa il bootstrap. */}
+                        <a id="ga-linkid-native" href="/gioca" className="hotel-button-native">
                             <span className="hotel-button-native__text hotel-button-native__text--play">Gioca</span>
                         </a>
                     </habbo-hotel-native-button>

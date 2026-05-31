@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { type MouseEvent, type ReactNode, useState } from 'react';
 import { type AuthUser, avatarUrl, broadcastAuth, useNotifications } from '../hooks/useAuth';
 
@@ -63,6 +64,7 @@ function UserMenu({ user }: { user: AuthUser }): ReactNode
     const [open, setOpen] = useState(false);
     const { data: notif } = useNotifications(true);
     const notifCount = notif?.total ?? 0;
+    const qc = useQueryClient();
 
     async function handleLogout(ev: MouseEvent): Promise<void>
     {
@@ -77,13 +79,29 @@ function UserMenu({ user }: { user: AuthUser }): ReactNode
         }
     }
 
+    // Apertura menu → invalida cache auth così se il rank è cambiato
+    // (es. promozione a staff via SQL) la voce 'Pannello Amministrazione'
+    // appare immediatamente senza attendere il poll 30s di useAuth.
+    function toggleOpen(ev: MouseEvent): void
+    {
+        ev.preventDefault();
+        setOpen(o =>
+        {
+            if(!o) void qc.invalidateQueries({ queryKey: ['auth', 'me'] });
+            return !o;
+        });
+    }
+
+    // Il rank dell'utente è anche esposto come attributo HTML così che lo
+    // staff possa verificarlo via DevTools in caso il menu sembri non
+    // riflettere il valore aggiornato (es. JWT stale, cache, ecc).
     return (
-        <habbo-user-menu className="header__aside header__aside--user-menu">
+        <habbo-user-menu className="header__aside header__aside--user-menu" data-rank={user.rank}>
             <div className="user-menu">
                 <div className="user-menu__header">
                     <a
                         href="#"
-                        onClick={ev => { ev.preventDefault(); setOpen(o => !o); }}
+                        onClick={toggleOpen}
                         className="user-menu__toggle"
                     >
                         <div className="user-menu__name__wrapper">
@@ -127,13 +145,29 @@ function UserMenu({ user }: { user: AuthUser }): ReactNode
                     </a>
                 </div>
                 <ul className={`user-menu__list${open ? '' : ' ng-hide'}`}>
+                    <li
+                        className="user-menu__item"
+                        style={{
+                            padding: '6px 16px 8px',
+                            borderBottom: '1px solid rgba(255,255,255,0.12)',
+                            fontSize: 11,
+                            color: 'rgba(255,255,255,0.55)',
+                            textTransform: 'uppercase',
+                            letterSpacing: 0.4
+                        }}
+                        title="Tuo livello account (rank Arcturus): da 5 in su sei staff."
+                    >
+                        Rank {user.rank}{user.rank >= 5 ? ' · STAFF' : ''}
+                    </li>
                     <li className="user-menu__item">
                         <a href={`/profile/${encodeURIComponent(user.username)}`} className="user-menu__link user-menu__link--profile">Il mio profilo</a>
                     </li>
                     <li className="user-menu__item">
                         <a href="/settings" className="user-menu__link user-menu__link--settings">Impostazioni</a>
                     </li>
-                    {/* Voce staff-only: rank >= 5 nell'EMU Arcturus = staff/mod/admin */}
+                    {/* Voce staff-only: rank >= 5 nell'EMU Arcturus = staff/mod/admin.
+                        L'endpoint /api/v2/staff/* è comunque protetto da requireRank(5)
+                        lato server, quindi non c'è rischio di escalation. */}
                     {user.rank >= 5 && (
                         <li className="user-menu__item">
                             <a href="/admin" className="user-menu__link user-menu__link--settings" style={{ color: '#fbd33f' }}>

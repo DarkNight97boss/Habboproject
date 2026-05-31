@@ -228,4 +228,71 @@ staff.post('/refresh-wordfilter', async c =>
     return c.json({ ok: r.ok, error: r.errorMessage });
 });
 
+// =================================================================
+// GET /staff/audit-log — viewer audit log (ultime 100 entries)
+// =================================================================
+staff.get('/audit-log', async c =>
+{
+    const limit = Math.min(Number(c.req.query('limit') ?? 100), 500);
+
+    const rows = await dbQuery<{
+        id: number; user_id: number | null; action: string;
+        ip: string; user_agent: string; details: string | null;
+        created_at: number; username: string | null;
+    }>(
+        `SELECT al.id, al.user_id, al.action, al.ip, al.user_agent,
+                al.details, al.created_at, u.username
+         FROM cms_v3_audit_log al
+         LEFT JOIN users u ON u.id = al.user_id
+         ORDER BY al.id DESC
+         LIMIT ?`,
+        [limit]
+    );
+
+    return c.json({
+        entries: rows.map(r => ({
+            id: r.id,
+            userId: r.user_id,
+            username: r.username,
+            action: r.action,
+            ip: r.ip,
+            userAgent: r.user_agent,
+            details: r.details ? safeParseJson(r.details) : null,
+            createdAt: r.created_at
+        }))
+    });
+});
+
+function safeParseJson(s: string): unknown
+{
+    try { return JSON.parse(s); }
+    catch { return s; }
+}
+
+// =================================================================
+// GET /staff/stats — quick stats dashboard
+// =================================================================
+staff.get('/stats', async c =>
+{
+    const rows = await dbQuery<{
+        total_users: number; online_users: number; total_rooms: number;
+        total_photos: number; staff_count: number;
+    }>(
+        `SELECT
+            (SELECT COUNT(*) FROM users) AS total_users,
+            (SELECT COUNT(*) FROM users WHERE online = '1') AS online_users,
+            (SELECT COUNT(*) FROM rooms WHERE state <> 'invisible') AS total_rooms,
+            (SELECT COUNT(*) FROM camera_web) AS total_photos,
+            (SELECT COUNT(*) FROM users WHERE rank >= 5) AS staff_count`
+    );
+
+    return c.json({
+        totalUsers: rows[0]?.total_users ?? 0,
+        onlineUsers: rows[0]?.online_users ?? 0,
+        totalRooms: rows[0]?.total_rooms ?? 0,
+        totalPhotos: rows[0]?.total_photos ?? 0,
+        staffCount: rows[0]?.staff_count ?? 0
+    });
+});
+
 export default staff;

@@ -71,7 +71,9 @@ export async function rconSend(cmd: RconCommandShape): Promise<RconResult>
             if(settled) return;
             settled = true;
             try { sock.destroy(); } catch { /* ignore */ }
-            resolve({ ok, response, errorMessage: err });
+            const r: RconResult = { ok, response };
+            if(err !== undefined) r.errorMessage = err;
+            resolve(r);
         };
 
         sock.setTimeout(TIMEOUT_MS);

@@ -133,6 +133,14 @@ function UserMenu({ user }: { user: AuthUser }): ReactNode
                     <li className="user-menu__item">
                         <a href="/settings" className="user-menu__link user-menu__link--settings">Impostazioni</a>
                     </li>
+                    {/* Voce staff-only: rank >= 5 nell'EMU Arcturus = staff/mod/admin */}
+                    {user.rank >= 5 && (
+                        <li className="user-menu__item">
+                            <a href="/admin" className="user-menu__link user-menu__link--settings" style={{ color: '#fbd33f' }}>
+                                Pannello Amministrazione
+                            </a>
+                        </li>
+                    )}
                     <li className="user-menu__item">
                         <a href="/help" className="user-menu__link user-menu__link--help">Aiuto</a>
                     </li>

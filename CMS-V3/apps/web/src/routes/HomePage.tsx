@@ -10,6 +10,10 @@ import { type FormEvent, type ReactNode, useState } from 'react';
  */
 export function HomePage(): ReactNode
 {
+    // Layout main + sidebar: replica esatta dell'ufficiale.
+    // <section> contiene: h1, .main.main--fixed (col sinistra news), e due
+    // <habbo-web-pages> sidebar (col destra, float:right + clear:right).
+    // Il .news__navigation ("Più News") sta DENTRO .main--fixed, dopo le news.
     return (
         <div className="content">
             <HeaderLarge />
@@ -19,8 +23,8 @@ export function HomePage(): ReactNode
                     <h1>Ultime notizie</h1>
                     <div className="main main--fixed">
                         <NewsList />
-                        <Sidebar />
                     </div>
+                    <Sidebar />
                 </section>
             </main>
             <FooterOfficial />
@@ -209,14 +213,24 @@ function LoginForm(): ReactNode
                         </fieldset>
                     </div>
                     {error ? <p style={{ color: '#c33', fontSize: 12, margin: '6px 0' }}>{error}</p> : null}
-                    <div>
-                        <button
-                            type="submit"
-                            disabled={loading || !email || !password}
-                            className="login-form__button habbo-login-button"
-                        >
-                            {loading ? '…' : 'Entra!'}
-                        </button>
+                    {/*
+                      L'ufficiale habbo.it usa wrapper <div style="width:100%"><div>
+                      attorno al submit per portarlo a width:244px (= 256px colonna
+                      .login-form__email-login - 12px padding-right del form).
+                      Il submit .login-form__button è inline-block per default; senza
+                      questo wrapper resta della larghezza del testo (~107px).
+                    */}
+                    <div style={{ width: '100%' }}>
+                        <div>
+                            <button
+                                type="submit"
+                                disabled={loading || !email || !password}
+                                className="login-form__button habbo-login-button"
+                                style={{ width: '100%' }}
+                            >
+                                {loading ? '…' : 'Entra!'}
+                            </button>
+                        </div>
                     </div>
                 </form>
                 <div className="login-texts" id="forgot-password">
@@ -308,34 +322,48 @@ const news: NewsItem[] = [
 
 function NewsList(): ReactNode
 {
+    // Struttura ufficiale dentro .main--fixed:
+    //   <habbo-compile>
+    //     <section>
+    //       <article class="news-header news-header--column">…</article>
+    //       …
+    //     </section>
+    //   </habbo-compile>
+    //   <div class="news__navigation">
+    //     <a class="news__more">Più News</a>
+    //   </div>
     return (
-        <section style={{ display: 'block' }}>
-            {news.map(n => (
-                <article key={n.href} className="news-header news-header--column">
-                    <a href={n.href} className="news-header__link news-header__banner">
-                        <figure className="news-header__viewport">
-                            <img src={n.image} alt={n.title} className="news-header__image news-header__image--featured" />
-                            <img src={n.image} alt={n.title} className="news-header__image news-header__image--thumbnail" />
-                        </figure>
-                    </a>
-                    <a href={n.href} className="news-header__link news-header__wrapper">
-                        <h2 className="news-header__title">{n.title}</h2>
-                    </a>
-                    <aside className="news-header__wrapper news-header__info">
-                        <time className="news-header__date">{n.date}</time>
-                        <ul className="news-header__categories">
-                            <li className="news-header__category">
-                                <a className="news-header__category__link">{n.category}</a>
-                            </li>
-                        </ul>
-                    </aside>
-                    <p className="news-header__wrapper news-header__summary">{n.summary}</p>
-                </article>
-            ))}
+        <>
+            <habbo-compile>
+                <section>
+                    {news.map(n => (
+                        <article key={n.href} className="news-header news-header--column">
+                            <a href={n.href} className="news-header__link news-header__banner">
+                                <figure className="news-header__viewport">
+                                    <img src={n.image} alt={n.title} className="news-header__image news-header__image--featured" />
+                                    <img src={n.image} alt={n.title} className="news-header__image news-header__image--thumbnail" />
+                                </figure>
+                            </a>
+                            <a href={n.href} className="news-header__link news-header__wrapper">
+                                <h2 className="news-header__title">{n.title}</h2>
+                            </a>
+                            <aside className="news-header__wrapper news-header__info">
+                                <time className="news-header__date">{n.date}</time>
+                                <ul className="news-header__categories">
+                                    <li className="news-header__category">
+                                        <a className="news-header__category__link">{n.category}</a>
+                                    </li>
+                                </ul>
+                            </aside>
+                            <p className="news-header__wrapper news-header__summary">{n.summary}</p>
+                        </article>
+                    ))}
+                </section>
+            </habbo-compile>
             <div className="news__navigation">
                 <a href="/community/category/all" className="news__more">Più News</a>
             </div>
-        </section>
+        </>
     );
 }
 

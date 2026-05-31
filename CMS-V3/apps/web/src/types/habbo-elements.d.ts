@@ -28,6 +28,7 @@ declare module 'react' {
             'habbo-footer': HabboEl;
             'habbo-register-banner': HabboEl;
             'habbo-landing-menu': HabboEl;
+            'habbo-compile': HabboEl;
         }
     }
 }

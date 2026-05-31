@@ -1,0 +1,18 @@
+{
+    "libraries": [{
+            "id": "shirt_M_TEST",
+            "revision": 90001,
+            "parts": [{
+                    "id": 4316,
+                    "type": "ch"
+                }, {
+                    "id": 4316,
+                    "type": "ls"
+                }, {
+                    "id": 4316,
+                    "type": "rs"
+                }
+            ]
+        }
+    ]
+}

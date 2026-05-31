@@ -1,0 +1,151 @@
+{
+    "palettes": [{
+            "id": 1,
+            "colors": [
+            ]
+        }, {
+            "id": 2,
+            "colors": [
+            ]
+        }, {
+            "id": 3,
+            "colors": [
+            ]
+        }
+    ],
+    "setTypes": [{
+            "type": "hr",
+            "paletteId": 2,
+            "mandatory_f_0": false,
+            "mandatory_f_1": false,
+            "mandatory_m_0": false,
+            "mandatory_m_1": false,
+            "sets": [{
+                    "id": 900001,
+                    "gender": "M",
+                    "club": 0,
+                    "colorable": true,
+                    "selectable": true,
+                    "preselectable": false,
+                    "sellable": false,
+                    "parts": [{
+                            "id": 11,
+                            "type": "hr",
+                            "colorable": true,
+                            "index": 0,
+                            "colorindex": 1
+                        }
+                    ]
+                }
+            ]
+        }, {
+            "type": "hd",
+            "paletteId": 1,
+            "mandatory_f_0": true,
+            "mandatory_f_1": true,
+            "mandatory_m_0": true,
+            "mandatory_m_1": true,
+            "sets": [
+            ]
+        }, {
+            "type": "ch",
+            "paletteId": 3,
+            "mandatory_f_0": true,
+            "mandatory_f_1": true,
+            "mandatory_m_0": true,
+            "mandatory_m_1": false,
+            "sets": [
+            ]
+        }, {
+            "type": "lg",
+            "paletteId": 3,
+            "mandatory_f_0": true,
+            "mandatory_f_1": true,
+            "mandatory_m_0": true,
+            "mandatory_m_1": true,
+            "sets": [
+            ]
+        }, {
+            "type": "sh",
+            "paletteId": 3,
+            "mandatory_f_0": false,
+            "mandatory_f_1": false,
+            "mandatory_m_0": false,
+            "mandatory_m_1": false,
+            "sets": [
+            ]
+        }, {
+            "type": "ha",
+            "paletteId": 3,
+            "mandatory_f_0": false,
+            "mandatory_f_1": false,
+            "mandatory_m_0": false,
+            "mandatory_m_1": false,
+            "sets": [
+            ]
+        }, {
+            "type": "he",
+            "paletteId": 3,
+            "mandatory_f_0": false,
+            "mandatory_f_1": false,
+            "mandatory_m_0": false,
+            "mandatory_m_1": false,
+            "sets": [
+            ]
+        }, {
+            "type": "ea",
+            "paletteId": 3,
+            "mandatory_f_0": false,
+            "mandatory_f_1": false,
+            "mandatory_m_0": false,
+            "mandatory_m_1": false,
+            "sets": [
+            ]
+        }, {
+            "type": "fa",
+            "paletteId": 3,
+            "mandatory_f_0": false,
+            "mandatory_f_1": false,
+            "mandatory_m_0": false,
+            "mandatory_m_1": false,
+            "sets": [
+            ]
+        }, {
+            "type": "ca",
+            "paletteId": 3,
+            "mandatory_f_0": false,
+            "mandatory_f_1": false,
+            "mandatory_m_0": false,
+            "mandatory_m_1": false,
+            "sets": [
+            ]
+        }, {
+            "type": "wa",
+            "paletteId": 3,
+            "mandatory_f_0": false,
+            "mandatory_f_1": false,
+            "mandatory_m_0": false,
+            "mandatory_m_1": false,
+            "sets": [
+            ]
+        }, {
+            "type": "cc",
+            "paletteId": 3,
+            "mandatory_f_0": false,
+            "mandatory_f_1": false,
+            "mandatory_m_0": false,
+            "mandatory_m_1": false,
+            "sets": [
+            ]
+        }, {
+            "type": "cp",
+            "paletteId": 3,
+            "mandatory_f_0": false,
+            "mandatory_f_1": false,
+            "mandatory_m_0": false,
+            "mandatory_m_1": false,
+            "sets": [
+            ]
+        }
+    ]
+}

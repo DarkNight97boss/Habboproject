@@ -1,0 +1,14 @@
+/**
+ * Override leggeri sopra il CSS ufficiale habbo.it (app.a8ea7435.css).
+ *
+ * Tutto il layout e i colori vengono dal CDN Sulake. Qui mettiamo SOLO:
+ *  - Override Habboproject-specific (es. brand footer, nascondere alcune
+ *    cose non pertinenti come Stardust/NFT)
+ *  - Mostrare il login form sempre (nel sito ufficiale c'è un toggle Angular)
+ *
+ * NESSUNA dichiarazione qui dovrebbe rifare quello che la CSS ufficiale già fa.
+ */
+
+/* Mostra sempre il login form: nel sito originale Angular usa ng-show=toggle */
+.header__login-form { display: block !important; }
+.header__top__toggle.login-button { display: none !important; }

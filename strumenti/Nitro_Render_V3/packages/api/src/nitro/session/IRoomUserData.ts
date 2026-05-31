@@ -1,0 +1,40 @@
+export interface IRoomUserData
+{
+    readonly roomIndex: number;
+    activityPoints: number;
+    background: number;
+    stand: number;
+    overlay: number;
+    cardBackground: number;
+    borderId: number;
+    name: string;
+    type: number;
+    sex: string;
+    figure: string;
+    custom: string;
+    nickIcon: string;
+    prefixText: string;
+    prefixColor: string;
+    prefixIcon: string;
+    prefixEffect: string;
+    prefixFont: string;
+    displayOrder: string;
+    webID: number;
+    groupId: number;
+    groupName: string;
+    groupStatus: number;
+    ownerId: number;
+    ownerName: string;
+    rarityLevel: number;
+    hasSaddle: boolean;
+    isRiding: boolean;
+    canBreed: boolean;
+    canHarvest: boolean;
+    canRevive: boolean;
+    hasBreedingPermission: boolean;
+    petLevel: number;
+    botSkills: number[];
+    isModerator: boolean;
+    roomEntryMethod: string;
+    roomEntryTeleportId: number;
+}

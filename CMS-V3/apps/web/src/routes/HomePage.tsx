@@ -34,8 +34,11 @@ export function HomePage(): ReactNode
 
 function HeaderLarge(): ReactNode
 {
+    // <habbo-*> sono custom-element selettori che la CSS ufficiale usa
+    // come scope (es. `habbo-header-large .login-form__social { flex-direction:column }`).
+    // Senza questi wrapper le regole non si attivano e il layout è sbagliato.
     return (
-        <>
+        <habbo-header-large>
             <div className="header__top sticky-header sticky-header--top">
                 <div className="wrapper">
                     <div className="header__top__content">
@@ -47,17 +50,19 @@ function HeaderLarge(): ReactNode
             </div>
 
             <div className="header__content">
-                <div className="habbo-register-banner">
+                <habbo-register-banner>
                     <div className="register-banner__hotel" />
                     <div className="register-banner__wrapper">
                         <div className="register-banner__register">
                             <LoginForm />
                         </div>
                     </div>
-                </div>
-                <NavigationBar />
+                </habbo-register-banner>
+                <habbo-navigation>
+                    <NavigationBar />
+                </habbo-navigation>
             </div>
-        </>
+        </habbo-header-large>
     );
 }
 
@@ -99,71 +104,71 @@ function LoginForm(): ReactNode
         finally { setLoading(false); }
     }
 
+    // NB: la classe `ng-hide` qui NON nasconde nulla — è il selettore che la CSS
+    // ufficiale habbo.it usa come "hook" per applicare il layout flex 2-colonne
+    // (rule: .header__login-form.ng-hide { display:flex !important; ... }).
+    // Senza Angular caricato la classe è solo un marker CSS.
     return (
-        <div className="header__login-form">
-            <div className="social-login">
-                <div className="login-form__login-text" style={{ marginTop: '10px' }}>
-                    Effettua il login con una di queste opzioni
-                </div>
-                <div className="login-form__social">
+        <div className="header__login-form ng-hide">
+            <div className="login-form__social">
+                <div className="login-form__login-text">Effettua il login con una di queste opzioni</div>
+                <habbo-facebook-connect type="large">
                     <button type="button" className="facebook-connect">Facebook</button>
+                </habbo-facebook-connect>
+                <habbo-google-connect type="large">
                     <button type="button" className="google-connect">Google</button>
+                </habbo-google-connect>
+                <habbo-apple-connect type="large">
                     <button type="button" className="apple-connect">Accedi con Apple</button>
-                    <div className="login-texts" id="more-login">
-                        <div className="login-form__login-text">
-                            <small><a>Altri modi di accedere</a></small>
-                        </div>
+                </habbo-apple-connect>
+                <div className="login-texts" id="more-login">
+                    <div className="login-form__login-text">
+                        <small><a>Altri modi di accedere</a></small>
                     </div>
                 </div>
             </div>
             <div className="login-form__email-login">
-                <div className="login-form__login-text" style={{ marginTop: '10px' }}>
-                    O usa la tua email &amp; password:
-                </div>
+                <div className="login-form__login-text">O usa la tua email &amp; password:</div>
                 <form id="habboLoginForm" onSubmit={handleSubmit} className="login-form__form">
-                    <div style={{ width: '100%' }}>
-                        <fieldset className="form__fieldset login-form__fieldset">
-                            <div className="form__field">
-                                <input
-                                    name="email"
-                                    type="email"
-                                    value={email}
-                                    onChange={e => setEmail(e.target.value)}
-                                    placeholder="Email"
-                                    autoComplete="username"
-                                    autoCapitalize="none"
-                                    autoCorrect="off"
-                                    spellCheck={false}
-                                    className="form__input login-form__input"
-                                    disabled={loading}
-                                />
-                            </div>
-                        </fieldset>
-                        <fieldset className="form__fieldset login-form__fieldset">
-                            <div className="form__field">
-                                <input
-                                    name="password"
-                                    type="password"
-                                    value={password}
-                                    onChange={e => setPassword(e.target.value)}
-                                    placeholder="Password"
-                                    autoComplete="current-password"
-                                    className="form__input login-form__input"
-                                    disabled={loading}
-                                />
-                            </div>
-                        </fieldset>
-                    </div>
-                    {error ? <p style={{ color: '#c33', fontSize: 12, margin: '6px 0' }}>{error}</p> : null}
-                    <div style={{ width: '100%' }}>
-                        <button
-                            type="submit"
-                            disabled={loading || !email || !password}
-                            className="login-form__button habbo-login-button"
-                        >
-                            {loading ? '…' : 'Entra!'}
-                        </button>
-                    </div>
+                    <fieldset className="form__fieldset login-form__fieldset">
+                        <div className="form__field">
+                            <input
+                                name="email"
+                                type="email"
+                                value={email}
+                                onChange={e => setEmail(e.target.value)}
+                                placeholder="Email"
+                                autoComplete="username"
+                                autoCapitalize="none"
+                                autoCorrect="off"
+                                spellCheck={false}
+                                className="form__input login-form__input"
+                                disabled={loading}
+                            />
+                        </div>
+                    </fieldset>
+                    <fieldset className="form__fieldset login-form__fieldset">
+                        <div className="form__field">
+                            <input
+                                name="password"
+                                type="password"
+                                value={password}
+                                onChange={e => setPassword(e.target.value)}
+                                placeholder="Password"
+                                autoComplete="current-password"
+                                className="form__input login-form__input"
+                                disabled={loading}
+                            />
+                        </div>
+                    </fieldset>
+                    {error ? <p style={{ color: '#c33', fontSize: 12, margin: '6px 0', alignSelf: 'stretch' }}>{error}</p> : null}
+                    <button
+                        type="submit"
+                        disabled={loading || !email || !password}
+                        className="login-form__button habbo-login-button"
+                    >
+                        {loading ? '…' : 'Entra!'}
+                    </button>
                 </form>
                 <div className="login-texts" id="forgot-password">
                     <div className="login-form__login-text">

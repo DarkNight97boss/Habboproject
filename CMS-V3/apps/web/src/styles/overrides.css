@@ -37,3 +37,22 @@
     min-height: 100%;
     width: 100%;
 }
+
+/*
+ * Dropdown user-menu — la CSS ufficiale habbo.it limita il box a
+ *   .user-menu__list { max-height: 240px }
+ * pensato per ESATTAMENTE 4 voci (Profilo / Impostazioni / Aiuto / Esci).
+ * Habboproject ne ha 5 (Profilo · Impostazioni · Pannello Admin · Aiuto · Esci)
+ * → la 5ª voce sparisce sotto al ritaglio.
+ * Override: alziamo a 360px (≈ 7 voci) e auto-fit alla larghezza del
+ * contenuto più lungo (default ~180px tagliava 'Pannello Amministrazione').
+ */
+.user-menu__list {
+    max-height: 360px !important;
+    min-width: 220px !important;
+    width: max-content !important;
+}
+.user-menu__link {
+    /* Whitespace pre per non spezzare 'Pannello Amministrazione' su 2 righe. */
+    white-space: nowrap !important;
+}

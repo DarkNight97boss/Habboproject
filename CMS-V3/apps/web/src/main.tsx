@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { StrictMode, type ReactNode } from 'react';
+import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
+import { CollectiblesPage } from './routes/CollectiblesPage';
 import { CommunityArticlePage } from './routes/CommunityArticlePage';
 import { CommunityForumPage } from './routes/CommunityForumPage';
 import { CommunityNewsPage } from './routes/CommunityNewsPage';
@@ -11,7 +12,10 @@ import { CommunityRoomsPage } from './routes/CommunityRoomsPage';
 import { HomePage } from './routes/HomePage';
 import { MessagingPage } from './routes/MessagingPage';
 import { NotFoundPage } from './routes/NotFoundPage';
+import { PlayingHabboPage } from './routes/PlayingHabboPage';
 import { RegistrationPage } from './routes/RegistrationPage';
+import { ShopPage } from './routes/ShopPage';
+import { StaticInfoPage } from './routes/StaticInfoPage';
 
 // NB: il CSS ufficiale habbo.it (app.a8ea7435.css) è caricato direttamente
 // in index.html via <link>. Niente Tailwind/global.css qui — sarebbero
@@ -41,9 +45,11 @@ createRoot(root).render(
                     <Route path="/community/category" element={<Navigate to="/community/category/all" replace />} />
                     <Route path="/community/category/:category" element={<CommunityNewsPage />} />
                     <Route path="/community/article/:slug" element={<CommunityArticlePage />} />
-                    <Route path="/shop" element={<Placeholder name="Shop" />} />
-                    <Route path="/playing-habbo" element={<Placeholder name="Il Mondo di Habbo" />} />
-                    <Route path="/habbo-nft" element={<Placeholder name="Collezionabili" />} />
+                    <Route path="/shop" element={<ShopPage />} />
+                    <Route path="/playing-habbo" element={<PlayingHabboPage />} />
+                    <Route path="/playing-habbo/:slug" element={<StaticInfoPage />} />
+                    <Route path="/help/:slug" element={<StaticInfoPage />} />
+                    <Route path="/habbo-nft" element={<CollectiblesPage />} />
                     <Route path="*" element={<NotFoundPage />} />
                 </Routes>
             </BrowserRouter>
@@ -52,12 +58,3 @@ createRoot(root).render(
     </StrictMode>
 );
 
-function Placeholder({ name }: { name: string }): ReactNode
-{
-    return (
-        <div className="wrapper wrapper--content">
-            <h1>{name}</h1>
-            <p>Pagina in costruzione.</p>
-        </div>
-    );
-}

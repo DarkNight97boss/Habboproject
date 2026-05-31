@@ -225,17 +225,27 @@ auth.post(
         const passwordHash = await hashPassword(parsed.data.password);
 
         // Crea utente — schema Arcturus standard.
-        // - rank 1 (utente normale), credits/duckets/diamonds starter,
-        //   look/look_settings da defaults, last_online ora.
+        // Schema reale Arcturus `users`: tutti i campi non specificati hanno
+        // default (rank=1, credits=2500, pixels=500, points=10, online='0',
+        // motto='', auth_ticket='', machine_id='', home_room=0, ecc).
+        // NB: NON ci sono colonne `vip_points` o `diamonds` qui (l'Arcturus
+        // base usa solo `points`; ricchezze extra → tabelle separate).
         const now = Math.floor(Date.now() / 1000);
-        const figure = 'hr-100-61.hd-180-1.ch-210-66.lg-270-82.sh-290-80'; // default look it
+        const figure = 'hr-100-61.hd-180-1.ch-210-66.lg-270-82.sh-290-80'; // default look IT
         const result = await dbExecute(
             `INSERT INTO users (
-                username, password, mail, rank, credits, pixels, vip_points, diamonds, online,
-                look, gender, motto, account_created, last_online, last_login, ip_register, ip_current,
-                home_room
-            ) VALUES (?, ?, '', 1, 1000, 100, 0, 5, '0', ?, 'M', 'Nuovo Habbo!', ?, ?, ?, ?, ?, 0)`,
-            [parsed.data.username, passwordHash, figure, now, now, now, ip.slice(0, 45), ip.slice(0, 45)]
+                username, password, mail, look, motto,
+                account_created, last_online, last_login,
+                ip_register, ip_current
+            ) VALUES (?, ?, ?, ?, 'Nuovo Habbo!', ?, ?, ?, ?, ?)`,
+            [
+                parsed.data.username,
+                passwordHash,
+                '', // mail vuota (registrazione username-only)
+                figure,
+                now, now, now,
+                ip.slice(0, 45), ip.slice(0, 45)
+            ]
         );
 
         const insertedId = (result as { insertId?: number }).insertId;

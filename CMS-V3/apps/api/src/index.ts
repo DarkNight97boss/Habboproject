@@ -9,6 +9,7 @@ import { populateAuth } from './middleware/auth.js';
 import { makeRateLimit } from './middleware/rate-limit.js';
 import { securityHeaders } from './middleware/security-headers.js';
 import authRoute from './routes/auth.js';
+import communityRoute from './routes/community.js';
 import meRoute from './routes/me.js';
 
 const log = pino({
@@ -43,6 +44,7 @@ app.get('/version', c => c.json({ name: 'cms-v3-api', version: '0.1.0', env: env
 // === Routes ===
 app.route('/api/v2/auth', authRoute);
 app.route('/api/v2/me', meRoute);
+app.route('/api/v2/community', communityRoute);
 
 // === 404 fallback ===
 app.notFound(c => c.json({ error: 'not_found', path: c.req.path }, 404));

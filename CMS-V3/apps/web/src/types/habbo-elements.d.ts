@@ -41,6 +41,10 @@ declare module 'react' {
             'habbo-moderation-notification': HabboEl;
             'habbo-discussions': HabboEl;
             'habbo-empty-results': HabboEl;
+            'habbo-columns-channel': HabboEl;
+            'habbo-card': HabboEl;
+            'habbo-like': HabboEl;
+            'habbo-avatar': HabboEl;
         }
     }
 }

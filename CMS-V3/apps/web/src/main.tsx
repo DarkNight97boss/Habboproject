@@ -4,6 +4,7 @@ import { StrictMode, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { HomePage } from './routes/HomePage';
+import { RegistrationPage } from './routes/RegistrationPage';
 
 // NB: il CSS ufficiale habbo.it (app.a8ea7435.css) è caricato direttamente
 // in index.html via <link>. Niente Tailwind/global.css qui — sarebbero
@@ -24,6 +25,7 @@ createRoot(root).render(
             <BrowserRouter>
                 <Routes>
                     <Route path="/" element={<HomePage />} />
+                    <Route path="/registration" element={<RegistrationPage />} />
                     <Route path="/community" element={<Placeholder name="Community" />} />
                     <Route path="/shop" element={<Placeholder name="Shop" />} />
                     <Route path="/playing-habbo" element={<Placeholder name="Il Mondo di Habbo" />} />

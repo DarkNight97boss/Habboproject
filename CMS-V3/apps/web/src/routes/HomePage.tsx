@@ -90,7 +90,11 @@ function UserMenu({ user }: { user: AuthUser }): ReactNode
                         className="user-menu__toggle"
                     >
                         <div className="user-menu__name__wrapper">
-                            <div className="user-menu__name">{user.username}</div>
+                            {/* NB: la classe --open attiva la rotazione della freccia
+                                ::before via la regola ufficiale
+                                .user-menu__name--open::before { transform: rotate(180deg) }
+                                con transition: transform .3s sul base selector */}
+                            <div className={`user-menu__name${open ? ' user-menu__name--open' : ''}`}>{user.username}</div>
                         </div>
                         <habbo-imager className="user-menu__avatar">
                             <img

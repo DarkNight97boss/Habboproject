@@ -154,12 +154,16 @@ function TabsAuthed(): ReactNode
                     <div className="tabs__toggle__title">Novità</div>
                 </div>
                 <ul className="tabs__menu ng-hide">
-                    <li className="tab">
-                        <a href="/" className="tab__link tab__link--active">Novità</a>
-                    </li>
-                    <li className="tab">
-                        <a href="/messaging" className="tab__link">Messaggi</a>
-                    </li>
+                    <habbo-tab>
+                        <li className="tab">
+                            <a href="/" className="tab__link tab__link--active">Novità</a>
+                        </li>
+                    </habbo-tab>
+                    <habbo-tab>
+                        <li className="tab">
+                            <a href="/messaging" className="tab__link">Messaggi</a>
+                        </li>
+                    </habbo-tab>
                 </ul>
             </nav>
         </habbo-tabs>

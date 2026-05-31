@@ -60,7 +60,9 @@ export function ProfilePage(): ReactNode
         ? new Date(data.user.accountCreated * 1000).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })
         : '—';
 
-    // Order ufficiale habbo.it Avaren: Distintivi, Amici, Stanze, Gruppi.
+    // Order ufficiale habbo.it Avaren: Distintivi, Amici, Stanze, Gruppi,
+    // poi sezione Foto (full-width sotto), poi "Registrato su Habbo il <date>"
+    // + 3 cuoricini decorativi.
     const body = (
         <main className="wrapper wrapper--content">
             <div className="profile__section">
@@ -74,9 +76,16 @@ export function ProfilePage(): ReactNode
                     </habbo-empty-results>
                 )}
             </div>
+            {data.photos.length > 0 && <PhotosSection photos={data.photos} username={data.user.username} />}
             <p className="profile__registered" style={{ textAlign: 'center', marginTop: 24, color: '#7ecaee', textTransform: 'uppercase' }}>
                 Registrato su Habbo il <strong>{regDate}</strong>
             </p>
+            {/* 3 cuoricini decorativi come l'ufficiale Avaren in fondo */}
+            <div style={{ textAlign: 'center', margin: '16px 0', fontSize: 22, letterSpacing: 8 }}>
+                <span style={{ color: '#e84d6e' }}>♥</span>
+                <span style={{ color: '#e84d6e' }}>♥</span>
+                <span style={{ color: '#e84d6e' }}>♥</span>
+            </div>
         </main>
     );
 
@@ -279,6 +288,77 @@ function RoomsCard({ rooms, totalCount }: { rooms: Room[]; totalCount: number })
     );
 }
 
+// ============================================================
+// PHOTOS SECTION (full-width sotto le 4 cards)
+// ============================================================
+
+interface PhotoSummary
+{
+    id: number;
+    timestamp: number;
+    url: string;
+}
+
+function PhotosSection({ photos, username }: { photos: PhotoSummary[]; username: string }): ReactNode
+{
+    return (
+        <section className="profile__foto" style={{ marginTop: 24 }}>
+            <h2 style={{ color: '#fff', textTransform: 'uppercase', borderBottom: '2px solid rgba(255,255,255,.2)', paddingBottom: 8, marginBottom: 12 }}>
+                Foto
+            </h2>
+            <ul style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: 12,
+                listStyle: 'none',
+                padding: 0,
+                margin: 0
+            }}>
+                {photos.map(p => (
+                    <li key={p.id}>
+                        <a href={`/profile/${encodeURIComponent(username)}/photo/${p.id}`} style={{ display: 'block', position: 'relative' }}>
+                            <img
+                                src={p.url}
+                                alt=""
+                                loading="lazy"
+                                style={{ width: '100%', height: 'auto', borderRadius: 3, display: 'block' }}
+                            />
+                            <div style={{
+                                position: 'absolute',
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                padding: '4px 8px',
+                                background: 'linear-gradient(transparent, rgba(0,0,0,.7))',
+                                color: '#fff',
+                                fontSize: 12,
+                                display: 'flex',
+                                justifyContent: 'space-between'
+                            }}>
+                                <span>{formatPhotoDateShort(p.timestamp)}</span>
+                            </div>
+                        </a>
+                    </li>
+                ))}
+            </ul>
+            <div style={{ textAlign: 'right', marginTop: 8 }}>
+                <a href="/community/photos" style={{ color: '#fbd33f', textTransform: 'uppercase', fontWeight: 'bold' }}>
+                    Foto da Habbo &raquo;
+                </a>
+            </div>
+        </section>
+    );
+}
+
+function formatPhotoDateShort(ts: number): string
+{
+    const d = new Date(ts * 1000);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yy = String(d.getFullYear()).slice(-2);
+    return `${dd}/${mm}/${yy}`;
+}
+
 function GroupsCard({ groups, totalCount }: { groups: Group[]; totalCount: number }): ReactNode
 {
     return (
@@ -346,6 +426,7 @@ interface ProfileResponse
     friends: Friend[];
     groups: Group[];
     badges: Badge[];
+    photos: PhotoSummary[];
     counts: {
         photos: number;
         rooms: number;

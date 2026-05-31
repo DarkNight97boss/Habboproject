@@ -87,6 +87,15 @@ profile.get('/:username', async c =>
         [u.id]
     );
 
+    // Foto: ultime 8 dello user (come Avaren ufficiale).
+    const photos = await dbQuery<{ id: number; timestamp: number; url: string }>(
+        `SELECT id, timestamp, url FROM camera_web
+         WHERE user_id = ?
+         ORDER BY timestamp DESC
+         LIMIT 8`,
+        [u.id]
+    );
+
     // Conteggi totali (stats card).
     const counts = await dbQuery<{
         photos: number; rooms: number; friends: number; groups: number;
@@ -130,6 +139,7 @@ profile.get('/:username', async c =>
         groups,
         badges: badges.map(b => ({ code: b.badge_code, slot: b.slot_id })),
         achievements,
+        photos: photos.map(p => ({ id: p.id, timestamp: p.timestamp, url: p.url })),
         counts: counts[0] ?? { photos: 0, rooms: 0, friends: 0, groups: 0, badges: 0, achievements: 0 }
     });
 });

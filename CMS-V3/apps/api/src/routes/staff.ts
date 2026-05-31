@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { dbExecute, dbQuery } from '../db/pool.js';
 import { requireAuth, requireRank } from '../middleware/auth.js';
 import { hashPassword } from '../security/password.js';
+import { fetchAllNewsAdmin, fetchNewsBySlug } from '../services/news.js';
 import { rcon } from '../services/rcon.js';
 
 /**
@@ -881,7 +882,151 @@ staff.get('/audit-log', async c =>
 });
 
 // =================================================================
-// 9) STAFF LIST (porting staffpage.php)
+// 9) NEWS MANAGEMENT (porting news.php + editnews.php)
+// =================================================================
+// La tabella cms_v3_news viene autogestita dal service `news.ts`
+// (CREATE TABLE IF NOT EXISTS + seed) — qui assumiamo che il primo
+// accesso pubblico l'abbia già inizializzata.
+
+const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+function slugify(s: string): string
+{
+    return s.toLowerCase()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')  // strip accenti
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 80);
+}
+
+staff.get('/news', async c =>
+{
+    const items = await fetchAllNewsAdmin();
+    return c.json({ news: items });
+});
+
+staff.get('/news/:slug', async c =>
+{
+    const slug = c.req.param('slug');
+    const item = await fetchNewsBySlug(slug, true);
+    if(!item) return c.json({ error: 'not_found' }, 404);
+    return c.json({ article: item });
+});
+
+staff.post('/news', async c =>
+{
+    const actor = c.var.user!;
+    const body = await c.req.json().catch(() => null);
+    const parsed = z.object({
+        slug: z.string().max(80).optional(),                 // se omesso → auto-slugify(title)
+        title: z.string().min(3).max(200),
+        category: z.string().max(40).default('aggiornamenti-su-habbo'),
+        categoryLabel: z.string().max(60).default('Aggiornamenti su Habbo'),
+        summary: z.string().min(10).max(500),
+        bodyHtml: z.string().min(10),
+        image: z.string().max(255).default(''),
+        published: z.boolean().default(true)
+    }).safeParse(body);
+    if(!parsed.success) return c.json({ error: 'bad_request', details: parsed.error.errors }, 400);
+
+    const slug = parsed.data.slug && slugPattern.test(parsed.data.slug)
+        ? parsed.data.slug
+        : slugify(parsed.data.title);
+    if(!slug) return c.json({ error: 'invalid_slug' }, 400);
+
+    const now = Math.floor(Date.now() / 1000);
+    try
+    {
+        const r = await dbExecute(
+            `INSERT INTO cms_v3_news
+                (slug, title, category, category_label, summary, body_html, image,
+                 author_id, published, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                slug, parsed.data.title, parsed.data.category, parsed.data.categoryLabel,
+                parsed.data.summary, parsed.data.bodyHtml, parsed.data.image,
+                Number(actor.sub), parsed.data.published ? 1 : 0, now, now
+            ]
+        );
+        await logRconAudit(Number(actor.sub), 'news.create', clientIp(c), c.req.header('user-agent') ?? '',
+            { newsId: r.insertId, slug, title: parsed.data.title });
+        return c.json({ ok: true, id: r.insertId, slug });
+    }
+    catch(e)
+    {
+        const msg = (e as Error).message;
+        if(msg.includes('Duplicate')) return c.json({ error: 'slug_already_exists' }, 409);
+        throw e;
+    }
+});
+
+staff.patch('/news/:id', async c =>
+{
+    const actor = c.var.user!;
+    const id = Number(c.req.param('id'));
+    if(!Number.isFinite(id) || id <= 0) return c.json({ error: 'bad_request' }, 400);
+
+    const body = await c.req.json().catch(() => null);
+    const parsed = z.object({
+        slug: z.string().max(80).optional(),
+        title: z.string().min(3).max(200).optional(),
+        category: z.string().max(40).optional(),
+        categoryLabel: z.string().max(60).optional(),
+        summary: z.string().min(10).max(500).optional(),
+        bodyHtml: z.string().min(10).optional(),
+        image: z.string().max(255).optional(),
+        published: z.boolean().optional()
+    }).safeParse(body);
+    if(!parsed.success) return c.json({ error: 'bad_request', details: parsed.error.errors }, 400);
+
+    const sets: string[] = [];
+    const vals: unknown[] = [];
+    if(parsed.data.slug !== undefined)
+    {
+        if(!slugPattern.test(parsed.data.slug)) return c.json({ error: 'invalid_slug' }, 400);
+        sets.push('slug = ?'); vals.push(parsed.data.slug);
+    }
+    if(parsed.data.title !== undefined) { sets.push('title = ?'); vals.push(parsed.data.title); }
+    if(parsed.data.category !== undefined) { sets.push('category = ?'); vals.push(parsed.data.category); }
+    if(parsed.data.categoryLabel !== undefined) { sets.push('category_label = ?'); vals.push(parsed.data.categoryLabel); }
+    if(parsed.data.summary !== undefined) { sets.push('summary = ?'); vals.push(parsed.data.summary); }
+    if(parsed.data.bodyHtml !== undefined) { sets.push('body_html = ?'); vals.push(parsed.data.bodyHtml); }
+    if(parsed.data.image !== undefined) { sets.push('image = ?'); vals.push(parsed.data.image); }
+    if(parsed.data.published !== undefined) { sets.push('published = ?'); vals.push(parsed.data.published ? 1 : 0); }
+    if(!sets.length) return c.json({ error: 'no_changes' }, 400);
+
+    sets.push('updated_at = ?');
+    vals.push(Math.floor(Date.now() / 1000));
+    vals.push(id);
+
+    try
+    {
+        await dbExecute(`UPDATE cms_v3_news SET ${sets.join(', ')} WHERE id = ?`, vals);
+    }
+    catch(e)
+    {
+        const msg = (e as Error).message;
+        if(msg.includes('Duplicate')) return c.json({ error: 'slug_already_exists' }, 409);
+        throw e;
+    }
+
+    await logRconAudit(Number(actor.sub), 'news.update', clientIp(c), c.req.header('user-agent') ?? '',
+        auditDetails({ newsId: id, changes: parsed.data }));
+    return c.json({ ok: true });
+});
+
+staff.delete('/news/:id', async c =>
+{
+    const actor = c.var.user!;
+    const id = Number(c.req.param('id'));
+    if(!Number.isFinite(id) || id <= 0) return c.json({ error: 'bad_request' }, 400);
+    await dbExecute('DELETE FROM cms_v3_news WHERE id = ? LIMIT 1', [id]);
+    await logRconAudit(Number(actor.sub), 'news.delete', clientIp(c), c.req.header('user-agent') ?? '',
+        { newsId: id });
+    return c.json({ ok: true });
+});
+
+// =================================================================
+// 10) STAFF LIST (porting staffpage.php)
 // =================================================================
 staff.get('/staff-list', async c =>
 {

@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { dbQuery } from '../db/pool.js';
+import { ensureNewsTable, fetchNewsBySlug, fetchNewsList } from '../services/news.js';
 
 const community = new Hono();
 
@@ -183,22 +184,23 @@ const NEWS: NewsItem[] = [
     }
 ];
 
-community.get('/news', c =>
+community.get('/news', async c =>
 {
     const cat = c.req.query('category');
-    const items = (cat && cat !== 'all') ? NEWS.filter(n => n.category === cat) : NEWS;
-    // Restituiamo senza bodyHtml per la lista (più leggera).
-    return c.json({
-        news: items.map(({ bodyHtml: _b, ...rest }) => rest)
-    });
+    // Auto-create tabella + seed con NEWS hardcoded al primo accesso.
+    // Idempotente: se cms_v3_news contiene già righe, il seed non fa nulla.
+    await ensureNewsTable(NEWS);
+    const items = await fetchNewsList(cat);
+    return c.json({ news: items });
 });
 
-community.get('/news/:slug', c =>
+community.get('/news/:slug', async c =>
 {
     const slug = c.req.param('slug');
-    const item = NEWS.find(n => n.slug === slug);
-    if(!item) return c.json({ error: 'not_found' }, 404);
-    return c.json({ article: item });
+    await ensureNewsTable(NEWS);
+    const article = await fetchNewsBySlug(slug);
+    if(!article) return c.json({ error: 'not_found' }, 404);
+    return c.json({ article });
 });
 
 // =================================================================

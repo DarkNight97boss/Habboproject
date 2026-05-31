@@ -239,6 +239,15 @@ community.get('/photos/:id', async c =>
     const p = rows[0];
     if(!p) return c.json({ error: 'not_found' }, 404);
 
+    // "Altri scatti dell'autore": le ultime 6 foto dello stesso utente,
+    // escluso lo scatto corrente.
+    const others = await dbQuery<{ id: number; timestamp: number; url: string }>(
+        `SELECT id, timestamp, url FROM camera_web
+         WHERE user_id = ? AND id <> ?
+         ORDER BY timestamp DESC LIMIT 6`,
+        [p.user_id, p.id]
+    );
+
     return c.json({
         photo: {
             id: p.id,
@@ -250,7 +259,8 @@ community.get('/photos/:id', async c =>
             timestamp: p.timestamp,
             url: p.url,
             likes: 0
-        }
+        },
+        otherPhotos: others.map(o => ({ id: o.id, timestamp: o.timestamp, url: o.url }))
     });
 });
 

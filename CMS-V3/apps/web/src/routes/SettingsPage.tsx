@@ -19,12 +19,15 @@ import { useAuth } from '../hooks/useAuth';
  * Sezioni: privacy (default) | password | email | motto. Le altre
  * (2FA, personaggi, wallet) le aggiungeremo quando avranno backend.
  */
-type Section = 'privacy' | 'password' | 'email' | 'motto';
+type Section = 'privacy' | 'account-protection' | '2fa' | 'password' | 'email' | 'characters' | 'motto';
 
 const SECTIONS: { key: Section; label: string }[] = [
     { key: 'privacy', label: 'Privacy' },
+    { key: 'account-protection', label: 'Protezione Account' },
+    { key: '2fa', label: '2FA' },
     { key: 'password', label: 'Password' },
     { key: 'email', label: 'Email' },
+    { key: 'characters', label: 'Personaggi' },
     { key: 'motto', label: 'Motto' }
 ];
 
@@ -66,8 +69,11 @@ export function SettingsPage(): ReactNode
                 <section>
                     <habbo-compile className="main main--fixed">
                         {validSection === 'privacy' && <PrivacySection />}
+                        {validSection === 'account-protection' && <AccountProtectionSection />}
+                        {validSection === '2fa' && <TwoFactorSection />}
                         {validSection === 'password' && <PasswordSection />}
                         {validSection === 'email' && <EmailSection currentEmail={user.mail} />}
+                        {validSection === 'characters' && <CharactersSection username={user.username} />}
                         {validSection === 'motto' && <MottoSection currentMotto={user.motto} />}
                     </habbo-compile>
                     <habbo-web-pages className="aside aside--box aside--fixed">
@@ -209,5 +215,80 @@ function MottoSection({ currentMotto }: { currentMotto: string }): ReactNode
             <button type="submit" style={{ marginTop: 8, padding: '8px 16px', background: '#0f7dbc', color: 'white', border: '2px solid #2a9cde', borderRadius: 5, cursor: 'pointer', fontWeight: 'bold' }}>AGGIORNA</button>
             {msg && <p style={{ marginTop: 8 }}>{msg}</p>}
         </form>
+    );
+}
+
+function AccountProtectionSection(): ReactNode
+{
+    return (
+        <div style={{ padding: 16, color: '#fff' }}>
+            <h2 style={{ textTransform: 'uppercase', margin: '0 0 12px' }}>Protezione Account</h2>
+            <p style={{ opacity: 0.85 }}>
+                Blocca o sblocca l'accesso al tuo account. Quando bloccato, nessuno potrà fare login
+                anche con la password corretta — utile se sospetti che qualcuno abbia visto le tue
+                credenziali. Lo sblocchi via email o contattando lo staff.
+            </p>
+            <div style={{ background: 'rgba(255,255,255,0.05)', padding: 16, borderRadius: 5, marginTop: 16 }}>
+                <h3 style={{ margin: '0 0 8px', textTransform: 'uppercase' }}>Stato attuale</h3>
+                <p style={{ margin: 0 }}>🟢 Account <strong>attivo</strong></p>
+                <button
+                    type="button"
+                    disabled
+                    style={{ marginTop: 12, padding: '8px 16px', background: '#666', color: 'white', border: 'none', borderRadius: 5, cursor: 'not-allowed', opacity: 0.6 }}
+                    title="Disponibile a breve"
+                >
+                    BLOCCA ACCOUNT (in arrivo)
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function TwoFactorSection(): ReactNode
+{
+    return (
+        <div style={{ padding: 16, color: '#fff' }}>
+            <h2 style={{ textTransform: 'uppercase', margin: '0 0 12px' }}>Autenticazione a 2 Fattori (2FA)</h2>
+            <p style={{ opacity: 0.85 }}>
+                Aggiungi un livello extra di protezione richiedendo un codice TOTP dall'app authenticator
+                (Google Authenticator, Authy, 1Password, ecc.) al login.
+            </p>
+            <div style={{ background: 'rgba(255,255,255,0.05)', padding: 16, borderRadius: 5, marginTop: 16 }}>
+                <h3 style={{ margin: '0 0 8px', textTransform: 'uppercase' }}>Stato 2FA</h3>
+                <p style={{ margin: 0 }}>🔒 2FA <strong>non attivo</strong></p>
+                <p style={{ fontSize: 12, opacity: 0.7, margin: '8px 0' }}>
+                    Lo staff ha già 2FA obbligatoria. Per gli utenti normali il 2FA opt-in è in arrivo.
+                </p>
+                <button
+                    type="button"
+                    disabled
+                    style={{ marginTop: 8, padding: '8px 16px', background: '#666', color: 'white', border: 'none', borderRadius: 5, cursor: 'not-allowed', opacity: 0.6 }}
+                >
+                    ATTIVA 2FA (in arrivo)
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function CharactersSection({ username }: { username: string }): ReactNode
+{
+    return (
+        <div style={{ padding: 16, color: '#fff' }}>
+            <h2 style={{ textTransform: 'uppercase', margin: '0 0 12px' }}>Personaggi</h2>
+            <p style={{ opacity: 0.85 }}>
+                Habboproject permette <strong>un solo personaggio per persona</strong> (anti-multiaccount
+                tramite fingerprint browser + IP). Questo per garantire fair-play e mantenere la community
+                sana — niente smurf, niente alt account abusati.
+            </p>
+            <div style={{ background: 'rgba(255,255,255,0.05)', padding: 16, borderRadius: 5, marginTop: 16 }}>
+                <h3 style={{ margin: '0 0 8px', textTransform: 'uppercase' }}>Il tuo personaggio</h3>
+                <p style={{ margin: 0, fontSize: 18 }}>👤 <strong>{username}</strong></p>
+                <p style={{ fontSize: 12, opacity: 0.7, margin: '8px 0' }}>
+                    Per cambiare nome utente, contatta lo staff (<code>:cfh</code> in chat).
+                    Il cambio è disponibile una sola volta a vita.
+                </p>
+            </div>
+        </div>
     );
 }

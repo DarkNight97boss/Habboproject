@@ -2,24 +2,25 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8" />
-    <link rel="icon" href="https://images.habbo.com/habbo-web/america/it/assets/images/favicon.08c747be.ico" />
+    <link rel="icon" href="/assets/habbo/assets/images/favicon.08c747be.ico" />
     <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
     <meta name="theme-color" content="#0c3a65" />
     <meta name="description" content="Habboproject — la community" />
     <title>Conosci nuovi amici, divertiti, fatti notare! - Habbo</title>
 
-    <!-- Preconnect ai CDN ufficiali habbo per velocizzare il primo paint. -->
-    <link rel="preconnect" href="https://images.habbo.com" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
-    <!-- Sprite images ufficiali (background per icone nav, social, ecc.) -->
-    <link rel="prefetch" href="https://images.habbo.com/habbo-web/america/it/assets/images/sprite.275ed2fd.png" />
-    <link rel="prefetch" href="https://images.habbo.com/habbo-web/america/it/assets/images/sprite@2x.f98bb62b.png" media="(-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi), (min-resolution: 2dppx)" />
-    <link rel="prefetch" href="https://images.habbo.com/habbo-web/america/it/assets/images/backgrounds/hotel.c5bc8f85.png" />
-
-    <!-- CSS ufficiale habbo.it (riferimento diretto al CDN Sulake) -->
-    <link rel="stylesheet" href="https://images.habbo.com/habbo-web/america/it/app.a8ea7435.css" />
+    <!--
+        Tutti gli asset chrome (CSS + sprite + background + font + favicon)
+        sono mirrorati in locale sotto /assets/habbo/. Vedi
+        `apps/web/scripts/download-habbo-assets.mjs`:
+        scarica da images.habbo.com, riscrive le url() assolute della CSS
+        in path relativi locali, preserva la folder structure così le url()
+        relative continuano a risolvere.
+        Rigenera con `yarn workspace @cms-v3/web download-assets`.
+    -->
+    <link rel="prefetch" href="/assets/habbo/assets/images/sprite.275ed2fd.png" />
+    <link rel="prefetch" href="/assets/habbo/assets/images/sprite@2x.f98bb62b.png" media="(-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi), (min-resolution: 2dppx)" />
+    <link rel="prefetch" href="/assets/habbo/assets/images/backgrounds/hotel.c5bc8f85.png" />
+    <link rel="stylesheet" href="/assets/habbo/app.css" />
 
     <!-- Override leggeri specifici Habboproject (caricati DOPO la CSS ufficiale per priorità). -->
     <link rel="stylesheet" href="/src/styles/overrides.css" />

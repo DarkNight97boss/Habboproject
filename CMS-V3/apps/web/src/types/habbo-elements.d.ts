@@ -39,6 +39,8 @@ declare module 'react' {
             'habbo-imager': HabboEl;
             'habbo-hotel-native-button': HabboEl;
             'habbo-moderation-notification': HabboEl;
+            'habbo-discussions': HabboEl;
+            'habbo-empty-results': HabboEl;
         }
     }
 }

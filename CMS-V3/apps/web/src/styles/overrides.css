@@ -13,3 +13,27 @@
 
 /* Nasconde il toggle "login" che esiste solo nella versione Angular. */
 .header__top__toggle.login-button { display: none !important; }
+
+/*
+ * Sticky-footer fix per la React app.
+ *
+ * La CSS ufficiale habbo.it si aspetta `<body><div.content/><habbo-footer/></body>`,
+ * dove body è `display: flex; flex-direction: column` e `.content`
+ * ha `flex: 1 0 auto` (cresce per riempire lo spazio verticale residuo
+ * spingendo il footer in fondo).
+ *
+ * Vite/React monta tutto sotto `<div id="root">` che spezza la cascade
+ * flex: `body > #root > .content` invece di `body > .content`.
+ * Risultato: footer attaccato sotto il contenuto (specialmente visibile
+ * su pagine corte come /messaging in stato empty).
+ *
+ * Fix: rendiamo `#root` un flex column "passthrough" alto come il body,
+ * così `.content` cresce dentro #root come crescerebbe dentro body.
+ */
+#root {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 100%;
+    width: 100%;
+}

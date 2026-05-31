@@ -1,4 +1,5 @@
-import { type FormEvent, type ReactNode, useState } from 'react';
+import { type FormEvent, type MouseEvent, type ReactNode, useState } from 'react';
+import { type AuthUser, avatarUrl, useAuth } from '../hooks/useAuth';
 
 /**
  * Homepage habbo.it — replica usando le classi del CSS UFFICIALE
@@ -14,19 +15,23 @@ export function HomePage(): ReactNode
     // <section> contiene: h1, .main.main--fixed (col sinistra news), e due
     // <habbo-web-pages> sidebar (col destra, float:right + clear:right).
     // Il .news__navigation ("Più News") sta DENTRO .main--fixed, dopo le news.
-    // Struttura body ufficiale:
-    //   <div class="content">
-    //     <habbo-header-large/>
-    //     <habbo-tabs><nav class="tabs ng-hide"/></habbo-tabs>
-    //     <main class="wrapper wrapper--content"><section/></main>
-    //   </div>
-    //   <habbo-footer/>           ← OUTSIDE .content
+    const { data: user, isLoading } = useAuth();
+
+    // Durante il fetch iniziale di /me, mostra header anonimo (evita flash).
+    // Una volta noto lo stato (user || null), renderizza la variante giusta:
+    //  - ANONYMOUS: habbo-header-large (hero + login form)
+    //  - AUTHENTICATED: habbo-header-small (user-menu + GIOCA in nav)
+    //    + habbo-tabs visibili (Novità | Messaggi)
+    //    + habbo-moderation-notification dentro main
+    const isAuthed = !isLoading && user;
+
     return (
         <>
             <div className="content">
-                <HeaderLarge />
-                <Tabs />
+                {isAuthed ? <HeaderSmallAuthed user={user} /> : <HeaderLarge />}
+                {isAuthed ? <TabsAuthed /> : <Tabs />}
                 <main className="wrapper wrapper--content">
+                    {isAuthed ? <habbo-moderation-notification /> : null}
                     <section>
                         <h1>Ultime notizie</h1>
                         <div className="main main--fixed">
@@ -38,6 +43,126 @@ export function HomePage(): ReactNode
             </div>
             <FooterOfficial />
         </>
+    );
+}
+
+// ============================================================
+// HEADER SMALL (POST-LOGIN)
+// ============================================================
+
+function HeaderSmallAuthed({ user }: { user: AuthUser }): ReactNode
+{
+    return (
+        <habbo-header-small>
+            <header className="header__wrapper wrapper">
+                <a href="/" className="header__habbo__logo">
+                    <h1 className="header__habbo__name">Habbo</h1>
+                </a>
+                <UserMenu user={user} />
+            </header>
+            <habbo-navigation>
+                <NavigationBarAuthed />
+                <habbo-landing-menu />
+            </habbo-navigation>
+            <div className="wrapper" />
+        </habbo-header-small>
+    );
+}
+
+function UserMenu({ user }: { user: AuthUser }): ReactNode
+{
+    const [open, setOpen] = useState(false);
+
+    async function handleLogout(ev: MouseEvent): Promise<void>
+    {
+        ev.preventDefault();
+        try { await fetch('/api/v2/auth/logout', { method: 'POST', credentials: 'include' }); }
+        finally { window.location.href = '/'; }
+    }
+
+    return (
+        <habbo-user-menu className="header__aside header__aside--user-menu">
+            <div className="user-menu">
+                <div className="user-menu__header">
+                    <a
+                        href="#"
+                        onClick={ev => { ev.preventDefault(); setOpen(o => !o); }}
+                        className="user-menu__toggle"
+                    >
+                        <div className="user-menu__name__wrapper">
+                            <div className="user-menu__name">{user.username}</div>
+                        </div>
+                        <habbo-imager className="user-menu__avatar">
+                            <img
+                                src={avatarUrl(user.look, { headOnly: true, size: 'm' })}
+                                alt={user.username}
+                                className="imager"
+                            />
+                        </habbo-imager>
+                    </a>
+                </div>
+                <ul className={`user-menu__list${open ? '' : ' ng-hide'}`}>
+                    <li className="user-menu__item">
+                        <a href="/profile" className="user-menu__link user-menu__link--profile">Il mio profilo</a>
+                    </li>
+                    <li className="user-menu__item">
+                        <a href="/settings" className="user-menu__link user-menu__link--settings">Impostazioni</a>
+                    </li>
+                    <li className="user-menu__item">
+                        <a href="/help" className="user-menu__link user-menu__link--help">Aiuto</a>
+                    </li>
+                    <li className="user-menu__item">
+                        <a href="#" onClick={handleLogout} className="user-menu__link user-menu__link--logout">Esci</a>
+                    </li>
+                </ul>
+            </div>
+        </habbo-user-menu>
+    );
+}
+
+function NavigationBarAuthed(): ReactNode
+{
+    // Identica alla nav anonima ma con l'extra <li.navigation__item--hotel>
+    // che contiene il pulsante verde GIOCA (porta dentro /client).
+    return (
+        <nav className="navigation">
+            <ul className="navigation__menu">
+                <li className="navigation__item"><a id="ga-linkid-home" href="/" className="navigation__link navigation__link--home navigation__link--active">Home</a></li>
+                <li className="navigation__item"><a id="ga-linkid-community" href="/community" className="navigation__link navigation__link--community">Community</a></li>
+                <li className="navigation__item"><a id="ga-linkid-shop" href="/shop" className="navigation__link navigation__link--shop">Shop</a></li>
+                <li className="navigation__item"><a id="ga-linkid-playing-habbo" href="/playing-habbo" className="navigation__link navigation__link--playing-habbo">Il Mondo di Habbo</a></li>
+                <li className="navigation__item"><a id="ga-linkid-habbo-nft" href="/habbo-nft" className="navigation__link navigation__link--habbo-nft">COLLEZIONABILI</a></li>
+                <li className="navigation__item navigation__item--hotel">
+                    <habbo-hotel-native-button>
+                        <a id="ga-linkid-native" href="/client" className="hotel-button-native">
+                            <span className="hotel-button-native__text hotel-button-native__text--play">Gioca</span>
+                        </a>
+                    </habbo-hotel-native-button>
+                </li>
+            </ul>
+        </nav>
+    );
+}
+
+function TabsAuthed(): ReactNode
+{
+    // Tabs ufficiali post-login: "Novità" (attiva) | "Messaggi".
+    return (
+        <habbo-tabs>
+            <nav className="tabs">
+                <div className="tabs__toggle">
+                    <div className="tabs__toggle__title">Novità</div>
+                </div>
+                <ul className="tabs__menu ng-hide">
+                    <li className="tab">
+                        <a href="/" className="tab__link tab__link--active">Novità</a>
+                    </li>
+                    <li className="tab">
+                        <a href="/messaging" className="tab__link">Messaggi</a>
+                    </li>
+                </ul>
+            </nav>
+        </habbo-tabs>
     );
 }
 

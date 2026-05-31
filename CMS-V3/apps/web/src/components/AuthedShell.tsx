@@ -240,6 +240,40 @@ export function HomeTabs({ active }: { active: 'novita' | 'messaggi' }): ReactNo
     );
 }
 
+type ShopTab = 'acquista' | 'prepagate' | 'i-miei-acquisti';
+
+/**
+ * Tabs sezione Shop: Acquista | Prepagate | I miei acquisti
+ * (replica habbo-it/shop subnav).
+ */
+export function ShopTabs({ active }: { active: ShopTab }): ReactNode
+{
+    const items: { key: ShopTab; label: string; href: string }[] = [
+        { key: 'acquista', label: 'Acquista', href: '/shop' },
+        { key: 'prepagate', label: 'Prepagate', href: '/shop/prepagate' },
+        { key: 'i-miei-acquisti', label: 'I miei acquisti', href: '/shop/acquisti' }
+    ];
+    const activeLabel = items.find(i => i.key === active)?.label ?? 'Acquista';
+    return (
+        <habbo-tabs>
+            <nav className="tabs">
+                <div className="tabs__toggle">
+                    <div className="tabs__toggle__title">{activeLabel}</div>
+                </div>
+                <ul className="tabs__menu ng-hide">
+                    {items.map(it => (
+                        <habbo-tab key={it.key}>
+                            <li className="tab">
+                                <a href={it.href} className={`tab__link${it.key === active ? ' tab__link--active' : ''}`}>{it.label}</a>
+                            </li>
+                        </habbo-tab>
+                    ))}
+                </ul>
+            </nav>
+        </habbo-tabs>
+    );
+}
+
 type CommunityTab = 'foto' | 'stanze' | 'forum' | 'notizie';
 
 /**

@@ -82,7 +82,7 @@ function UserMenu({ user }: { user: AuthUser }): ReactNode
                 </div>
                 <ul className={`user-menu__list${open ? '' : ' ng-hide'}`}>
                     <li className="user-menu__item">
-                        <a href="/profile" className="user-menu__link user-menu__link--profile">Il mio profilo</a>
+                        <a href={`/profile/${encodeURIComponent(user.username)}`} className="user-menu__link user-menu__link--profile">Il mio profilo</a>
                     </li>
                     <li className="user-menu__item">
                         <a href="/settings" className="user-menu__link user-menu__link--settings">Impostazioni</a>

@@ -171,6 +171,55 @@ async function main()
         catch(e) { failed.push({ relPath: rel, error: String(e.message) }); }
     }
 
+    // 6) JS bundle del CDN base (Angular vendor + scripts del sito ufficiale).
+    //    Nominati con hash della versione corrente — quando Sulake rilascia
+    //    una nuova build cambiano gli hex e questo script va aggiornato.
+    //    NB: NON usiamo questi script runtime (il nostro CMS è React) ma li
+    //    mirroriamo per future referenze (debug, parity check, eventuale
+    //    embedding di pezzi del client Angular).
+    const EXTRA_JS = [
+        'vendor.accb8962.js',
+        'scripts.b823e390.js'
+    ];
+    for(const rel of EXTRA_JS)
+    {
+        try
+        {
+            await downloadAsset(rel);
+            downloaded.push(rel);
+            // Recursive scan: parse il JS appena scaricato per pattern
+            // sub-chunk relativi al CDN base (lazy-loaded chunks Angular
+            // tipo `require.ensure('./foo.XXX.js')`). Catch i casi più
+            // comuni; se Sulake aggiunge code-splitting in futuro, estendi
+            // questa regex.
+            const js = await readFile(path.join(OUT_ROOT, rel), 'utf8');
+            const subChunks = new Set();
+            // import dinamici: import("foo.123.js") o require("./bar.456.js")
+            for(const m of js.matchAll(/["']\.?\.?\/?([\w./-]+\.js)["']/g))
+            {
+                const chunk = m[1];
+                // skip i file già presenti
+                if(chunk === rel) continue;
+                // skip path absoluti non habbo
+                if(chunk.startsWith('http')) continue;
+                subChunks.add(chunk);
+            }
+            if(subChunks.size > 0)
+            {
+                log(`  ↳ ${rel} referenzia ${subChunks.size} chunk JS — tento mirror`);
+                for(const chunk of subChunks)
+                {
+                    try { await downloadAsset(chunk); downloaded.push(chunk); }
+                    catch { /* 404 sui chunk inesistenti è atteso, skip silent */ }
+                }
+            }
+        }
+        catch(e)
+        {
+            failed.push({ relPath: rel, error: String(e.message) });
+        }
+    }
+
     // 6) sommario
     log(`\n=== DONE ===`);
     log(`OK   : ${downloaded.length} file`);

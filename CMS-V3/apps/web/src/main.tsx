@@ -3,12 +3,14 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { StrictMode, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
+import { CommunityArticlePage } from './routes/CommunityArticlePage';
 import { CommunityForumPage } from './routes/CommunityForumPage';
 import { CommunityNewsPage } from './routes/CommunityNewsPage';
 import { CommunityPhotosPage } from './routes/CommunityPhotosPage';
 import { CommunityRoomsPage } from './routes/CommunityRoomsPage';
 import { HomePage } from './routes/HomePage';
 import { MessagingPage } from './routes/MessagingPage';
+import { NotFoundPage } from './routes/NotFoundPage';
 import { RegistrationPage } from './routes/RegistrationPage';
 
 // NB: il CSS ufficiale habbo.it (app.a8ea7435.css) è caricato direttamente
@@ -38,10 +40,11 @@ createRoot(root).render(
                     <Route path="/community/forum" element={<CommunityForumPage />} />
                     <Route path="/community/category" element={<Navigate to="/community/category/all" replace />} />
                     <Route path="/community/category/:category" element={<CommunityNewsPage />} />
+                    <Route path="/community/article/:slug" element={<CommunityArticlePage />} />
                     <Route path="/shop" element={<Placeholder name="Shop" />} />
                     <Route path="/playing-habbo" element={<Placeholder name="Il Mondo di Habbo" />} />
                     <Route path="/habbo-nft" element={<Placeholder name="Collezionabili" />} />
-                    <Route path="*" element={<NotFound />} />
+                    <Route path="*" element={<NotFoundPage />} />
                 </Routes>
             </BrowserRouter>
             <ReactQueryDevtools initialIsOpen={false} />
@@ -55,16 +58,6 @@ function Placeholder({ name }: { name: string }): ReactNode
         <div className="wrapper wrapper--content">
             <h1>{name}</h1>
             <p>Pagina in costruzione.</p>
-        </div>
-    );
-}
-
-function NotFound(): ReactNode
-{
-    return (
-        <div className="wrapper wrapper--content">
-            <h1>OH BOBBA! Pagina non trovata.</h1>
-            <p>Frank non ha trovato la pagina che stai cercando. <a href="/">Homepage</a></p>
         </div>
     );
 }

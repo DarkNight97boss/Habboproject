@@ -82,42 +82,104 @@ community.get('/rooms', async c =>
 // Quando avremo una tabella `cms_articles` o simile la migrazione
 // è solo cambiare la sorgente.
 
-const NEWS = [
+interface NewsItem
+{
+    slug: string;
+    href: string;
+    image: string;
+    title: string;
+    date: string;
+    category: string;
+    categoryLabel: string;
+    summary: string;
+    bodyHtml: string;
+}
+
+const NEWS: NewsItem[] = [
     {
+        slug: 'welcome',
         href: '/community/article/welcome',
         image: 'https://images.habbo.com/web_images/habbo-web-articles/lpromo_jonas_may26.png',
         title: 'BENVENUTO SU HABBO',
         date: '31 mag 2026',
         category: 'aggiornamenti-su-habbo',
         categoryLabel: 'Aggiornamenti su Habbo',
-        summary: 'Il tuo hotel virtuale è pronto. Esplora le stanze, fai nuovi amici e personalizza il tuo Habbo. Clicca su GIOCA per iniziare!'
+        summary: 'Il tuo hotel virtuale è pronto. Esplora le stanze, fai nuovi amici e personalizza il tuo Habbo. Clicca su GIOCA per iniziare!',
+        bodyHtml: `
+            <h2>Benvenuto, nuovo Habbo!</h2>
+            <p>Habboproject è una community italiana dedicata al gioco originale, restaurata e curata
+               per offrire la stessa esperienza pixel-art che amavamo nei primi 2000.</p>
+            <p>Cosa puoi fare:</p>
+            <ul>
+                <li>Crea il tuo avatar e personalizza il look</li>
+                <li>Visita le stanze pubbliche e fai nuove amicizie</li>
+                <li>Costruisci la tua stanza usando il furni del catalogo</li>
+                <li>Partecipa agli eventi staff-organizzati</li>
+            </ul>
+            <p>Clicca su <strong>GIOCA</strong> in alto a destra per entrare nell'hotel.</p>
+        `
     },
     {
+        slug: 'roller-disco',
         href: '/community/article/roller-disco',
         image: 'https://images.habbo.com/web_images/habbo-web-articles/lpromo_rollerdiscoFL_may26.png',
         title: 'LIVE ORA: Roller Disco!',
         date: '01 mag 2026',
         category: 'campagne-attivita',
         categoryLabel: 'Campagne & Attività',
-        summary: "La Pista Retrò ti sta chiamando. Entra e dai un'occhiata!"
+        summary: "La Pista Retrò ti sta chiamando. Entra e dai un'occhiata!",
+        bodyHtml: `
+            <h2>Pattini, luci, musica anni '70!</h2>
+            <p>La Pista Retrò è aperta nella stanza pubblica "Roller Disco". Indossa i pattini gratis
+               che trovi nel guardaroba e lanciati sulla pista a tempo di musica.</p>
+            <p>Eventi schedulati ogni sera alle 21:00 con DJ Habbo dal vivo.</p>
+        `
     },
     {
+        slug: 'comandi-italiani',
         href: '/community/article/comandi-italiani',
         image: 'https://images.habbo.com/web_images/habbo-web-articles/lpromo_jonas_may26.png',
         title: 'COMANDI ITALIANI',
         date: '29 mag 2026',
         category: 'aggiornamenti-su-habbo',
         categoryLabel: 'Aggiornamenti su Habbo',
-        summary: 'Ora puoi usare :bando, :tira, :spingi, :silenzia e altri 140 comandi in italiano.'
+        summary: 'Ora puoi usare :bando, :tira, :spingi, :silenzia e altri 140 comandi in italiano.',
+        bodyHtml: `
+            <h2>140 comandi tradotti</h2>
+            <p>Ora puoi usare i comandi in italiano in chat senza dover ricordare quelli in inglese:</p>
+            <ul>
+                <li><code>:bando &lt;nome&gt;</code> — banna un utente dalla tua stanza</li>
+                <li><code>:tira &lt;nome&gt;</code> — chiama un utente vicino a te</li>
+                <li><code>:spingi &lt;nome&gt;</code> — sposta un utente di una tile</li>
+                <li><code>:silenzia &lt;nome&gt; &lt;minuti&gt;</code> — mute temporaneo</li>
+                <li>e altri 140 comandi…</li>
+            </ul>
+            <p>Lista completa via <code>:comandi</code> in chat.</p>
+        `
     },
     {
+        slug: 'oracolo',
         href: '/community/article/oracolo',
         image: 'https://images.habbo.com/web_images/habbo-web-articles/lpromo_HabboPulse.png',
         title: 'BOT ORACOLO ATTIVO',
         date: '30 mag 2026',
         category: 'nuove-funzionalita',
         categoryLabel: 'Nuove funzionalità',
-        summary: 'Entra nella stanza Oracolo e proponi le tue idee per nuove feature.'
+        summary: 'Entra nella stanza Oracolo e proponi le tue idee per nuove feature.',
+        bodyHtml: `
+            <h2>Cosa è Oracolo?</h2>
+            <p>Oracolo è un bot che vive nella stanza omonima e ascolta le proposte di feature
+               che la community vorrebbe vedere implementate in Habboproject.</p>
+            <p>Come funziona:</p>
+            <ul>
+                <li>Entra nella stanza "Oracolo" (cerca su Navigator)</li>
+                <li>Scrivi la tua proposta normalmente in chat</li>
+                <li>Oracolo la salva e altri utenti possono votarla</li>
+                <li>Le top-10 proposte vengono valutate dallo staff per l'implementazione</li>
+            </ul>
+            <p>Comandi staff: <code>:oracolo lista</code>, <code>:oracolo accetta &lt;id&gt;</code>,
+               <code>:oracolo rifiuta &lt;id&gt;</code>.</p>
+        `
     }
 ];
 
@@ -125,7 +187,18 @@ community.get('/news', c =>
 {
     const cat = c.req.query('category');
     const items = (cat && cat !== 'all') ? NEWS.filter(n => n.category === cat) : NEWS;
-    return c.json({ news: items });
+    // Restituiamo senza bodyHtml per la lista (più leggera).
+    return c.json({
+        news: items.map(({ bodyHtml: _b, ...rest }) => rest)
+    });
+});
+
+community.get('/news/:slug', c =>
+{
+    const slug = c.req.param('slug');
+    const item = NEWS.find(n => n.slug === slug);
+    if(!item) return c.json({ error: 'not_found' }, 404);
+    return c.json({ article: item });
 });
 
 // =================================================================

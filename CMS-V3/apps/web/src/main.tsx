@@ -19,6 +19,8 @@ import { ProfilePage } from './routes/ProfilePage';
 import { RegistrationPage } from './routes/RegistrationPage';
 import { SettingsPage } from './routes/SettingsPage';
 import { ShopPage } from './routes/ShopPage';
+import { ShopPrepaidPage } from './routes/ShopPrepaidPage';
+import { ShopPurchasesPage } from './routes/ShopPurchasesPage';
 import { StaticInfoPage } from './routes/StaticInfoPage';
 
 // NB: il CSS ufficiale habbo.it (app.a8ea7435.css) è caricato direttamente
@@ -50,6 +52,8 @@ createRoot(root).render(
                     <Route path="/community/category/:category" element={<CommunityNewsPage />} />
                     <Route path="/community/article/:slug" element={<CommunityArticlePage />} />
                     <Route path="/shop" element={<ShopPage />} />
+                    <Route path="/shop/prepagate" element={<ShopPrepaidPage />} />
+                    <Route path="/shop/acquisti" element={<ShopPurchasesPage />} />
                     <Route path="/playing-habbo" element={<PlayingHabboPage />} />
                     <Route path="/playing-habbo/:slug" element={<StaticInfoPage />} />
                     <Route path="/help/:slug" element={<StaticInfoPage />} />

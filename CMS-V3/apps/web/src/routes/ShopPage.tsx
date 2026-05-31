@@ -1,6 +1,6 @@
 import { type ReactNode, useState } from 'react';
-import { Navigate } from 'react-router';
-import { AuthedShell } from '../components/AuthedShell';
+import { Navigate, useLocation } from 'react-router';
+import { AuthedShell, ShopTabs } from '../components/AuthedShell';
 import { type AuthUser, useAuth } from '../hooks/useAuth';
 
 /**
@@ -59,9 +59,19 @@ const BUNDLES: Bundle[] = [
 export function ShopPage(): ReactNode
 {
     const { data: user, isLoading } = useAuth();
+    const location = useLocation();
     const [activeCat, setActiveCat] = useState<Category>('tutti');
     if(isLoading) return null;
     if(!user) return <Navigate to="/" replace />;
+
+    // Sub-page tab routing (acquista/prepagate/acquisti) — solo presentazione
+    // diversa, lo stato auth è condiviso. Le altre sub-pages renderizzano
+    // ShopPrepaidPage / ShopPurchasesPage (in /shop/prepagate, /shop/acquisti).
+    const subTab = location.pathname.endsWith('/prepagate')
+        ? 'prepagate'
+        : location.pathname.endsWith('/acquisti')
+        ? 'i-miei-acquisti'
+        : 'acquista';
 
     const filtered = activeCat === 'tutti' ? BUNDLES : BUNDLES.filter(b => b.category === activeCat);
     const daily = filtered.filter(b => b.section === 'daily');
@@ -70,7 +80,7 @@ export function ShopPage(): ReactNode
     const rares = filtered.filter(b => b.section === 'rares');
 
     return (
-        <AuthedShell user={user}>
+        <AuthedShell user={user} tabs={<ShopTabs active={subTab} />}>
             <main className="wrapper wrapper--content">
                 <header className="shop__header">
                     <h1 className="shop__header__title">Guadagna crediti, diamanti e premi</h1>

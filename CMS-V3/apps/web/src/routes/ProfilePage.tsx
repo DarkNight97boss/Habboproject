@@ -49,6 +49,11 @@ export function ProfilePage(): ReactNode
         ? new Date(data.user.accountCreated * 1000).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })
         : '—';
 
+    // La CSS ufficiale habbo.it ha regole `.profile__card__wrapper--rooms/
+    // --groups/--friends/--badges` (float:left, width:50%, teaser image
+    // ::before in cima alla card) ma NON include una variante --achievements.
+    // Sull'ufficiale gli achievement sono dentro il client, non nel profilo
+    // web pubblico. Non li mostriamo qui per rispettare la fedeltà 1:1.
     const body = (
         <main className="wrapper wrapper--content">
             <ProfileBanner user={data.user} />
@@ -57,9 +62,7 @@ export function ProfilePage(): ReactNode
                 {data.groups.length > 0 && <GroupsCard groups={data.groups} totalCount={data.counts.groups} />}
                 {data.friends.length > 0 && <FriendsCard friends={data.friends} totalCount={data.counts.friends} />}
                 {data.badges.length > 0 && <BadgesCard badges={data.badges} totalCount={data.counts.badges} />}
-                {data.achievements.length > 0 && <AchievementsCard achievements={data.achievements} totalCount={data.counts.achievements} />}
-                {data.rooms.length === 0 && data.groups.length === 0 && data.friends.length === 0
-                    && data.badges.length === 0 && data.achievements.length === 0 && (
+                {data.rooms.length === 0 && data.groups.length === 0 && data.friends.length === 0 && data.badges.length === 0 && (
                     <habbo-empty-results>
                         <span>Questo profilo non ha ancora attività pubbliche.</span>
                     </habbo-empty-results>
@@ -104,37 +107,38 @@ interface ProfileUser
 
 function ProfileBanner({ user }: { user: ProfileUser }): ReactNode
 {
+    // Layout banner mirror habbo.it/profile/<user>:
+    //   <header.profile__header>            ← CSS ufficiale applica bg
+    //                                         profile.69262798.png + height
+    //     <div.profile__header__content.wrapper>
+    //       <habbo-avatar.profile__header__avatar>
+    //         <img/>                        ← avatar fullbody size=l
+    //       <div.profile__header__user>
+    //         <h1.profile__header__name>{username}
+    //         <p.profile__header__motto>{motto}
     return (
-        <header className="profile__header" style={{
-            background: 'url(/assets/habbo/assets/images/backgrounds/profile.69262798.png) center top no-repeat',
-            backgroundSize: 'cover',
-            padding: '20px 16px',
-            marginBottom: 16,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 24,
-            minHeight: 140,
-            borderRadius: 3
-        }}>
-            <habbo-avatar className="profile__avatar">
-                <img
-                    src={avatarUrl(user.look, { headOnly: false, size: 'l' })}
-                    alt={user.username}
-                    style={{ height: 130, imageRendering: 'pixelated' }}
-                />
-            </habbo-avatar>
-            <div style={{ flex: 1, color: '#fff' }}>
-                <h1 className="profile__title" style={{ margin: 0, fontSize: 32, textTransform: 'uppercase', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
-                    {user.username}
-                </h1>
-                {user.motto && (
-                    <p style={{ margin: '6px 0', fontStyle: 'italic', fontSize: 14, opacity: 0.95, textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
-                        "{user.motto}"
+        <header className="profile__header">
+            <div className="profile__header__content wrapper" style={{ display: 'flex', alignItems: 'center', gap: 24, padding: '20px 12px', minHeight: 130 }}>
+                <habbo-avatar className="profile__header__avatar">
+                    <img
+                        src={avatarUrl(user.look, { headOnly: false, size: 'l' })}
+                        alt={user.username}
+                        style={{ imageRendering: 'pixelated' }}
+                    />
+                </habbo-avatar>
+                <div className="profile__header__user" style={{ flex: 1, color: '#fff', textShadow: '0 2px 4px rgba(0,0,0,.5)' }}>
+                    <h1 className="profile__header__name" style={{ margin: 0, fontSize: 32, textTransform: 'uppercase' }}>
+                        {user.username}
+                    </h1>
+                    {user.motto && (
+                        <p className="profile__header__motto" style={{ margin: '6px 0', fontStyle: 'italic', fontSize: 14 }}>
+                            "{user.motto}"
+                        </p>
+                    )}
+                    <p style={{ margin: '4px 0 0', fontSize: 12, opacity: 0.85 }}>
+                        {user.online ? '🟢 Online' : '⚪ Offline'}
                     </p>
-                )}
-                <p style={{ margin: '4px 0 0', fontSize: 12, opacity: 0.85 }}>
-                    {user.online ? '🟢 Online' : '⚪ Offline'}
-                </p>
+                </div>
             </div>
         </header>
     );

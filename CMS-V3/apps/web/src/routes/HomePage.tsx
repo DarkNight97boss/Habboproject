@@ -14,21 +14,30 @@ export function HomePage(): ReactNode
     // <section> contiene: h1, .main.main--fixed (col sinistra news), e due
     // <habbo-web-pages> sidebar (col destra, float:right + clear:right).
     // Il .news__navigation ("Più News") sta DENTRO .main--fixed, dopo le news.
+    // Struttura body ufficiale:
+    //   <div class="content">
+    //     <habbo-header-large/>
+    //     <habbo-tabs><nav class="tabs ng-hide"/></habbo-tabs>
+    //     <main class="wrapper wrapper--content"><section/></main>
+    //   </div>
+    //   <habbo-footer/>           ← OUTSIDE .content
     return (
-        <div className="content">
-            <HeaderLarge />
-            <Tabs />
-            <main className="wrapper wrapper--content">
-                <section>
-                    <h1>Ultime notizie</h1>
-                    <div className="main main--fixed">
-                        <NewsList />
-                    </div>
-                    <Sidebar />
-                </section>
-            </main>
+        <>
+            <div className="content">
+                <HeaderLarge />
+                <Tabs />
+                <main className="wrapper wrapper--content">
+                    <section>
+                        <h1>Ultime notizie</h1>
+                        <div className="main main--fixed">
+                            <NewsList />
+                        </div>
+                        <Sidebar />
+                    </section>
+                </main>
+            </div>
             <FooterOfficial />
-        </div>
+        </>
     );
 }
 
@@ -267,8 +276,14 @@ function NavigationBar(): ReactNode
 
 function Tabs(): ReactNode
 {
-    // tabs vuoto (1 sola tab) — il sito ufficiale lo nasconde se < 2
-    return null;
+    // Ufficiale ha sempre <habbo-tabs><nav class="tabs ng-hide"></nav></habbo-tabs>
+    // anche con una sola tab — la CSS la nasconde via .ng-hide. Lo manteniamo
+    // per parità strutturale (alcune regole CSS scopano via habbo-tabs ancestor).
+    return (
+        <habbo-tabs>
+            <nav className="tabs ng-hide" />
+        </habbo-tabs>
+    );
 }
 
 // ============================================================

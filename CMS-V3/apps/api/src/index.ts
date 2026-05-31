@@ -12,6 +12,7 @@ import authRoute from './routes/auth.js';
 import communityRoute from './routes/community.js';
 import meRoute from './routes/me.js';
 import profileRoute from './routes/profile.js';
+import staffRoute from './routes/staff.js';
 
 const log = pino({
     level: env.LOG_LEVEL,
@@ -47,6 +48,7 @@ app.route('/api/v2/auth', authRoute);
 app.route('/api/v2/me', meRoute);
 app.route('/api/v2/community', communityRoute);
 app.route('/api/v2/profile', profileRoute);
+app.route('/api/v2/staff', staffRoute);
 
 // === 404 fallback ===
 app.notFound(c => c.json({ error: 'not_found', path: c.req.path }, 404));

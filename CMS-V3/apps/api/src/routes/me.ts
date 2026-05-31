@@ -8,6 +8,34 @@ const me = new Hono();
 
 me.use('*', requireAuth);
 
+// =================================================================
+// GET /me/notifications — counters per badge user-menu real-time
+// =================================================================
+// Cheap polling endpoint (chiamato ogni 15s dal frontend). Conta:
+//   - messaggi privati ricevuti offline (Arcturus messenger_offline)
+//   - richieste amicizia pending (messenger_friendrequests user_to_id=me)
+// La somma è il badge red-dot sul user-menu.
+
+me.get('/notifications', async c =>
+{
+    const user = c.var.user!;
+    const userId = Number(user.sub);
+
+    const rows = await dbQuery<{ unread_messages: number; friend_requests: number }>(
+        `SELECT
+            (SELECT COUNT(*) FROM messenger_offline WHERE user_id = ?) AS unread_messages,
+            (SELECT COUNT(*) FROM messenger_friendrequests WHERE user_to_id = ?) AS friend_requests`,
+        [userId, userId]
+    );
+
+    const r = rows[0] ?? { unread_messages: 0, friend_requests: 0 };
+    return c.json({
+        unreadMessages: r.unread_messages,
+        friendRequests: r.friend_requests,
+        total: r.unread_messages + r.friend_requests
+    });
+});
+
 me.get('/', async c =>
 {
     const user = c.var.user!;

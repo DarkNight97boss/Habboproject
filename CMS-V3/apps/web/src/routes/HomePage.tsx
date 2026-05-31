@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, type MouseEvent, type ReactNode, useState } from 'react';
-import { type AuthUser, avatarUrl, useAuth } from '../hooks/useAuth';
+import { type AuthUser, avatarUrl, broadcastAuth, useAuth } from '../hooks/useAuth';
 
 /**
  * Homepage habbo.it — replica usando le classi del CSS UFFICIALE
@@ -252,6 +252,9 @@ function LoginForm(): ReactNode
                 // automaticamente con header-small + user-menu + GIOCA,
                 // restando su `/`.
                 await qc.invalidateQueries({ queryKey: ['auth', 'me'] });
+                // Notifica le altre tab CMS aperte (esempio: una tab vuota
+                // diventa autenticata senza che l'utente ci faccia login).
+                broadcastAuth('login');
             }
         }
         catch

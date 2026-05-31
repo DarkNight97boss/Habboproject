@@ -39,6 +39,16 @@ export default defineConfig({
                 target: 'http://127.0.0.1:8080',
                 changeOrigin: true,
                 secure: false
+            },
+            // Alias amichevole: /gioca → /api/v2/auth/play (launcher Nitro
+            // con SSO ticket pre-iniettato). Manteniamo l'endpoint reale
+            // sotto /api/v2/auth/play per coerenza con il resto della API,
+            // ma il bottone usa /gioca così l'URL è leggibile dall'utente.
+            '/gioca': {
+                target: 'http://127.0.0.1:8092',
+                changeOrigin: true,
+                secure: false,
+                rewrite: () => '/api/v2/auth/play'
             }
         }
     },

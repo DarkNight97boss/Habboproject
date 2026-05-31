@@ -138,7 +138,10 @@ function NavigationBarAuthed(): ReactNode
                 <li className="navigation__item"><a id="ga-linkid-habbo-nft" href="/habbo-nft" className="navigation__link navigation__link--habbo-nft">COLLEZIONABILI</a></li>
                 <li className="navigation__item navigation__item--hotel">
                     <habbo-hotel-native-button>
-                        <a id="ga-linkid-native" href="/client" className="hotel-button-native">
+                        {/* /api/v2/auth/play = launcher Nitro con SSO ticket
+                            pre-iniettato (vedi auth.ts → `auth.get('/play')`).
+                            Apre il client nella stessa tab. */}
+                        <a id="ga-linkid-native" href="/api/v2/auth/play" className="hotel-button-native">
                             <span className="hotel-button-native__text hotel-button-native__text--play">Gioca</span>
                         </a>
                     </habbo-hotel-native-button>

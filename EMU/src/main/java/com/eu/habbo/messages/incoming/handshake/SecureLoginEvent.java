@@ -109,7 +109,11 @@ public class SecureLoginEvent extends MessageHandler {
         }
 
         if (this.client.getHabbo() == null) {
-            Habbo habbo = Emulator.getGameEnvironment().getHabboManager().loadHabbo(sso);
+            // Wave 18 SSO hardening: passiamo il peer IP a loadHabbo per
+            // permettere il binding del ticket all'IP che ha richiesto /play.
+            // Mismatch → ticket rifiutato anche se TTL ancora valido + ticket
+            // ancora non consumato.
+            Habbo habbo = Emulator.getGameEnvironment().getHabboManager().loadHabbo(sso, peerIp);
             if (habbo == null) {
                 // Unknown / consumed SSO ticket — bump the brute-force counter.
                 if (peerIp != null) com.eu.habbo.core.IpRateLimiter.SSO.onFailure(peerIp);

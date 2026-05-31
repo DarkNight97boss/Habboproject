@@ -50,7 +50,7 @@ function HeaderLarge(): ReactNode
             </div>
 
             <div className="header__content">
-                <habbo-register-banner>
+                <habbo-register-banner className="habbo-register-banner">
                     <div className="register-banner__hotel" />
                     <div className="register-banner__wrapper">
                         <div className="register-banner__register">
@@ -104,82 +104,131 @@ function LoginForm(): ReactNode
         finally { setLoading(false); }
     }
 
-    // NB: la classe `ng-hide` qui NON nasconde nulla — è il selettore che la CSS
-    // ufficiale habbo.it usa come "hook" per applicare il layout flex 2-colonne
-    // (rule: .header__login-form.ng-hide { display:flex !important; ... }).
-    // Senza Angular caricato la classe è solo un marker CSS.
+    // Struttura mirrorata 1:1 da habbo.it (ispezionata via Chrome extension):
+    //   <habbo-login-form class="header__login-form ng-hide">
+    //     <div class="social-login">
+    //       <div class="login-form__login-text">…</div>
+    //       <div class="login-form__social">
+    //         <habbo-{facebook|google|apple}-connect type="large|small">
+    //           <button class="{facebook|google|apple}-connect">…</button>
+    //         </habbo-…>
+    //         <div class="login-texts" id="more-login">
+    //           <div class="login-form__login-text">
+    //             <habbo-rpx-login><small><a class="janrainEngage">…</a></small></habbo-rpx-login>
+    //           </div>
+    //         </div>
+    //       </div>
+    //     </div>
+    //     <div class="login-form__email-login">
+    //       <div class="login-form__login-text">…</div>
+    //       <form id="habboLoginForm" class="login-form__form">
+    //         <div>
+    //           <fieldset class="form__fieldset login-form__fieldset">
+    //             <div class="form__field"><input class="form__input login-form__input"/></div>
+    //           </fieldset>
+    //           …password…
+    //         </div>
+    //         <div><button class="login-form__button habbo-login-button" type="submit">…</button></div>
+    //       </form>
+    //       <div class="login-texts" id="forgot-password">
+    //         <habbo-claim-password class="login-form__login-text"><small><a>…</a></small></habbo-claim-password>
+    //       </div>
+    //       <div class="login-form__register"><small><a>…</a></small></div>
+    //     </div>
+    //   </habbo-login-form>
+    //
+    // La classe `ng-hide` (su habbo-login-form) è un hook CSS che attiva la regola
+    //   .header__login-form.ng-hide { display:flex !important; ... }
+    // del CSS ufficiale — non nasconde nulla perché Angular non è caricato.
     return (
-        <div className="header__login-form ng-hide">
-            <div className="login-form__social">
+        <habbo-login-form className="header__login-form ng-hide">
+            <div className="social-login">
                 <div className="login-form__login-text">Effettua il login con una di queste opzioni</div>
-                <habbo-facebook-connect type="large">
-                    <button type="button" className="facebook-connect">Facebook</button>
-                </habbo-facebook-connect>
-                <habbo-google-connect type="large">
-                    <button type="button" className="google-connect">Google</button>
-                </habbo-google-connect>
-                <habbo-apple-connect type="large">
-                    <button type="button" className="apple-connect">Accedi con Apple</button>
-                </habbo-apple-connect>
-                <div className="login-texts" id="more-login">
-                    <div className="login-form__login-text">
-                        <small><a>Altri modi di accedere</a></small>
+                <div className="login-form__social">
+                    <habbo-facebook-connect type="large">
+                        <button type="button" className="facebook-connect">Facebook</button>
+                    </habbo-facebook-connect>
+                    <habbo-facebook-connect type="small">
+                        <button type="button" className="facebook-connect">Facebook</button>
+                    </habbo-facebook-connect>
+                    <habbo-google-connect type="large">
+                        <button type="button" className="google-connect">Google</button>
+                    </habbo-google-connect>
+                    <habbo-google-connect type="small">
+                        <button type="button" className="google-connect">Google</button>
+                    </habbo-google-connect>
+                    <habbo-apple-connect type="large">
+                        <button type="button" className="apple-connect">Accedi con Apple</button>
+                    </habbo-apple-connect>
+                    <habbo-apple-connect type="small">
+                        <button type="button" className="apple-connect">Accedi con Apple</button>
+                    </habbo-apple-connect>
+                    <div className="login-texts" id="more-login">
+                        <div className="login-form__login-text">
+                            <habbo-rpx-login>
+                                <small><a className="janrainEngage">Altri modi di accedere</a></small>
+                            </habbo-rpx-login>
+                        </div>
                     </div>
                 </div>
             </div>
             <div className="login-form__email-login">
                 <div className="login-form__login-text">O usa la tua email &amp; password:</div>
                 <form id="habboLoginForm" onSubmit={handleSubmit} className="login-form__form">
-                    <fieldset className="form__fieldset login-form__fieldset">
-                        <div className="form__field">
-                            <input
-                                name="email"
-                                type="email"
-                                value={email}
-                                onChange={e => setEmail(e.target.value)}
-                                placeholder="Email"
-                                autoComplete="username"
-                                autoCapitalize="none"
-                                autoCorrect="off"
-                                spellCheck={false}
-                                className="form__input login-form__input"
-                                disabled={loading}
-                            />
-                        </div>
-                    </fieldset>
-                    <fieldset className="form__fieldset login-form__fieldset">
-                        <div className="form__field">
-                            <input
-                                name="password"
-                                type="password"
-                                value={password}
-                                onChange={e => setPassword(e.target.value)}
-                                placeholder="Password"
-                                autoComplete="current-password"
-                                className="form__input login-form__input"
-                                disabled={loading}
-                            />
-                        </div>
-                    </fieldset>
-                    {error ? <p style={{ color: '#c33', fontSize: 12, margin: '6px 0', alignSelf: 'stretch' }}>{error}</p> : null}
-                    <button
-                        type="submit"
-                        disabled={loading || !email || !password}
-                        className="login-form__button habbo-login-button"
-                    >
-                        {loading ? '…' : 'Entra!'}
-                    </button>
+                    <div>
+                        <fieldset className="form__fieldset login-form__fieldset">
+                            <div className="form__field">
+                                <input
+                                    name="email"
+                                    type="email"
+                                    value={email}
+                                    onChange={e => setEmail(e.target.value)}
+                                    placeholder="Email"
+                                    autoComplete="username"
+                                    autoCapitalize="none"
+                                    autoCorrect="off"
+                                    spellCheck={false}
+                                    className="form__input login-form__input"
+                                    disabled={loading}
+                                />
+                            </div>
+                        </fieldset>
+                        <fieldset className="form__fieldset login-form__fieldset">
+                            <div className="form__field">
+                                <input
+                                    name="password"
+                                    type="password"
+                                    value={password}
+                                    onChange={e => setPassword(e.target.value)}
+                                    placeholder="Password"
+                                    autoComplete="current-password"
+                                    className="form__input login-form__input"
+                                    disabled={loading}
+                                />
+                            </div>
+                        </fieldset>
+                    </div>
+                    {error ? <p style={{ color: '#c33', fontSize: 12, margin: '6px 0' }}>{error}</p> : null}
+                    <div>
+                        <button
+                            type="submit"
+                            disabled={loading || !email || !password}
+                            className="login-form__button habbo-login-button"
+                        >
+                            {loading ? '…' : 'Entra!'}
+                        </button>
+                    </div>
                 </form>
                 <div className="login-texts" id="forgot-password">
-                    <div className="login-form__login-text">
+                    <habbo-claim-password className="login-form__login-text">
                         <small><a href="/forgot-password">Password dimenticata?</a></small>
-                    </div>
+                    </habbo-claim-password>
                 </div>
                 <div className="login-form__register">
                     <small><a href="/registration">Non hai ancora un account? Registrati su Habbo!</a></small>
                 </div>
             </div>
-        </div>
+        </habbo-login-form>
     );
 }
 
@@ -188,11 +237,11 @@ function NavigationBar(): ReactNode
     return (
         <nav className="navigation">
             <ul className="navigation__menu">
-                <li className="navigation__item"><a href="/" className="navigation__link navigation__link--home navigation__link--active">Home</a></li>
-                <li className="navigation__item"><a href="/community" className="navigation__link navigation__link--community">Community</a></li>
-                <li className="navigation__item"><a href="/shop" className="navigation__link navigation__link--shop">Shop</a></li>
-                <li className="navigation__item"><a href="/playing-habbo" className="navigation__link navigation__link--playing-habbo">Il Mondo di Habbo</a></li>
-                <li className="navigation__item"><a href="/habbo-nft" className="navigation__link navigation__link--habbo-nft">COLLEZIONABILI</a></li>
+                <li className="navigation__item"><a id="ga-linkid-home" href="/" className="navigation__link navigation__link--home navigation__link--active">Home</a></li>
+                <li className="navigation__item"><a id="ga-linkid-community" href="/community" className="navigation__link navigation__link--community">Community</a></li>
+                <li className="navigation__item"><a id="ga-linkid-shop" href="/shop" className="navigation__link navigation__link--shop">Shop</a></li>
+                <li className="navigation__item"><a id="ga-linkid-playing-habbo" href="/playing-habbo" className="navigation__link navigation__link--playing-habbo">Il Mondo di Habbo</a></li>
+                <li className="navigation__item"><a id="ga-linkid-habbo-nft" href="/habbo-nft" className="navigation__link navigation__link--habbo-nft">COLLEZIONABILI</a></li>
             </ul>
         </nav>
     );
@@ -296,20 +345,23 @@ function NewsList(): ReactNode
 
 function Sidebar(): ReactNode
 {
+    // Sull'ufficiale ogni box laterale è renderizzato da <habbo-web-pages> che
+    // applica `.aside.aside--box.aside--fixed` sul custom element stesso, con
+    // un <aside class="static-content"> annidato.
     return (
         <>
-            <aside className="aside aside--box aside--fixed">
-                <div className="static-content">
+            <habbo-web-pages className="aside aside--box aside--fixed">
+                <aside className="static-content">
                     <h3>Consigli di sicurezza</h3>
                     <p>Sentiti sempre al sicuro su internet! Impara come <a href="/playing-habbo/safety">navigare in sicurezza</a>.</p>
-                </div>
-            </aside>
-            <aside className="aside aside--box aside--fixed">
-                <div className="static-content">
+                </aside>
+            </habbo-web-pages>
+            <habbo-web-pages className="aside aside--box aside--fixed">
+                <aside className="static-content">
                     <h3>Guida per i genitori</h3>
                     <p>Vuoi saperne di più su come ci assicuriamo che i nostri utenti si divertano in un ambiente sicuro? Guarda la nostra <a href="/help/parents">Guida per i genitori</a>.</p>
-                </div>
-            </aside>
+                </aside>
+            </habbo-web-pages>
         </>
     );
 }
@@ -332,31 +384,33 @@ function FooterOfficial(): ReactNode
     ];
 
     return (
-        <footer className="wrapper">
-            <div className="footer__media">
-                <p className="footer__media__label">Segui Habbo</p>
-                <ul>
-                    <li className="footer__media__item"><a href="#" className="footer__media__link"><i className="icon icon--facebook" /></a></li>
-                    <li className="footer__media__item"><a href="#" className="footer__media__link"><i className="icon icon--twitter" /></a></li>
-                    <li className="footer__media__item"><a href="#" className="footer__media__link"><i className="icon icon--youtube" /></a></li>
-                    <li className="footer__media__item"><a href="#" className="footer__media__link"><i className="icon icon--instagram" /></a></li>
-                    <li className="footer__media__item"><a href="#" className="footer__media__link"><i className="icon icon--rss" /></a></li>
-                </ul>
-            </div>
-            <div className="footer__content">
-                <ul className="footer__nav">
-                    {links.map(l => (
-                        <li key={l.href} className="footer__nav__item">
-                            <a href={l.href} className="footer__nav__link" target="_blank" rel="noopener noreferrer">{l.label}</a>
-                        </li>
-                    ))}
-                </ul>
-                <p className="footer__copyright">
-                    © 2004 — {new Date().getFullYear()} Habboproject — clone non ufficiale a scopo educativo.
-                    HABBO® è un marchio registrato di proprietà di Sulake Oy.
-                </p>
-                <a href="http://www.sulake.com" target="_blank" rel="noopener noreferrer" className="footer__sulake">Sulake</a>
-            </div>
-        </footer>
+        <habbo-footer>
+            <footer className="wrapper">
+                <div className="footer__media">
+                    <p className="footer__media__label">Segui Habbo</p>
+                    <ul>
+                        <li className="footer__media__item"><a href="#" className="footer__media__link"><i className="icon icon--facebook" /></a></li>
+                        <li className="footer__media__item"><a href="#" className="footer__media__link"><i className="icon icon--twitter" /></a></li>
+                        <li className="footer__media__item"><a href="#" className="footer__media__link"><i className="icon icon--youtube" /></a></li>
+                        <li className="footer__media__item"><a href="#" className="footer__media__link"><i className="icon icon--instagram" /></a></li>
+                        <li className="footer__media__item"><a href="#" className="footer__media__link"><i className="icon icon--rss" /></a></li>
+                    </ul>
+                </div>
+                <div className="footer__content">
+                    <ul className="footer__nav">
+                        {links.map(l => (
+                            <li key={l.href} className="footer__nav__item">
+                                <a href={l.href} className="footer__nav__link" target="_blank" rel="noopener noreferrer">{l.label}</a>
+                            </li>
+                        ))}
+                    </ul>
+                    <p className="footer__copyright">
+                        © 2004 — {new Date().getFullYear()} Habboproject — clone non ufficiale a scopo educativo.
+                        HABBO® è un marchio registrato di proprietà di Sulake Oy.
+                    </p>
+                    <a href="http://www.sulake.com" target="_blank" rel="noopener noreferrer" className="footer__sulake">Sulake</a>
+                </div>
+            </footer>
+        </habbo-footer>
     );
 }

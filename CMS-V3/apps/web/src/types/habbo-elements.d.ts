@@ -19,8 +19,15 @@ declare module 'react' {
             'habbo-google-connect': HabboEl;
             'habbo-apple-connect': HabboEl;
             'habbo-tabs': HabboEl;
+            'habbo-tab': HabboEl;
             'habbo-news-list': HabboEl;
             'habbo-news-item': HabboEl;
+            'habbo-rpx-login': HabboEl;
+            'habbo-claim-password': HabboEl;
+            'habbo-web-pages': HabboEl;
+            'habbo-footer': HabboEl;
+            'habbo-register-banner': HabboEl;
+            'habbo-landing-menu': HabboEl;
         }
     }
 }

@@ -35,8 +35,16 @@ export function useAuth()
     });
 }
 
-/** URL avatar da figure string — usa l'imager ufficiale habbo.it come fallback. */
-export function avatarUrl(figure: string, opts: { size?: 's' | 'm' | 'l'; headOnly?: boolean } = {}): string
+/**
+ * URL avatar da figure string — usa l'imager ufficiale habbo.it come fallback.
+ *
+ * Param `size`:
+ *  - 's' = small (25x25 head, 35x55 body)
+ *  - 'm' = medium (default, ~32x32 head, 50x110 body)
+ *  - 'l' = large (~50x50 head, 64x110 body)
+ *  - 'b' = big (54x62 head — usato in room-item creator/avatar dal CSS ufficiale habbo.it)
+ */
+export function avatarUrl(figure: string, opts: { size?: 's' | 'm' | 'l' | 'b'; headOnly?: boolean } = {}): string
 {
     const params = new URLSearchParams({ figure });
     if(opts.size) params.set('size', opts.size);

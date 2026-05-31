@@ -86,7 +86,7 @@ function ThreadItem({ thread }: { thread: Thread }): ReactNode
                         <habbo-imager className="avatar__image">
                             <img
                                 className="imager"
-                                src={avatarUrl(thread.authorLook, { headOnly: true, size: 's' })}
+                                src={avatarUrl(thread.authorLook, { headOnly: true, size: 'b' })}
                                 alt={thread.authorName}
                             />
                         </habbo-imager>

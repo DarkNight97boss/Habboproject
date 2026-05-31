@@ -117,7 +117,7 @@ function RoomItem({ room }: { room: Room }): ReactNode
                         <habbo-imager className="avatar__image">
                             <img
                                 className="imager"
-                                src={avatarUrl(room.ownerLook || 'hd-180-1.ch-210-66.lg-270-82.sh-290-80', { headOnly: true, size: 's' })}
+                                src={avatarUrl(room.ownerLook || 'hd-180-1.ch-210-66.lg-270-82.sh-290-80', { headOnly: true, size: 'b' })}
                                 alt={room.ownerName}
                             />
                         </habbo-imager>

@@ -376,8 +376,14 @@ auth.get('/sso', async c =>
     if(!user) return c.json({ error: 'unauthorized' }, 401);
 
     // Ticket lifetime: 60 secondi (consumato subito dal client al boot).
+    // CRITICO: persistiamo auth_ticket_issued_at altrimenti l'EMU applica
+    // il fallback "no TTL" e il ticket resta valido a tempo indefinito
+    // (vedi HabboManager.loadHabbo + sqlupdates/sso_ticket_ttl.sql).
     const ticket = randomBytes(24).toString('hex');
-    await dbExecute('UPDATE users SET auth_ticket = ? WHERE id = ?', [ticket, Number(user.sub)]);
+    await dbExecute(
+        'UPDATE users SET auth_ticket = ?, auth_ticket_issued_at = UNIX_TIMESTAMP() WHERE id = ?',
+        [ticket, Number(user.sub)]
+    );
     await logAudit(Number(user.sub), 'auth.sso.issued', clientIP(c), c.req.header('user-agent') ?? '');
     return c.json({ ticket });
 });
@@ -395,7 +401,10 @@ auth.get('/sso-token', async c =>
     if(!user) return c.json({ error: 'unauthorized' }, 401);
 
     const ticket = randomBytes(24).toString('hex');
-    await dbExecute('UPDATE users SET auth_ticket = ? WHERE id = ?', [ticket, Number(user.sub)]);
+    await dbExecute(
+        'UPDATE users SET auth_ticket = ?, auth_ticket_issued_at = UNIX_TIMESTAMP() WHERE id = ?',
+        [ticket, Number(user.sub)]
+    );
     await logAudit(Number(user.sub), 'auth.sso_token.issued', clientIP(c), c.req.header('user-agent') ?? '');
     // Nitro accetta sia `token` che `ticket` a seconda della versione: ritorniamo entrambi.
     return c.json({ token: ticket, ticket });
@@ -436,9 +445,13 @@ auth.get('/play', async c =>
     const ip = clientIP(c);
     const ua = c.req.header('user-agent') ?? '';
 
-    // 1. Genera ticket fresco.
+    // 1. Genera ticket fresco. NB: scriviamo anche auth_ticket_issued_at
+    //    (Arcturus stock col) altrimenti il TTL EMU di 60s è inerte.
     const ticket = randomBytes(24).toString('hex');
-    await dbExecute('UPDATE users SET auth_ticket = ? WHERE id = ?', [ticket, Number(user.sub)]);
+    await dbExecute(
+        'UPDATE users SET auth_ticket = ?, auth_ticket_issued_at = UNIX_TIMESTAMP() WHERE id = ?',
+        [ticket, Number(user.sub)]
+    );
     await logAudit(Number(user.sub), 'auth.play.launched', ip, ua);
 
     // 2. Fetch HTML Nitro dal PHP server (dietro :8091).

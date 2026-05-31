@@ -160,33 +160,43 @@ public class HabboManager {
         }
 
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT * FROM users WHERE auth_ticket = ? LIMIT 1")) {
-            statement.setString(1, sso);
-            try (ResultSet set = statement.executeQuery()) {
-                if (set.next()) {
-                    habbo = new Habbo(set);
+        // ATOMIC SINGLE-USE: blank the ticket FIRST and check rowsAffected.
+        // Solo un worker concorrente può vincere questa UPDATE per un dato
+        // valore di auth_ticket (vincolo InnoDB row-level lock + WHERE filter).
+        // Il vecchio flusso SELECT * → UPDATE permetteva un TOCTOU: due login
+        // paralleli con lo stesso ticket potevano entrambi superare la SELECT
+        // prima che il blank avvenisse. Ora il primo UPDATE consuma il ticket
+        // atomicamente; il secondo vede rowsAffected=0 e ritorna null.
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            int rowsClaimed;
+            try (PreparedStatement claim = connection.prepareStatement(
+                    "UPDATE users SET auth_ticket = '', auth_ticket_issued_at = 0 WHERE auth_ticket = ? LIMIT 1")) {
+                claim.setString(1, sso);
+                rowsClaimed = claim.executeUpdate();
+            } catch (SQLException missingColumn) {
+                // Fallback se la colonna auth_ticket_issued_at non è ancora stata creata.
+                try (PreparedStatement claim = connection.prepareStatement(
+                        "UPDATE users SET auth_ticket = '' WHERE auth_ticket = ? LIMIT 1")) {
+                    claim.setString(1, sso);
+                    rowsClaimed = claim.executeUpdate();
+                }
+            }
+            if (rowsClaimed != 1) {
+                // Race persa o ticket inesistente / già consumato.
+                LOGGER.warn("Ticket SSO non disponibile (consumato in parallelo o inesistente)");
+                return null;
+            }
 
-                    if (habbo.getHabboInfo().firstVisit) {
-                        Emulator.getPluginManager().fireEvent(new UserRegisteredEvent(habbo));
-                    }
+            // Ora carichiamo il profilo per id — il ticket è già stato azzerato
+            // quindi nessun secondo worker può raggiungere questo punto.
+            try (PreparedStatement select = connection.prepareStatement("SELECT * FROM users WHERE id = ? LIMIT 1")) {
+                select.setInt(1, userId);
+                try (ResultSet set = select.executeQuery()) {
+                    if (set.next()) {
+                        habbo = new Habbo(set);
 
-                    // Always blank the ticket — the previous behaviour kept it alive when
-                    // `debug.mode=1`, which is a foot-gun on staging if the build is ever
-                    // exposed. The debug branch was a convenience that masked the security
-                    // property of single-use SSO, so we drop it here.
-                    try (PreparedStatement stmt = connection.prepareStatement("UPDATE users SET auth_ticket = ?, auth_ticket_issued_at = 0 WHERE id = ? LIMIT 1")) {
-                        stmt.setString(1, "");
-                        stmt.setInt(2, habbo.getHabboInfo().getId());
-                        stmt.execute();
-                    } catch (SQLException e) {
-                        // Fall back if the new column isn't present yet.
-                        try (PreparedStatement stmt = connection.prepareStatement("UPDATE users SET auth_ticket = ? WHERE id = ? LIMIT 1")) {
-                            stmt.setString(1, "");
-                            stmt.setInt(2, habbo.getHabboInfo().getId());
-                            stmt.execute();
-                        } catch (SQLException ex) {
-                            LOGGER.error("Eccezione SQL intercettata", ex);
+                        if (habbo.getHabboInfo().firstVisit) {
+                            Emulator.getPluginManager().fireEvent(new UserRegisteredEvent(habbo));
                         }
                     }
                 }

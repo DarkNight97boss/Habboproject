@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, type MouseEvent, type ReactNode, useState } from 'react';
 import { type AuthUser, avatarUrl, useAuth } from '../hooks/useAuth';
 
@@ -222,6 +223,7 @@ function LoginForm(): ReactNode
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const qc = useQueryClient();
 
     async function handleSubmit(ev: FormEvent<HTMLFormElement>)
     {
@@ -244,7 +246,12 @@ function LoginForm(): ReactNode
             }
             else
             {
-                window.location.href = '/me';
+                // Nessun redirect: il cookie cms_v3_access è già settato
+                // dalla risposta. Invalido la query useAuth() — al re-fetch
+                // /api/v2/me ritorna l'utente e la HomePage rerenderizza
+                // automaticamente con header-small + user-menu + GIOCA,
+                // restando su `/`.
+                await qc.invalidateQueries({ queryKey: ['auth', 'me'] });
             }
         }
         catch

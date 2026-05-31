@@ -42,6 +42,12 @@ declare module 'react' {
             'habbo-discussions': HabboEl;
             'habbo-empty-results': HabboEl;
             'habbo-columns-channel': HabboEl;
+            'habbo-profile-header': HabboEl;
+            'habbo-profile-modal': HabboEl;
+            'habbo-badge-list': HabboEl;
+            'habbo-friend-list': HabboEl;
+            'habbo-room-list': HabboEl;
+            'habbo-group-list': HabboEl;
             'habbo-card': HabboEl;
             'habbo-like': HabboEl;
             'habbo-avatar': HabboEl;

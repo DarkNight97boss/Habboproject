@@ -11,6 +11,7 @@ import { securityHeaders } from './middleware/security-headers.js';
 import authRoute from './routes/auth.js';
 import communityRoute from './routes/community.js';
 import meRoute from './routes/me.js';
+import profileRoute from './routes/profile.js';
 
 const log = pino({
     level: env.LOG_LEVEL,
@@ -45,6 +46,7 @@ app.get('/version', c => c.json({ name: 'cms-v3-api', version: '0.1.0', env: env
 app.route('/api/v2/auth', authRoute);
 app.route('/api/v2/me', meRoute);
 app.route('/api/v2/community', communityRoute);
+app.route('/api/v2/profile', profileRoute);
 
 // === 404 fallback ===
 app.notFound(c => c.json({ error: 'not_found', path: c.req.path }, 404));

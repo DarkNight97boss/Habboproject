@@ -9,11 +9,15 @@ import { CommunityForumPage } from './routes/CommunityForumPage';
 import { CommunityNewsPage } from './routes/CommunityNewsPage';
 import { CommunityPhotosPage } from './routes/CommunityPhotosPage';
 import { CommunityRoomsPage } from './routes/CommunityRoomsPage';
+import { HelpPage } from './routes/HelpPage';
 import { HomePage } from './routes/HomePage';
 import { MessagingPage } from './routes/MessagingPage';
 import { NotFoundPage } from './routes/NotFoundPage';
+import { PhotoDetailPage } from './routes/PhotoDetailPage';
 import { PlayingHabboPage } from './routes/PlayingHabboPage';
+import { ProfilePage } from './routes/ProfilePage';
 import { RegistrationPage } from './routes/RegistrationPage';
+import { SettingsPage } from './routes/SettingsPage';
 import { ShopPage } from './routes/ShopPage';
 import { StaticInfoPage } from './routes/StaticInfoPage';
 
@@ -50,6 +54,11 @@ createRoot(root).render(
                     <Route path="/playing-habbo/:slug" element={<StaticInfoPage />} />
                     <Route path="/help/:slug" element={<StaticInfoPage />} />
                     <Route path="/habbo-nft" element={<CollectiblesPage />} />
+                    <Route path="/profile/:username" element={<ProfilePage />} />
+                    <Route path="/profile/:user/photo/:id" element={<PhotoDetailPage />} />
+                    <Route path="/settings" element={<Navigate to="/settings/privacy" replace />} />
+                    <Route path="/settings/:section" element={<SettingsPage />} />
+                    <Route path="/help" element={<HelpPage />} />
                     <Route path="*" element={<NotFoundPage />} />
                 </Routes>
             </BrowserRouter>

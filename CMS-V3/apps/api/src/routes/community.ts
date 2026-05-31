@@ -213,6 +213,47 @@ community.get('/forum/threads', c =>
     return c.json({ threads: [], total: 0 });
 });
 
+// =================================================================
+// GET /community/photos/:id — singola foto + like + creator full
+// =================================================================
+// Pubblico. Ritorna 404 se la foto non esiste.
+
+community.get('/photos/:id', async c =>
+{
+    const id = Number(c.req.param('id'));
+    if(!Number.isFinite(id) || id <= 0) return c.json({ error: 'bad_id' }, 400);
+
+    const rows = await dbQuery<{
+        id: number; user_id: number; username: string; look: string;
+        room_id: number; room_name: string; timestamp: number; url: string;
+    }>(
+        `SELECT cw.id, cw.user_id, u.username, u.look,
+                cw.room_id, COALESCE(r.name, '') AS room_name,
+                cw.timestamp, cw.url
+         FROM camera_web cw
+         INNER JOIN users u ON u.id = cw.user_id
+         LEFT JOIN rooms r ON r.id = cw.room_id
+         WHERE cw.id = ? LIMIT 1`,
+        [id]
+    );
+    const p = rows[0];
+    if(!p) return c.json({ error: 'not_found' }, 404);
+
+    return c.json({
+        photo: {
+            id: p.id,
+            userId: p.user_id,
+            username: p.username,
+            userLook: p.look,
+            roomId: p.room_id,
+            roomName: p.room_name,
+            timestamp: p.timestamp,
+            url: p.url,
+            likes: 0
+        }
+    });
+});
+
 community.get('/photos', async c =>
 {
     const limit = Math.min(Number(c.req.query('limit') ?? 48), 200);

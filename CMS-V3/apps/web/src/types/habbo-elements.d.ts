@@ -29,6 +29,12 @@ declare module 'react' {
             'habbo-register-banner': HabboEl;
             'habbo-landing-menu': HabboEl;
             'habbo-compile': HabboEl;
+            'habbo-header-small': HabboEl;
+            'habbo-registration-form': HabboEl;
+            'habbo-password-new': HabboEl;
+            'habbo-birthdate': HabboEl;
+            'habbo-profile-visibility': HabboEl;
+            'habbo-policies': HabboEl;
         }
     }
 }

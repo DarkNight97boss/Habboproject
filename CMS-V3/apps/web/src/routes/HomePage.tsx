@@ -81,7 +81,7 @@ function HeaderLarge(): ReactNode
 
 function LoginForm(): ReactNode
 {
-    const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -89,7 +89,7 @@ function LoginForm(): ReactNode
     async function handleSubmit(ev: FormEvent<HTMLFormElement>)
     {
         ev.preventDefault();
-        if(!email || !password || loading) return;
+        if(!username || !password || loading) return;
         setLoading(true);
         setError(null);
         try
@@ -98,12 +98,12 @@ function LoginForm(): ReactNode
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ username: email, password })
+                body: JSON.stringify({ username, password })
             });
             if(!r.ok)
             {
                 const j = await r.json().catch(() => ({ error: 'unknown' }));
-                setError(j.error === 'invalid_credentials' ? 'Email o password errate.' : 'Login fallito.');
+                setError(j.error === 'invalid_credentials' ? 'Nome utente o password errati.' : 'Login fallito.');
             }
             else
             {
@@ -186,17 +186,17 @@ function LoginForm(): ReactNode
                 </div>
             </div>
             <div className="login-form__email-login">
-                <div className="login-form__login-text">O usa la tua email &amp; password:</div>
+                <div className="login-form__login-text">O usa il tuo nome utente &amp; password:</div>
                 <form id="habboLoginForm" onSubmit={handleSubmit} className="login-form__form">
                     <div>
                         <fieldset className="form__fieldset login-form__fieldset">
                             <div className="form__field">
                                 <input
-                                    name="email"
-                                    type="email"
-                                    value={email}
-                                    onChange={e => setEmail(e.target.value)}
-                                    placeholder="Email"
+                                    name="username"
+                                    type="text"
+                                    value={username}
+                                    onChange={e => setUsername(e.target.value)}
+                                    placeholder="Nome utente"
                                     autoComplete="username"
                                     autoCapitalize="none"
                                     autoCorrect="off"
@@ -233,7 +233,7 @@ function LoginForm(): ReactNode
                         <div>
                             <button
                                 type="submit"
-                                disabled={loading || !email || !password}
+                                disabled={loading || !username || !password}
                                 className="login-form__button habbo-login-button"
                                 style={{ width: '100%' }}
                             >

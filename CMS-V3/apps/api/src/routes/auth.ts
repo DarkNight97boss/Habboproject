@@ -22,6 +22,30 @@ const refreshSchema = z.object({
     refreshToken: z.string().min(10).max(2048)
 });
 
+// Username: 3-15 char, lettere/numeri/underscore/trattino — restrittivo
+// per evitare nickname con caratteri ambigui (zero-width, RTL, omoglifi).
+const usernameRegex = /^[a-zA-Z0-9_-]{3,15}$/;
+
+// Password: min 6 char + almeno una lettera + almeno un numero/carattere speciale.
+// Stessa policy testuale dell'ufficiale habbo.it nel form di registrazione.
+function passwordIsAcceptable(pw: string): { ok: boolean; reason?: string }
+{
+    if(pw.length < 6) return { ok: false, reason: 'password_weak' };
+    if(pw.length > 256) return { ok: false, reason: 'password_weak' };
+    const hasLetter = /[a-zA-Z]/.test(pw);
+    const hasDigitOrSym = /[\d\W_]/.test(pw);
+    if(!hasLetter || !hasDigitOrSym) return { ok: false, reason: 'password_weak' };
+    return { ok: true };
+}
+
+const registerSchema = z.object({
+    username: z.string().regex(usernameRegex),
+    password: z.string().min(6).max(256),
+    birthdate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    profilePublic: z.boolean().optional(),
+    newsletter: z.boolean().optional()
+});
+
 // =================================================================
 // HELPERS
 // =================================================================
@@ -131,6 +155,121 @@ auth.post(
             accessToken: access.token,
             expiresAt: access.exp
         });
+    }
+);
+
+// =================================================================
+// POST /auth/register
+// =================================================================
+
+auth.post(
+    '/register',
+    // Rate limit aggressivo per evitare account farming.
+    makeRateLimit('auth-register', 5, 60_000),
+    async c =>
+    {
+        const body = await c.req.json().catch(() => null);
+        const parsed = registerSchema.safeParse(body);
+        if(!parsed.success)
+        {
+            // Determina il primo errore semanticamente utile.
+            const flat = parsed.error.flatten();
+            const fieldErrors = flat.fieldErrors;
+            let err = 'bad_request';
+            if(fieldErrors.username?.length) err = 'username_invalid';
+            else if(fieldErrors.password?.length) err = 'password_weak';
+            else if(fieldErrors.birthdate?.length) err = 'birthdate_invalid';
+            return c.json({ error: err, issues: flat }, 400);
+        }
+
+        const ip = clientIP(c);
+        const ua = c.req.header('user-agent') ?? '';
+
+        // Vincolo età ≥16 anni (stessa policy ufficiale habbo.it).
+        const birth = new Date(parsed.data.birthdate + 'T00:00:00Z');
+        if(isNaN(birth.getTime())) return c.json({ error: 'birthdate_invalid' }, 400);
+        const ageMs = Date.now() - birth.getTime();
+        const ageYears = ageMs / (365.25 * 24 * 3600 * 1000);
+        if(ageYears < 16) return c.json({ error: 'underage' }, 400);
+
+        // Password policy.
+        const pw = passwordIsAcceptable(parsed.data.password);
+        if(!pw.ok)
+        {
+            await logAudit(null, 'auth.register.failed.password_weak', ip, ua, { username: parsed.data.username });
+            return c.json({ error: pw.reason }, 400);
+        }
+
+        // HIBP k-anonymity check — blocchiamo password già breached.
+        try
+        {
+            const pwned = await isPasswordPwned(parsed.data.password);
+            if(pwned.pwned && pwned.count > 5)
+            {
+                await logAudit(null, 'auth.register.failed.password_pwned', ip, ua, { username: parsed.data.username, count: pwned.count });
+                return c.json({ error: 'password_pwned' }, 400);
+            }
+        }
+        catch { /* HIBP fallibile, non-bloccante */ }
+
+        // Username unique check (case-insensitive: l'EMU compara username
+        // ignorando il case, quindi blocchiamo varianti).
+        const existing = await dbQuery<{ id: number }>(
+            'SELECT id FROM users WHERE LOWER(username) = LOWER(?) LIMIT 1',
+            [parsed.data.username]
+        );
+        if(existing.length > 0)
+        {
+            await logAudit(null, 'auth.register.failed.username_taken', ip, ua, { username: parsed.data.username });
+            return c.json({ error: 'username_taken' }, 409);
+        }
+
+        const passwordHash = await hashPassword(parsed.data.password);
+
+        // Crea utente — schema Arcturus standard.
+        // - rank 1 (utente normale), credits/duckets/diamonds starter,
+        //   look/look_settings da defaults, last_online ora.
+        const now = Math.floor(Date.now() / 1000);
+        const figure = 'hr-100-61.hd-180-1.ch-210-66.lg-270-82.sh-290-80'; // default look it
+        const result = await dbExecute(
+            `INSERT INTO users (
+                username, password, mail, rank, credits, pixels, vip_points, diamonds, online,
+                look, gender, motto, account_created, last_online, last_login, ip_register, ip_current,
+                home_room
+            ) VALUES (?, ?, '', 1, 1000, 100, 0, 5, '0', ?, 'M', 'Nuovo Habbo!', ?, ?, ?, ?, ?, 0)`,
+            [parsed.data.username, passwordHash, figure, now, now, now, ip.slice(0, 45), ip.slice(0, 45)]
+        );
+
+        const insertedId = (result as { insertId?: number }).insertId;
+        if(!insertedId)
+        {
+            await logAudit(null, 'auth.register.failed.db_no_insert_id', ip, ua, { username: parsed.data.username });
+            return c.json({ error: 'server_error' }, 500);
+        }
+
+        // Auto-login: emetti subito access + refresh.
+        const access = await signAccessToken({ sub: String(insertedId), username: parsed.data.username, rank: 1 });
+        const family = randomBytes(16).toString('hex');
+        const refresh = await signRefreshToken(String(insertedId), family);
+
+        await dbExecute(
+            'INSERT INTO cms_v3_refresh_tokens (user_id, family, jti, created_at, expires_at, ip, user_agent) VALUES (?, ?, ?, UNIX_TIMESTAMP(), ?, ?, ?)',
+            [insertedId, family, refresh.jti, refresh.exp, ip.slice(0, 45), ua.slice(0, 255)]
+        );
+
+        await logAudit(insertedId, 'auth.register.success', ip, ua, {
+            profilePublic: !!parsed.data.profilePublic,
+            newsletter: !!parsed.data.newsletter
+        });
+
+        c.header('Set-Cookie', `cms_v3_access=${access.token}; ${cookieOpts(env.JWT_ACCESS_TTL_SECONDS)}`, { append: true });
+        c.header('Set-Cookie', `cms_v3_refresh=${refresh.token}; ${cookieOpts(env.REFRESH_TOKEN_TTL_DAYS * 24 * 3600)}`, { append: true });
+
+        return c.json({
+            user: { id: insertedId, username: parsed.data.username, rank: 1 },
+            accessToken: access.token,
+            expiresAt: access.exp
+        }, 201);
     }
 );
 

@@ -65,6 +65,7 @@ createRoot(root).render(
                     <Route path="/settings/:section" element={<SettingsPage />} />
                     <Route path="/help" element={<HelpPage />} />
                     <Route path="/admin" element={<StaffPanelPage />} />
+                    <Route path="/admin/:section" element={<StaffPanelPage />} />
                     <Route path="*" element={<NotFoundPage />} />
                 </Routes>
             </BrowserRouter>

@@ -121,18 +121,16 @@ auth.post(
             return c.json({ error: 'invalid_credentials' }, 401);
         }
 
-        // Migrazione trasparente: se la password era bcrypt/md5/etc. (non Argon2),
-        // ri-hashiamo con Argon2id e salviamo.
-        if(!isArgon2Hash(u.password))
-        {
-            try
-            {
-                const newHash = await hashPassword(parsed.data.password);
-                await dbExecute('UPDATE users SET password = ? WHERE id = ?', [newHash, u.id]);
-                await logAudit(u.id, 'auth.password.rehashed_argon2', ip, ua);
-            }
-            catch { /* non-blocking, log skipped */ }
-        }
+        // Migrazione trasparente bcrypt→Argon2id DISABILITATA:
+        // la colonna `users.password` è VARCHAR(64) (legacy schema Arcturus,
+        // dimensionata per bcrypt $2y$10$...60-char). Un hash Argon2id completo
+        // è ~96 char e viene TRONCATO da MySQL → l'hash diventa irrecuperabile
+        // e l'utente non riesce più a fare login.
+        // bcrypt $2y$10$ è già robusto (OWASP 2024 "ok-but-prefer-Argon2id"),
+        // quindi lasciamo i legacy bcrypt come sono. La migrazione corretta
+        // richiede prima `ALTER TABLE users MODIFY password VARCHAR(255)`,
+        // e DOPO si può riabilitare il blocco qui sotto.
+        // (Vedi memory note "habboproject-cms-v3-pwhash-overflow".)
 
         // Genera coppia access + refresh.
         const access = await signAccessToken({ sub: String(u.id), username: u.username, rank: u.rank });
@@ -372,6 +370,93 @@ auth.get('/sso', async c =>
     await dbExecute('UPDATE users SET auth_ticket = ? WHERE id = ?', [ticket, Number(user.sub)]);
     await logAudit(Number(user.sub), 'auth.sso.issued', clientIP(c), c.req.header('user-agent') ?? '');
     return c.json({ ticket });
+});
+
+// =================================================================
+// GET /auth/sso-token — adapter Nitro-shape
+// =================================================================
+// Nitro V3 chiama `${api.url}/api/auth/sso-token` aspettandosi { token: "..." }
+// (NON { ticket }). Wrappa la stessa logica di /sso ma con response shape
+// compatibile con il bootstrap del client.
+
+auth.get('/sso-token', async c =>
+{
+    const user = c.var.user;
+    if(!user) return c.json({ error: 'unauthorized' }, 401);
+
+    const ticket = randomBytes(24).toString('hex');
+    await dbExecute('UPDATE users SET auth_ticket = ? WHERE id = ?', [ticket, Number(user.sub)]);
+    await logAudit(Number(user.sub), 'auth.sso_token.issued', clientIP(c), c.req.header('user-agent') ?? '');
+    // Nitro accetta sia `token` che `ticket` a seconda della versione: ritorniamo entrambi.
+    return c.json({ token: ticket, ticket });
+});
+
+// =================================================================
+// GET /auth/health — Nitro pinga questo all'avvio per check connettività
+// =================================================================
+
+auth.get('/health', c => c.json({ status: 'ok', service: 'cms-v3-api' }));
+
+// =================================================================
+// GET /auth/play — launcher Nitro con SSO ticket pre-iniettato
+// =================================================================
+// Nitro V3 NON legge `?sso=` da URL e NON chiama autonomamente
+// /api/auth/sso-token al boot: aspetta che `window.NitroConfig['sso.ticket']`
+// sia popolato (di solito dal CMS server-side prima dello shell HTML).
+//
+// Questo endpoint:
+//   1. richiede auth (cookie cms_v3_access)
+//   2. emette un auth_ticket fresco in users.auth_ticket
+//   3. fetcha l'index.html del Nitro standalone su :8091
+//   4. iniettata `<base href="/client/">` per risolvere asset relativi
+//      tramite il Vite proxy → :8091
+//   5. iniettata un interceptor `Object.defineProperty(window,'NitroConfig'…)`
+//      che, alla PRIMA assegnazione da parte di bootstrap.js, scrive
+//      automaticamente `NitroConfig['sso.ticket']` col valore generato
+//      (questo evita la race con il caricamento async del React app)
+//   6. ritorna l'HTML modificato come text/html
+//
+// GIOCA button quindi punta a /api/v2/auth/play.
+
+auth.get('/play', async c =>
+{
+    const user = c.var.user;
+    if(!user) return c.json({ error: 'unauthorized' }, 401);
+
+    const ip = clientIP(c);
+    const ua = c.req.header('user-agent') ?? '';
+
+    // 1. Genera ticket fresco.
+    const ticket = randomBytes(24).toString('hex');
+    await dbExecute('UPDATE users SET auth_ticket = ? WHERE id = ?', [ticket, Number(user.sub)]);
+    await logAudit(Number(user.sub), 'auth.play.launched', ip, ua);
+
+    // 2. Fetch HTML Nitro dal PHP server (dietro :8091).
+    let nitroHtml: string;
+    try
+    {
+        const r = await fetch('http://127.0.0.1:8091/', {
+            headers: { 'X-Forwarded-For': ip.slice(0, 45) }
+        });
+        if(!r.ok) throw new Error('nitro_html_' + r.status);
+        nitroHtml = await r.text();
+    }
+    catch(e)
+    {
+        return c.json({ error: 'nitro_unavailable', detail: String(e) }, 502);
+    }
+
+    // 3. Inject <base> + NitroConfig interceptor — il ticket è inserito
+    //    automaticamente al primo `window.NitroConfig = {...}` di bootstrap.js.
+    //    Usiamo JSON.stringify per escape pulito (no XSS via ticket).
+    const ticketJson = JSON.stringify(ticket);
+    const inject = `<base href="/client/"><script>(function(){var t=${ticketJson},v;Object.defineProperty(window,'NitroConfig',{get:function(){return v},set:function(x){v=x;if(x&&typeof x==='object'){x['sso.ticket']=t}},configurable:true})})();</script>`;
+
+    const modified = nitroHtml.replace(/<head>/i, '<head>' + inject);
+
+    c.header('Content-Type', 'text/html; charset=utf-8');
+    c.header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    return c.body(modified);
 });
 
 // =================================================================

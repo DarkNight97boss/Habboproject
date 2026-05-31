@@ -1,55 +1,64 @@
-import { Algorithm, hash, verify } from '@node-rs/argon2';
+import { verify as argon2Verify } from '@node-rs/argon2';
 import bcrypt from 'bcryptjs';
 import { env } from '../env.js';
 
 /**
- * Argon2id — winner OWASP 2024 raccomandazione password hashing.
- * Implementazione Rust (@node-rs/argon2) — prebuilds per Linux/Mac/Win x64/arm64.
+ * Password hashing — bcrypt cost 12.
  *
- * Params:
- *  - memoryCost: 64 MB (64*1024 KB)
- *  - timeCost: 3 iterazioni
- *  - parallelism: 4 thread
+ * Argon2id DISABILITATO per ora: la colonna `users.password` è VARCHAR(64)
+ * (legacy schema Arcturus dimensionato per bcrypt $2y$10$...60-char). Un
+ * hash Argon2id completo è ~96 char e viene troncato silenziosamente da
+ * MySQL → credenziali corrotte. Vedi memory `cms-v3-pwhash-overflow`.
+ *
+ * Bcrypt $2b$12$ rimane sicuro (OWASP 2024 minimum cost = 10, noi usiamo
+ * 12 per margine extra) e fitta perfettamente nei 60 char della colonna,
+ * mantenendo compatibilità con l'EMU Arcturus che pure scrive bcrypt.
+ *
+ * Per riabilitare Argon2id in futuro: ALTER TABLE users MODIFY password
+ * VARCHAR(255) (coordinato con EMU). Poi swap BCRYPT_COST → ARGON_OPTIONS
+ * e import { hash } as argon2Hash. La verifica multi-formato qui sotto
+ * legge già entrambi i formati, quindi la transizione è zero-downtime.
  */
-const ARGON_OPTIONS = {
-    algorithm: Algorithm.Argon2id,
-    memoryCost: env.ARGON2_MEMORY_KB,
-    timeCost: env.ARGON2_TIME_COST,
-    parallelism: env.ARGON2_PARALLELISM
-} as const;
+const BCRYPT_COST = 12;
 
-/** Hash di reference per timing-safe verify (in caso di user inesistente). */
-const TIMING_SAFE_DUMMY_HASH = '$argon2id$v=19$m=65536,t=3,p=4$YWFhYWFhYWFhYWFhYWFhYQ$YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE';
+/**
+ * Hash di reference 60-char per timing-safe verify (quando l'utente non
+ * esiste, dobbiamo comunque "perdere tempo" per non rivelarlo al chiamante
+ * via timing oracle). Pre-generato con bcrypt.hashSync(rand_str, 12).
+ */
+const TIMING_SAFE_DUMMY_HASH = '$2b$12$FH1ojtNyKLf2XHfyQA8hxukJzZL9TPsBSZetDTmasd5nFJSmto4L2';
 
 export async function hashPassword(plain: string): Promise<string>
 {
     if(plain.length === 0) throw new Error('password vuota');
-    if(plain.length > 1024) throw new Error('password troppo lunga');
-    return hash(plain, ARGON_OPTIONS);
+    if(plain.length > 72) throw new Error('password troppo lunga (bcrypt max 72 byte)');
+    // bcryptjs è puro JS — niente native binding, niente prebuilds. Costo 12
+    // ≈ 250-400ms su laptop moderno, accettabile per login one-shot.
+    return bcrypt.hash(plain, BCRYPT_COST);
 }
 
 /**
  * Verifica password contro hash di formato:
- *  - Argon2id (`$argon2id$...`) — preferito, nuovi utenti CMS-V3
- *  - bcrypt (`$2a$`, `$2b$`, `$2y$`) — formato Arcturus EMU legacy
+ *  - bcrypt (`$2a$`, `$2b$`, `$2y$`) — formato corrente CMS-V3 + Arcturus
+ *  - Argon2id (`$argon2id$...`) — eventuali hash legacy CMS-V3 (transition)
  *  - SHA-512 raw (lunghezza 128 hex) — fallback per setup molto vecchi
  *
- * Il chiamante deve poi controllare isArgon2Hash() e ri-hashare con
- * hashPassword() per la migrazione trasparente al login successivo.
+ * NB: dopo il login OK NON ri-hashiamo automaticamente (vedi auth.ts).
+ * La migrazione di formato è un esercizio coordinato con l'EMU, non un
+ * effetto collaterale del login.
  */
 export async function verifyPassword(hashed: string, plain: string): Promise<boolean>
 {
     try
     {
-        if(hashed.startsWith('$argon2'))
-        {
-            return await verify(hashed, plain);
-        }
         if(hashed.startsWith('$2a$') || hashed.startsWith('$2b$') || hashed.startsWith('$2y$'))
         {
             return await bcrypt.compare(plain, hashed);
         }
-        // Fallback SHA-512 raw esadecimale (alcuni setup PHP molto vecchi).
+        if(hashed.startsWith('$argon2'))
+        {
+            return await argon2Verify(hashed, plain);
+        }
         if(/^[a-f0-9]{128}$/i.test(hashed))
         {
             const enc = new TextEncoder();
@@ -68,13 +77,19 @@ export async function verifyPassword(hashed: string, plain: string): Promise<boo
 /** Verify timing-safe contro dummy hash quando non c'è user (anti timing oracle). */
 export async function timingSafeDummyVerify(plain: string): Promise<void>
 {
-    try { await verify(TIMING_SAFE_DUMMY_HASH, plain); } catch { /* ignored */ }
+    try { await bcrypt.compare(plain, TIMING_SAFE_DUMMY_HASH); } catch { /* ignored */ }
 }
 
-/** Heuristica: il vecchio hash è argon2 se inizia con $argon2id$. */
+/** Heuristica: il vecchio hash è argon2 se inizia con $argon2*. */
 export function isArgon2Hash(value: string): boolean
 {
     return value.startsWith('$argon2id$') || value.startsWith('$argon2i$') || value.startsWith('$argon2d$');
+}
+
+/** Heuristica: l'hash è bcrypt se inizia con $2a$/$2b$/$2y$ ed è 60 char. */
+export function isBcryptHash(value: string): boolean
+{
+    return value.length === 60 && (value.startsWith('$2a$') || value.startsWith('$2b$') || value.startsWith('$2y$'));
 }
 
 /**

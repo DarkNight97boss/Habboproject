@@ -48,7 +48,12 @@ const envSchema = z.object({
     LOG_PRETTY: z.coerce.boolean().default(false),
 
     HIBP_CHECK_ENABLED: z.coerce.boolean().default(true),
-    HIBP_API_URL: z.string().url().default('https://api.pwnedpasswords.com/range')
+    HIBP_API_URL: z.string().url().default('https://api.pwnedpasswords.com/range'),
+
+    // Bridge RCON/MUS verso EMU Arcturus (loopback only).
+    RCON_HOST: z.string().default('127.0.0.1'),
+    RCON_PORT: z.coerce.number().int().positive().default(3001),
+    RCON_TOKEN: z.string().default('')
 });
 
 const parsed = envSchema.safeParse(process.env);

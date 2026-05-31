@@ -2,7 +2,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { StrictMode, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Route, Routes } from 'react-router';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
+import { CommunityPhotosPage } from './routes/CommunityPhotosPage';
 import { HomePage } from './routes/HomePage';
 import { MessagingPage } from './routes/MessagingPage';
 import { RegistrationPage } from './routes/RegistrationPage';
@@ -28,7 +29,8 @@ createRoot(root).render(
                     <Route path="/" element={<HomePage />} />
                     <Route path="/registration" element={<RegistrationPage />} />
                     <Route path="/messaging" element={<MessagingPage />} />
-                    <Route path="/community" element={<Placeholder name="Community" />} />
+                    <Route path="/community" element={<Navigate to="/community/photos" replace />} />
+                    <Route path="/community/photos" element={<CommunityPhotosPage />} />
                     <Route path="/shop" element={<Placeholder name="Shop" />} />
                     <Route path="/playing-habbo" element={<Placeholder name="Il Mondo di Habbo" />} />
                     <Route path="/habbo-nft" element={<Placeholder name="Collezionabili" />} />

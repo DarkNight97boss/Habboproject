@@ -1,0 +1,191 @@
+/**
+ * Skin Engine — override CSS che CONSUMA le custom properties scritte
+ * runtime da `lib/skin.ts applySkin(manifest)`.
+ *
+ * Non contiene VALORI di tema (quelli vivono nei manifest JSON in DB),
+ * solo le REGOLE che dicono "questa proprietà CSS deve leggere quella var".
+ *
+ * Specificità: usiamo `html[data-skin]` per battere il CSS habbo.it.
+ * I valori `var(--*, fallback)` garantiscono che se uno skin non setta
+ * un token, vince il fallback (sicuro per skin partial).
+ */
+
+/* ============================================================
+   BACKGROUND BODY (layer composto)
+   ============================================================ */
+html[data-skin] body {
+    background-color: var(--color-page-bg, #0c3a65) !important;
+    background-image: var(--bg-value, none);
+    color: var(--color-page-fg, #7ECAEE);
+    font-family: var(--font-family-base, "Ubuntu", system-ui, sans-serif);
+    font-size: calc(16px * var(--font-size-scale, 1));
+    transition: background-color var(--anim-speed, 200ms) var(--anim-easing, ease-out),
+                color var(--anim-speed, 200ms) var(--anim-easing, ease-out);
+}
+
+/* Background pattern overlay (Fase 2 — quando assets.patternUrl è settato) */
+html[data-skin] body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: var(--asset-pattern, none);
+    background-repeat: repeat;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.15;
+}
+
+html[data-skin] .wrapper {
+    background-color: transparent;
+}
+
+/* ============================================================
+   TYPOGRAPHY
+   ============================================================ */
+html[data-skin] h1,
+html[data-skin] h2,
+html[data-skin] h3,
+html[data-skin] h4,
+html[data-skin] h5,
+html[data-skin] h6,
+html[data-skin] .habbo-rounded-box h2,
+html[data-skin] .static-content h3 {
+    font-family: var(--font-family-heading, "Ubuntu", system-ui, sans-serif);
+    font-weight: var(--font-weight-heading, 700);
+    letter-spacing: var(--font-letter-spacing-heading, 0);
+}
+
+/* ============================================================
+   HEADER habbo (logo + GIOCA bar)
+   ============================================================ */
+html[data-skin] habbo-header-small,
+html[data-skin] .habbo-header-small {
+    background-color: var(--color-header-bg, #0a3b6e) !important;
+    color: var(--color-header-fg, #FFFFFF) !important;
+    transition: background-color var(--anim-speed, 200ms) var(--anim-easing, ease-out);
+}
+
+/* ============================================================
+   NAV bars
+   ============================================================ */
+html[data-skin] .nav__nav,
+html[data-skin] .nav--horizontal {
+    background-color: var(--color-navtop-bg, #E8F0F5) !important;
+    color: var(--color-navtop-fg, #0a3b6e) !important;
+}
+
+html[data-skin] .nav--horizontal a,
+html[data-skin] .nav__link {
+    color: var(--color-navtop-fg, #0a3b6e) !important;
+}
+
+html[data-skin] .sub-nav,
+html[data-skin] .nav--sub {
+    background-color: var(--color-navsub-bg, #0A1620) !important;
+    color: var(--color-navsub-fg, #7ECAEE) !important;
+}
+
+/* ============================================================
+   CARD / BOX
+   ============================================================ */
+html[data-skin] .habbo-rounded-box,
+html[data-skin] .static-content {
+    background-color: var(--color-card-bg, #102f4d) !important;
+    border: 1px solid var(--color-card-border, #A1B5C8) !important;
+    border-radius: var(--radius-base, 0) !important;
+    box-shadow: var(--shadow-card, none) !important;
+    color: var(--color-page-fg, #FFFFFF);
+    transition: border-radius var(--anim-speed, 200ms),
+                box-shadow var(--anim-speed, 200ms);
+}
+
+html[data-skin] .habbo-rounded-box h2,
+html[data-skin] .static-content h3 {
+    background-color: var(--color-card-header-bg, #2A6495);
+    color: var(--color-card-header-fg, #FFFFFF);
+}
+
+/* ============================================================
+   LINK
+   ============================================================ */
+html[data-skin] a:not(.btn):not(.nav__link):not(.habbo-button) {
+    color: var(--color-link, #FFB900);
+    transition: color var(--anim-speed, 200ms);
+}
+html[data-skin] a:not(.btn):not(.nav__link):not(.habbo-button):hover {
+    color: var(--color-link-hover, #FFEA00);
+}
+
+/* ============================================================
+   BUTTON
+   ============================================================ */
+html[data-skin] .habbo-button--primary,
+html[data-skin] button.habbo-button {
+    background-color: var(--color-button-bg, #0F7DBC) !important;
+    color: var(--color-button-fg, #FFFFFF) !important;
+    border-color: var(--color-button-border, #2A6495) !important;
+    border-radius: var(--radius-button, 0) !important;
+    box-shadow: var(--shadow-button, none) !important;
+    transition: all var(--anim-speed, 200ms) var(--anim-easing, ease-out);
+}
+
+html[data-skin] .habbo-button--primary:hover {
+    transform: translateY(-1px);
+}
+
+html[data-skin] input,
+html[data-skin] select,
+html[data-skin] textarea,
+html[data-skin] .form__input {
+    border-radius: var(--radius-input, 0) !important;
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+html[data-skin] habbo-footer,
+html[data-skin] .habbo-footer {
+    background-color: var(--color-header-bg, #0a3b6e) !important;
+    color: var(--color-header-fg, #FFFFFF) !important;
+}
+
+/* ============================================================
+   ANIMATIONS REGISTRABILI (Fase 2 le userà)
+   ============================================================ */
+
+@keyframes skin-snow {
+    0%   { background-position: 0 0; }
+    100% { background-position: 100px 1000px; }
+}
+
+@keyframes skin-stars {
+    0%   { opacity: 0.3; }
+    50%  { opacity: 0.8; }
+    100% { opacity: 0.3; }
+}
+
+@keyframes skin-cobweb-sway {
+    0%, 100% { transform: rotate(-2deg); }
+    50%      { transform: rotate(2deg); }
+}
+
+@keyframes skin-pulse-glow {
+    0%, 100% { box-shadow: 0 0 16px var(--color-accent, #FFB900); }
+    50%      { box-shadow: 0 0 32px var(--color-accent, #FFB900); }
+}
+
+/* Skin con shadow.style="neon-glow" → accent box hanno pulse subtile */
+html[data-skin][data-shadow-style="neon-glow"] .habbo-button--primary {
+    animation: skin-pulse-glow 3s ease-in-out infinite;
+}
+
+/* ============================================================
+   LAYOUT VARIANTS — placeholder (Fase 3 li implementerà davvero)
+   ============================================================ */
+html[data-layout="modern"] .wrapper--content {
+    /* Esempio: hero full-width — Fase 3 espande questo. */
+}
+
+html[data-layout="compact"] .wrapper--content {
+    /* Esempio: single column, sidebar nasconde su <1024px. */
+}

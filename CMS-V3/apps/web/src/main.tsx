@@ -23,21 +23,20 @@ import { StaffPanelPage } from './routes/StaffPanelPage';
 import { ShopPrepaidPage } from './routes/ShopPrepaidPage';
 import { ShopPurchasesPage } from './routes/ShopPurchasesPage';
 import { StaticInfoPage } from './routes/StaticInfoPage';
-import { hydrateTheme } from './lib/theme';
-import { useTheme } from './hooks/useTheme';
+import { hydrateSkin } from './lib/skin';
+import { useSkin } from './hooks/useSkin';
 import { type ReactNode } from 'react';
 import './styles/themes.css';
+import './styles/skin-engine.css';
 
 // NB: il CSS ufficiale habbo.it (app.a8ea7435.css) è caricato direttamente
 // in index.html via <link>. Niente Tailwind/global.css qui — sarebbero
 // override imprevedibili sopra la CSS ufficiale.
 //
-// ECCEZIONE: themes.css. Contiene SOLO regole sotto html[data-theme="..."]
-// (specificità mirata) per applicare temi alternativi alla palette base.
-// Hydratiamo il tema PRIMA del render React per evitare flash of unstyled
-// content (FOUC) — l'attributo data-theme è settato sul <html> prima che
-// React monti.
-hydrateTheme();
+// ECCEZIONI: themes.css (legacy v1, palette only) + skin-engine.css (v2,
+// consuma CSS vars scritte da applySkin a runtime). Hydratiamo lo skin
+// cached PRIMA del render React per evitare FOUC.
+hydrateSkin();
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -49,14 +48,13 @@ const root = document.getElementById('root');
 if(!root) throw new Error('root element missing');
 
 /**
- * Watcher headless: chiama useTheme() (React Query) per fetchare il tema
- * server-side ogni 60s e applicarlo al DOM. Senza questo, il tema cached
- * resterebbe applicato all'infinito e non si aggiornerebbe quando lo staff
- * cambia il tema globale.
+ * Watcher headless: chiama useSkin() (React Query) per fetchare lo skin
+ * attivo server-side ogni 60s e applicarlo al DOM. Senza questo, il cached
+ * resterebbe applicato all'infinito e non vedrebbe i cambi staff.
  */
 function ThemeApplier(): ReactNode
 {
-    useTheme();
+    useSkin();
     return null;
 }
 

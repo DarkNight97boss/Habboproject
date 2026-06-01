@@ -24,7 +24,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Navigate, NavLink, useParams } from 'react-router';
 import { AuthedShell } from '../components/AuthedShell';
-import { ThemePicker } from '../components/ThemePicker';
+import { SkinPicker } from '../components/SkinPicker';
 import { avatarUrl, useAuth } from '../hooks/useAuth';
 import '../styles/admin.css';
 
@@ -136,8 +136,8 @@ function AppearanceSection(): ReactNode
 {
     return (
         <div className="admin-section">
-            <h2 className="admin-section__title">Aspetto del sito</h2>
-            <ThemePicker />
+            <h2 className="admin-section__title">Aspetto del sito (Skin Engine)</h2>
+            <SkinPicker />
         </div>
     );
 }

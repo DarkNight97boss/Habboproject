@@ -467,11 +467,7 @@ auth.get('/play', async c =>
     //    (CDN R2 dietro proxy CF). Tecnicamente e' UA spoofing, ma per accedere
     //    al PROPRIO bucket R2 dal PROPRIO VPS e' legittimo.
     const CDN_BASE = env.CDN_BASE_URL || 'https://cdn.asteriacore.online';
-    const nitroHtml = await getNitroIndexHtml(CDN_BASE);
-    if(!nitroHtml)
-    {
-        return c.json({ error: 'nitro_unavailable', cdn: CDN_BASE }, 502);
-    }
+    const nitroHtml = NITRO_INDEX_TEMPLATE;
 
     // 3. Inject <base href={CDN_BASE}/> + NitroConfig interceptor.
     //    Il <base> e' cruciale: il client Nitro fa request relative
@@ -508,57 +504,20 @@ auth.get('/play', async c =>
 });
 
 // =================================================================
-// Cache in-memory dell'index.html del Nitro V3 (per /play endpoint).
+// Template HTML del Nitro V3 (hardcoded per evitare CF Bot Fight su fetch CDN).
 // =================================================================
-// L'HTML e' statico (~1.2KB) e cambia solo a release. TTL 5 min = ottimo
-// trade-off fra freshness (deploy nuovo si propaga rapido) e load CDN.
-// Bypass del Bot Fight Mode di Cloudflare via UA browser-like.
-let _nitroCache: { html: string; fetchedAt: number; cdn: string } | null = null;
-const NITRO_CACHE_TTL_MS = 5 * 60 * 1000;
-
-async function getNitroIndexHtml(cdnBase: string): Promise<string | null>
-{
-    const now = Date.now();
-    if(_nitroCache && _nitroCache.cdn === cdnBase && now - _nitroCache.fetchedAt < NITRO_CACHE_TTL_MS)
-    {
-        return _nitroCache.html;
-    }
-
-    try
-    {
-        const r = await fetch(`${cdnBase}/index.html`, {
-            headers: {
-                // UA browser-like per bypassare CF Bot Fight Mode.
-                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'it-IT,it;q=0.9,en;q=0.8',
-                'Cache-Control': 'no-cache'
-            }
-        });
-        if(!r.ok)
-        {
-            // eslint-disable-next-line no-console
-            console.error(`[getNitroIndexHtml] CDN fetch failed: HTTP ${r.status}`);
-            return null;
-        }
-        const html = await r.text();
-        // Sanity check: deve contenere bootstrap.js (sennò e' CF challenge page)
-        if(!html.includes('configuration/bootstrap.js'))
-        {
-            // eslint-disable-next-line no-console
-            console.error(`[getNitroIndexHtml] CDN returned non-Nitro HTML (CF challenge?): ${html.slice(0, 200)}`);
-            return null;
-        }
-        _nitroCache = { html, fetchedAt: now, cdn: cdnBase };
-        return html;
-    }
-    catch(e)
-    {
-        // eslint-disable-next-line no-console
-        console.error(`[getNitroIndexHtml] CDN fetch error:`, e);
-        return null;
-    }
-}
+// Tentativo precedente: fetch da https://cdn.asteriacore.online/index.html
+//   → 403 Bot Fight challenge anche con UA Chrome reale (CF blocca server-side
+//   fetch da IP datacenter Hetzner, è una protezione legittima).
+//
+// Soluzione: serviamo direttamente un template HTML minimale identico a
+// quello buildato dal Nitro V3 (vedi CMS/react/index.html). Il bundle vero
+// e' su CDN — questo HTML lo carica via <script src="configuration/bootstrap.js">
+// relativo, che con <base href=CDN> risolve sul CDN.
+//
+// Se in futuro la Nitro V3 cambia il template (es. aggiunge meta tag, ecc),
+// basta aggiornare questa costante. L'HTML e' ~330 byte, no overhead.
+const NITRO_INDEX_TEMPLATE = '<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Asteria Hotel</title></head><body><div id="root"></div><script src="configuration/bootstrap.js"></script></body></html>';
 
 // =================================================================
 // HIBP check utility per il register form

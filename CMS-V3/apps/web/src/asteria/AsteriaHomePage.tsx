@@ -183,7 +183,7 @@ function AuthedHero({ user }: { user: AuthUser }): ReactNode
             <div className="asteria-hero__eyebrow">Bentornato — {user.motto || 'pronto per giocare'}</div>
             <h1 className="asteria-hero__title">Ciao, {user.username}</h1>
             <p className="asteria-hero__tagline">
-                {user.credits.toLocaleString('it-IT')} crediti · {user.points.toLocaleString('it-IT')} punti
+                {user.credits.toLocaleString('it-IT')} crediti · rank {user.rank}
                 <br />Cosa vuoi fare oggi?
             </p>
             <div className="asteria-hero__cta">

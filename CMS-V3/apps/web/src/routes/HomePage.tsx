@@ -73,21 +73,38 @@ function HeaderSmallAuthed({ user }: { user: AuthUser }): ReactNode
 function UserMenu({ user }: { user: AuthUser }): ReactNode
 {
     const [open, setOpen] = useState(false);
+    const qc = useQueryClient();
 
     async function handleLogout(ev: MouseEvent): Promise<void>
     {
         ev.preventDefault();
         try { await fetch('/api/v2/auth/logout', { method: 'POST', credentials: 'include' }); }
-        finally { window.location.href = '/'; }
+        finally
+        {
+            broadcastAuth('logout');
+            window.location.href = '/';
+        }
+    }
+
+    function toggleOpen(ev: MouseEvent): void
+    {
+        ev.preventDefault();
+        setOpen(o =>
+        {
+            // Apertura menu → refetch /me così se il rank e' cambiato (promote
+            // a staff via SQL) la voce 'Pannello Amministrazione' appare subito.
+            if(!o) void qc.invalidateQueries({ queryKey: ['auth', 'me'] });
+            return !o;
+        });
     }
 
     return (
-        <habbo-user-menu className="header__aside header__aside--user-menu">
+        <habbo-user-menu className="header__aside header__aside--user-menu" data-rank={user.rank}>
             <div className="user-menu">
                 <div className="user-menu__header">
                     <a
                         href="#"
-                        onClick={ev => { ev.preventDefault(); setOpen(o => !o); }}
+                        onClick={toggleOpen}
                         className="user-menu__toggle"
                     >
                         <div className="user-menu__name__wrapper">
@@ -107,12 +124,36 @@ function UserMenu({ user }: { user: AuthUser }): ReactNode
                     </a>
                 </div>
                 <ul className={`user-menu__list${open ? '' : ' ng-hide'}`}>
+                    <li
+                        className="user-menu__item"
+                        style={{
+                            padding: '6px 16px 8px',
+                            borderBottom: '1px solid rgba(255,255,255,0.12)',
+                            fontSize: 11,
+                            color: 'rgba(255,255,255,0.55)',
+                            textTransform: 'uppercase',
+                            letterSpacing: 0.4
+                        }}
+                        title="Tuo livello account (rank Arcturus): da 5 in su sei staff."
+                    >
+                        Rank {user.rank}{user.rank >= 5 ? ' · STAFF' : ''}
+                    </li>
                     <li className="user-menu__item">
-                        <a href="/profile" className="user-menu__link user-menu__link--profile">Il mio profilo</a>
+                        <a href={`/profile/${encodeURIComponent(user.username)}`} className="user-menu__link user-menu__link--profile">Il mio profilo</a>
                     </li>
                     <li className="user-menu__item">
                         <a href="/settings" className="user-menu__link user-menu__link--settings">Impostazioni</a>
                     </li>
+                    {/* Voce staff-only: rank >= 5 nell'EMU Arcturus = staff/mod/admin.
+                        L'endpoint /api/v2/staff/* è comunque protetto da requireRank(5)
+                        lato server, quindi non c'è rischio di escalation. */}
+                    {user.rank >= 5 && (
+                        <li className="user-menu__item">
+                            <a href="/admin" className="user-menu__link user-menu__link--settings" style={{ color: '#fbd33f' }}>
+                                Pannello Amministrazione
+                            </a>
+                        </li>
+                    )}
                     <li className="user-menu__item">
                         <a href="/help" className="user-menu__link user-menu__link--help">Aiuto</a>
                     </li>

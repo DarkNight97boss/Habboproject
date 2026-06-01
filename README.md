@@ -52,6 +52,40 @@ docker compose --profile redis --profile obs up -d
 - ✅ Observability completa (Prometheus + Grafana + 11 alert PromQL)
 - ✅ Multi-host ready (Redis + read replica)
 
+## Ambiente di Sviluppo (dev.asteriacore.online)
+
+[![Dev Deploy](https://github.com/DarkNight97boss/Habboproject/actions/workflows/pr-dev-deploy.yml/badge.svg)](https://github.com/DarkNight97boss/Habboproject/actions/workflows/pr-dev-deploy.yml)
+[![Prod Deploy](https://github.com/DarkNight97boss/Habboproject/actions/workflows/prod-deploy.yml/badge.svg?branch=main)](https://github.com/DarkNight97boss/Habboproject/actions/workflows/prod-deploy.yml)
+
+`dev.asteriacore.online` è l'**ambiente di anteprima** (preview) di Asteria
+Core. Ogni Pull Request aperta verso `main` da un autore in whitelist viene
+automaticamente buildata su GitHub Actions e deployata sul VPS Hetzner, dove
+gira **in parallelo** alla produzione (stessa macchina, servizi systemd
+separati, database `ms_dev` distinto, porte dedicate). Il deploy include
+CMS-V3 (web + API Hono), EMU Java e — se la PR tocca `CMS/react/**` o
+`Nitro-V3/**` — anche il bundle Nitro su un bucket R2 dedicato.
+
+L'obiettivo è che ogni revisore possa aprire `https://dev.asteriacore.online`,
+fare login, premere **GIOCA** e testare la gameroom end-to-end **prima** del
+merge. Niente Docker, niente secondo VPS: un solo ambiente dev riusato per
+ogni PR attiva (concurrency-group `dev`, cancel-in-progress).
+
+Al merge su `main`, un secondo workflow (`prod-deploy.yml`) ricompila e
+promuove gli artifact su `asteriacore.online`.
+
+| Ambiente | URL                                                | Branch / Trigger                | Database  | Workflow              | Servizi systemd                  |
+|----------|----------------------------------------------------|---------------------------------|-----------|-----------------------|----------------------------------|
+| **dev**  | https://dev.asteriacore.online                     | PR aperta verso `main`          | `ms_dev`  | `pr-dev-deploy.yml`   | `habbo-emu-dev`, `cms-api-dev`   |
+| **prod** | https://asteriacore.online                         | push / merge su `main`          | `ms`      | `prod-deploy.yml`     | `habbo-emu`, `cms-api`           |
+
+Endpoint ausiliari dev: `dev-api.asteriacore.online` (CMS-V3 API Hono),
+`dev-hotel.asteriacore.online` (gameroom Nitro). Asset client serviti da
+bucket R2 `asteria-gamedata-dev` (mirror del prod `asteria-gamedata`).
+
+Per dettagli su workflow GitHub Actions, secrets richiesti, allowlist autori,
+script `apply-dev.sh` / `apply-sql.sh` e procedura di rollback, vedi
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
+
 ## Licenza
 
 GPL-3.0 (ereditata da Arcturus Morningstar). Vedi `EMU/LICENSE`.

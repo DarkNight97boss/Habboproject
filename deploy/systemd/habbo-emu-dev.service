@@ -1,0 +1,61 @@
+# habbo-emu-dev.service
+#
+# Unit systemd per l'EMU Java (Arcturus / Asteria Core) in ambiente DEV.
+# Gira IN PARALLELO al servizio prod `habbo-emu.service` sullo stesso VPS.
+#
+# Differenze chiave rispetto al servizio prod:
+#   - WorkingDirectory/ExecStart puntano a /opt/habboproject-dev (sparse-checkout
+#     separata, niente conflitti con /opt/habboproject di prod)
+#   - JVM mini: -Xms512m -Xmx1g (in prod usiamo Xmx >= 2g). Il dev serve solo
+#     a validare le PR, non a reggere traffico reale.
+#   - DB target: ms_dev (configurato dentro /opt/habboproject-dev/EMU/config.ini,
+#     non qui — l'EMU legge config.ini dal WorkingDirectory).
+#   - SyslogIdentifier=habbo-emu-dev cosi' `journalctl -t habbo-emu-dev` filtra
+#     solo i log di questo servizio senza mescolarsi a quelli prod.
+#   - RestartSec=10 (uguale a prod) — l'EMU al boot fa parecchio I/O su DB,
+#     un retry troppo veloce rischia di sovrapporre due istanze.
+#
+# Porte EMU dev (definite in config.ini, non qui): vedi nginx-dev.conf /
+# Cloudflare Public Hostname dev.asteriacore.online.
+
+[Unit]
+Description=Asteria Core EMU (Arcturus) - DEV environment
+Documentation=https://github.com/DarkNight97boss/Habboproject
+After=network-online.target mariadb.service
+Wants=network-online.target
+Requires=mariadb.service
+
+[Service]
+Type=simple
+User=asteria
+Group=asteria
+
+WorkingDirectory=/opt/habboproject-dev/EMU
+
+# JVM ridotta: dev environment, una manciata di utenti staff/test al massimo.
+# Niente -XX:+UseG1GC esplicito: con heap <= 1g il default va benissimo.
+ExecStart=/usr/bin/java -Xms512m -Xmx1g -jar /opt/habboproject-dev/EMU/target/Habbo-3.5.5-jar-with-dependencies.jar
+
+Restart=on-failure
+RestartSec=10
+
+# Hardening (allineato al servizio prod, ma con path /opt/habboproject-dev).
+# /var/log lo lasciamo scrivibile perche' Arcturus puo' scriverci log di crash
+# se configurato cosi'; in pratica oggi logga su journald via stdout/stderr.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/habboproject-dev/EMU /var/log
+
+# Filtro log dedicato (journalctl -t habbo-emu-dev / -u habbo-emu-dev).
+SyslogIdentifier=habbo-emu-dev
+StandardOutput=journal
+StandardError=journal
+
+# Limiti file descriptor: l'EMU apre molti socket (un FD per ogni client + DB
+# pool). 65535 e' coerente con prod e abbondante per dev.
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,61 @@
+# cms-api-dev.service
+#
+# Unit systemd per la CMS-V3 API (Hono / Node 24) in ambiente DEV.
+# Gira IN PARALLELO al servizio prod `cms-api.service` sullo stesso VPS.
+#
+# Differenze chiave rispetto al servizio prod:
+#   - WorkingDirectory/ExecStart puntano a /opt/habboproject-dev/CMS-V3/apps/api
+#   - EnvironmentFile dedicato: /etc/asteria/cms-api-dev.env
+#       Contiene: DB_NAME=ms_dev, PORT=8093 (prod usa 8092),
+#                 R2_BUCKET=asteria-gamedata-dev, JWT_SECRET dev-only,
+#                 NODE_ENV=development, LOG_LEVEL=debug, CORS origin dev, ecc.
+#   - SyslogIdentifier=cms-api-dev per filtrare i log dedicati via journalctl.
+#   - RestartSec=5 (uguale a prod): l'API Node riparte in <1s, retry rapido ok.
+#
+# Nota build: il workflow CI fa `yarn workspace @asteria/api build` e copia
+# /apps/api/dist sul VPS prima di `systemctl restart cms-api-dev`. Quindi qui
+# ci aspettiamo che dist/index.js esista gia' — niente `yarn start` runtime.
+
+[Unit]
+Description=Asteria Core CMS-V3 API (Hono/Node) - DEV environment
+Documentation=https://github.com/DarkNight97boss/Habboproject
+After=network-online.target mariadb.service
+Wants=network-online.target
+Requires=mariadb.service
+
+[Service]
+Type=simple
+User=asteria
+Group=asteria
+
+WorkingDirectory=/opt/habboproject-dev/CMS-V3/apps/api
+
+# Env file dedicato dev — separato da /etc/asteria/cms-api.env di prod cosi'
+# possiamo ruotare segreti dev senza toccare prod e viceversa.
+EnvironmentFile=/etc/asteria/cms-api-dev.env
+
+# Eseguibile Node di sistema (Node 24 installato via nodesource).
+# Niente pm2 qui: systemd e' il process supervisor, pm2 sarebbe ridondante.
+ExecStart=/usr/bin/node /opt/habboproject-dev/CMS-V3/apps/api/dist/index.js
+
+Restart=on-failure
+RestartSec=5
+
+# Hardening base. ProtectSystem=strict + ReadWritePaths sul solo path dev:
+# se l'API tentasse di scrivere altrove (per bug o per attacco) viene bloccata.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/habboproject-dev/CMS-V3/apps/api
+
+# Filtro log dedicato (journalctl -t cms-api-dev / -u cms-api-dev).
+SyslogIdentifier=cms-api-dev
+StandardOutput=journal
+StandardError=journal
+
+# Node con molte connessioni keep-alive + pool DB puo' superare il default 1024.
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

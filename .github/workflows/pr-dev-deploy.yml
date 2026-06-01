@@ -1,0 +1,762 @@
+# =============================================================================
+#  pr-dev-deploy.yml
+# -----------------------------------------------------------------------------
+#  Asteria Core - Deploy automatico ambiente DEV ad ogni PR aperta verso main.
+#
+#  Cosa fa:
+#    1. Verifica che l'autore della PR sia nella whitelist (vars.DEPLOY_ALLOWLIST)
+#    2. Rileva quali aree sono cambiate (EMU / CMS-V3 web / CMS-V3 api / SQL / Nitro)
+#    3. Builda solo cio' che e' cambiato (build paralleli, jobs separati)
+#    4. Carica gli artifact sul VPS via rsync/SSH come utente 'asteria'
+#    5. Lancia /opt/asteria-scripts/apply-dev.sh sul VPS (idempotente, reset DB ms_dev)
+#    6. Smoke test https://dev.asteriacore.online + endpoint API + gamedata
+#    7. Commenta sulla PR con URL preview + status (commento idempotente, sovrascritto)
+#
+#  Riusa UN SOLO ambiente DEV (concurrency group dev-deploy, cancel-in-progress).
+#  Se non e' presente uno script apply-dev.sh sul VPS, viene generato inline come
+#  fallback durante il primo deploy (cosi' il workflow funziona "out of the box").
+# =============================================================================
+
+name: PR - Deploy DEV (dev.asteriacore.online)
+
+# -----------------------------------------------------------------------------
+# Trigger: PR su main + dispatch manuale (per redeploy on demand)
+# -----------------------------------------------------------------------------
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Numero PR da (re)deployare in DEV'
+        required: true
+        type: number
+      force_full_rebuild:
+        description: 'Forza rebuild di tutto (ignora paths-filter)'
+        required: false
+        type: boolean
+        default: false
+
+# -----------------------------------------------------------------------------
+# Concurrency: una sola run DEV alla volta. PR nuova => cancella precedente.
+# Group basato sull'evento (numero PR), NON sul branch, per gestire correttamente
+# anche i workflow_dispatch e PR ridenominate.
+# -----------------------------------------------------------------------------
+concurrency:
+  group: dev-deploy-${{ github.event.pull_request.number || inputs.pr_number }}
+  cancel-in-progress: true
+
+# -----------------------------------------------------------------------------
+# Permessi: minimi (read di default). Solo i job che commentano la PR richiedono
+# pull-requests:write. Niente write su contents in tutto il workflow.
+# -----------------------------------------------------------------------------
+permissions:
+  contents: read
+
+# -----------------------------------------------------------------------------
+# Variabili d'ambiente globali condivise tra job (host VPS, dominio dev, ecc.)
+# -----------------------------------------------------------------------------
+env:
+  VPS_HOST: ${{ vars.VPS_HOST }}
+  VPS_USER: ${{ vars.VPS_USER }}
+  DEV_DOMAIN: dev.asteriacore.online
+  DEV_API_DOMAIN: dev-api.asteriacore.online
+  DEV_HOTEL_DOMAIN: dev-hotel.asteriacore.online
+  PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+  PR_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  # ===========================================================================
+  # JOB 0 - GUARD: gate di sicurezza sull'autore PR.
+  # PR da fork hanno gia' i secrets bloccati di default (GitHub policy), ma
+  # questa whitelist ferma anche PR-bombing interno (collaboratori non staff).
+  # Se l'autore non e' in vars.DEPLOY_ALLOWLIST -> skip silenzioso + commento.
+  # ===========================================================================
+  guard:
+    name: Guard - verifica autore PR
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    outputs:
+      allowed: ${{ steps.check.outputs.allowed }}
+    steps:
+      - name: Verifica autore in whitelist
+        id: check
+        # Per workflow_dispatch l'autore viene da github.actor; per PR da pull_request.user.login
+        env:
+          PR_AUTHOR: ${{ github.event.pull_request.user.login || github.actor }}
+          ALLOWLIST_JSON: ${{ vars.DEPLOY_ALLOWLIST }}
+        run: |
+          set -euo pipefail
+          # Default safe: se la variabile non e' settata, blocca tutto
+          if [ -z "${ALLOWLIST_JSON:-}" ]; then
+            echo "::warning::vars.DEPLOY_ALLOWLIST non configurato - blocco deploy per sicurezza"
+            echo "allowed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Confronto JSON-aware (jq) per evitare match parziali ("foo" matcha "foobar")
+          if echo "$ALLOWLIST_JSON" | jq -e --arg u "$PR_AUTHOR" 'index($u)' > /dev/null; then
+            echo "Autore $PR_AUTHOR autorizzato"
+            echo "allowed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Autore $PR_AUTHOR NON in DEPLOY_ALLOWLIST - skip deploy"
+            echo "allowed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commenta PR se autore non autorizzato
+        if: steps.check.outputs.allowed == 'false' && github.event_name == 'pull_request'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const body = [
+              '### Deploy DEV saltato',
+              '',
+              `L'autore della PR (\`${context.payload.pull_request.user.login}\`) non e' nella whitelist \`DEPLOY_ALLOWLIST\`.`,
+              '',
+              'Per sbloccare: uno staff member deve aggiungere lo username alla variabile repo `DEPLOY_ALLOWLIST` (Settings -> Secrets and variables -> Actions -> Variables).',
+              '',
+              '_(Commento generato da `pr-dev-deploy.yml`)_'
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body
+            });
+
+  # ===========================================================================
+  # JOB 1 - DETECT CHANGES: usa dorny/paths-filter per evitare build inutili.
+  # Output booleani consumati come 'if:' negli altri job.
+  # ===========================================================================
+  detect-changes:
+    name: Detect - aree modificate
+    needs: guard
+    if: needs.guard.outputs.allowed == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      emu: ${{ steps.filter.outputs.emu }}
+      cmsweb: ${{ steps.filter.outputs.cmsweb }}
+      cmsapi: ${{ steps.filter.outputs.cmsapi }}
+      sql: ${{ steps.filter.outputs.sql }}
+      nitro: ${{ steps.filter.outputs.nitro }}
+    steps:
+      - name: Checkout (shallow, serve solo per il filter)
+        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.1.0
+        with:
+          fetch-depth: 2
+
+      - name: Paths filter
+        id: filter
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          # Su workflow_dispatch non c'e' un base PR: forza tutti i filtri a true
+          # se l'utente ha chiesto force_full_rebuild
+          filters: |
+            emu:
+              - 'EMU/**'
+            cmsweb:
+              - 'CMS-V3/apps/web/**'
+              - 'CMS-V3/packages/**'
+              - 'CMS-V3/yarn.lock'
+              - 'CMS-V3/package.json'
+            cmsapi:
+              - 'CMS-V3/apps/api/**'
+              - 'CMS-V3/packages/**'
+              - 'CMS-V3/yarn.lock'
+              - 'CMS-V3/package.json'
+            sql:
+              - 'EMU/sqlupdates/**'
+              - 'EMU/base database/**'
+              - 'CMS-V3/apps/api/src/db/migrations/**'
+            nitro:
+              - 'Nitro-V3/**'
+              - 'CMS/react/**'
+
+      - name: Override su force_full_rebuild
+        if: inputs.force_full_rebuild == true
+        run: |
+          echo "Force rebuild richiesto - tutti i filtri a true"
+          {
+            echo "emu=true"
+            echo "cmsweb=true"
+            echo "cmsapi=true"
+            echo "sql=true"
+            echo "nitro=true"
+          } >> "$GITHUB_OUTPUT"
+
+  # ===========================================================================
+  # JOB 2 - BUILD EMU (Java jar). Cache Maven via setup-java + sparse checkout.
+  # Skip se nessun file in EMU/** e' cambiato.
+  # ===========================================================================
+  build-emu:
+    name: Build - EMU (Java)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.emu == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sparse (solo EMU/)
+        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.1.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          sparse-checkout: |
+            EMU
+          sparse-checkout-cone-mode: false
+
+      - name: Setup JDK 17 Temurin + cache Maven
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4.2.1
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Build jar (mvn package)
+        # -B batch mode (no color), skipTests per velocita', skip javadoc (heavy)
+        working-directory: EMU
+        run: mvn -B -DskipTests -Dmaven.javadoc.skip=true package
+
+      - name: Upload artifact EMU jar
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        with:
+          name: emu-jar
+          path: EMU/target/Habbo-3.5.5-jar-with-dependencies.jar
+          retention-days: 3
+          if-no-files-found: error
+
+  # ===========================================================================
+  # JOB 3 - BUILD CMS-V3 WEB (React 19 / Vite 8). Cache yarn via lockfile.
+  # Skip se non e' cambiato il frontend (o lo schema DB - per safety rebuild).
+  # ===========================================================================
+  build-cms-web:
+    name: Build - CMS-V3 Web (Vite)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.cmsweb == 'true' || needs.detect-changes.outputs.sql == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sparse (solo CMS-V3/)
+        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.1.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          sparse-checkout: |
+            CMS-V3
+          sparse-checkout-cone-mode: false
+
+      - name: Setup Node 24 + cache yarn
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: '24'
+          cache: yarn
+          cache-dependency-path: CMS-V3/yarn.lock
+
+      - name: Install dependenze (frozen lockfile)
+        working-directory: CMS-V3
+        run: yarn install --frozen-lockfile
+
+      - name: Build Vite bundle (env DEV)
+        working-directory: CMS-V3
+        env:
+          VITE_API_BASE_URL: https://dev-api.asteriacore.online
+          VITE_NITRO_URL: https://dev-hotel.asteriacore.online
+          VITE_ENV: dev
+          VITE_PR_NUMBER: ${{ env.PR_NUMBER }}
+          VITE_COMMIT_SHA: ${{ env.PR_SHA }}
+        run: yarn workspace @cms-v3/web build
+
+      - name: Upload artifact dist web
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        with:
+          name: cms-web-dist
+          path: CMS-V3/apps/web/dist
+          retention-days: 3
+          if-no-files-found: error
+
+  # ===========================================================================
+  # JOB 4 - BUILD CMS-V3 API (Hono Node). Tar bundle con dist + node_modules
+  # production-only (yarn install --production reinstalled in folder isolato).
+  # ===========================================================================
+  build-cms-api:
+    name: Build - CMS-V3 API (Hono)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.cmsapi == 'true' || needs.detect-changes.outputs.sql == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sparse (solo CMS-V3/)
+        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.1.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          sparse-checkout: |
+            CMS-V3
+          sparse-checkout-cone-mode: false
+
+      - name: Setup Node 24 + cache yarn
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: '24'
+          cache: yarn
+          cache-dependency-path: CMS-V3/yarn.lock
+
+      - name: Install dev dependenze (per il build)
+        working-directory: CMS-V3
+        run: yarn install --frozen-lockfile
+
+      - name: Build TypeScript -> dist
+        working-directory: CMS-V3
+        run: yarn workspace @cms-v3/api build
+
+      - name: Reinstall dependenze production-only in folder isolato
+        # Copiamo dist + package.json + yarn.lock in /tmp/bundle e installiamo
+        # SOLO le dipendenze production (no @types, no tsx, no vitest). Riduce
+        # il bundle finale del ~70% e accelera il rsync.
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/api-bundle
+          cp -r CMS-V3/apps/api/dist /tmp/api-bundle/dist
+          cp CMS-V3/apps/api/package.json /tmp/api-bundle/
+          # yarn lockfile a livello monorepo - copiamolo lo stesso, npm/yarn lo userebbe
+          cp CMS-V3/yarn.lock /tmp/api-bundle/ || true
+          cd /tmp/api-bundle
+          # Usa npm install --omit=dev per evitare workspace resolution issues fuori dal monorepo
+          npm install --omit=dev --no-audit --no-fund --ignore-scripts
+
+      - name: Crea tar.gz del bundle API
+        run: |
+          cd /tmp/api-bundle
+          tar czf /tmp/cms-api-bundle.tar.gz .
+          ls -lh /tmp/cms-api-bundle.tar.gz
+
+      - name: Upload artifact bundle API
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        with:
+          name: cms-api-bundle
+          path: /tmp/cms-api-bundle.tar.gz
+          retention-days: 3
+          if-no-files-found: error
+
+  # ===========================================================================
+  # JOB 5 - DEPLOY: download artifact + rsync su VPS + invoca apply-dev.sh
+  # always() && !failure() : gira anche se uno dei build job e' stato skippato
+  # (per esempio "PR che tocca solo CMS web" => non builda EMU => deploy ok).
+  # ===========================================================================
+  deploy:
+    name: Deploy su VPS (dev.asteriacore.online)
+    needs: [detect-changes, build-emu, build-cms-web, build-cms-api]
+    if: |
+      always() &&
+      needs.detect-changes.result == 'success' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_status: ${{ steps.apply.outputs.status }}
+    steps:
+      - name: Download tutti gli artifact (se presenti)
+        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
+        with:
+          path: /tmp/artifacts
+        continue-on-error: true # se un job e' stato skippato, l'artifact non c'e'
+
+      - name: Mostra artifact scaricati
+        run: |
+          echo "=== Artifact ricevuti ==="
+          ls -laR /tmp/artifacts/ || echo "(nessun artifact)"
+
+      - name: Setup SSH agent con chiave deploy DEV
+        uses: webfactory/ssh-agent@dc588b651fe13675774614f8e6a936a468676387 # v0.9.0
+        with:
+          ssh-auth-sock: /tmp/ssh-auth.sock
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Configura known_hosts (pin host VPS)
+        env:
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          if [ -n "${SSH_KNOWN_HOSTS:-}" ]; then
+            echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+          else
+            # Fallback: scan al volo (meno sicuro - rischia MITM al primo connect)
+            ssh-keyscan -t ed25519,rsa "${{ env.VPS_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+          fi
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Crea dir di staging sul VPS
+        run: |
+          ssh -o StrictHostKeyChecking=yes "${VPS_USER}@${VPS_HOST}" \
+            "mkdir -p /tmp/asteria-dev-${PR_SHA}/{emu,cms-web,cms-api}"
+
+      - name: Rsync EMU jar (se presente)
+        if: needs.detect-changes.outputs.emu == 'true'
+        run: |
+          rsync -avz --delete \
+            -e "ssh -o StrictHostKeyChecking=yes" \
+            /tmp/artifacts/emu-jar/ \
+            "${VPS_USER}@${VPS_HOST}:/tmp/asteria-dev-${PR_SHA}/emu/"
+
+      - name: Rsync CMS Web dist (se presente)
+        if: needs.detect-changes.outputs.cmsweb == 'true' || needs.detect-changes.outputs.sql == 'true'
+        run: |
+          rsync -avz --delete \
+            -e "ssh -o StrictHostKeyChecking=yes" \
+            /tmp/artifacts/cms-web-dist/ \
+            "${VPS_USER}@${VPS_HOST}:/tmp/asteria-dev-${PR_SHA}/cms-web/"
+
+      - name: Rsync CMS API bundle (se presente)
+        if: needs.detect-changes.outputs.cmsapi == 'true' || needs.detect-changes.outputs.sql == 'true'
+        run: |
+          rsync -avz \
+            -e "ssh -o StrictHostKeyChecking=yes" \
+            /tmp/artifacts/cms-api-bundle/cms-api-bundle.tar.gz \
+            "${VPS_USER}@${VPS_HOST}:/tmp/asteria-dev-${PR_SHA}/cms-api/"
+
+      - name: Garantisci apply-dev.sh sul VPS (genera inline se mancante)
+        # Fallback: se /opt/asteria-scripts/apply-dev.sh non esiste, lo creiamo.
+        # Lo script vero (firmato, owned by root) andrebbe provisioned via Ansible
+        # / cloud-init, ma per il "first run" del workflow lo generiamo qui.
+        run: |
+          ssh -o StrictHostKeyChecking=yes "${VPS_USER}@${VPS_HOST}" 'bash -s' <<'REMOTE_EOF'
+          set -euo pipefail
+          SCRIPT=/opt/asteria-scripts/apply-dev.sh
+          if [ -x "$SCRIPT" ]; then
+            echo "[remote] apply-dev.sh gia' presente, skip generazione"
+            exit 0
+          fi
+          sudo mkdir -p /opt/asteria-scripts
+          sudo tee "$SCRIPT" > /dev/null <<'SCRIPT_EOF'
+          #!/usr/bin/env bash
+          # =========================================================================
+          # apply-dev.sh - Applica un nuovo deploy DEV (chiamato dal workflow GH)
+          # Argomenti: $1=SHA  $2=PR_NUMBER  $3=changed_emu  $4=changed_web
+          #           $5=changed_api  $6=changed_sql  $7=changed_nitro
+          # Idempotente. Reset DB ms_dev se changed_sql=true.
+          # =========================================================================
+          set -euo pipefail
+          SHA="${1:?SHA mancante}"
+          PR_NUM="${2:?PR_NUMBER mancante}"
+          CH_EMU="${3:-false}"
+          CH_WEB="${4:-false}"
+          CH_API="${5:-false}"
+          CH_SQL="${6:-false}"
+          CH_NITRO="${7:-false}"
+
+          STAGING="/tmp/asteria-dev-${SHA}"
+          DEV_ROOT="/opt/habboproject-dev"
+          DEV_WEB="/var/www/dev.asteriacore.online"
+          DEV_API_ROOT="/opt/asteria-cms-api-dev"
+          EMU_JAR_DEV="${DEV_ROOT}/EMU/target/Habbo-3.5.5-jar-with-dependencies.jar"
+
+          log() { echo "[apply-dev $(date -Is)] $*"; }
+
+          # --- Reset DB ms_dev se schema cambiato ----------------------------------
+          if [ "$CH_SQL" = "true" ]; then
+            log "Reset DB ms_dev (schema changed)"
+            sudo -E /opt/asteria-scripts/apply-sql.sh dev || {
+              log "ERROR: apply-sql.sh dev fallito"
+              exit 1
+            }
+          fi
+
+          # --- EMU jar -------------------------------------------------------------
+          if [ "$CH_EMU" = "true" ] && [ -f "${STAGING}/emu/Habbo-3.5.5-jar-with-dependencies.jar" ]; then
+            log "Deploy EMU jar"
+            sudo install -o asteria -g asteria -m 0644 \
+              "${STAGING}/emu/Habbo-3.5.5-jar-with-dependencies.jar" \
+              "${EMU_JAR_DEV}"
+            sudo systemctl restart habbo-emu-dev.service
+          fi
+
+          # --- CMS Web dist (atomic symlink switch) --------------------------------
+          if [ "$CH_WEB" = "true" ] || [ "$CH_SQL" = "true" ]; then
+            if [ -d "${STAGING}/cms-web" ]; then
+              log "Deploy CMS Web dist (atomic switch)"
+              RELEASE_DIR="${DEV_WEB}/releases/${SHA}"
+              sudo mkdir -p "$RELEASE_DIR"
+              sudo rsync -a --delete "${STAGING}/cms-web/" "${RELEASE_DIR}/"
+              sudo ln -sfn "$RELEASE_DIR" "${DEV_WEB}/current"
+              sudo chown -R www-data:www-data "${RELEASE_DIR}"
+              # Pulizia: tieni le ultime 3 release
+              sudo find "${DEV_WEB}/releases" -mindepth 1 -maxdepth 1 -type d \
+                | sort -r | tail -n +4 | xargs -r sudo rm -rf
+            fi
+          fi
+
+          # --- CMS API bundle ------------------------------------------------------
+          if [ "$CH_API" = "true" ] || [ "$CH_SQL" = "true" ]; then
+            if [ -f "${STAGING}/cms-api/cms-api-bundle.tar.gz" ]; then
+              log "Deploy CMS API bundle"
+              RELEASE_DIR="${DEV_API_ROOT}/releases/${SHA}"
+              sudo mkdir -p "$RELEASE_DIR"
+              sudo tar xzf "${STAGING}/cms-api/cms-api-bundle.tar.gz" -C "$RELEASE_DIR"
+              sudo ln -sfn "$RELEASE_DIR" "${DEV_API_ROOT}/current"
+              sudo chown -R asteria:asteria "${RELEASE_DIR}"
+              sudo systemctl restart cms-api-dev.service
+              # Pulizia release vecchie
+              sudo find "${DEV_API_ROOT}/releases" -mindepth 1 -maxdepth 1 -type d \
+                | sort -r | tail -n +4 | xargs -r sudo rm -rf
+            fi
+          fi
+
+          # --- Cleanup staging -----------------------------------------------------
+          sudo rm -rf "$STAGING"
+          log "Deploy DEV completato per PR #${PR_NUM} @ ${SHA}"
+          SCRIPT_EOF
+          sudo chmod 0755 "$SCRIPT"
+          sudo chown root:root "$SCRIPT"
+          echo "[remote] apply-dev.sh generato"
+          REMOTE_EOF
+
+      - name: Esegui apply-dev.sh sul VPS
+        id: apply
+        env:
+          CH_EMU: ${{ needs.detect-changes.outputs.emu }}
+          CH_WEB: ${{ needs.detect-changes.outputs.cmsweb }}
+          CH_API: ${{ needs.detect-changes.outputs.cmsapi }}
+          CH_SQL: ${{ needs.detect-changes.outputs.sql }}
+          CH_NITRO: ${{ needs.detect-changes.outputs.nitro }}
+        run: |
+          set -euo pipefail
+          ssh -o StrictHostKeyChecking=yes "${VPS_USER}@${VPS_HOST}" \
+            "sudo /opt/asteria-scripts/apply-dev.sh '${PR_SHA}' '${PR_NUMBER}' '${CH_EMU}' '${CH_WEB}' '${CH_API}' '${CH_SQL}' '${CH_NITRO}'"
+          echo "status=ok" >> "$GITHUB_OUTPUT"
+
+  # ===========================================================================
+  # JOB 6 - SMOKE TEST: verifica HTTP che il dev environment risponda.
+  # Se fallisce, scarica le ultime 50 righe di journalctl dei servizi dev.
+  # ===========================================================================
+  smoke-test:
+    name: Smoke test - dev.asteriacore.online
+    needs: deploy
+    if: needs.deploy.result == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      web_ok: ${{ steps.web.outputs.ok }}
+      api_ok: ${{ steps.api.outputs.ok }}
+      hotel_ok: ${{ steps.hotel.outputs.ok }}
+    steps:
+      - name: Attendi 5s che i servizi siano up
+        run: sleep 5
+
+      - name: Check web (https://dev.asteriacore.online)
+        id: web
+        run: |
+          set +e
+          response=$(curl -fsS --max-time 10 -o /tmp/web.html -w "%{http_code}" "https://${DEV_DOMAIN}")
+          if [ "$response" = "200" ] && grep -qi "asteria" /tmp/web.html; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+            echo "Web OK (200, body contiene 'asteria')"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::error::Web check fallito (HTTP $response)"
+            head -c 500 /tmp/web.html || true
+          fi
+
+      - name: Check API health (https://dev-api.asteriacore.online/health)
+        id: api
+        run: |
+          set +e
+          body=$(curl -fsS --max-time 10 "https://${DEV_API_DOMAIN}/health")
+          rc=$?
+          if [ $rc -eq 0 ] && echo "$body" | jq -e '.ok == true' > /dev/null 2>&1; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+            echo "API OK ($body)"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::error::API health fallito (body: $body)"
+          fi
+
+      - name: Check hotel gamedata (external_variables.txt)
+        id: hotel
+        run: |
+          set +e
+          response=$(curl -fsS --max-time 10 -o /dev/null -w "%{http_code}" \
+            "https://${DEV_HOTEL_DOMAIN}/gamedata/external_variables.txt")
+          if [ "$response" = "200" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+            echo "Hotel gamedata OK (200)"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::error::Hotel gamedata fallito (HTTP $response)"
+          fi
+
+      - name: Raccogli journalctl se qualche check e' KO
+        if: |
+          steps.web.outputs.ok == 'false' ||
+          steps.api.outputs.ok == 'false' ||
+          steps.hotel.outputs.ok == 'false'
+        env:
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          if [ -n "${SSH_KNOWN_HOSTS:-}" ]; then
+            echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+          else
+            ssh-keyscan -t ed25519,rsa "${VPS_HOST}" >> ~/.ssh/known_hosts 2>/dev/null
+          fi
+          chmod 644 ~/.ssh/known_hosts
+          {
+            echo '## journalctl habbo-emu-dev (last 80)'
+            ssh -o StrictHostKeyChecking=yes "${VPS_USER}@${VPS_HOST}" \
+              'sudo journalctl -u habbo-emu-dev --no-pager -n 80' || echo '(nessun output)'
+            echo
+            echo '## journalctl cms-api-dev (last 80)'
+            ssh -o StrictHostKeyChecking=yes "${VPS_USER}@${VPS_HOST}" \
+              'sudo journalctl -u cms-api-dev --no-pager -n 80' || echo '(nessun output)'
+          } > /tmp/journal.txt
+          cat /tmp/journal.txt
+
+      - name: Carica journal come artifact (se KO)
+        if: |
+          steps.web.outputs.ok == 'false' ||
+          steps.api.outputs.ok == 'false' ||
+          steps.hotel.outputs.ok == 'false'
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        with:
+          name: journal-${{ env.PR_SHA }}
+          path: /tmp/journal.txt
+          retention-days: 7
+
+        # Setup chiave SSH (necessario per il job journalctl sopra)
+      - name: Setup SSH agent (per journalctl)
+        if: |
+          steps.web.outputs.ok == 'false' ||
+          steps.api.outputs.ok == 'false' ||
+          steps.hotel.outputs.ok == 'false'
+        uses: webfactory/ssh-agent@dc588b651fe13675774614f8e6a936a468676387 # v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+  # ===========================================================================
+  # JOB 7 - COMMENT PR: commento idempotente con URL preview + stato job.
+  # Trova commento precedente del bot via marker HTML <!-- asteria-deploy-comment -->
+  # e lo sovrascrive (no spam).
+  # ===========================================================================
+  comment-pr:
+    name: Commenta PR con risultato
+    needs: [guard, detect-changes, build-emu, build-cms-web, build-cms-api, deploy, smoke-test]
+    if: always() && needs.guard.outputs.allowed == 'true' && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Compila commento e pubblica (find-and-replace)
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          PR_SHA: ${{ env.PR_SHA }}
+          DETECT_EMU: ${{ needs.detect-changes.outputs.emu }}
+          DETECT_WEB: ${{ needs.detect-changes.outputs.cmsweb }}
+          DETECT_API: ${{ needs.detect-changes.outputs.cmsapi }}
+          DETECT_SQL: ${{ needs.detect-changes.outputs.sql }}
+          DETECT_NITRO: ${{ needs.detect-changes.outputs.nitro }}
+          RES_EMU: ${{ needs.build-emu.result }}
+          RES_WEB: ${{ needs.build-cms-web.result }}
+          RES_API: ${{ needs.build-cms-api.result }}
+          RES_DEPLOY: ${{ needs.deploy.result }}
+          RES_SMOKE: ${{ needs.smoke-test.result }}
+          SMOKE_WEB: ${{ needs.smoke-test.outputs.web_ok }}
+          SMOKE_API: ${{ needs.smoke-test.outputs.api_ok }}
+          SMOKE_HOTEL: ${{ needs.smoke-test.outputs.hotel_ok }}
+        with:
+          script: |
+            const MARKER = '<!-- asteria-deploy-comment -->';
+            const icon = (res) => {
+              if (res === 'success') return ':white_check_mark:';
+              if (res === 'skipped') return ':fast_forward:';
+              if (res === 'failure') return ':x:';
+              if (res === 'cancelled') return ':no_entry_sign:';
+              return ':question:';
+            };
+            const flag = (v) => v === 'true' ? ':white_check_mark:' : ':white_circle:';
+            const smokeIcon = (v) => v === 'true' ? ':green_circle:' : (v === 'false' ? ':red_circle:' : ':white_circle:');
+
+            const deployOk = process.env.RES_DEPLOY === 'success';
+            const smokeOk = process.env.RES_SMOKE === 'success';
+            const overall = deployOk && smokeOk
+              ? ':rocket: **Deploy DEV completato con successo**'
+              : (process.env.RES_DEPLOY === 'failure' || process.env.RES_SMOKE === 'failure'
+                  ? ':boom: **Deploy DEV fallito**'
+                  : ':hourglass: **Deploy DEV in corso o parziale**');
+
+            const sha = (process.env.PR_SHA || '').substring(0, 8);
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            const body = [
+              MARKER,
+              '## Asteria Core - Deploy DEV',
+              '',
+              overall,
+              '',
+              `**Preview:** https://dev.asteriacore.online`,
+              `**API:** https://dev-api.asteriacore.online/health`,
+              `**Hotel:** https://dev-hotel.asteriacore.online`,
+              `**Commit:** \`${sha}\``,
+              `**Workflow run:** ${runUrl}`,
+              '',
+              '### Aree modificate (paths-filter)',
+              '',
+              '| Area | Modificata |',
+              '|------|------------|',
+              `| EMU (Java) | ${flag(process.env.DETECT_EMU)} |`,
+              `| CMS-V3 Web | ${flag(process.env.DETECT_WEB)} |`,
+              `| CMS-V3 API | ${flag(process.env.DETECT_API)} |`,
+              `| SQL / Migrations | ${flag(process.env.DETECT_SQL)} |`,
+              `| Nitro / gamedata | ${flag(process.env.DETECT_NITRO)} |`,
+              '',
+              '### Stato job',
+              '',
+              '| Job | Risultato |',
+              '|-----|-----------|',
+              `| build-emu | ${icon(process.env.RES_EMU)} ${process.env.RES_EMU} |`,
+              `| build-cms-web | ${icon(process.env.RES_WEB)} ${process.env.RES_WEB} |`,
+              `| build-cms-api | ${icon(process.env.RES_API)} ${process.env.RES_API} |`,
+              `| deploy | ${icon(process.env.RES_DEPLOY)} ${process.env.RES_DEPLOY} |`,
+              `| smoke-test | ${icon(process.env.RES_SMOKE)} ${process.env.RES_SMOKE} |`,
+              '',
+              '### Smoke test',
+              '',
+              '| Endpoint | Stato |',
+              '|----------|-------|',
+              `| dev.asteriacore.online | ${smokeIcon(process.env.SMOKE_WEB)} |`,
+              `| dev-api.asteriacore.online/health | ${smokeIcon(process.env.SMOKE_API)} |`,
+              `| dev-hotel.asteriacore.online/gamedata | ${smokeIcon(process.env.SMOKE_HOTEL)} |`,
+              '',
+              '<details><summary>Log servizi (in caso di fallimento)</summary>',
+              '',
+              '```bash',
+              '# Sul VPS:',
+              'sudo journalctl -u habbo-emu-dev -f',
+              'sudo journalctl -u cms-api-dev -f',
+              'sudo nginx -t && sudo tail -f /var/log/nginx/dev.asteriacore.online.error.log',
+              '```',
+              '',
+              '</details>',
+              '',
+              `_Commento aggiornato in-place. Ultima esecuzione: ${new Date().toISOString()}_`
+            ].join('\n');
+
+            const prNumber = context.payload.pull_request.number;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100
+            });
+            const existing = comments.find(c => c.body && c.body.includes(MARKER));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+              core.info(`Commento aggiornato (id=${existing.id})`);
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body
+              });
+              core.info('Commento creato');
+            }

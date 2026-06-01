@@ -1,0 +1,368 @@
+# =============================================================================
+# Asteria Core - PR Dev Teardown
+# =============================================================================
+# Scopo:
+#   Quando una Pull Request viene chiusa (merged oppure semplicemente closed),
+#   questo workflow ripulisce le risorse temporanee specifiche di quella PR
+#   sul VPS (cartelle /tmp/asteria-dev-<sha>/, lock-file, eventuali artifact
+#   intermedi) e aggiorna un commento finale sulla PR informando l'autore che
+#   l'ambiente dev (https://dev.asteriacore.online) non punta piu' al suo HEAD.
+#
+#   IMPORTANTE: il dev environment GLOBALE (systemd habbo-emu-dev.service,
+#   cms-api-dev.service, DB ms_dev, nginx dev.asteriacore.online) NON viene
+#   smontato. Resta in piedi - eventualmente in stato "idle" sull'ultimo deploy
+#   - in attesa della prossima PR che fara' override del dev. Questo perche':
+#     1) Lo stack dev consuma poca RAM quando non riceve traffico (~250MB)
+#     2) Evita cold-start di 70s+ alla prossima PR
+#     3) Permette al maintainer di ispezionare manualmente l'ultimo stato dev
+#
+#   Se NESSUNA altra PR e' aperta sul repo (controllo via gh CLI sul VPS),
+#   il workflow ha un OPZIONALE flag che ferma i servizi dev per liberare RAM.
+#   Per default lo lascia attivo (RAM cost trascurabile, restart costoso).
+#
+# Trigger:
+#   pull_request: types [closed] su base 'main'
+#   (si attiva sia per merged=true sia per merged=false / chiusura senza merge)
+#
+# Permissions:
+#   - contents: read    -> per checkout (necessario per github-script comment)
+#   - pull-requests: write -> per scrivere il commento finale sulla PR
+# =============================================================================
+
+name: PR Dev Teardown
+
+on:
+  pull_request:
+    # Si attiva SOLO alla chiusura della PR (sia merge sia close-senza-merge).
+    # Non si attiva su open/synchronize/reopen (quelli li gestisce pr-dev-deploy.yml).
+    types: [closed]
+    branches:
+      - main
+
+# -----------------------------------------------------------------------------
+# Concurrency:
+# Raggruppiamo per numero PR. Se per qualche motivo viene triggerato due volte
+# lo stesso teardown (es. close manuale subito dopo un merge), il secondo run
+# annulla il primo che diventa obsoleto.
+# -----------------------------------------------------------------------------
+concurrency:
+  group: pr-dev-teardown-${{ github.event.pull_request.number }}
+  cancel-in-progress: false   # Non cancelliamo: vogliamo che il teardown completi sempre
+
+# Permissions minimi necessari a livello di workflow
+permissions:
+  contents: read
+  pull-requests: write   # Per postare il commento finale via github-script
+
+jobs:
+
+  # ===========================================================================
+  # JOB 1: teardown
+  # ---------------------------------------------------------------------------
+  # SSH al VPS come utente 'asteria' (deploy key dedicata SSH_PRIVATE_KEY),
+  # esegue lo script di pulizia inline che:
+  #   - rimuove /tmp/asteria-dev-<sha>* relativi alla PR
+  #   - rimuove eventuali lock di deploy lasciati orfani (/var/lock/asteria-dev.lock)
+  #   - se nessun'altra PR e' open (gh CLI), opzionalmente ferma i servizi dev
+  #   - NON tocca /opt/habboproject-dev (resta all'ultimo deploy per ispezione)
+  #
+  # Gate di sicurezza: anche se il workflow scatta su qualsiasi PR closed
+  # (incluse quelle di autori esterni), lo step di SSH richiede SSH_PRIVATE_KEY
+  # che NON e' accessibile a workflow originati da fork (GH default). Aggiungiamo
+  # comunque un controllo esplicito sull'allowlist per sicurezza extra.
+  # ===========================================================================
+  teardown:
+    name: Teardown dev resources for PR #${{ github.event.pull_request.number }}
+    runs-on: ubuntu-latest
+    # Gate: solo se l'autore della PR e' nella whitelist dev. Per PR esterne
+    # (fork) i secrets non sono disponibili e il job fallirebbe comunque a SSH;
+    # questo if evita anche solo di tentare, riducendo rumore nei logs.
+    if: contains(fromJSON(vars.DEPLOY_ALLOWLIST), github.event.pull_request.user.login)
+
+    # Output utili al job successivo (commento finale)
+    outputs:
+      pr_number: ${{ steps.meta.outputs.pr_number }}
+      pr_head_sha: ${{ steps.meta.outputs.pr_head_sha }}
+      pr_merged: ${{ steps.meta.outputs.pr_merged }}
+      other_open_prs: ${{ steps.teardown_remote.outputs.other_open_prs }}
+      services_stopped: ${{ steps.teardown_remote.outputs.services_stopped }}
+      teardown_status: ${{ steps.teardown_remote.outputs.teardown_status }}
+
+    steps:
+
+      # -----------------------------------------------------------------------
+      # Step 1: raccogliamo i metadata della PR in variabili shell + outputs
+      # -----------------------------------------------------------------------
+      - name: Estrai metadata PR
+        id: meta
+        run: |
+          echo "pr_number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          echo "pr_head_sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          echo "pr_merged=${{ github.event.pull_request.merged }}" >> "$GITHUB_OUTPUT"
+          echo "Teardown PR #${{ github.event.pull_request.number }} (head=${{ github.event.pull_request.head.sha }} merged=${{ github.event.pull_request.merged }})"
+
+      # -----------------------------------------------------------------------
+      # Step 2: setup chiave SSH (webfactory/ssh-agent gestisce l'agent in modo
+      # pulito e supporta SSH_KNOWN_HOSTS via env). Pinniamo per supply chain.
+      # -----------------------------------------------------------------------
+      - name: Setup ssh-agent con chiave deploy DEV
+        uses: webfactory/ssh-agent@dc588b651fe13675774614f8e6a936a468676387 # v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # -----------------------------------------------------------------------
+      # Step 3: aggiungiamo l'host del VPS a known_hosts per evitare prompt
+      # interattivi e prevenire MITM. Il valore di SSH_KNOWN_HOSTS e' l'output
+      # gia' pre-generato con `ssh-keyscan -t ed25519,rsa REDACTED-VPS-IP`.
+      # -----------------------------------------------------------------------
+      - name: Configura known_hosts (host pinning)
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      # -----------------------------------------------------------------------
+      # Step 4: esegui lo script di teardown inline sul VPS.
+      # Lo script e' definito QUI (heredoc) per non dipendere da file esterni
+      # sul VPS che potrebbero non essere ancora deployati / aggiornati.
+      # Comunica risultati via marker stdout 'GH_OUTPUT::key=value' che poi
+      # leggiamo lato runner.
+      # -----------------------------------------------------------------------
+      - name: Esegui teardown remoto via SSH
+        id: teardown_remote
+        env:
+          PR_NUMBER: ${{ steps.meta.outputs.pr_number }}
+          PR_HEAD_SHA: ${{ steps.meta.outputs.pr_head_sha }}
+          PR_MERGED: ${{ steps.meta.outputs.pr_merged }}
+          # Flag: se true, ferma i servizi dev quando non ci sono altre PR open
+          STOP_IF_IDLE: "false"
+        run: |
+          set -euo pipefail
+
+          # ssh in modalita' non-interattiva, no TTY, fail-fast.
+          # Heredoc bash con -s passa lo script via stdin all'utente remoto.
+          # Variabili d'ambiente vengono forwardate esplicitamente.
+          REMOTE_OUTPUT=$(ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+              ${{ vars.VPS_USER }}@${{ vars.VPS_HOST }} \
+              "PR_NUMBER='${PR_NUMBER}' PR_HEAD_SHA='${PR_HEAD_SHA}' PR_MERGED='${PR_MERGED}' STOP_IF_IDLE='${STOP_IF_IDLE}' bash -s" <<'REMOTE_SCRIPT'
+          set -euo pipefail
+
+          # ---------------------------------------------------------------
+          # Script teardown DEV - eseguito come utente 'asteria' sul VPS
+          # ---------------------------------------------------------------
+          # Parametri (env):
+          #   PR_NUMBER     - numero PR chiusa
+          #   PR_HEAD_SHA   - sha del HEAD della PR
+          #   PR_MERGED     - "true"/"false"
+          #   STOP_IF_IDLE  - se "true" e nessuna altra PR open, ferma servizi dev
+          # ---------------------------------------------------------------
+
+          echo "[teardown] PR #${PR_NUMBER} sha=${PR_HEAD_SHA} merged=${PR_MERGED}"
+          echo "[teardown] STOP_IF_IDLE=${STOP_IF_IDLE}"
+
+          # ----- 1) Rimuovi staging /tmp/asteria-dev-<sha>/ relativi a questa PR
+          # Il workflow pr-dev-deploy.yml deposita gli artifact qui prima di
+          # promuoverli in /opt/habboproject-dev. Dopo close possiamo pulirli.
+          # Match con prefisso sha della PR + eventuali sha precedenti se la PR
+          # ha ricevuto multipli synchronize: useremo un marker file che il
+          # deploy lascia con il PR_NUMBER per safe-cleanup.
+          STAGING_BASE="/tmp"
+          shopt -s nullglob
+          REMOVED_DIRS=()
+          for d in "${STAGING_BASE}"/asteria-dev-*; do
+            [ -d "$d" ] || continue
+            # Ogni staging dir contiene un .pr_meta con PR_NUMBER del deploy
+            if [ -f "${d}/.pr_meta" ] && grep -qx "PR=${PR_NUMBER}" "${d}/.pr_meta"; then
+              echo "[teardown] rimuovo staging: ${d}"
+              rm -rf -- "$d"
+              REMOVED_DIRS+=("$(basename "$d")")
+            fi
+          done
+          shopt -u nullglob
+          echo "[teardown] staging dir rimosse: ${#REMOVED_DIRS[@]}"
+
+          # ----- 2) Rimuovi lock orfani eventualmente lasciati da deploy fallito
+          # Solo se il lock e' di questa PR (controllo PID/contenuto).
+          LOCK_FILE="/var/lock/asteria-dev.lock"
+          if [ -f "${LOCK_FILE}" ]; then
+            if grep -qx "PR=${PR_NUMBER}" "${LOCK_FILE}" 2>/dev/null; then
+              echo "[teardown] rimuovo lock orfano di questa PR: ${LOCK_FILE}"
+              sudo rm -f -- "${LOCK_FILE}"
+            else
+              echo "[teardown] lock presente ma non e' di PR ${PR_NUMBER}, non tocco"
+            fi
+          fi
+
+          # ----- 3) Conta altre PR open sul repo (gh CLI gia' configurato sul VPS)
+          # Token in /root/.asteria-secrets/gh.env, letto via sudo (asteria non legge root).
+          # Il file espone GH_TOKEN. Usiamo gh per richiedere lo stato.
+          OTHER_OPEN_PRS=0
+          if sudo test -r /root/.asteria-secrets/gh.env; then
+            # source in subshell con sudo per non leakare il token nell'env padre
+            OTHER_OPEN_PRS=$(sudo bash -c 'set -a; . /root/.asteria-secrets/gh.env; set +a; gh pr list --repo DarkNight97boss/Habboproject --state open --json number --jq "length"' 2>/dev/null || echo "0")
+          else
+            echo "[teardown] WARN: /root/.asteria-secrets/gh.env non leggibile, skip conteggio PR open"
+            OTHER_OPEN_PRS="unknown"
+          fi
+          echo "[teardown] altre PR open: ${OTHER_OPEN_PRS}"
+
+          # ----- 4) Eventualmente stop servizi dev se STOP_IF_IDLE=true e zero PR open
+          SERVICES_STOPPED="false"
+          if [ "${STOP_IF_IDLE}" = "true" ] && [ "${OTHER_OPEN_PRS}" = "0" ]; then
+            echo "[teardown] nessuna PR open + STOP_IF_IDLE attivo: fermo servizi dev"
+            sudo systemctl stop habbo-emu-dev.service || true
+            sudo systemctl stop cms-api-dev.service || true
+            SERVICES_STOPPED="true"
+          else
+            echo "[teardown] servizi dev lasciati in esecuzione (idle ammesso)"
+          fi
+
+          # ----- 5) Marker stato corrente in /opt/habboproject-dev/.last_pr
+          # Cosi' alla prossima query stato sappiamo che dev e' "stale" dell'ultima PR.
+          if [ -d /opt/habboproject-dev ]; then
+            echo "PR=${PR_NUMBER}" | sudo tee /opt/habboproject-dev/.last_pr_closed >/dev/null
+            echo "SHA=${PR_HEAD_SHA}" | sudo tee -a /opt/habboproject-dev/.last_pr_closed >/dev/null
+            echo "MERGED=${PR_MERGED}" | sudo tee -a /opt/habboproject-dev/.last_pr_closed >/dev/null
+            echo "CLOSED_AT=$(date -u +%FT%TZ)" | sudo tee -a /opt/habboproject-dev/.last_pr_closed >/dev/null
+          fi
+
+          # ----- 6) Emetti output machine-readable per il runner GH
+          echo "GH_OUTPUT::other_open_prs=${OTHER_OPEN_PRS}"
+          echo "GH_OUTPUT::services_stopped=${SERVICES_STOPPED}"
+          echo "GH_OUTPUT::teardown_status=ok"
+          echo "[teardown] completato"
+          REMOTE_SCRIPT
+          )
+
+          echo "----- output remoto -----"
+          echo "${REMOTE_OUTPUT}"
+          echo "-------------------------"
+
+          # Parsing marker GH_OUTPUT:: dallo stdout remoto e propagazione a GITHUB_OUTPUT
+          while IFS= read -r line; do
+            case "$line" in
+              GH_OUTPUT::*)
+                kv="${line#GH_OUTPUT::}"
+                echo "$kv" >> "$GITHUB_OUTPUT"
+                ;;
+            esac
+          done <<< "${REMOTE_OUTPUT}"
+
+      # -----------------------------------------------------------------------
+      # Step 5: Riepilogo nella Summary del run (utile per debug rapido)
+      # -----------------------------------------------------------------------
+      - name: Step summary
+        if: always()
+        run: |
+          {
+            echo "## Teardown PR #${{ steps.meta.outputs.pr_number }}"
+            echo ""
+            echo "| Campo | Valore |"
+            echo "|-------|--------|"
+            echo "| PR merged | ${{ steps.meta.outputs.pr_merged }} |"
+            echo "| HEAD sha | \`${{ steps.meta.outputs.pr_head_sha }}\` |"
+            echo "| Altre PR open | ${{ steps.teardown_remote.outputs.other_open_prs }} |"
+            echo "| Servizi dev fermati | ${{ steps.teardown_remote.outputs.services_stopped }} |"
+            echo "| Status | ${{ steps.teardown_remote.outputs.teardown_status }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ===========================================================================
+  # JOB 2: comment
+  # ---------------------------------------------------------------------------
+  # Posta un commento finale sulla PR con link al run di teardown e info su
+  # stato corrente del dev environment. Idempotente: se gia' c'e' un commento
+  # con marker <!-- asteria-dev-teardown --> lo aggiorna invece di duplicare.
+  # ===========================================================================
+  comment:
+    name: Commento finale PR
+    runs-on: ubuntu-latest
+    needs: teardown
+    if: always() && contains(fromJSON(vars.DEPLOY_ALLOWLIST), github.event.pull_request.user.login)
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+
+      # -----------------------------------------------------------------------
+      # github-script ci da' una sandbox JS con octokit gia' autenticata
+      # tramite GITHUB_TOKEN. Pinniamo per supply-chain.
+      # -----------------------------------------------------------------------
+      - name: Posta/aggiorna commento di teardown
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const merged = context.payload.pull_request.merged;
+            const headSha = context.payload.pull_request.head.sha;
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            // Output dal job precedente
+            const teardownStatus = `${{ needs.teardown.outputs.teardown_status }}` || 'unknown';
+            const otherOpenPrs = `${{ needs.teardown.outputs.other_open_prs }}` || 'unknown';
+            const servicesStopped = `${{ needs.teardown.outputs.services_stopped }}` || 'false';
+
+            // Marker HTML per identificare il commento e fare upsert (no duplicati)
+            const MARKER = '<!-- asteria-dev-teardown -->';
+
+            // Stato dev environment dopo teardown
+            let devState;
+            if (servicesStopped === 'true') {
+              devState = 'fermo (idle) - nessuna PR aperta, servizi stoppati per liberare RAM';
+            } else if (otherOpenPrs === '0') {
+              devState = 'in esecuzione ma nessuna PR aperta - lo stack resta su con ultimo deploy';
+            } else if (otherOpenPrs === 'unknown') {
+              devState = 'in esecuzione - stato altre PR non determinabile';
+            } else {
+              devState = `in esecuzione - ${otherOpenPrs} altre PR aperte verranno deployate al prossimo evento`;
+            }
+
+            const closedKind = merged ? 'mergiata in `main`' : 'chiusa senza merge';
+            const statusIcon = teardownStatus === 'ok' ? 'OK' : 'WARN';
+
+            const body = [
+              MARKER,
+              `### Dev preview chiuso [${statusIcon}]`,
+              ``,
+              `Questa PR e' stata ${closedKind}. Il dev environment **https://dev.asteriacore.online** non punta piu' al HEAD di questa PR.`,
+              ``,
+              `| Campo | Valore |`,
+              `|-------|--------|`,
+              `| PR | #${prNumber} |`,
+              `| HEAD sha | \`${headSha.substring(0, 12)}\` |`,
+              `| Stato teardown | \`${teardownStatus}\` |`,
+              `| Altre PR aperte | \`${otherOpenPrs}\` |`,
+              `| Servizi dev | ${devState} |`,
+              `| Run logs | [#${context.runId}](${runUrl}) |`,
+              ``,
+              `> Se hai bisogno di rideployare il dev su questa PR, riaprila oppure pusha un nuovo commit dopo la riapertura. Il prossimo \`pull_request.opened\` / \`synchronize\` su una PR diversa fara' override dello stack dev.`,
+            ].join('\n');
+
+            // Cerca eventuale commento esistente con il marker per upsert
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100,
+            });
+
+            const existing = comments.find(c => c.body && c.body.includes(MARKER));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+              core.info(`Aggiornato commento esistente #${existing.id}`);
+            } else {
+              const { data: created } = await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+              core.info(`Creato nuovo commento #${created.id}`);
+            }

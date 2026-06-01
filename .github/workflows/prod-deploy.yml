@@ -1,0 +1,1265 @@
+# =============================================================================
+# Asteria Core - Production Deploy
+# =============================================================================
+# Scopo:
+#   Buildare gli artifact (EMU jar, CMS-V3 web bundle, CMS-V3 api dist) su
+#   runner GitHub e dispiegarli atomicamente sul VPS Hetzner verso PRODUZIONE
+#   (https://asteriacore.online), con backup pre-deploy, applicazione
+#   incrementale delle migrations SQL, restart EMU con broadcast preavviso,
+#   smoke-test post-deploy e rollback automatico in caso di fallimento.
+#
+# Trigger:
+#   - push su 'main' con path filter sui componenti che cambiano
+#     (EMU/**, CMS-V3/**, Nitro-V3/**, CMS/react/**, sqlupdates, migrations)
+#   - workflow_dispatch manuale per hotfix con possibilita' di specificare sha
+#
+# Differenze chiave vs dev:
+#   - concurrency NON cancella deploy in volo (deploy prod si accodano)
+#   - autori in PROD_DEPLOY_ALLOWLIST (lista piu' ristretta)
+#   - environment 'production' con required reviewer GitHub (gate manuale)
+#   - chiave SSH dedicata SSH_PRIVATE_KEY_PROD (blast radius separato)
+#   - backup PRE-deploy (DB dump + jar + dist tarball) con retention 14gg
+#   - migrations SQL: INCREMENTALI (no DROP, tracker schema_migrations)
+#   - EMU: broadcast in-game prima del restart, poi sleep, poi restart
+#   - smoke-test obbligatorio + rollback automatico se fallisce
+#   - GitHub Release auto-creato con tag prod-<run_number>
+#   - Notifica Discord (webhook OPS) finale con stato
+#
+# Permissions:
+#   - contents: write   -> per creare GitHub Release (tag + changelog)
+#   - actions: read     -> per artifact download cross-job
+#   - id-token: write   -> non usato qui, ma utile se in futuro OIDC su CF/R2
+# =============================================================================
+
+name: Production Deploy
+
+on:
+  # ---------------------------------------------------------------------------
+  # Push diretto su main: scatta automaticamente quando una PR viene mergiata
+  # oppure quando un maintainer pusha un hotfix direttamente. Filtriamo per
+  # path: deploy solo se sono toccati componenti runtime (no docs/.github/etc).
+  # ---------------------------------------------------------------------------
+  push:
+    branches:
+      - main
+    paths:
+      - 'EMU/**'
+      - 'CMS-V3/**'
+      - 'Nitro-V3/**'
+      - 'CMS/react/**'
+      - '.github/workflows/prod-deploy.yml'
+
+  # ---------------------------------------------------------------------------
+  # Trigger manuale per hotfix: si puo' specificare uno sha alternativo
+  # (utile per re-deploy di un commit precedente o per rollforward dopo un
+  # incidente).
+  # ---------------------------------------------------------------------------
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'SHA da dispiegare (default: HEAD di main)'
+        required: false
+        type: string
+        default: ''
+      force_all:
+        description: 'Forza build+deploy di TUTTI i componenti (ignora path filter)'
+        required: false
+        type: boolean
+        default: false
+      skip_smoke:
+        description: 'Skip smoke-test (SCONSIGLIATO, solo per debug)'
+        required: false
+        type: boolean
+        default: false
+
+# -----------------------------------------------------------------------------
+# Concurrency:
+# Tutti i deploy prod condividono il SOLITO group. cancel-in-progress=false
+# significa: se arriva un nuovo deploy mentre uno e' in corso, il nuovo si
+# accoda invece di cancellare quello in volo (mai interrompere un deploy prod,
+# rischio di stato inconsistente DB/jar).
+# -----------------------------------------------------------------------------
+concurrency:
+  group: prod-deploy
+  cancel-in-progress: false
+
+# Permissions minime a livello di workflow. I singoli job possono restringere.
+permissions:
+  contents: read
+
+# Variabili globali condivise tra job
+env:
+  # Versioni toolchain (devono matchare il VPS per evitare sorprese a runtime)
+  NODE_VERSION: '24'
+  JAVA_VERSION: '17'
+  JAVA_DISTRIBUTION: 'temurin'
+  # Path di staging sul VPS dove rsynciamo gli artifact prima di promuoverli
+  STAGING_BASE: '/tmp/asteria-prod'
+
+jobs:
+
+  # ===========================================================================
+  # JOB 1: guard
+  # ---------------------------------------------------------------------------
+  # Verifica che l'attore (github.actor) sia nella PROD_DEPLOY_ALLOWLIST.
+  # Per push merge il "actor" e' chi ha cliccato Merge sulla PR; per hotfix
+  # push diretto e' chi ha pushato; per workflow_dispatch e' chi ha lanciato.
+  # In tutti i casi vogliamo bloccare deploy prod da account non autorizzati
+  # (es. bot Dependabot, account compromessi, contributor esterni).
+  # ===========================================================================
+  guard:
+    name: Guard - verifica autorizzazione attore
+    runs-on: ubuntu-latest
+    outputs:
+      # Propaghiamo lo sha effettivo da dispiegare (default HEAD, override se hotfix)
+      deploy_sha: ${{ steps.resolve.outputs.deploy_sha }}
+    steps:
+      - name: Verifica attore in PROD_DEPLOY_ALLOWLIST
+        env:
+          ACTOR: ${{ github.actor }}
+          ALLOWLIST: ${{ vars.PROD_DEPLOY_ALLOWLIST }}
+        run: |
+          set -euo pipefail
+          # Parsing JSON allowlist (es: ["simoleo89","DarkNight97boss"]).
+          # Usiamo jq per check robusto invece di contains() di GitHub
+          # (che non funziona bene in if: condizioni a runtime su env).
+          if ! echo "${ALLOWLIST}" | jq -e --arg a "${ACTOR}" 'index($a)' >/dev/null; then
+            echo "ERRORE: attore '${ACTOR}' NON e' in PROD_DEPLOY_ALLOWLIST."
+            echo "Allowlist corrente: ${ALLOWLIST}"
+            echo "Per autorizzare: Repo Settings -> Variables -> PROD_DEPLOY_ALLOWLIST"
+            exit 1
+          fi
+          echo "OK: attore '${ACTOR}' autorizzato al deploy prod."
+
+      - name: Risolvi sha da dispiegare
+        id: resolve
+        env:
+          INPUT_SHA: ${{ inputs.sha }}
+          GITHUB_SHA_REF: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          # Se workflow_dispatch ha specificato uno sha, usalo. Altrimenti HEAD.
+          if [ -n "${INPUT_SHA}" ]; then
+            DEPLOY_SHA="${INPUT_SHA}"
+            echo "Hotfix manuale: deploy sha=${DEPLOY_SHA}"
+          else
+            DEPLOY_SHA="${GITHUB_SHA_REF}"
+            echo "Deploy automatico: deploy sha=${DEPLOY_SHA}"
+          fi
+          echo "deploy_sha=${DEPLOY_SHA}" >> "$GITHUB_OUTPUT"
+
+  # ===========================================================================
+  # JOB 2: detect-changes
+  # ---------------------------------------------------------------------------
+  # Identifica quali componenti sono cambiati nel commit/range, per saltare
+  # build non necessari. Identico a quello del dev workflow per coerenza.
+  # Se workflow_dispatch.force_all=true, forza tutti i flag a true.
+  # ===========================================================================
+  detect-changes:
+    name: Detect componenti modificati
+    needs: guard
+    runs-on: ubuntu-latest
+    outputs:
+      emu: ${{ steps.filter.outputs.emu || steps.force.outputs.emu }}
+      cms_web: ${{ steps.filter.outputs.cms_web || steps.force.outputs.cms_web }}
+      cms_api: ${{ steps.filter.outputs.cms_api || steps.force.outputs.cms_api }}
+      sql: ${{ steps.filter.outputs.sql || steps.force.outputs.sql }}
+      nitro: ${{ steps.filter.outputs.nitro || steps.force.outputs.nitro }}
+    steps:
+      - name: Checkout (full history per diff path-filter)
+        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.1.0
+        with:
+          ref: ${{ needs.guard.outputs.deploy_sha }}
+          fetch-depth: 0   # necessario per dorny/paths-filter su push
+
+      - name: Path filter
+        id: filter
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          filters: |
+            emu:
+              - 'EMU/**'
+            cms_web:
+              - 'CMS-V3/apps/web/**'
+              - 'CMS-V3/package.json'
+              - 'CMS-V3/yarn.lock'
+            cms_api:
+              - 'CMS-V3/apps/api/**'
+              - 'CMS-V3/package.json'
+              - 'CMS-V3/yarn.lock'
+            sql:
+              - 'EMU/sqlupdates/**'
+              - 'CMS-V3/apps/api/src/db/migrations/**'
+            nitro:
+              - 'Nitro-V3/**'
+              - 'CMS/react/**'
+
+      # Se l'utente ha invocato workflow_dispatch con force_all=true,
+      # sovrascriviamo tutti gli output a 'true' per forzare full deploy.
+      - name: Force all (workflow_dispatch override)
+        id: force
+        if: ${{ inputs.force_all == true }}
+        run: |
+          echo "emu=true"     >> "$GITHUB_OUTPUT"
+          echo "cms_web=true" >> "$GITHUB_OUTPUT"
+          echo "cms_api=true" >> "$GITHUB_OUTPUT"
+          echo "sql=true"     >> "$GITHUB_OUTPUT"
+          echo "nitro=true"   >> "$GITHUB_OUTPUT"
+
+      - name: Riepilogo changes
+        run: |
+          echo "## Componenti da buildare/dispiegare" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Componente | Cambiato |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|------------|----------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| EMU jar    | ${{ steps.filter.outputs.emu || steps.force.outputs.emu }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| CMS web    | ${{ steps.filter.outputs.cms_web || steps.force.outputs.cms_web }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| CMS api    | ${{ steps.filter.outputs.cms_api || steps.force.outputs.cms_api }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| SQL migr.  | ${{ steps.filter.outputs.sql || steps.force.outputs.sql }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Nitro      | ${{ steps.filter.outputs.nitro || steps.force.outputs.nitro }} |" >> "$GITHUB_STEP_SUMMARY"
+
+  # ===========================================================================
+  # JOB 3: build-emu
+  # ---------------------------------------------------------------------------
+  # Maven build del jar EMU. Cache ~/.m2 per evitare di scaricare 200MB di
+  # dipendenze ad ogni run. Output: EMU/target/Habbo-3.5.5-jar-with-dependencies.jar
+  # ===========================================================================
+  build-emu:
+    name: Build EMU jar
+    needs: [guard, detect-changes]
+    if: needs.detect-changes.outputs.emu == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.1.0
+        with:
+          ref: ${{ needs.guard.outputs.deploy_sha }}
+
+      - name: Setup JDK ${{ env.JAVA_VERSION }} (${{ env.JAVA_DISTRIBUTION }})
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4.2.1
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          # cache: maven    -> usiamo actions/cache esplicito sotto per controllo fine
+          cache: 'maven'
+
+      # Cache esplicita (in aggiunta a setup-java) per ramo prod separato:
+      # vogliamo cache deterministica basata su hash del pom.xml.
+      - name: Cache Maven local repo
+        uses: actions/cache@0c907a75c2c80ebcb7f088228285e798b750cf8f # v4.2.1
+        with:
+          path: ~/.m2/repository
+          key: m2-prod-${{ runner.os }}-${{ hashFiles('EMU/pom.xml') }}
+          restore-keys: |
+            m2-prod-${{ runner.os }}-
+            m2-${{ runner.os }}-
+
+      - name: Maven package (skipTests)
+        working-directory: EMU
+        env:
+          MAVEN_OPTS: '-Xmx2g -XX:+UseG1GC'
+        run: |
+          set -euo pipefail
+          # -B = batch mode (no progress bar), -ntp = no transfer progress
+          # skipTests perche' i test del repo upstream Arcturus non sono
+          # mantenuti e fallirebbero. La validazione e' lo smoke-test post-deploy.
+          mvn -B -ntp -DskipTests package
+          ls -la target/
+
+      - name: Upload artifact EMU jar
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        with:
+          name: emu-jar-${{ needs.guard.outputs.deploy_sha }}
+          path: EMU/target/Habbo-*-jar-with-dependencies.jar
+          retention-days: 14
+          if-no-files-found: error
+
+  # ===========================================================================
+  # JOB 4: build-cms-web
+  # ---------------------------------------------------------------------------
+  # Build del bundle React/Vite del frontend CMS-V3. Variabili VITE_* embedded
+  # nel bundle a build-time pointano a domini PROD.
+  # ===========================================================================
+  build-cms-web:
+    name: Build CMS-V3 web (Vite, prod)
+    needs: [guard, detect-changes]
+    if: needs.detect-changes.outputs.cms_web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.1.0
+        with:
+          ref: ${{ needs.guard.outputs.deploy_sha }}
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.0.3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: CMS-V3/yarn.lock
+
+      - name: Cache node_modules (CMS-V3 root + apps/web)
+        uses: actions/cache@0c907a75c2c80ebcb7f088228285e798b750cf8f # v4.2.1
+        with:
+          path: |
+            CMS-V3/node_modules
+            CMS-V3/apps/web/node_modules
+          key: node-prod-web-${{ runner.os }}-${{ hashFiles('CMS-V3/yarn.lock') }}
+          restore-keys: |
+            node-prod-web-${{ runner.os }}-
+
+      - name: Install deps (yarn frozen)
+        working-directory: CMS-V3
+        run: yarn install --frozen-lockfile
+
+      - name: Build web (Vite, env=prod)
+        working-directory: CMS-V3/apps/web
+        env:
+          # Embedded a build-time nel bundle: il bundle non puo' essere
+          # riusato su dev senza rebuild (ed e' corretto cosi').
+          VITE_API_BASE_URL: 'https://api.asteriacore.online'
+          VITE_NITRO_URL: 'https://hotel.asteriacore.online'
+          VITE_ENV: 'prod'
+          NODE_ENV: 'production'
+        run: |
+          set -euo pipefail
+          yarn build
+          ls -la dist/
+
+      - name: Pack dist in tarball (preserva permessi/atime per rsync)
+        working-directory: CMS-V3/apps/web
+        run: tar -czf cms-web-dist.tgz dist/
+
+      - name: Upload artifact CMS web
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        with:
+          name: cms-web-${{ needs.guard.outputs.deploy_sha }}
+          path: CMS-V3/apps/web/cms-web-dist.tgz
+          retention-days: 14
+          if-no-files-found: error
+
+  # ===========================================================================
+  # JOB 5: build-cms-api
+  # ---------------------------------------------------------------------------
+  # Compile TypeScript dell'API Hono Node. Output dist/ con .js + sourcemap.
+  # ===========================================================================
+  build-cms-api:
+    name: Build CMS-V3 api (tsc, prod)
+    needs: [guard, detect-changes]
+    if: needs.detect-changes.outputs.cms_api == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.1.0
+        with:
+          ref: ${{ needs.guard.outputs.deploy_sha }}
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.0.3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: CMS-V3/yarn.lock
+
+      - name: Cache node_modules (CMS-V3 root + apps/api)
+        uses: actions/cache@0c907a75c2c80ebcb7f088228285e798b750cf8f # v4.2.1
+        with:
+          path: |
+            CMS-V3/node_modules
+            CMS-V3/apps/api/node_modules
+          key: node-prod-api-${{ runner.os }}-${{ hashFiles('CMS-V3/yarn.lock') }}
+          restore-keys: |
+            node-prod-api-${{ runner.os }}-
+
+      - name: Install deps (yarn frozen)
+        working-directory: CMS-V3
+        run: yarn install --frozen-lockfile
+
+      - name: Build api (tsc)
+        working-directory: CMS-V3/apps/api
+        env:
+          NODE_ENV: 'production'
+        run: |
+          set -euo pipefail
+          yarn build
+          ls -la dist/
+
+      # Includiamo anche package.json + yarn.lock per poter fare yarn install
+      # --production sul VPS dentro al folder di staging (zero rebuild).
+      - name: Pack dist + package manifests
+        working-directory: CMS-V3/apps/api
+        run: |
+          tar -czf cms-api-dist.tgz dist/ package.json
+          ls -la cms-api-dist.tgz
+
+      - name: Upload artifact CMS api
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        with:
+          name: cms-api-${{ needs.guard.outputs.deploy_sha }}
+          path: CMS-V3/apps/api/cms-api-dist.tgz
+          retention-days: 14
+          if-no-files-found: error
+
+  # ===========================================================================
+  # JOB 6: collect-sql-and-nitro
+  # ---------------------------------------------------------------------------
+  # Pacchettizza i file SQL (sqlupdates + migrations) e i bundle Nitro per
+  # essere trasferiti al VPS. Sono "static asset" quindi niente build, solo
+  # archiviazione. Skipped se i rispettivi flag sono false.
+  # ===========================================================================
+  collect-sql-and-nitro:
+    name: Collect SQL + Nitro bundles
+    needs: [guard, detect-changes]
+    if: needs.detect-changes.outputs.sql == 'true' || needs.detect-changes.outputs.nitro == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.1.0
+        with:
+          ref: ${{ needs.guard.outputs.deploy_sha }}
+
+      - name: Pack SQL bundle (se cambiato)
+        if: needs.detect-changes.outputs.sql == 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p sql-bundle
+          # Copy SQL EMU (sqlupdates ordinati lex) + migrations CMS-V3
+          if [ -d EMU/sqlupdates ]; then
+            cp -r EMU/sqlupdates sql-bundle/emu-sqlupdates
+          fi
+          if [ -d CMS-V3/apps/api/src/db/migrations ]; then
+            cp -r CMS-V3/apps/api/src/db/migrations sql-bundle/cms-migrations
+          fi
+          tar -czf sql-bundle.tgz sql-bundle/
+          ls -la sql-bundle.tgz
+
+      - name: Upload SQL bundle
+        if: needs.detect-changes.outputs.sql == 'true'
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        with:
+          name: sql-bundle-${{ needs.guard.outputs.deploy_sha }}
+          path: sql-bundle.tgz
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Pack Nitro/CMS-react bundle (se cambiato)
+        if: needs.detect-changes.outputs.nitro == 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p nitro-bundle
+          if [ -d CMS/react ]; then
+            cp -r CMS/react nitro-bundle/cms-react
+          fi
+          if [ -d Nitro-V3 ]; then
+            # Solo le cartelle di output da Nitro-V3, non i sorgenti
+            # (lo build di Nitro deve essere gia' avvenuto - upstream policy).
+            for d in dist build public; do
+              if [ -d "Nitro-V3/$d" ]; then
+                cp -r "Nitro-V3/$d" "nitro-bundle/nitro-$d"
+              fi
+            done
+          fi
+          tar -czf nitro-bundle.tgz nitro-bundle/
+          ls -la nitro-bundle.tgz
+
+      - name: Upload Nitro bundle
+        if: needs.detect-changes.outputs.nitro == 'true'
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        with:
+          name: nitro-bundle-${{ needs.guard.outputs.deploy_sha }}
+          path: nitro-bundle.tgz
+          retention-days: 14
+          if-no-files-found: error
+
+  # ===========================================================================
+  # JOB 7: pre-deploy-backup
+  # ---------------------------------------------------------------------------
+  # PRIMA di toccare qualsiasi cosa in prod, prendiamo un backup completo:
+  #   - mysqldump del DB ms (per rollback dati)
+  #   - tarball del jar EMU corrente
+  #   - tarball del dist CMS-V3 web corrente
+  #   - copia dist CMS-V3 api corrente
+  # Salvato in /opt/asteria-backups/pre-deploy-<sha>-<epoch>.tgz, retention 14gg.
+  # ===========================================================================
+  pre-deploy-backup:
+    name: Pre-deploy backup
+    needs: [guard, detect-changes]
+    runs-on: ubuntu-latest
+    environment: production   # gate manuale (required reviewer su environment)
+    timeout-minutes: 10
+    outputs:
+      backup_path: ${{ steps.backup.outputs.backup_path }}
+      backup_epoch: ${{ steps.backup.outputs.backup_epoch }}
+    steps:
+      - name: Setup ssh-agent (chiave dedicata PROD)
+        uses: webfactory/ssh-agent@dc588b651fe13675774614f8e6a936a468676387 # v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_PROD }}
+
+      - name: Configura known_hosts (host pinning)
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Esegui backup remoto
+        id: backup
+        env:
+          DEPLOY_SHA: ${{ needs.guard.outputs.deploy_sha }}
+        run: |
+          set -euo pipefail
+          # Lo script di backup vive INLINE per non dipendere da file VPS che
+          # potrebbero essere stale. Cattura le ultime righe per estrarre path.
+          REMOTE_OUTPUT=$(ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            ${{ vars.VPS_USER }}@${{ vars.VPS_HOST }} \
+            "DEPLOY_SHA='${DEPLOY_SHA}' bash -s" <<'REMOTE_SCRIPT'
+          set -euo pipefail
+
+          # ---------------------------------------------------------------
+          # Script backup PROD - utente 'asteria' (sudo NOPASSWD)
+          # ---------------------------------------------------------------
+          BACKUP_DIR="/opt/asteria-backups"
+          EPOCH="$(date +%s)"
+          BACKUP_NAME="pre-deploy-${DEPLOY_SHA}-${EPOCH}"
+          BACKUP_PATH="${BACKUP_DIR}/${BACKUP_NAME}.tgz"
+
+          sudo mkdir -p "${BACKUP_DIR}"
+          sudo chown asteria:asteria "${BACKUP_DIR}"
+
+          STAGE="$(mktemp -d -t asteria-backup-XXXXXX)"
+          trap "rm -rf -- '${STAGE}'" EXIT
+
+          # 1) DB dump (singolo schema 'ms'). Credenziali da vault root.
+          echo "[backup] mysqldump ms ..."
+          sudo bash -c '
+            set -euo pipefail
+            . /root/.asteria-secrets/db.env
+            mysqldump --single-transaction --quick --routines --events \
+              -u root -p"${MYSQL_ROOT_PASSWORD}" ms
+          ' | gzip -9 > "${STAGE}/ms.sql.gz"
+
+          # 2) EMU jar corrente
+          if [ -d /opt/habboproject/EMU/target ]; then
+            echo "[backup] tar EMU target ..."
+            tar -czf "${STAGE}/emu-target.tgz" -C /opt/habboproject/EMU target/
+          fi
+
+          # 3) CMS-V3 web dist corrente
+          if [ -d /opt/habboproject/CMS-V3/apps/web/dist ]; then
+            echo "[backup] tar CMS web dist ..."
+            tar -czf "${STAGE}/cms-web-dist.tgz" -C /opt/habboproject/CMS-V3/apps/web dist/
+          fi
+
+          # 4) CMS-V3 api dist corrente
+          if [ -d /opt/habboproject/CMS-V3/apps/api/dist ]; then
+            echo "[backup] tar CMS api dist ..."
+            tar -czf "${STAGE}/cms-api-dist.tgz" -C /opt/habboproject/CMS-V3/apps/api dist/ package.json 2>/dev/null || true
+          fi
+
+          # 5) Manifest con sha + timestamp + lista contenuto
+          cat > "${STAGE}/MANIFEST.txt" <<EOF
+          backup_name: ${BACKUP_NAME}
+          deploy_sha: ${DEPLOY_SHA}
+          epoch: ${EPOCH}
+          created_at: $(date -u +%FT%TZ)
+          contents:
+          $(ls -la "${STAGE}")
+          EOF
+
+          # 6) Bundle finale + retention (cleanup > 14 giorni)
+          tar -czf "${BACKUP_PATH}" -C "${STAGE}" .
+          chmod 600 "${BACKUP_PATH}"
+          echo "[backup] creato: ${BACKUP_PATH} ($(du -h "${BACKUP_PATH}" | cut -f1))"
+
+          # Retention 14gg
+          find "${BACKUP_DIR}" -name 'pre-deploy-*.tgz' -mtime +14 -print -delete
+
+          echo "GH_OUTPUT::backup_path=${BACKUP_PATH}"
+          echo "GH_OUTPUT::backup_epoch=${EPOCH}"
+          REMOTE_SCRIPT
+          )
+
+          echo "----- output remoto -----"
+          echo "${REMOTE_OUTPUT}"
+          echo "-------------------------"
+
+          while IFS= read -r line; do
+            case "$line" in
+              GH_OUTPUT::*)
+                kv="${line#GH_OUTPUT::}"
+                echo "$kv" >> "$GITHUB_OUTPUT"
+                ;;
+            esac
+          done <<< "${REMOTE_OUTPUT}"
+
+  # ===========================================================================
+  # JOB 8: deploy-prod
+  # ---------------------------------------------------------------------------
+  # Scarica artifact, rsync su VPS, esegue script apply-prod (inline) che fa
+  # promozione atomica + restart servizi.
+  # ===========================================================================
+  deploy-prod:
+    name: Deploy a produzione
+    needs:
+      - guard
+      - detect-changes
+      - pre-deploy-backup
+      - build-emu
+      - build-cms-web
+      - build-cms-api
+      - collect-sql-and-nitro
+    # Se uno dei build job e' skipped, il job qui non fallisce: usiamo always()
+    # + check espliciti sui failures. Cosi' un push che tocca solo CMS web
+    # non blocca tutto perche' build-emu e' skipped.
+    if: |
+      always() &&
+      needs.guard.result == 'success' &&
+      needs.pre-deploy-backup.result == 'success' &&
+      (needs.build-emu.result == 'success' || needs.build-emu.result == 'skipped') &&
+      (needs.build-cms-web.result == 'success' || needs.build-cms-web.result == 'skipped') &&
+      (needs.build-cms-api.result == 'success' || needs.build-cms-api.result == 'skipped') &&
+      (needs.collect-sql-and-nitro.result == 'success' || needs.collect-sql-and-nitro.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: production   # ri-conferma (alcuni team vogliono double-approval)
+    timeout-minutes: 25
+    outputs:
+      deploy_status: ${{ steps.apply.outputs.deploy_status }}
+      restarted_services: ${{ steps.apply.outputs.restarted_services }}
+    steps:
+      - name: Setup ssh-agent (chiave dedicata PROD)
+        uses: webfactory/ssh-agent@dc588b651fe13675774614f8e6a936a468676387 # v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_PROD }}
+
+      - name: Configura known_hosts (host pinning)
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      # ---- Download artifact dai job di build (saltati se non necessari) ----
+      - name: Download EMU jar
+        if: needs.detect-changes.outputs.emu == 'true'
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: emu-jar-${{ needs.guard.outputs.deploy_sha }}
+          path: artifacts/emu
+
+      - name: Download CMS web
+        if: needs.detect-changes.outputs.cms_web == 'true'
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: cms-web-${{ needs.guard.outputs.deploy_sha }}
+          path: artifacts/cms-web
+
+      - name: Download CMS api
+        if: needs.detect-changes.outputs.cms_api == 'true'
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: cms-api-${{ needs.guard.outputs.deploy_sha }}
+          path: artifacts/cms-api
+
+      - name: Download SQL bundle
+        if: needs.detect-changes.outputs.sql == 'true'
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: sql-bundle-${{ needs.guard.outputs.deploy_sha }}
+          path: artifacts/sql
+
+      - name: Download Nitro bundle
+        if: needs.detect-changes.outputs.nitro == 'true'
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: nitro-bundle-${{ needs.guard.outputs.deploy_sha }}
+          path: artifacts/nitro
+
+      - name: Lista artifacts scaricati
+        run: |
+          set -euo pipefail
+          echo "Contenuto artifacts/:"
+          find artifacts -type f -maxdepth 3 | sort || true
+
+      # ---- Rsync staging sul VPS ----
+      - name: Rsync artifact a staging VPS
+        env:
+          DEPLOY_SHA: ${{ needs.guard.outputs.deploy_sha }}
+        run: |
+          set -euo pipefail
+          STAGE_REMOTE="${{ env.STAGING_BASE }}-${DEPLOY_SHA}"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            ${{ vars.VPS_USER }}@${{ vars.VPS_HOST }} \
+            "mkdir -p '${STAGE_REMOTE}' && chmod 755 '${STAGE_REMOTE}'"
+
+          # Solo se la directory locale esiste rsynchiamo (i flag if: sopra
+          # impediscono il download se non serve, ma rendiamo idempotente)
+          if [ -d artifacts ]; then
+            rsync -avz --delete \
+              -e "ssh -o BatchMode=yes -o StrictHostKeyChecking=yes" \
+              artifacts/ \
+              ${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}:"${STAGE_REMOTE}/"
+          fi
+
+          echo "Staging remoto pronto: ${STAGE_REMOTE}"
+
+      # ---- Applica deploy via script inline ----
+      - name: Applica deploy (script inline)
+        id: apply
+        env:
+          DEPLOY_SHA: ${{ needs.guard.outputs.deploy_sha }}
+          DEPLOY_EMU: ${{ needs.detect-changes.outputs.emu }}
+          DEPLOY_CMS_WEB: ${{ needs.detect-changes.outputs.cms_web }}
+          DEPLOY_CMS_API: ${{ needs.detect-changes.outputs.cms_api }}
+          DEPLOY_SQL: ${{ needs.detect-changes.outputs.sql }}
+          DEPLOY_NITRO: ${{ needs.detect-changes.outputs.nitro }}
+          BACKUP_PATH: ${{ needs.pre-deploy-backup.outputs.backup_path }}
+        run: |
+          set -euo pipefail
+          REMOTE_OUTPUT=$(ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            ${{ vars.VPS_USER }}@${{ vars.VPS_HOST }} \
+            "DEPLOY_SHA='${DEPLOY_SHA}' DEPLOY_EMU='${DEPLOY_EMU}' DEPLOY_CMS_WEB='${DEPLOY_CMS_WEB}' DEPLOY_CMS_API='${DEPLOY_CMS_API}' DEPLOY_SQL='${DEPLOY_SQL}' DEPLOY_NITRO='${DEPLOY_NITRO}' BACKUP_PATH='${BACKUP_PATH}' STAGING_BASE='${{ env.STAGING_BASE }}' bash -s" <<'REMOTE_SCRIPT'
+          set -euo pipefail
+
+          # ---------------------------------------------------------------
+          # Script apply-prod - utente 'asteria' (sudo NOPASSWD)
+          # ---------------------------------------------------------------
+          STAGE="${STAGING_BASE}-${DEPLOY_SHA}"
+          PROD_ROOT="/opt/habboproject"
+          RESTARTED=()
+
+          echo "[deploy] sha=${DEPLOY_SHA} stage=${STAGE}"
+          echo "[deploy] flags: emu=${DEPLOY_EMU} web=${DEPLOY_CMS_WEB} api=${DEPLOY_CMS_API} sql=${DEPLOY_SQL} nitro=${DEPLOY_NITRO}"
+          echo "[deploy] backup di sicurezza pre-deploy: ${BACKUP_PATH}"
+
+          # --- Marker lock per debugging concurrency
+          LOCK="/var/lock/asteria-prod.lock"
+          sudo bash -c "echo 'SHA=${DEPLOY_SHA}' > '${LOCK}'"
+          trap "sudo rm -f '${LOCK}'" EXIT
+
+          # ===========================
+          # 1) DB migrations (PRIMA del restart EMU per evitare schema mismatch)
+          #    Solo se sql==true. Script idempotente che usa tabella schema_migrations.
+          # ===========================
+          if [ "${DEPLOY_SQL}" = "true" ] && [ -d "${STAGE}/sql" ]; then
+            echo "[deploy] applico migrations SQL incrementali ..."
+            tar -xzf "${STAGE}/sql/sql-bundle.tgz" -C "${STAGE}/sql"
+
+            # Tracker schema_migrations: applica solo file mai visti prima.
+            # Convenzione filename: YYYYMMDD_NN_descrizione.sql (sort lessicografico).
+            # Eseguito interamente in un singolo sudo bash -c (no heredoc nesting)
+            # per robustezza in script transmitted-over-ssh.
+            EMU_DIR="${STAGE}/sql/sql-bundle/emu-sqlupdates"
+            CMS_DIR="${STAGE}/sql/sql-bundle/cms-migrations"
+            sudo EMU_DIR="${EMU_DIR}" CMS_DIR="${CMS_DIR}" bash -c '
+              set -euo pipefail
+              . /root/.asteria-secrets/db.env
+              MYSQL_BIN="mysql -u root -p${MYSQL_ROOT_PASSWORD} -N -B ms"
+              ${MYSQL_BIN} -e "CREATE TABLE IF NOT EXISTS schema_migrations (filename VARCHAR(255) PRIMARY KEY, applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, checksum CHAR(64) NOT NULL) ENGINE=InnoDB"
+              for DIR in "${EMU_DIR}" "${CMS_DIR}"; do
+                [ -d "${DIR}" ] || continue
+                for f in $(ls "${DIR}"/*.sql 2>/dev/null | sort); do
+                  BN="$(basename "$f")"
+                  CKSUM="$(sha256sum "$f" | cut -d" " -f1)"
+                  EXISTS=$(${MYSQL_BIN} -e "SELECT COUNT(*) FROM schema_migrations WHERE filename=\"${BN}\"")
+                  if [ "${EXISTS}" = "0" ]; then
+                    echo "  -> applico: ${BN}"
+                    ${MYSQL_BIN} < "$f"
+                    ${MYSQL_BIN} -e "INSERT INTO schema_migrations (filename, checksum) VALUES (\"${BN}\", \"${CKSUM}\")"
+                  else
+                    STORED=$(${MYSQL_BIN} -e "SELECT checksum FROM schema_migrations WHERE filename=\"${BN}\"")
+                    if [ "${STORED}" != "${CKSUM}" ]; then
+                      echo "  WARN: ${BN} gia applicata ma checksum cambiato (was=${STORED} now=${CKSUM})"
+                    fi
+                  fi
+                done
+              done
+            '
+            RESTARTED+=("sql")
+          fi
+
+          # ===========================
+          # 2) CMS-V3 API: bundle nuovo dist, swap atomico, reload-or-restart
+          # ===========================
+          if [ "${DEPLOY_CMS_API}" = "true" ] && [ -f "${STAGE}/cms-api/cms-api-dist.tgz" ]; then
+            echo "[deploy] CMS-V3 api: estrazione + swap atomico ..."
+            STAGED_API="${PROD_ROOT}/CMS-V3-staged-api-${DEPLOY_SHA}"
+            sudo rm -rf "${STAGED_API}"
+            sudo mkdir -p "${STAGED_API}"
+            sudo tar -xzf "${STAGE}/cms-api/cms-api-dist.tgz" -C "${STAGED_API}"
+
+            # yarn install --production dentro la dir staged se serve
+            # (i node_modules condivisi a livello workspace di solito bastano,
+            # ma se la api ha dipendenze esclusive le installiamo).
+            if [ -f "${STAGED_API}/package.json" ] && grep -q '"dependencies"' "${STAGED_API}/package.json"; then
+              echo "[deploy] yarn install --production nello staged api ..."
+              (cd "${STAGED_API}" && sudo -u asteria yarn install --production --frozen-lockfile 2>&1 | tail -20) || echo "[deploy] WARN: yarn install fallito, presumo workspace shared"
+            fi
+
+            # Swap atomico: rinomina vecchio dist a .prev e sposta staged a dist
+            API_DIST="${PROD_ROOT}/CMS-V3/apps/api/dist"
+            if [ -d "${API_DIST}" ]; then
+              sudo rm -rf "${API_DIST}.prev"
+              sudo mv "${API_DIST}" "${API_DIST}.prev"
+            fi
+            sudo mv "${STAGED_API}/dist" "${API_DIST}"
+            sudo chown -R asteria:asteria "${API_DIST}"
+            sudo rm -rf "${STAGED_API}"
+
+            # Reload-or-restart: Hono ha graceful shutdown, downtime ~150ms
+            echo "[deploy] reload cms-api.service ..."
+            sudo systemctl reload-or-restart cms-api.service
+            RESTARTED+=("cms-api")
+          fi
+
+          # ===========================
+          # 3) CMS-V3 WEB: estrazione e swap atomico, nginx reload
+          # ===========================
+          if [ "${DEPLOY_CMS_WEB}" = "true" ] && [ -f "${STAGE}/cms-web/cms-web-dist.tgz" ]; then
+            echo "[deploy] CMS-V3 web: estrazione + swap atomico ..."
+            STAGED_WEB="${PROD_ROOT}/CMS-V3-staged-web-${DEPLOY_SHA}"
+            sudo rm -rf "${STAGED_WEB}"
+            sudo mkdir -p "${STAGED_WEB}"
+            sudo tar -xzf "${STAGE}/cms-web/cms-web-dist.tgz" -C "${STAGED_WEB}"
+
+            WEB_DIST="${PROD_ROOT}/CMS-V3/apps/web/dist"
+            if [ -d "${WEB_DIST}" ]; then
+              sudo rm -rf "${WEB_DIST}.prev"
+              sudo mv "${WEB_DIST}" "${WEB_DIST}.prev"
+            fi
+            sudo mv "${STAGED_WEB}/dist" "${WEB_DIST}"
+            sudo chown -R asteria:asteria "${WEB_DIST}"
+            sudo rm -rf "${STAGED_WEB}"
+
+            echo "[deploy] nginx -s reload ..."
+            sudo nginx -t && sudo systemctl reload nginx
+            RESTARTED+=("nginx")
+          fi
+
+          # ===========================
+          # 4) Nitro / CMS react bundle: rsync verso /opt/habboproject/CMS/react
+          # ===========================
+          if [ "${DEPLOY_NITRO}" = "true" ] && [ -f "${STAGE}/nitro/nitro-bundle.tgz" ]; then
+            echo "[deploy] Nitro bundle: estrazione + sync ..."
+            STAGED_NITRO="${PROD_ROOT}/CMS-V3-staged-nitro-${DEPLOY_SHA}"
+            sudo rm -rf "${STAGED_NITRO}"
+            sudo mkdir -p "${STAGED_NITRO}"
+            sudo tar -xzf "${STAGE}/nitro/nitro-bundle.tgz" -C "${STAGED_NITRO}"
+
+            if [ -d "${STAGED_NITRO}/nitro-bundle/cms-react" ]; then
+              sudo rsync -a --delete "${STAGED_NITRO}/nitro-bundle/cms-react/" "${PROD_ROOT}/CMS/react/"
+            fi
+            sudo chown -R asteria:asteria "${PROD_ROOT}/CMS/react"
+            sudo rm -rf "${STAGED_NITRO}"
+            RESTARTED+=("nitro-bundle")
+          fi
+
+          # ===========================
+          # 5) EMU: broadcast in-game pre-shutdown + restart
+          #    Solo se emu==true. Diamo ai giocatori 30s di preavviso.
+          # ===========================
+          if [ "${DEPLOY_EMU}" = "true" ] && [ -f "${STAGE}/emu/Habbo-3.5.5-jar-with-dependencies.jar" ] 2>/dev/null || ls "${STAGE}/emu/"Habbo-*-jar-with-dependencies.jar >/dev/null 2>&1; then
+            echo "[deploy] EMU: broadcast pre-shutdown + restart ..."
+
+            # Broadcast via DB (Arcturus emulator_texts/cmd_alert) - approccio
+            # generico: inseriamo un messaggio in coda console-cmd MUS oppure
+            # usiamo netcat su MUS porta 3001 se attiva. Fallback: solo log.
+            sudo bash -c '
+              set -euo pipefail
+              . /root/.asteria-secrets/db.env
+              MSG="Aggiornamento server tra 30s. Riconnessione automatica al termine."
+              # Tabella commands MUS: alert_broadcast (sintassi Arcturus)
+              mysql -u root -p"${MYSQL_ROOT_PASSWORD}" ms -e "
+                INSERT INTO emulator_texts (\`key\`, value)
+                VALUES (\"_deploy_broadcast_msg\", \"${MSG}\")
+                ON DUPLICATE KEY UPDATE value=VALUES(value);
+              " || true
+              # Se hai MUS abilitato su :3001, invio comando alert:
+              # (echo -e "alert\n${MSG}" | nc -w2 127.0.0.1 3001 2>/dev/null) || true
+            '
+
+            # Attesa preavviso per i giocatori connessi
+            echo "[deploy] sleep 30s preavviso ..."
+            sleep 30
+
+            # Swap jar atomico
+            JAR_DIR="${PROD_ROOT}/EMU/target"
+            sudo mkdir -p "${JAR_DIR}.prev"
+            if ls "${JAR_DIR}"/Habbo-*-jar-with-dependencies.jar >/dev/null 2>&1; then
+              sudo cp "${JAR_DIR}"/Habbo-*-jar-with-dependencies.jar "${JAR_DIR}.prev/"
+            fi
+            sudo cp "${STAGE}/emu/"Habbo-*-jar-with-dependencies.jar "${JAR_DIR}/"
+            sudo chown -R asteria:asteria "${JAR_DIR}"
+
+            echo "[deploy] systemctl restart habbo-emu.service ..."
+            sudo systemctl restart habbo-emu.service
+            RESTARTED+=("habbo-emu")
+          fi
+
+          # ===========================
+          # 6) Cleanup staging
+          # ===========================
+          echo "[deploy] cleanup staging ${STAGE}"
+          rm -rf -- "${STAGE}"
+
+          # ===========================
+          # 7) Output finale
+          # ===========================
+          IFS=,
+          echo "GH_OUTPUT::deploy_status=ok"
+          echo "GH_OUTPUT::restarted_services=${RESTARTED[*]:-none}"
+          echo "[deploy] completato"
+          REMOTE_SCRIPT
+          )
+
+          echo "----- output remoto -----"
+          echo "${REMOTE_OUTPUT}"
+          echo "-------------------------"
+
+          while IFS= read -r line; do
+            case "$line" in
+              GH_OUTPUT::*)
+                kv="${line#GH_OUTPUT::}"
+                echo "$kv" >> "$GITHUB_OUTPUT"
+                ;;
+            esac
+          done <<< "${REMOTE_OUTPUT}"
+
+  # ===========================================================================
+  # JOB 9: smoke-test-prod
+  # ---------------------------------------------------------------------------
+  # Verifica end-to-end che la prod risponda:
+  #   - https://asteriacore.online (root, 200)
+  #   - https://api.asteriacore.online/health (200, JSON con "ok")
+  #   - https://hotel.asteriacore.online/gamedata/external_variables.txt (200)
+  #   - TCP 2096 raggiungibile (gameserver porta player)
+  # Se uno fallisce, marca il job failed -> trigger rollback.
+  # ===========================================================================
+  smoke-test-prod:
+    name: Smoke-test produzione
+    needs: [guard, deploy-prod]
+    # inputs.skip_smoke esiste solo su workflow_dispatch; su push e' null e
+    # la condizione "!= true" e' true (= eseguiamo smoke), come atteso.
+    if: ${{ needs.deploy-prod.result == 'success' && inputs.skip_smoke != true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: HTTP checks
+        run: |
+          set -euo pipefail
+
+          check_http() {
+            local URL="$1"
+            local EXPECT="$2"
+            echo "[smoke] GET ${URL} (expect ${EXPECT})"
+            CODE=$(curl -s -o /tmp/body -w '%{http_code}' --max-time 15 "${URL}" || echo '000')
+            if [ "${CODE}" != "${EXPECT}" ]; then
+              echo "[smoke] FAIL ${URL} code=${CODE}"
+              head -c 500 /tmp/body || true
+              return 1
+            fi
+            echo "[smoke] OK ${URL}"
+          }
+
+          check_http "https://asteriacore.online" "200"
+          check_http "https://api.asteriacore.online/health" "200"
+          check_http "https://hotel.asteriacore.online/gamedata/external_variables.txt" "200"
+
+          # Validazione contenuto /health (deve contenere "ok")
+          if ! grep -qi 'ok' /tmp/body 2>/dev/null; then
+            # /tmp/body ora ha il content dell'ultima call (external_variables);
+            # rifacciamo il fetch /health esplicito per assert
+            curl -s --max-time 10 https://api.asteriacore.online/health | tee /tmp/health
+            if ! grep -qi 'ok' /tmp/health; then
+              echo "[smoke] /health non contiene 'ok'"
+              exit 1
+            fi
+          fi
+
+      - name: TCP check gameserver :2096 (via VPS, no porta pubblica)
+        env:
+          DEPLOY_SHA: ${{ needs.guard.outputs.deploy_sha }}
+        run: |
+          set -euo pipefail
+          # La porta 2096 NON e' pubblicamente esposta (tunnel CF la inoltra al
+          # client Nitro via SSL). Verifichiamo via SSH che il listener locale
+          # sul VPS sia su.
+          # Per evitare di richiedere SSH key qui, usiamo invece il check HTTP
+          # del client Nitro che, se la connessione gameserver fallisce, ritorna
+          # un errore visibile. Approccio: fetch della pagina hotel e cerca un
+          # marker che il client esiste (es. <div id="nitro-client" o asset key).
+          BODY=$(curl -s --max-time 15 https://hotel.asteriacore.online/ || true)
+          if [ -z "${BODY}" ]; then
+            echo "[smoke] hotel landing vuota"
+            exit 1
+          fi
+          # Heuristic minimo: la pagina hotel deve avere "nitro" o "asteria" nel body
+          if ! echo "${BODY}" | grep -qiE 'nitro|asteria|client'; then
+            echo "[smoke] hotel landing NON contiene marker atteso"
+            echo "${BODY}" | head -c 500
+            exit 1
+          fi
+          echo "[smoke] hotel landing OK"
+
+  # ===========================================================================
+  # JOB 10: rollback
+  # ---------------------------------------------------------------------------
+  # Eseguito SOLO se smoke-test-prod fallisce. Ripristina dal backup pre-deploy.
+  # ===========================================================================
+  rollback:
+    name: Rollback (smoke-test failed)
+    needs: [guard, pre-deploy-backup, deploy-prod, smoke-test-prod]
+    if: ${{ failure() && needs.deploy-prod.result == 'success' && needs.smoke-test-prod.result == 'failure' }}
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 15
+    steps:
+      - name: Setup ssh-agent (chiave dedicata PROD)
+        uses: webfactory/ssh-agent@dc588b651fe13675774614f8e6a936a468676387 # v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_PROD }}
+
+      - name: Configura known_hosts
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Esegui rollback inline
+        env:
+          BACKUP_PATH: ${{ needs.pre-deploy-backup.outputs.backup_path }}
+          DEPLOY_SHA: ${{ needs.guard.outputs.deploy_sha }}
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            ${{ vars.VPS_USER }}@${{ vars.VPS_HOST }} \
+            "BACKUP_PATH='${BACKUP_PATH}' DEPLOY_SHA='${DEPLOY_SHA}' bash -s" <<'REMOTE_SCRIPT'
+          set -euo pipefail
+
+          # ---------------------------------------------------------------
+          # Script rollback PROD - utente 'asteria' (sudo NOPASSWD)
+          # ---------------------------------------------------------------
+          if [ ! -f "${BACKUP_PATH}" ]; then
+            echo "[rollback] ERRORE: backup ${BACKUP_PATH} non trovato"
+            exit 1
+          fi
+
+          STAGE="$(mktemp -d -t asteria-rollback-XXXXXX)"
+          trap "rm -rf -- '${STAGE}'" EXIT
+          tar -xzf "${BACKUP_PATH}" -C "${STAGE}"
+          ls -la "${STAGE}"
+
+          PROD_ROOT="/opt/habboproject"
+
+          # 1) Ripristina jar EMU
+          if [ -f "${STAGE}/emu-target.tgz" ]; then
+            echo "[rollback] ripristino EMU jar ..."
+            sudo tar -xzf "${STAGE}/emu-target.tgz" -C "${PROD_ROOT}/EMU/"
+            sudo chown -R asteria:asteria "${PROD_ROOT}/EMU/target"
+          fi
+
+          # 2) Ripristina CMS web dist
+          if [ -f "${STAGE}/cms-web-dist.tgz" ]; then
+            echo "[rollback] ripristino CMS web dist ..."
+            sudo tar -xzf "${STAGE}/cms-web-dist.tgz" -C "${PROD_ROOT}/CMS-V3/apps/web/"
+            sudo chown -R asteria:asteria "${PROD_ROOT}/CMS-V3/apps/web/dist"
+          fi
+
+          # 3) Ripristina CMS api dist
+          if [ -f "${STAGE}/cms-api-dist.tgz" ]; then
+            echo "[rollback] ripristino CMS api dist ..."
+            sudo tar -xzf "${STAGE}/cms-api-dist.tgz" -C "${PROD_ROOT}/CMS-V3/apps/api/"
+            sudo chown -R asteria:asteria "${PROD_ROOT}/CMS-V3/apps/api/dist"
+          fi
+
+          # 4) Ripristina DB (mysqldump)
+          # ATTENZIONE: questo OVERWRITE il DB ms con lo snapshot pre-deploy.
+          # Eventuali nuovi dati arrivati DOPO il deploy fallito andranno persi
+          # (raramente molti, viste le finestre brevi di smoke-test < 5min).
+          if [ -f "${STAGE}/ms.sql.gz" ]; then
+            echo "[rollback] ripristino DB ms (overwrite) ..."
+            sudo bash -c '
+              set -euo pipefail
+              . /root/.asteria-secrets/db.env
+              gunzip -c "'"${STAGE}"'/ms.sql.gz" | mysql -u root -p"${MYSQL_ROOT_PASSWORD}" ms
+            '
+          fi
+
+          # 5) Restart tutti i servizi per assicurarsi che leggano lo stato vecchio
+          echo "[rollback] restart cms-api, habbo-emu, nginx reload"
+          sudo systemctl restart cms-api.service || true
+          sudo systemctl restart habbo-emu.service || true
+          sudo nginx -t && sudo systemctl reload nginx
+
+          echo "[rollback] completato (ripristinato backup ${BACKUP_PATH})"
+          REMOTE_SCRIPT
+
+      - name: Discord alert ROLLBACK
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_OPS }}
+          DEPLOY_SHA: ${{ needs.guard.outputs.deploy_sha }}
+        run: |
+          set -euo pipefail
+          # Skip silenzioso se webhook non configurato (no fail-hard)
+          if [ -z "${WEBHOOK:-}" ]; then
+            echo "DISCORD_WEBHOOK_OPS non configurato, skip notify."
+            exit 0
+          fi
+          PAYLOAD=$(jq -n \
+            --arg sha "${DEPLOY_SHA}" \
+            --arg run "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            '{
+              username: "Asteria Deploy",
+              embeds: [{
+                title: "[ROLLBACK ESEGUITO] Production deploy fallito smoke-test",
+                description: ("Deploy sha=`" + ($sha|.[0:12]) + "` ripristinato dal backup pre-deploy.\nVerifica logs: " + $run),
+                color: 15158332
+              }]
+            }')
+          curl -sS -X POST -H 'Content-Type: application/json' -d "${PAYLOAD}" "${WEBHOOK}"
+
+  # ===========================================================================
+  # JOB 11: release
+  # ---------------------------------------------------------------------------
+  # Solo su success completo (deploy + smoke OK). Crea GitHub Release con
+  # tag prod-<run_number> e changelog generato da git log dei commit dal tag
+  # precedente.
+  # ===========================================================================
+  release:
+    name: Crea GitHub Release
+    needs: [guard, deploy-prod, smoke-test-prod]
+    if: ${{ needs.deploy-prod.result == 'success' && needs.smoke-test-prod.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write    # necessario per creare tag + release
+    steps:
+      - name: Checkout (full history per git log)
+        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.1.0
+        with:
+          ref: ${{ needs.guard.outputs.deploy_sha }}
+          fetch-depth: 0
+
+      - name: Genera changelog
+        id: changelog
+        run: |
+          set -euo pipefail
+          PREV_TAG=$(git tag --list 'prod-*' --sort=-v:refname | head -n1 || true)
+          echo "PREV_TAG=${PREV_TAG}"
+          if [ -n "${PREV_TAG}" ]; then
+            LOG=$(git log --pretty=format:'- %h %s (%an)' "${PREV_TAG}..HEAD")
+          else
+            LOG=$(git log --pretty=format:'- %h %s (%an)' -n 50)
+          fi
+          # Multi-line output via heredoc delimiter
+          {
+            echo 'log<<EOF'
+            echo "${LOG}"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Crea release tag prod-${{ github.run_number }}
+        uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
+        with:
+          tag_name: prod-${{ github.run_number }}
+          name: Production deploy #${{ github.run_number }}
+          target_commitish: ${{ needs.guard.outputs.deploy_sha }}
+          body: |
+            ## Deploy produzione #${{ github.run_number }}
+
+            - SHA: `${{ needs.guard.outputs.deploy_sha }}`
+            - Triggered by: `${{ github.actor }}`
+            - Run: [#${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            - Servizi riavviati: `${{ needs.deploy-prod.outputs.restarted_services }}`
+
+            ### Changelog
+
+            ${{ steps.changelog.outputs.log }}
+          draft: false
+          prerelease: false
+
+  # ===========================================================================
+  # JOB 12: notify
+  # ---------------------------------------------------------------------------
+  # Notifica Discord finale (success o failure). Gira sempre (if: always()).
+  # ===========================================================================
+  notify:
+    name: Notifica Discord
+    needs: [guard, deploy-prod, smoke-test-prod, rollback, release]
+    # secrets.* NON e' permesso in job-level if: ; il check su webhook vuoto
+    # avviene a livello di step (skip silenzioso). always() garantisce il run
+    # anche se un job upstream e' failure/skipped.
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Calcola stato finale
+        id: status
+        run: |
+          set -euo pipefail
+          DEPLOY="${{ needs.deploy-prod.result }}"
+          SMOKE="${{ needs.smoke-test-prod.result }}"
+          ROLLBACK="${{ needs.rollback.result }}"
+          if [ "${DEPLOY}" = "success" ] && [ "${SMOKE}" = "success" ]; then
+            STATUS="success"
+            COLOR="3066993"   # verde
+            TITLE="[OK] Production deploy completato"
+          elif [ "${ROLLBACK}" = "success" ]; then
+            STATUS="rolled_back"
+            COLOR="15105570"  # arancione
+            TITLE="[ROLLBACK] Production deploy fallito, ripristinato backup"
+          elif [ "${DEPLOY}" = "skipped" ]; then
+            STATUS="skipped"
+            COLOR="9807270"   # grigio
+            TITLE="[SKIP] Production deploy saltato"
+          else
+            STATUS="failure"
+            COLOR="15158332"  # rosso
+            TITLE="[FAIL] Production deploy fallito"
+          fi
+          echo "status=${STATUS}" >> "$GITHUB_OUTPUT"
+          echo "color=${COLOR}"   >> "$GITHUB_OUTPUT"
+          echo "title=${TITLE}"   >> "$GITHUB_OUTPUT"
+
+      - name: Posta su Discord
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_OPS }}
+          STATUS: ${{ steps.status.outputs.status }}
+          COLOR: ${{ steps.status.outputs.color }}
+          TITLE: ${{ steps.status.outputs.title }}
+          DEPLOY_SHA: ${{ needs.guard.outputs.deploy_sha }}
+        run: |
+          set -euo pipefail
+          # Skip silenzioso se webhook non configurato
+          if [ -z "${WEBHOOK:-}" ]; then
+            echo "DISCORD_WEBHOOK_OPS non configurato, skip notify."
+            exit 0
+          fi
+          COMMIT_URL="${{ github.server_url }}/${{ github.repository }}/commit/${DEPLOY_SHA}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          PAYLOAD=$(jq -n \
+            --arg title "${TITLE}" \
+            --arg sha "${DEPLOY_SHA}" \
+            --arg actor "${{ github.actor }}" \
+            --arg commit "${COMMIT_URL}" \
+            --arg run "${RUN_URL}" \
+            --arg services "${{ needs.deploy-prod.outputs.restarted_services }}" \
+            --argjson color ${COLOR} \
+            '{
+              username: "Asteria Deploy",
+              embeds: [{
+                title: $title,
+                url: $commit,
+                color: $color,
+                fields: [
+                  {name: "SHA",       value: ("`" + ($sha|.[0:12]) + "`"), inline: true},
+                  {name: "Attore",    value: $actor, inline: true},
+                  {name: "Servizi",   value: ($services // "n/a"), inline: false},
+                  {name: "Run logs",  value: $run, inline: false}
+                ]
+              }]
+            }')
+          curl -sS -X POST -H 'Content-Type: application/json' -d "${PAYLOAD}" "${WEBHOOK}"

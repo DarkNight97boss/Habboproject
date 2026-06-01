@@ -1,6 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, type MouseEvent, type ReactNode, useState } from 'react';
+import { AsteriaHomePage } from '../asteria/AsteriaHomePage';
 import { type AuthUser, avatarUrl, broadcastAuth, useAuth } from '../hooks/useAuth';
+import { useSkin } from '../hooks/useSkin';
 
 /**
  * Homepage habbo.it — replica usando le classi del CSS UFFICIALE
@@ -12,6 +14,13 @@ import { type AuthUser, avatarUrl, broadcastAuth, useAuth } from '../hooks/useAu
  */
 export function HomePage(): ReactNode
 {
+    // Skin-aware routing: se lo staff ha attivato 'asteria-nebula', render
+    // della HomePage proprietaria (no DOM habbo.it). Per tutti gli altri skin
+    // (compresi habbo-classico/modern/dark-pro) resta il render habbo-style
+    // sotto, che usa il CSS habbo.it ufficiale.
+    const skin = useSkin();
+    if(skin?.meta.slug === 'asteria-nebula') return <AsteriaHomePage />;
+
     // Layout main + sidebar: replica esatta dell'ufficiale.
     // <section> contiene: h1, .main.main--fixed (col sinistra news), e due
     // <habbo-web-pages> sidebar (col destra, float:right + clear:right).

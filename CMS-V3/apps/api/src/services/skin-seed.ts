@@ -215,7 +215,93 @@ const HABBO_DARK_PRO: BuiltinSkin = {
     }
 };
 
-const BUILTIN_SKINS: BuiltinSkin[] = [HABBO_CLASSICO_2008, HABBO_MODERN, HABBO_DARK_PRO];
+// ============================================================
+//   4. ASTERIA NEBULA — identità proprietaria gaming 2026
+//      Glassmorphism + aurora animata + neon + microinterazioni
+// ============================================================
+const ASTERIA_NEBULA: BuiltinSkin = {
+    slug: 'asteria-nebula',
+    name: 'Asteria Nebula',
+    description: 'L\'identità proprietaria di Asteria: glassmorphism, aurora cosmica animata, neon viola/cyan/rosa. Gaming-grade UI per Gen Z.',
+    manifest: {
+        version: 1,
+        meta: {
+            slug: 'asteria-nebula',
+            name: 'Asteria Nebula',
+            description: 'Glassmorphism + aurora animata + neon. Identità proprietaria Asteria, non un clone Habbo.',
+            swatches: ['#050511', '#a855f7', '#06b6d4', '#ec4899']
+        },
+        tokens: {
+            colors: {
+                // Cosmic black base — profondità reale, non grigio sporco
+                'page-bg':        '#050511',
+                'page-fg':        '#f1f5f9',
+                // Header & nav: vetro smerigliato sopra l'aurora
+                'header-bg':      'rgba(5, 5, 17, 0.55)',
+                'header-fg':      '#ffffff',
+                'navtop-bg':      'rgba(15, 15, 30, 0.70)',
+                'navtop-fg':      '#f1f5f9',
+                'navsub-bg':      'rgba(5, 5, 17, 0.85)',
+                'navsub-fg':      '#c4b5fd',
+                // Card glass: backdrop blur visibile attraverso
+                'card-bg':        'rgba(255, 255, 255, 0.04)',
+                'card-border':    'rgba(255, 255, 255, 0.10)',
+                'card-header-bg': 'rgba(168, 85, 247, 0.20)',
+                'card-header-fg': '#ffffff',
+                // Accent: viola elettrico (signature Asteria)
+                'accent':         '#a855f7',
+                'accent-fg':      '#ffffff',
+                // Secondary accents: cyan + rosa shocking
+                'accent-cyan':    '#06b6d4',
+                'accent-pink':    '#ec4899',
+                // Button: gradient generato in CSS (vedi skin-engine.css)
+                'button-bg':      '#a855f7',
+                'button-fg':      '#ffffff',
+                'button-border':  'rgba(255, 255, 255, 0.15)',
+                // Link: viola tenue, hover diventa rosa neon
+                'link':           '#c4b5fd',
+                'link-hover':     '#ec4899',
+                // Muted: slate per testo secondario
+                'text-muted':     '#64748b',
+                // States
+                'success':        '#10b981',
+                'warning':        '#f59e0b',
+                'error':          '#f43f5e'
+            },
+            typography: {
+                // Heading: Space Grotesk — geometric, modern, signature gaming
+                fontFamily: '"Inter", system-ui, -apple-system, "Segoe UI", sans-serif',
+                fontFamilyHeading: '"Space Grotesk", "Inter", system-ui, sans-serif',
+                fontUrl: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap',
+                sizeScale: 1.05,        // leggermente più grande, premium feel
+                weightHeading: 700,
+                letterSpacingHeading: '-0.02em'  // tight modern
+            },
+            spacing: { unit: 8, densityScale: 1.2 },   // roomier — premium spacing
+            radius:  { base: 16, button: 12, input: 10 },  // very rounded
+            shadow:  {
+                style: 'neon-glow',
+                // Card: floating + neon viola subtile + inner highlight
+                card:   '0 8px 32px rgba(168, 85, 247, 0.15), 0 1px 3px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+                // Button: neon glow viola + inner gloss
+                button: '0 4px 24px rgba(168, 85, 247, 0.45), 0 1px 2px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.20)'
+            },
+            animation: {
+                speed: 'normal',
+                easing: 'cubic-bezier(0.22, 1, 0.36, 1)'   // spring-like, snappy
+            }
+        },
+        layout: { variant: 'modern' },
+        background: {
+            type: 'animated',
+            // value è il fallback statico (usato se prefers-reduced-motion)
+            value: 'radial-gradient(ellipse at top left, #1e0840 0%, #050511 50%), radial-gradient(ellipse at bottom right, #042f3f 0%, #050511 50%)',
+            animation: 'aurora'
+        }
+    }
+};
+
+const BUILTIN_SKINS: BuiltinSkin[] = [ASTERIA_NEBULA, HABBO_CLASSICO_2008, HABBO_MODERN, HABBO_DARK_PRO];
 
 /**
  * Idempotente: per ogni builtin INSERT se manca, UPDATE manifest se è

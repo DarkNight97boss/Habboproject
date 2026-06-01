@@ -189,3 +189,338 @@ html[data-layout="modern"] .wrapper--content {
 html[data-layout="compact"] .wrapper--content {
     /* Esempio: single column, sidebar nasconde su <1024px. */
 }
+
+/* ============================================================
+   ╔══════════════════════════════════════════════════════════╗
+   ║                                                          ║
+   ║    SKIN PROPRIETARIO: ASTERIA NEBULA                     ║
+   ║    Glassmorphism + Aurora + Neon + Microinterazioni      ║
+   ║                                                          ║
+   ╚══════════════════════════════════════════════════════════╝
+   ============================================================ */
+
+/* ─── Aurora cosmica animata sullo sfondo ────────────────── */
+
+@keyframes asteria-aurora-flow {
+    0%, 100% {
+        transform: translate(0%, 0%) rotate(0deg);
+    }
+    33% {
+        transform: translate(3%, -2%) rotate(120deg);
+    }
+    66% {
+        transform: translate(-2%, 3%) rotate(240deg);
+    }
+}
+
+@keyframes asteria-aurora-pulse {
+    0%, 100% { opacity: 0.6; }
+    50%      { opacity: 0.9; }
+}
+
+@keyframes asteria-stars-drift {
+    from { background-position: 0 0; }
+    to   { background-position: -1000px 500px; }
+}
+
+/* Layer 0: nero cosmic + radial gradient base */
+html[data-skin="asteria-nebula"] body {
+    background:
+        radial-gradient(ellipse at 0% 0%,   rgba(168, 85, 247, 0.18) 0%, transparent 50%),
+        radial-gradient(ellipse at 100% 100%, rgba(6, 182, 212, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(236, 72, 153, 0.10) 0%, transparent 60%),
+        #050511 !important;
+    color: #f1f5f9;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* Layer 1: aurora animata (pseudo-element fisso) */
+html[data-skin="asteria-nebula"] body::after {
+    content: "";
+    position: fixed;
+    inset: -50%;
+    background:
+        conic-gradient(from 0deg at 50% 50%,
+            rgba(168, 85, 247, 0.20) 0deg,
+            rgba(6, 182, 212, 0.15) 90deg,
+            rgba(236, 72, 153, 0.18) 180deg,
+            rgba(168, 85, 247, 0.20) 270deg,
+            rgba(168, 85, 247, 0.20) 360deg);
+    filter: blur(80px);
+    animation: asteria-aurora-flow 60s ease-in-out infinite, asteria-aurora-pulse 8s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.55;
+}
+
+/* Layer 2: pattern stelle drift (subtile) */
+html[data-skin="asteria-nebula"] body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+        radial-gradient(2px 2px at 20px 30px, rgba(255, 255, 255, 0.40), transparent),
+        radial-gradient(1px 1px at 80px 120px, rgba(255, 255, 255, 0.30), transparent),
+        radial-gradient(1.5px 1.5px at 200px 50px, rgba(255, 255, 255, 0.35), transparent),
+        radial-gradient(1px 1px at 350px 250px, rgba(255, 255, 255, 0.25), transparent),
+        radial-gradient(2px 2px at 500px 180px, rgba(255, 255, 255, 0.40), transparent),
+        radial-gradient(1px 1px at 700px 380px, rgba(255, 255, 255, 0.30), transparent);
+    background-repeat: repeat;
+    background-size: 1000px 600px;
+    animation: asteria-stars-drift 180s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+}
+
+/* Asicura che il content stia SOPRA gli effetti background */
+html[data-skin="asteria-nebula"] #root,
+html[data-skin="asteria-nebula"] .wrapper {
+    position: relative;
+    z-index: 1;
+}
+
+/* Reduced motion: disabilita animazioni */
+@media (prefers-reduced-motion: reduce) {
+    html[data-skin="asteria-nebula"] body::after,
+    html[data-skin="asteria-nebula"] body::before {
+        animation: none;
+    }
+}
+
+/* ─── Glassmorphism — backdrop-filter su card/header/nav ──── */
+
+html[data-skin="asteria-nebula"] habbo-header-small,
+html[data-skin="asteria-nebula"] .habbo-header-small {
+    background-color: rgba(5, 5, 17, 0.55) !important;
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+html[data-skin="asteria-nebula"] .nav__nav,
+html[data-skin="asteria-nebula"] .nav--horizontal {
+    background-color: rgba(15, 15, 30, 0.70) !important;
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+html[data-skin="asteria-nebula"] .nav--horizontal a,
+html[data-skin="asteria-nebula"] .nav__link {
+    color: #f1f5f9 !important;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    transition: color 200ms cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+}
+
+/* Nav link: underline neon animato on hover */
+html[data-skin="asteria-nebula"] .nav--horizontal a::after,
+html[data-skin="asteria-nebula"] .nav__link::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%) scaleX(0);
+    width: 60%;
+    height: 2px;
+    background: linear-gradient(90deg, #a855f7, #06b6d4);
+    border-radius: 2px;
+    transition: transform 250ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html[data-skin="asteria-nebula"] .nav--horizontal a:hover,
+html[data-skin="asteria-nebula"] .nav__link:hover {
+    color: #a855f7 !important;
+}
+
+html[data-skin="asteria-nebula"] .nav--horizontal a:hover::after,
+html[data-skin="asteria-nebula"] .nav__link:hover::after {
+    transform: translateX(-50%) scaleX(1);
+}
+
+/* Card glass — heart of the look */
+html[data-skin="asteria-nebula"] .habbo-rounded-box,
+html[data-skin="asteria-nebula"] .static-content {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    border-radius: 16px !important;
+    box-shadow:
+        0 8px 32px rgba(168, 85, 247, 0.15),
+        0 1px 3px rgba(0, 0, 0, 0.40),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+    transition:
+        transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 280ms cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 280ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+/* Card hover: micro-lift + glow border */
+html[data-skin="asteria-nebula"] .habbo-rounded-box:hover,
+html[data-skin="asteria-nebula"] .static-content:hover {
+    transform: translateY(-2px);
+    border-color: rgba(168, 85, 247, 0.40) !important;
+    box-shadow:
+        0 16px 48px rgba(168, 85, 247, 0.25),
+        0 4px 12px rgba(0, 0, 0, 0.50),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Card header — gradient neon subtile */
+html[data-skin="asteria-nebula"] .habbo-rounded-box h2,
+html[data-skin="asteria-nebula"] .static-content h3 {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.30) 0%, rgba(6, 182, 212, 0.20) 100%);
+    color: #ffffff;
+    font-family: "Space Grotesk", "Inter", sans-serif;
+    letter-spacing: -0.02em;
+    padding: 12px 16px;
+    border-radius: 12px 12px 0 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ─── Button — gradient neon + glow + microbounce ─────────── */
+
+html[data-skin="asteria-nebula"] .habbo-button--primary,
+html[data-skin="asteria-nebula"] button.habbo-button {
+    background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.20) !important;
+    border-radius: 12px !important;
+    padding: 10px 24px !important;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    box-shadow:
+        0 4px 24px rgba(168, 85, 247, 0.45),
+        0 1px 2px rgba(0, 0, 0, 0.30),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+    transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Sheen sweep on hover (subtle gloss) */
+html[data-skin="asteria-nebula"] .habbo-button--primary::before,
+html[data-skin="asteria-nebula"] button.habbo-button::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.25) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+}
+
+html[data-skin="asteria-nebula"] .habbo-button--primary:hover,
+html[data-skin="asteria-nebula"] button.habbo-button:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow:
+        0 8px 32px rgba(168, 85, 247, 0.60),
+        0 2px 4px rgba(0, 0, 0, 0.40),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+}
+
+html[data-skin="asteria-nebula"] .habbo-button--primary:hover::before,
+html[data-skin="asteria-nebula"] button.habbo-button:hover::before {
+    transform: translateX(100%);
+}
+
+html[data-skin="asteria-nebula"] .habbo-button--primary:active,
+html[data-skin="asteria-nebula"] button.habbo-button:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* ─── Link — gradient text + animated underline ─────────── */
+
+html[data-skin="asteria-nebula"] a:not(.btn):not(.nav__link):not(.habbo-button) {
+    color: #c4b5fd;
+    position: relative;
+    text-decoration: none;
+    transition: color 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html[data-skin="asteria-nebula"] a:not(.btn):not(.nav__link):not(.habbo-button):hover {
+    color: #ec4899;
+}
+
+/* ─── Form input glass ──────────────────────────────────── */
+
+html[data-skin="asteria-nebula"] input,
+html[data-skin="asteria-nebula"] select,
+html[data-skin="asteria-nebula"] textarea,
+html[data-skin="asteria-nebula"] .form__input {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 10px !important;
+    color: #f1f5f9 !important;
+    padding: 10px 14px !important;
+    transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+html[data-skin="asteria-nebula"] input:focus,
+html[data-skin="asteria-nebula"] select:focus,
+html[data-skin="asteria-nebula"] textarea:focus,
+html[data-skin="asteria-nebula"] .form__input:focus {
+    outline: none;
+    border-color: rgba(168, 85, 247, 0.60) !important;
+    box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.15), 0 0 24px rgba(168, 85, 247, 0.20) !important;
+}
+
+html[data-skin="asteria-nebula"] input::placeholder,
+html[data-skin="asteria-nebula"] textarea::placeholder {
+    color: rgba(241, 245, 249, 0.40);
+}
+
+/* ─── Headings — gradient text per H1/H2 importanti ──────── */
+
+html[data-skin="asteria-nebula"] h1 {
+    background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 50%, #06b6d4 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-family: "Space Grotesk", "Inter", sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+}
+
+/* ─── Footer ──────────────────────────────────────────── */
+
+html[data-skin="asteria-nebula"] habbo-footer,
+html[data-skin="asteria-nebula"] .habbo-footer {
+    background-color: rgba(5, 5, 17, 0.70) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ─── Selection ───────────────────────────────────────── */
+
+html[data-skin="asteria-nebula"] ::selection {
+    background-color: rgba(168, 85, 247, 0.40);
+    color: #ffffff;
+}
+
+/* ─── Scrollbar custom (WebKit) ───────────────────────── */
+
+html[data-skin="asteria-nebula"] ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+html[data-skin="asteria-nebula"] ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.30);
+}
+html[data-skin="asteria-nebula"] ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #a855f7, #06b6d4);
+    border-radius: 6px;
+    border: 2px solid #050511;
+}
+html[data-skin="asteria-nebula"] ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #ec4899, #a855f7);
+}

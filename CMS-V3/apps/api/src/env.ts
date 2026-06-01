@@ -53,7 +53,14 @@ const envSchema = z.object({
     // Bridge RCON/MUS verso EMU Arcturus (loopback only).
     RCON_HOST: z.string().default('127.0.0.1'),
     RCON_PORT: z.coerce.number().int().positive().default(3001),
-    RCON_TOKEN: z.string().default('')
+    RCON_TOKEN: z.string().default(''),
+
+    // CDN per il client Nitro V3 (asset statici hostati su Cloudflare R2).
+    // Il /play endpoint fetcha l'index.html da qui e inietta SSO ticket +
+    // <base href> per far risolvere tutti gli asset relativi dal CDN.
+    // Default: cdn.asteriacore.online (production). Per dev: override con
+    // dev-cdn.asteriacore.online o test bucket separato.
+    CDN_BASE_URL: z.string().url().default('https://cdn.asteriacore.online')
 });
 
 const parsed = envSchema.safeParse(process.env);

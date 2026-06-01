@@ -450,12 +450,30 @@ auth.get('/play', async c =>
     );
     await logAudit(Number(user.sub), 'auth.play.launched', ip, ua);
 
-    // 2. Fetch HTML Nitro dal PHP server (dietro :8091).
+    // 2. Fetch HTML Nitro dal CDN Cloudflare R2 (cdn.asteriacore.online).
+    //    Strategia: il client Nitro V3 buildato è asset statico hostato su R2
+    //    sotto cdn.asteriacore.online/. Il nostro CMS-V3 NON serve più il
+    //    Nitro come iframe locale (vecchio PHP server su :8091 rimosso).
+    //
+    //    Da dove arriva il bundle:
+    //      - https://cdn.asteriacore.online/index.html → entry HTML
+    //      - https://cdn.asteriacore.online/configuration/bootstrap.js → loader
+    //      - https://cdn.asteriacore.online/assets/*.js → React app buildato
+    //      - https://cdn.asteriacore.online/gamedata/*.json → metadata
+    //      - https://cdn.asteriacore.online/bundled/{figure,furniture,effect}/*.nitro
+    //      - https://cdn.asteriacore.online/dcr/hof_furni/icons/*.png → catalog
+    //
+    //    Vantaggi vs vecchio fetch a :8091 PHP:
+    //      - Niente dependency PHP server runtime (no Apache/PHP fastcgi)
+    //      - Cache CF edge → load time inferiore per utenti EU
+    //      - Versionabile via S3 path prefix (es. /v2/, /v3/) future-proof
+    //      - IP VPS non esposto (il client carica da CF, non da nostro server)
+    const CDN_BASE = env.CDN_BASE_URL || 'https://cdn.asteriacore.online';
     let nitroHtml: string;
     try
     {
-        const r = await fetch('http://127.0.0.1:8091/', {
-            headers: { 'X-Forwarded-For': ip.slice(0, 45) }
+        const r = await fetch(`${CDN_BASE}/index.html`, {
+            headers: { 'User-Agent': 'asteria-cms-v3/1.0 (+server-side-fetch)' }
         });
         if(!r.ok) throw new Error('nitro_html_' + r.status);
         nitroHtml = await r.text();
@@ -465,11 +483,18 @@ auth.get('/play', async c =>
         return c.json({ error: 'nitro_unavailable', detail: String(e) }, 502);
     }
 
-    // 3. Inject <base> + NitroConfig interceptor — il ticket è inserito
-    //    automaticamente al primo `window.NitroConfig = {...}` di bootstrap.js.
+    // 3. Inject <base href={CDN_BASE}/> + NitroConfig interceptor.
+    //    Il <base> e' cruciale: il client Nitro fa request relative
+    //    (configuration/bootstrap.js, assets/*.js, gamedata/*.json) che senza
+    //    base risolverebbero a asteriacore.online (= CMS-V3 frontend, 404).
+    //    Con <base href="https://cdn.asteriacore.online/"> tutte risolvono a CDN.
+    //
+    //    L'interceptor NitroConfig assegna il ticket SSO al primo set di
+    //    window.NitroConfig fatto da bootstrap.js (timing-safe wrap).
     //    Usiamo JSON.stringify per escape pulito (no XSS via ticket).
     const ticketJson = JSON.stringify(ticket);
-    const inject = `<base href="/client/"><script>(function(){var t=${ticketJson},v;Object.defineProperty(window,'NitroConfig',{get:function(){return v},set:function(x){v=x;if(x&&typeof x==='object'){x['sso.ticket']=t}},configurable:true})})();</script>`;
+    const baseHref = `${CDN_BASE}/`;
+    const inject = `<base href="${baseHref}"><script>(function(){var t=${ticketJson},v;Object.defineProperty(window,'NitroConfig',{get:function(){return v},set:function(x){v=x;if(x&&typeof x==='object'){x['sso.ticket']=t}},configurable:true})})();</script>`;
 
     const modified = nitroHtml.replace(/<head>/i, '<head>' + inject);
 

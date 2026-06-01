@@ -1,0 +1,551 @@
+/**
+ * Asteria Nebula — stili dedicati per i componenti proprietari.
+ *
+ * Convenzione: tutte le classi prefissate `asteria-` per isolare e non
+ * collidere col CSS habbo.it (anche se la HomePage Asteria non lo renderizza,
+ * altre pagine potrebbero coesistere).
+ *
+ * Le animazioni @keyframes asteria-aurora-*, asteria-stars-* sono in
+ * skin-engine.css (riusate qui).
+ */
+
+/* ============================================================
+   ASTERIA SHELL — root wrapper full-viewport
+   ============================================================ */
+.asteria-root {
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+    color: #f1f5f9;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    line-height: 1.5;
+}
+
+/* ============================================================
+   HEADER — glass top bar + logo + nav + user-menu
+   ============================================================ */
+.asteria-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    background: rgba(5, 5, 17, 0.55);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+}
+
+.asteria-logo {
+    font-family: 'Space Grotesk', 'Inter', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    background: linear-gradient(135deg, #ffffff 0%, #a855f7 50%, #06b6d4 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    cursor: pointer;
+    user-select: none;
+    transition: filter 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.asteria-logo:hover {
+    filter: drop-shadow(0 0 16px rgba(168, 85, 247, 0.60));
+}
+.asteria-logo .asteria-logo__dot {
+    color: #ec4899;
+    -webkit-text-fill-color: #ec4899;
+}
+
+.asteria-nav {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+    justify-content: center;
+}
+.asteria-nav a {
+    position: relative;
+    padding: 8px 16px;
+    color: #cbd5e1;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    letter-spacing: -0.01em;
+    border-radius: 8px;
+    transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.asteria-nav a:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+}
+.asteria-nav a.is-active {
+    color: #ffffff;
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.20), rgba(6, 182, 212, 0.15));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+
+.asteria-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* ============================================================
+   BUTTON PRIMARY — gradient + glow + microbounce
+   ============================================================ */
+.asteria-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+    color: #ffffff;
+    font-family: 'Space Grotesk', 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+        0 4px 24px rgba(168, 85, 247, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.asteria-btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.25) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.asteria-btn:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow:
+        0 8px 36px rgba(168, 85, 247, 0.65),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.asteria-btn:hover::before { transform: translateX(100%); }
+.asteria-btn:active { transform: translateY(0) scale(0.98); }
+.asteria-btn--ghost {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.asteria-btn--ghost:hover {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(168, 85, 247, 0.50);
+    box-shadow: 0 0 24px rgba(168, 85, 247, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.asteria-btn--xl {
+    padding: 16px 36px;
+    font-size: 16px;
+    border-radius: 14px;
+}
+
+/* ============================================================
+   HERO — full-width pannello
+   ============================================================ */
+.asteria-hero {
+    padding: 80px 32px;
+    text-align: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.asteria-hero__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    font-size: 12px;
+    font-weight: 500;
+    color: #c4b5fd;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+}
+.asteria-hero__eyebrow::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 12px #10b981, 0 0 4px #10b981;
+    animation: asteria-aurora-pulse 2s ease-in-out infinite;
+}
+
+.asteria-hero__title {
+    font-family: 'Space Grotesk', 'Inter', sans-serif;
+    font-size: clamp(48px, 8vw, 96px);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1.0;
+    background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 40%, #06b6d4 70%, #ec4899 100%);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: asteria-gradient-shift 8s ease-in-out infinite;
+    margin: 0 0 24px;
+}
+
+@keyframes asteria-gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50%      { background-position: 100% 50%; }
+}
+
+.asteria-hero__tagline {
+    font-size: 20px;
+    color: #cbd5e1;
+    max-width: 640px;
+    margin: 0 auto 40px;
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+.asteria-hero__cta {
+    display: inline-flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* ============================================================
+   STATS STRIP — 4 metriche live in fila
+   ============================================================ */
+.asteria-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1px;
+    max-width: 1200px;
+    margin: 0 auto 80px;
+    padding: 0 32px;
+}
+.asteria-stat {
+    text-align: center;
+    padding: 24px 16px;
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    transition: all 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.asteria-stat:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-2px);
+    border-color: rgba(168, 85, 247, 0.40);
+    box-shadow: 0 8px 24px rgba(168, 85, 247, 0.20);
+}
+.asteria-stat__value {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 4px;
+    letter-spacing: -0.02em;
+}
+.asteria-stat__label {
+    font-size: 11px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 500;
+}
+
+/* ============================================================
+   NEWS GRID — 3 colonne card premium glassmorphism
+   ============================================================ */
+.asteria-section {
+    max-width: 1200px;
+    margin: 0 auto 80px;
+    padding: 0 32px;
+}
+.asteria-section__head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    margin-bottom: 32px;
+}
+.asteria-section__title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+.asteria-section__subtitle {
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.asteria-news-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+}
+.asteria-news-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow:
+        0 8px 32px rgba(168, 85, 247, 0.15),
+        0 1px 3px rgba(0, 0, 0, 0.40),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: all 320ms cubic-bezier(0.22, 1, 0.36, 1);
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+}
+.asteria-news-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(168, 85, 247, 0.50);
+    box-shadow:
+        0 24px 64px rgba(168, 85, 247, 0.35),
+        0 4px 12px rgba(0, 0, 0, 0.50),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.asteria-news-card__cover {
+    aspect-ratio: 16 / 9;
+    background: linear-gradient(135deg, #1e1b3a 0%, #0a0a16 100%);
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    overflow: hidden;
+}
+.asteria-news-card__cover::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 50%, rgba(5, 5, 17, 0.70) 100%);
+}
+.asteria-news-card__category {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 2;
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: rgba(168, 85, 247, 0.85);
+    backdrop-filter: blur(10px);
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.asteria-news-card__body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+.asteria-news-card__title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+}
+.asteria-news-card__excerpt {
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1.5;
+    flex: 1;
+}
+.asteria-news-card__meta {
+    color: #64748b;
+    font-size: 12px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* ============================================================
+   QUICK ACTIONS — 4 button shortcut
+   ============================================================ */
+.asteria-quick {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 80px;
+}
+.asteria-quick a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 14px;
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.asteria-quick a:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(168, 85, 247, 0.50);
+    transform: translateY(-2px);
+    box-shadow:
+        0 8px 24px rgba(168, 85, 247, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.asteria-quick__icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.30), rgba(6, 182, 212, 0.20));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   LOGIN PANEL — glass panel anon
+   ============================================================ */
+.asteria-login {
+    max-width: 480px;
+    margin: 0 auto 60px;
+    padding: 32px;
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 20px;
+    box-shadow:
+        0 16px 64px rgba(168, 85, 247, 0.20),
+        0 1px 3px rgba(0, 0, 0, 0.50),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+.asteria-login__title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 8px;
+    letter-spacing: -0.02em;
+}
+.asteria-login__subtitle {
+    color: #94a3b8;
+    font-size: 14px;
+    margin: 0 0 24px;
+}
+.asteria-input {
+    display: block;
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.30);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    color: #ffffff;
+    font-size: 14px;
+    margin-bottom: 12px;
+    transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
+    box-sizing: border-box;
+}
+.asteria-input:focus {
+    outline: none;
+    border-color: rgba(168, 85, 247, 0.60);
+    box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.15), 0 0 32px rgba(168, 85, 247, 0.20);
+    background: rgba(0, 0, 0, 0.40);
+}
+.asteria-input::placeholder { color: rgba(241, 245, 249, 0.40); }
+
+.asteria-error {
+    padding: 10px 14px;
+    background: rgba(244, 63, 94, 0.15);
+    border: 1px solid rgba(244, 63, 94, 0.40);
+    border-radius: 10px;
+    color: #fda4af;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+/* ============================================================
+   FOOTER — minimal
+   ============================================================ */
+.asteria-footer {
+    margin-top: 100px;
+    padding: 40px 32px 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(5, 5, 17, 0.50);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    text-align: center;
+    color: #64748b;
+    font-size: 13px;
+}
+.asteria-footer__links {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+.asteria-footer__links a {
+    color: #94a3b8;
+    text-decoration: none;
+    transition: color 200ms;
+}
+.asteria-footer__links a:hover { color: #a855f7; }
+
+/* ============================================================
+   USER PILL (top right per auth users)
+   ============================================================ */
+.asteria-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px 6px 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: #f1f5f9;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.asteria-pill:hover {
+    border-color: rgba(168, 85, 247, 0.50);
+    box-shadow: 0 0 24px rgba(168, 85, 247, 0.30);
+}
+.asteria-pill img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.30);
+}

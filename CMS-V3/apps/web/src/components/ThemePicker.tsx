@@ -1,28 +1,41 @@
 import { type ReactNode } from 'react';
-import { useTheme } from '../hooks/useTheme';
+import { useSetTheme, useTheme } from '../hooks/useTheme';
 import { THEMES, type ThemeId } from '../lib/theme';
 
 /**
- * Selettore tema con preview swatches.
+ * Selettore tema SITO (staff only — usato in StaffPanelPage /admin/appearance).
  *
- * Layout: griglia di card cliccabili — una card per tema. Card mostra:
- *   - nome + descrizione
- *   - 4 swatch colorati (palette preview)
- *   - badge "Attivo" se è il tema corrente
+ * Layout: griglia card cliccabili con preview swatch.
+ * Comportamento: click → mutation PUT /api/v2/site/theme → invalida cache →
+ * tutti i visitatori vedono il nuovo tema al prossimo poll (max ~60s) o
+ * quando re-focusano la tab.
  *
- * On click → applica tema immediatamente (no Salva button).
+ * NB: il backend (rank >= 5) è la vera enforcement; questo componente è
+ * SOLO renderizzato dentro StaffPanelPage che è già protetto.
  */
 export function ThemePicker(): ReactNode
 {
-    const [current, setCurrent] = useTheme();
+    const current = useTheme();
+    const mutation = useSetTheme();
+
+    function select(themeId: ThemeId): void
+    {
+        if(themeId === current || mutation.isPending) return;
+        mutation.mutate(themeId);
+    }
 
     return (
-        <div style={{ padding: 16, color: 'var(--theme-page-fg, #fff)' }}>
-            <h2 style={{ textTransform: 'uppercase', margin: '0 0 8px' }}>Aspetto</h2>
-            <p style={{ margin: '0 0 20px', opacity: 0.85 }}>
-                Scegli come vuoi vedere il sito. Il cambio è istantaneo e si applica solo
-                al tuo browser (puoi avere un tema diverso per ogni dispositivo).
+        <div>
+            <p style={{ margin: '0 0 16px', opacity: 0.85 }}>
+                Scegli il tema per <strong>tutto il sito</strong>. Tutti gli utenti vedranno il nuovo
+                aspetto entro 60 secondi (o al loro prossimo refresh).
             </p>
+
+            {mutation.isError && (
+                <div style={{ padding: 12, background: 'rgba(220, 38, 38, 0.15)', border: '1px solid #dc2626', borderRadius: 4, marginBottom: 16, color: '#fff' }}>
+                    Errore: {mutation.error.message}
+                </div>
+            )}
 
             <div style={{
                 display: 'grid',
@@ -37,14 +50,16 @@ export function ThemePicker(): ReactNode
                         description={t.description}
                         swatches={t.swatches}
                         active={current === t.id}
-                        onSelect={setCurrent}
+                        disabled={mutation.isPending}
+                        onSelect={select}
                     />
                 ))}
             </div>
 
             <p style={{ marginTop: 20, fontSize: 12, opacity: 0.7 }}>
-                Vuoi proporre un tema? Aprilo come <code>:cfh</code> al team o suggeriscilo
-                allo staff. I temi più votati entrano nel pool ufficiale.
+                Il cambio si applica subito sul tuo browser e si propaga a tutti gli altri
+                visitatori entro ~1 minuto (cache CDN + polling client). Per testare un tema
+                prima di confermare, fai il rollback subito dopo.
             </p>
         </div>
     );
@@ -56,23 +71,26 @@ interface ThemeCardProps {
     description: string;
     swatches: readonly [string, string, string, string];
     active: boolean;
+    disabled: boolean;
     onSelect: (id: ThemeId) => void;
 }
 
 function ThemeCard(props: ThemeCardProps): ReactNode
 {
-    const { themeId, name, description, swatches, active, onSelect } = props;
+    const { themeId, name, description, swatches, active, disabled, onSelect } = props;
     return (
         <button
             type="button"
             onClick={() => onSelect(themeId)}
+            disabled={disabled}
             style={{
                 textAlign: 'left',
                 padding: 12,
                 background: active ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.20)',
                 border: active ? '2px solid var(--theme-accent, #FFB900)' : '2px solid rgba(255,255,255,0.10)',
                 borderRadius: 6,
-                cursor: 'pointer',
+                cursor: disabled ? 'wait' : (active ? 'default' : 'pointer'),
+                opacity: disabled && !active ? 0.5 : 1,
                 color: 'inherit',
                 font: 'inherit',
                 display: 'flex',

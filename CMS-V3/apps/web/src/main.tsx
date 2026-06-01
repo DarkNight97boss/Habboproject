@@ -24,6 +24,8 @@ import { ShopPrepaidPage } from './routes/ShopPrepaidPage';
 import { ShopPurchasesPage } from './routes/ShopPurchasesPage';
 import { StaticInfoPage } from './routes/StaticInfoPage';
 import { hydrateTheme } from './lib/theme';
+import { useTheme } from './hooks/useTheme';
+import { type ReactNode } from 'react';
 import './styles/themes.css';
 
 // NB: il CSS ufficiale habbo.it (app.a8ea7435.css) è caricato direttamente
@@ -46,9 +48,22 @@ const queryClient = new QueryClient({
 const root = document.getElementById('root');
 if(!root) throw new Error('root element missing');
 
+/**
+ * Watcher headless: chiama useTheme() (React Query) per fetchare il tema
+ * server-side ogni 60s e applicarlo al DOM. Senza questo, il tema cached
+ * resterebbe applicato all'infinito e non si aggiornerebbe quando lo staff
+ * cambia il tema globale.
+ */
+function ThemeApplier(): ReactNode
+{
+    useTheme();
+    return null;
+}
+
 createRoot(root).render(
     <StrictMode>
         <QueryClientProvider client={queryClient}>
+            <ThemeApplier />
             <BrowserRouter>
                 <Routes>
                     <Route path="/" element={<HomePage />} />

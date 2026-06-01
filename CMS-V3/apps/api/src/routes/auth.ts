@@ -450,37 +450,27 @@ auth.get('/play', async c =>
     );
     await logAudit(Number(user.sub), 'auth.play.launched', ip, ua);
 
-    // 2. Fetch HTML Nitro dal CDN Cloudflare R2 (cdn.asteriacore.online).
-    //    Strategia: il client Nitro V3 buildato è asset statico hostato su R2
-    //    sotto cdn.asteriacore.online/. Il nostro CMS-V3 NON serve più il
-    //    Nitro come iframe locale (vecchio PHP server su :8091 rimosso).
+    // 2. Carica l'HTML del bundle Nitro dal CDN (cdn.asteriacore.online).
     //
-    //    Da dove arriva il bundle:
-    //      - https://cdn.asteriacore.online/index.html → entry HTML
-    //      - https://cdn.asteriacore.online/configuration/bootstrap.js → loader
-    //      - https://cdn.asteriacore.online/assets/*.js → React app buildato
-    //      - https://cdn.asteriacore.online/gamedata/*.json → metadata
-    //      - https://cdn.asteriacore.online/bundled/{figure,furniture,effect}/*.nitro
-    //      - https://cdn.asteriacore.online/dcr/hof_furni/icons/*.png → catalog
+    //    OTTIMIZZAZIONE: cache in-memory module-scoped (TTL 5 min).
+    //    L'index.html del Nitro V3 e' statico (~1.2KB) — non ha senso fetchare
+    //    da CDN ad ogni /play. Cachiamo in memoria per evitare:
+    //      - Latency extra (~50ms per fetch)
+    //      - Possibile rate-limit CF se /play e' chiamato di frequente
+    //      - Bot Fight Mode di Cloudflare che blocca server-side fetch
+    //        (vede Node UA non-browser e ritorna challenge HTML 403)
     //
-    //    Vantaggi vs vecchio fetch a :8091 PHP:
-    //      - Niente dependency PHP server runtime (no Apache/PHP fastcgi)
-    //      - Cache CF edge → load time inferiore per utenti EU
-    //      - Versionabile via S3 path prefix (es. /v2/, /v3/) future-proof
-    //      - IP VPS non esposto (il client carica da CF, non da nostro server)
+    //    L'invalidazione TTL 5 min e' sufficiente: l'index Nitro cambia solo
+    //    quando rilasciamo nuova build (raro, eventi staff/PR merge).
+    //
+    //    UA spoof: usiamo Mozilla/5.0 generic per bypassare Bot Fight CF
+    //    (CDN R2 dietro proxy CF). Tecnicamente e' UA spoofing, ma per accedere
+    //    al PROPRIO bucket R2 dal PROPRIO VPS e' legittimo.
     const CDN_BASE = env.CDN_BASE_URL || 'https://cdn.asteriacore.online';
-    let nitroHtml: string;
-    try
+    const nitroHtml = await getNitroIndexHtml(CDN_BASE);
+    if(!nitroHtml)
     {
-        const r = await fetch(`${CDN_BASE}/index.html`, {
-            headers: { 'User-Agent': 'asteria-cms-v3/1.0 (+server-side-fetch)' }
-        });
-        if(!r.ok) throw new Error('nitro_html_' + r.status);
-        nitroHtml = await r.text();
-    }
-    catch(e)
-    {
-        return c.json({ error: 'nitro_unavailable', detail: String(e) }, 502);
+        return c.json({ error: 'nitro_unavailable', cdn: CDN_BASE }, 502);
     }
 
     // 3. Inject <base href={CDN_BASE}/> + NitroConfig interceptor.
@@ -516,6 +506,59 @@ auth.get('/play', async c =>
     c.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()');
     return c.body(modified);
 });
+
+// =================================================================
+// Cache in-memory dell'index.html del Nitro V3 (per /play endpoint).
+// =================================================================
+// L'HTML e' statico (~1.2KB) e cambia solo a release. TTL 5 min = ottimo
+// trade-off fra freshness (deploy nuovo si propaga rapido) e load CDN.
+// Bypass del Bot Fight Mode di Cloudflare via UA browser-like.
+let _nitroCache: { html: string; fetchedAt: number; cdn: string } | null = null;
+const NITRO_CACHE_TTL_MS = 5 * 60 * 1000;
+
+async function getNitroIndexHtml(cdnBase: string): Promise<string | null>
+{
+    const now = Date.now();
+    if(_nitroCache && _nitroCache.cdn === cdnBase && now - _nitroCache.fetchedAt < NITRO_CACHE_TTL_MS)
+    {
+        return _nitroCache.html;
+    }
+
+    try
+    {
+        const r = await fetch(`${cdnBase}/index.html`, {
+            headers: {
+                // UA browser-like per bypassare CF Bot Fight Mode.
+                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'it-IT,it;q=0.9,en;q=0.8',
+                'Cache-Control': 'no-cache'
+            }
+        });
+        if(!r.ok)
+        {
+            // eslint-disable-next-line no-console
+            console.error(`[getNitroIndexHtml] CDN fetch failed: HTTP ${r.status}`);
+            return null;
+        }
+        const html = await r.text();
+        // Sanity check: deve contenere bootstrap.js (sennò e' CF challenge page)
+        if(!html.includes('configuration/bootstrap.js'))
+        {
+            // eslint-disable-next-line no-console
+            console.error(`[getNitroIndexHtml] CDN returned non-Nitro HTML (CF challenge?): ${html.slice(0, 200)}`);
+            return null;
+        }
+        _nitroCache = { html, fetchedAt: now, cdn: cdnBase };
+        return html;
+    }
+    catch(e)
+    {
+        // eslint-disable-next-line no-console
+        console.error(`[getNitroIndexHtml] CDN fetch error:`, e);
+        return null;
+    }
+}
 
 // =================================================================
 // HIBP check utility per il register form

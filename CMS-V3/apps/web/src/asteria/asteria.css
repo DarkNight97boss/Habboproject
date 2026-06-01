@@ -1,38 +1,112 @@
 /**
- * Asteria Nebula — stili dedicati per i componenti proprietari.
+ * Asteria Nebula v2 — UI proprietaria gaming/social 2026.
  *
- * Convenzione: tutte le classi prefissate `asteria-` per isolare e non
- * collidere col CSS habbo.it (anche se la HomePage Asteria non lo renderizza,
- * altre pagine potrebbero coesistere).
+ * Reference: Linear, Arc Browser, Vercel landing, Apple Vision Pro, Cyberpunk 2077 menu.
+ * Patterns: spotlight cursor, bento grid, variable typography, glassmorphism,
+ * particle field, mouse-tracking 3D tilt, marquee live, count-up stats.
  *
- * Le animazioni @keyframes asteria-aurora-*, asteria-stars-* sono in
- * skin-engine.css (riusate qui).
+ * Prefisso `asteria-` → isolation totale dal CSS habbo.it.
  */
 
 /* ============================================================
-   ASTERIA SHELL — root wrapper full-viewport
+   FONT VARIATION — Space Grotesk variable (300-700)
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Inter:wght@400..700&family=JetBrains+Mono:wght@500&display=swap');
+
+/* ============================================================
+   ROOT + NOISE OVERLAY (texture grain subtile)
    ============================================================ */
 .asteria-root {
     min-height: 100vh;
     position: relative;
     z-index: 1;
     color: #f1f5f9;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
     line-height: 1.5;
+    overflow-x: hidden;
+}
+
+/* Noise grain SVG overlay — film texture */
+.asteria-root::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>");
+    mix-blend-mode: overlay;
 }
 
 /* ============================================================
-   HEADER — glass top bar + logo + nav + user-menu
+   MOUSE SPOTLIGHT — glow viola che segue il cursore
+   ============================================================ */
+.asteria-spotlight {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 800px;
+    height: 800px;
+    border-radius: 50%;
+    background: radial-gradient(circle at center,
+        rgba(168, 85, 247, 0.18) 0%,
+        rgba(168, 85, 247, 0.08) 25%,
+        rgba(6, 182, 212, 0.04) 50%,
+        transparent 70%);
+    filter: blur(40px);
+    pointer-events: none;
+    z-index: 0;
+    transform: translate(-50%, -50%);
+    transition: opacity 400ms;
+    will-change: top, left;
+}
+
+/* ============================================================
+   PARTICLE FIELD — 40 particelle floating
+   ============================================================ */
+.asteria-particles {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+.asteria-particle {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(168, 85, 247, 0.50);
+    animation: asteria-float 20s linear infinite;
+    will-change: transform;
+}
+
+@keyframes asteria-float {
+    0% {
+        transform: translateY(100vh) translateX(0) scale(0);
+        opacity: 0;
+    }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% {
+        transform: translateY(-10vh) translateX(50px) scale(1);
+        opacity: 0;
+    }
+}
+
+/* ============================================================
+   HEADER glass sticky
    ============================================================ */
 .asteria-header {
     position: sticky;
     top: 0;
     z-index: 50;
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
     background: rgba(5, 5, 17, 0.55);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 16px 32px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 18px 40px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -40,41 +114,48 @@
 }
 
 .asteria-logo {
-    font-family: 'Space Grotesk', 'Inter', sans-serif;
-    font-size: 24px;
-    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    cursor: pointer;
+    user-select: none;
+}
+.asteria-logo svg {
+    width: 28px;
+    height: 28px;
+    filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.60));
+    animation: asteria-logo-spin 20s linear infinite;
+}
+@keyframes asteria-logo-spin {
+    to { transform: rotate(360deg); }
+}
+.asteria-logo__name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
     letter-spacing: -0.04em;
-    background: linear-gradient(135deg, #ffffff 0%, #a855f7 50%, #06b6d4 100%);
+    background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 60%, #06b6d4 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    cursor: pointer;
-    user-select: none;
-    transition: filter 200ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.asteria-logo:hover {
-    filter: drop-shadow(0 0 16px rgba(168, 85, 247, 0.60));
-}
-.asteria-logo .asteria-logo__dot {
-    color: #ec4899;
-    -webkit-text-fill-color: #ec4899;
 }
 
 .asteria-nav {
     display: flex;
-    gap: 4px;
+    gap: 2px;
     flex: 1;
     justify-content: center;
 }
 .asteria-nav a {
     position: relative;
-    padding: 8px 16px;
-    color: #cbd5e1;
+    padding: 8px 18px;
+    color: #94a3b8;
     text-decoration: none;
     font-weight: 500;
     font-size: 14px;
     letter-spacing: -0.01em;
-    border-radius: 8px;
+    border-radius: 999px;
     transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .asteria-nav a:hover {
@@ -83,34 +164,31 @@
 }
 .asteria-nav a.is-active {
     color: #ffffff;
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.20), rgba(6, 182, 212, 0.15));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(6, 182, 212, 0.15));
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        0 0 24px rgba(168, 85, 247, 0.20);
 }
 
-.asteria-user {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
+.asteria-user { display: flex; align-items: center; gap: 10px; }
 
 /* ============================================================
-   BUTTON PRIMARY — gradient + glow + microbounce
+   BUTTON — gradient + glow + sheen
    ============================================================ */
 .asteria-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 10px 22px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 11px 22px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
     background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
     color: #ffffff;
-    font-family: 'Space Grotesk', 'Inter', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 600;
     font-size: 14px;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
+    letter-spacing: -0.005em;
     text-decoration: none;
     cursor: pointer;
     position: relative;
@@ -130,55 +208,94 @@
 }
 .asteria-btn:hover {
     transform: translateY(-2px) scale(1.02);
-    box-shadow:
-        0 8px 36px rgba(168, 85, 247, 0.65),
-        inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    box-shadow: 0 8px 36px rgba(168, 85, 247, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 .asteria-btn:hover::before { transform: translateX(100%); }
 .asteria-btn:active { transform: translateY(0) scale(0.98); }
 .asteria-btn--ghost {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 .asteria-btn--ghost:hover {
     background: rgba(255, 255, 255, 0.10);
     border-color: rgba(168, 85, 247, 0.50);
-    box-shadow: 0 0 24px rgba(168, 85, 247, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 .asteria-btn--xl {
-    padding: 16px 36px;
+    padding: 18px 40px;
     font-size: 16px;
-    border-radius: 14px;
+    border-radius: 999px;
 }
 
 /* ============================================================
-   HERO — full-width pannello
+   MARQUEE — live ticker scrolling
+   ============================================================ */
+.asteria-marquee {
+    overflow: hidden;
+    padding: 14px 0;
+    background: rgba(168, 85, 247, 0.04);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    margin-bottom: 0;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+}
+.asteria-marquee__track {
+    display: inline-flex;
+    gap: 48px;
+    white-space: nowrap;
+    animation: asteria-marquee-scroll 40s linear infinite;
+    will-change: transform;
+}
+@keyframes asteria-marquee-scroll {
+    to { transform: translateX(-50%); }
+}
+.asteria-marquee__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: #c4b5fd;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+.asteria-marquee__item::before {
+    content: "✦";
+    color: #ec4899;
+    font-size: 16px;
+}
+
+/* ============================================================
+   HERO — massive title + spotlight
    ============================================================ */
 .asteria-hero {
-    padding: 80px 32px;
+    padding: 120px 32px 80px;
     text-align: center;
-    max-width: 1200px;
+    max-width: 1280px;
     margin: 0 auto;
     position: relative;
+    z-index: 5;
 }
 
 .asteria-hero__eyebrow {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 14px;
+    gap: 10px;
+    padding: 7px 16px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.10);
-    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
     font-weight: 500;
     color: #c4b5fd;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    margin-bottom: 24px;
+    margin-bottom: 32px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 .asteria-hero__eyebrow::before {
     content: "";
@@ -186,355 +303,462 @@
     height: 8px;
     border-radius: 50%;
     background: #10b981;
-    box-shadow: 0 0 12px #10b981, 0 0 4px #10b981;
-    animation: asteria-aurora-pulse 2s ease-in-out infinite;
+    box-shadow: 0 0 12px #10b981, 0 0 24px #10b981;
+    animation: asteria-live-pulse 1.6s ease-in-out infinite;
+}
+@keyframes asteria-live-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50%      { transform: scale(1.4); opacity: 0.6; }
 }
 
 .asteria-hero__title {
-    font-family: 'Space Grotesk', 'Inter', sans-serif;
-    font-size: clamp(48px, 8vw, 96px);
-    font-weight: 700;
-    letter-spacing: -0.04em;
-    line-height: 1.0;
-    background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 40%, #06b6d4 70%, #ec4899 100%);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(56px, 14vw, 180px);
+    font-weight: 600;
+    font-variation-settings: "wght" 600;
+    letter-spacing: -0.06em;
+    line-height: 0.88;
+    background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 35%, #06b6d4 70%, #ec4899 100%);
     background-size: 200% 200%;
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    animation: asteria-gradient-shift 8s ease-in-out infinite;
-    margin: 0 0 24px;
+    animation: asteria-gradient-flow 12s ease-in-out infinite;
+    margin: 0 0 32px;
 }
-
-@keyframes asteria-gradient-shift {
+@keyframes asteria-gradient-flow {
     0%, 100% { background-position: 0% 50%; }
     50%      { background-position: 100% 50%; }
 }
 
+.asteria-hero__title__outline {
+    -webkit-text-stroke: 2px rgba(255, 255, 255, 0.12);
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    background: none;
+    background-clip: unset;
+}
+
 .asteria-hero__tagline {
     font-size: 20px;
-    color: #cbd5e1;
+    color: #94a3b8;
     max-width: 640px;
-    margin: 0 auto 40px;
+    margin: 0 auto 48px;
     font-weight: 400;
-    line-height: 1.5;
+    line-height: 1.6;
+    letter-spacing: -0.01em;
 }
 
 .asteria-hero__cta {
     display: inline-flex;
-    gap: 16px;
+    gap: 14px;
     flex-wrap: wrap;
     justify-content: center;
 }
 
 /* ============================================================
-   STATS STRIP — 4 metriche live in fila
+   STATS — modern count-up cards
    ============================================================ */
 .asteria-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1px;
-    max-width: 1200px;
-    margin: 0 auto 80px;
+    gap: 12px;
+    max-width: 1280px;
+    margin: 0 auto 100px;
     padding: 0 32px;
+    position: relative;
+    z-index: 5;
 }
 .asteria-stat {
     text-align: center;
-    padding: 24px 16px;
-    background: rgba(255, 255, 255, 0.02);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    padding: 28px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
+    border-radius: 20px;
+    position: relative;
+    overflow: hidden;
     transition: all 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-.asteria-stat:hover {
-    background: rgba(255, 255, 255, 0.05);
-    transform: translateY(-2px);
-    border-color: rgba(168, 85, 247, 0.40);
-    box-shadow: 0 8px 24px rgba(168, 85, 247, 0.20);
+.asteria-stat::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.10) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 280ms;
+    pointer-events: none;
 }
+.asteria-stat:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateY(-4px);
+    border-color: rgba(168, 85, 247, 0.40);
+    box-shadow: 0 16px 40px rgba(168, 85, 247, 0.25);
+}
+.asteria-stat:hover::before { opacity: 1; }
+
 .asteria-stat__value {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 32px;
+    font-size: 40px;
     font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
     color: #ffffff;
-    margin: 0 0 4px;
-    letter-spacing: -0.02em;
+    margin: 0 0 6px;
+    font-variant-numeric: tabular-nums;
+    position: relative;
+    z-index: 1;
 }
 .asteria-stat__label {
-    font-size: 11px;
-    color: #94a3b8;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: #64748b;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     font-weight: 500;
+    position: relative;
+    z-index: 1;
 }
 
 /* ============================================================
-   NEWS GRID — 3 colonne card premium glassmorphism
+   SECTION — generic
    ============================================================ */
 .asteria-section {
-    max-width: 1200px;
-    margin: 0 auto 80px;
+    max-width: 1280px;
+    margin: 0 auto 120px;
     padding: 0 32px;
+    position: relative;
+    z-index: 5;
 }
 .asteria-section__head {
     display: flex;
     align-items: end;
     justify-content: space-between;
-    margin-bottom: 32px;
+    margin-bottom: 40px;
+    gap: 24px;
 }
 .asteria-section__title {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 32px;
+    font-size: clamp(32px, 4vw, 48px);
     font-weight: 700;
     color: #ffffff;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.04em;
+    line-height: 1;
     margin: 0;
 }
 .asteria-section__subtitle {
-    color: #94a3b8;
+    color: #64748b;
     font-size: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
 }
 
-.asteria-news-grid {
+/* ============================================================
+   BENTO GRID — asimmetrico premium
+   ============================================================ */
+.asteria-bento {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: 240px;
+    gap: 16px;
 }
-.asteria-news-card {
+.asteria-bento__card {
     position: relative;
     overflow: hidden;
-    border-radius: 16px;
+    border-radius: 20px;
     background: rgba(255, 255, 255, 0.04);
     backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow:
-        0 8px 32px rgba(168, 85, 247, 0.15),
-        0 1px 3px rgba(0, 0, 0, 0.40),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        0 8px 32px rgba(168, 85, 247, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
     cursor: pointer;
-    transition: all 320ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition: all 400ms cubic-bezier(0.22, 1, 0.36, 1);
     text-decoration: none;
     color: inherit;
     display: flex;
     flex-direction: column;
+    will-change: transform;
 }
-.asteria-news-card:hover {
-    transform: translateY(-4px);
+.asteria-bento__card:hover {
+    transform: translateY(-6px);
     border-color: rgba(168, 85, 247, 0.50);
     box-shadow:
         0 24px 64px rgba(168, 85, 247, 0.35),
-        0 4px 12px rgba(0, 0, 0, 0.50),
         inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
-.asteria-news-card__cover {
-    aspect-ratio: 16 / 9;
-    background: linear-gradient(135deg, #1e1b3a 0%, #0a0a16 100%);
+
+/* Bento layout: 1 large feat + 5 mixed */
+.asteria-bento__card--feat {
+    grid-column: span 2;
+    grid-row: span 2;
+}
+.asteria-bento__card--wide {
+    grid-column: span 2;
+}
+.asteria-bento__card--tall {
+    grid-row: span 2;
+}
+@media (max-width: 900px) {
+    .asteria-bento { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 200px; }
+    .asteria-bento__card--feat, .asteria-bento__card--wide { grid-column: span 2; }
+    .asteria-bento__card--tall { grid-row: span 1; }
+}
+
+.asteria-bento__cover {
+    flex: 1;
     background-size: cover;
     background-position: center;
     position: relative;
-    overflow: hidden;
+    min-height: 120px;
 }
-.asteria-news-card__cover::after {
+.asteria-bento__cover::after {
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, transparent 50%, rgba(5, 5, 17, 0.70) 100%);
+    background: linear-gradient(180deg, transparent 40%, rgba(5, 5, 17, 0.85) 100%);
 }
-.asteria-news-card__category {
+.asteria-bento__category {
     position: absolute;
-    top: 12px;
-    left: 12px;
+    top: 16px;
+    left: 16px;
     z-index: 2;
-    padding: 4px 10px;
-    border-radius: 8px;
-    background: rgba(168, 85, 247, 0.85);
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: rgba(5, 5, 17, 0.70);
     backdrop-filter: blur(10px);
     color: #ffffff;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-.asteria-news-card__body {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    flex: 1;
-}
-.asteria-news-card__title {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 18px;
-    font-weight: 600;
-    color: #ffffff;
-    margin: 0;
-    letter-spacing: -0.01em;
-    line-height: 1.3;
-}
-.asteria-news-card__excerpt {
-    color: #94a3b8;
-    font-size: 14px;
-    line-height: 1.5;
-    flex: 1;
-}
-.asteria-news-card__meta {
-    color: #64748b;
-    font-size: 12px;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-/* ============================================================
-   QUICK ACTIONS — 4 button shortcut
-   ============================================================ */
-.asteria-quick {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px;
-    margin-bottom: 80px;
-}
-.asteria-quick a {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 20px;
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    border-radius: 14px;
-    color: #ffffff;
-    text-decoration: none;
     font-weight: 500;
-    transition: all 220ms cubic-bezier(0.22, 1, 0.36, 1);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border: 1px solid rgba(255, 255, 255, 0.15);
 }
-.asteria-quick a:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(168, 85, 247, 0.50);
-    transform: translateY(-2px);
-    box-shadow:
-        0 8px 24px rgba(168, 85, 247, 0.25),
-        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+.asteria-bento__body {
+    padding: 24px;
+    position: relative;
+    z-index: 2;
+    margin-top: -80px;
 }
-.asteria-quick__icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.30), rgba(6, 182, 212, 0.20));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    flex-shrink: 0;
-}
-
-/* ============================================================
-   LOGIN PANEL — glass panel anon
-   ============================================================ */
-.asteria-login {
-    max-width: 480px;
-    margin: 0 auto 60px;
-    padding: 32px;
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    border-radius: 20px;
-    box-shadow:
-        0 16px 64px rgba(168, 85, 247, 0.20),
-        0 1px 3px rgba(0, 0, 0, 0.50),
-        inset 0 1px 0 rgba(255, 255, 255, 0.10);
-}
-.asteria-login__title {
+.asteria-bento__card--feat .asteria-bento__body { padding: 32px; margin-top: -100px; }
+.asteria-bento__title {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 24px;
-    font-weight: 700;
+    font-size: 22px;
+    font-weight: 600;
     color: #ffffff;
     margin: 0 0 8px;
     letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+.asteria-bento__card--feat .asteria-bento__title {
+    font-size: 32px;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+}
+.asteria-bento__excerpt {
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0;
+}
+.asteria-bento__card--feat .asteria-bento__excerpt { font-size: 15px; }
+.asteria-bento__meta {
+    color: #64748b;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    margin-top: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+/* ============================================================
+   SPOTLIGHT CTA — full-width invite panel
+   ============================================================ */
+.asteria-spotlight-cta {
+    position: relative;
+    max-width: 1280px;
+    margin: 0 auto 120px;
+    padding: 80px 40px;
+    text-align: center;
+    border-radius: 32px;
+    overflow: hidden;
+    background:
+        radial-gradient(ellipse at top, rgba(168, 85, 247, 0.30) 0%, transparent 50%),
+        radial-gradient(ellipse at bottom, rgba(6, 182, 212, 0.20) 0%, transparent 50%),
+        rgba(5, 5, 17, 0.85);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+        0 24px 80px rgba(168, 85, 247, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+.asteria-spotlight-cta::before {
+    content: "✦";
+    position: absolute;
+    top: -50px;
+    left: -30px;
+    font-size: 200px;
+    color: rgba(168, 85, 247, 0.08);
+    pointer-events: none;
+}
+.asteria-spotlight-cta__eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #c4b5fd;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin-bottom: 16px;
+    opacity: 0.8;
+}
+.asteria-spotlight-cta__title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(40px, 6vw, 72px);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: #ffffff;
+    margin: 0 0 16px;
+}
+.asteria-spotlight-cta__sub {
+    color: #94a3b8;
+    font-size: 16px;
+    max-width: 480px;
+    margin: 0 auto 36px;
+    line-height: 1.5;
+}
+
+/* ============================================================
+   LOGIN GLASS PANEL
+   ============================================================ */
+.asteria-login {
+    max-width: 460px;
+    margin: 0 auto 60px;
+    padding: 36px 32px;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    box-shadow:
+        0 24px 80px rgba(168, 85, 247, 0.20),
+        0 1px 3px rgba(0, 0, 0, 0.50),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10);
+    position: relative;
+}
+.asteria-login__title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: #ffffff;
+    margin: 0 0 6px;
+    letter-spacing: -0.02em;
 }
 .asteria-login__subtitle {
-    color: #94a3b8;
-    font-size: 14px;
+    color: #64748b;
+    font-size: 13px;
     margin: 0 0 24px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
 }
 .asteria-input {
     display: block;
     width: 100%;
-    padding: 12px 16px;
+    padding: 14px 18px;
     background: rgba(0, 0, 0, 0.30);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 14px;
     color: #ffffff;
     font-size: 14px;
-    margin-bottom: 12px;
+    font-family: inherit;
+    margin-bottom: 10px;
     transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
     box-sizing: border-box;
 }
 .asteria-input:focus {
     outline: none;
     border-color: rgba(168, 85, 247, 0.60);
-    box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.15), 0 0 32px rgba(168, 85, 247, 0.20);
-    background: rgba(0, 0, 0, 0.40);
+    box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.15), 0 0 40px rgba(168, 85, 247, 0.25);
+    background: rgba(0, 0, 0, 0.50);
 }
-.asteria-input::placeholder { color: rgba(241, 245, 249, 0.40); }
+.asteria-input::placeholder { color: rgba(241, 245, 249, 0.30); }
 
 .asteria-error {
     padding: 10px 14px;
-    background: rgba(244, 63, 94, 0.15);
-    border: 1px solid rgba(244, 63, 94, 0.40);
-    border-radius: 10px;
+    background: rgba(244, 63, 94, 0.10);
+    border: 1px solid rgba(244, 63, 94, 0.30);
+    border-radius: 12px;
     color: #fda4af;
     font-size: 13px;
     margin-bottom: 12px;
 }
 
 /* ============================================================
-   FOOTER — minimal
+   QUICK ACTIONS (auth users)
    ============================================================ */
-.asteria-footer {
-    margin-top: 100px;
-    padding: 40px 32px 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(5, 5, 17, 0.50);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    text-align: center;
-    color: #64748b;
-    font-size: 13px;
+.asteria-quick {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    max-width: 1280px;
+    margin: 0 auto 120px;
+    padding: 0 32px;
 }
-.asteria-footer__links {
+.asteria-quick a {
     display: flex;
-    gap: 24px;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
-}
-.asteria-footer__links a {
-    color: #94a3b8;
+    align-items: center;
+    gap: 14px;
+    padding: 20px 22px;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    color: #ffffff;
     text-decoration: none;
-    transition: color 200ms;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 240ms cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    position: relative;
+    overflow: hidden;
 }
-.asteria-footer__links a:hover { color: #a855f7; }
+.asteria-quick a:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(168, 85, 247, 0.40);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(168, 85, 247, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.asteria-quick__icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.30), rgba(6, 182, 212, 0.20));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
 
 /* ============================================================
-   USER PILL (top right per auth users)
+   USER PILL
    ============================================================ */
 .asteria-pill {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 6px 14px 6px 6px;
+    padding: 5px 14px 5px 5px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     color: #f1f5f9;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -544,8 +768,53 @@
     box-shadow: 0 0 24px rgba(168, 85, 247, 0.30);
 }
 .asteria-pill img {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     background: rgba(0, 0, 0, 0.30);
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.asteria-footer {
+    margin-top: 80px;
+    padding: 48px 32px 32px;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    background: rgba(5, 5, 17, 0.50);
+    backdrop-filter: blur(20px);
+    text-align: center;
+    color: #475569;
+    font-size: 12px;
+    position: relative;
+    z-index: 5;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.05em;
+}
+.asteria-footer__links {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    text-transform: uppercase;
+}
+.asteria-footer__links a {
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    transition: color 200ms;
+}
+.asteria-footer__links a:hover { color: #a855f7; }
+.asteria-footer__copy {
+    color: #475569;
+    margin-top: 16px;
+}
+.asteria-footer__brand {
+    background: linear-gradient(135deg, #c4b5fd, #06b6d4);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 600;
 }

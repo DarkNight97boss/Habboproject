@@ -23,6 +23,7 @@ import { StaffPanelPage } from './routes/StaffPanelPage';
 import { ShopPrepaidPage } from './routes/ShopPrepaidPage';
 import { ShopPurchasesPage } from './routes/ShopPurchasesPage';
 import { StaticInfoPage } from './routes/StaticInfoPage';
+import { AsteriaLeaderboardPage } from './asteria/AsteriaLeaderboardPage';
 import { AsteriaLoginPage } from './asteria/AsteriaLoginPage';
 import { AsteriaMePage } from './asteria/AsteriaMePage';
 import { AsteriaPlaceholderPage } from './asteria/AsteriaPlaceholderPage';
@@ -88,6 +89,7 @@ createRoot(root).render(
                     <Route path="/login" element={<SkinAware asteria={<AsteriaLoginPage />} classic={<ToHomeRedirect />} />} />
                     <Route path="/registration" element={<SkinAware asteria={<AsteriaRegistrationPage />} classic={<RegistrationPage />} />} />
                     <Route path="/me" element={<SkinAware asteria={<AsteriaMePage />} classic={<ToHomeRedirect />} />} />
+                    <Route path="/leaderboard" element={<SkinAware asteria={<AsteriaLeaderboardPage />} classic={<ToHomeRedirect />} />} />
                     <Route path="/messaging" element={<SkinAware asteria={<AsteriaPlaceholderPage title="Messaggi" eyebrow="Inbox" subtitle="Sistema messaggistica privata in arrivo. Per ora usa la chat in-game." activeNav="home" />} classic={<MessagingPage />} />} />
                     <Route path="/community" element={<Navigate to="/community/photos" replace />} />
                     <Route path="/community/photos" element={<SkinAware asteria={<AsteriaPlaceholderPage title="Photos" eyebrow="Community · Photo" subtitle="Galleria foto dalla community Asteria. Sezione design proprietario in arrivo." activeNav="community" />} classic={<CommunityPhotosPage />} />} />

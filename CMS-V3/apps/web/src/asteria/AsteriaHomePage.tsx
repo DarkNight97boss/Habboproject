@@ -1,6 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react';
-import { type AuthUser, avatarUrl, broadcastAuth, useAuth } from '../hooks/useAuth';
+import { type AuthUser, broadcastAuth, useAuth } from '../hooks/useAuth';
+import { AsteriaNewsBento } from './AsteriaNewsBento';
+import { AsteriaShell } from './AsteriaShell';
 import './asteria.css';
 
 /**
@@ -17,242 +19,61 @@ export function AsteriaHomePage(): ReactNode
     const { data: user, isLoading } = useAuth();
     const isAuthed = !isLoading && user;
 
+    // Usa AsteriaShell standardizzato (orbi statici, no spotlight, header sticky scroll-shrink, Cmd+K, footer 3-col)
     return (
-        <div className="asteria-root">
-            <Spotlight />
-            <ParticleField count={18} />
-            <AsteriaHeader user={isAuthed ? user : null} />
-            <LiveMarquee />
+        <AsteriaShell activeNav="home">
             {isAuthed ? <AuthedHero user={user} /> : <AnonHero />}
             <StatsStrip />
             {isAuthed && <QuickActions />}
-            <NewsBento />
+            <AsteriaNewsBento />
             <SpotlightCTA isAuthed={!!isAuthed} />
-            <AsteriaFooter />
-        </div>
+        </AsteriaShell>
     );
 }
 
 // ============================================================
-//   SPOTLIGHT — blob glow viola che segue il cursore
+//   COUNT-UP HOOK — solo su IntersectionObserver visible
 // ============================================================
-function Spotlight(): ReactNode
-{
-    const ref = useRef<HTMLDivElement>(null);
-    useEffect(() =>
-    {
-        const el = ref.current;
-        if(!el) return;
-        let rafId: number | null = null;
-        let targetX = window.innerWidth / 2;
-        let targetY = 300;
-        let currX = targetX, currY = targetY;
-
-        function onMove(ev: MouseEvent): void
-        {
-            targetX = ev.clientX;
-            targetY = ev.clientY;
-            if(rafId === null) tick();
-        }
-        function tick(): void
-        {
-            // Easing: smooth follow
-            currX += (targetX - currX) * 0.12;
-            currY += (targetY - currY) * 0.12;
-            if(el)
-            {
-                el.style.left = `${currX}px`;
-                el.style.top = `${currY}px`;
-            }
-            if(Math.abs(targetX - currX) > 0.5 || Math.abs(targetY - currY) > 0.5)
-            {
-                rafId = requestAnimationFrame(tick);
-            }
-            else
-            {
-                rafId = null;
-            }
-        }
-        window.addEventListener('mousemove', onMove, { passive: true });
-        tick();
-        return () =>
-        {
-            window.removeEventListener('mousemove', onMove);
-            if(rafId !== null) cancelAnimationFrame(rafId);
-        };
-    }, []);
-    return <div ref={ref} className="asteria-spotlight" />;
-}
-
-// ============================================================
-//   PARTICLE FIELD — 30+ particelle floating con random delay
-// ============================================================
-function ParticleField({ count }: { count: number }): ReactNode
-{
-    // Genera position+delay+duration deterministically (no Date.now / Math.random
-    // alla mount per evitare hydration mismatch e per repeatability)
-    const particles = Array.from({ length: count }, (_, i) =>
-    {
-        const seed = i * 9301 + 49297;
-        const left = ((seed % 1000) / 10);
-        const delay = (((seed * 7) % 200) / 10);
-        const duration = 16 + (((seed * 13) % 100) / 10);
-        const size = 1 + ((seed % 30) / 10);
-        return { left, delay, duration, size };
-    });
-    return (
-        <div className="asteria-particles" aria-hidden="true">
-            {particles.map((p, i) => (
-                <span
-                    key={i}
-                    className="asteria-particle"
-                    style={{
-                        left: `${p.left}%`,
-                        animationDelay: `-${p.delay}s`,
-                        animationDuration: `${p.duration}s`,
-                        width: `${p.size}px`,
-                        height: `${p.size}px`
-                    }}
-                />
-            ))}
-        </div>
-    );
-}
-
-// ============================================================
-//   ASTERIA MARK — logo SVG 8-point star geometric
-// ============================================================
-function AsteriaMark(): ReactNode
-{
-    return (
-        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <linearGradient id="asteria-mark-grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="#a855f7" />
-                    <stop offset="50%" stopColor="#06b6d4" />
-                    <stop offset="100%" stopColor="#ec4899" />
-                </linearGradient>
-            </defs>
-            <path
-                d="M16 0 L18.5 13.5 L32 16 L18.5 18.5 L16 32 L13.5 18.5 L0 16 L13.5 13.5 Z"
-                fill="url(#asteria-mark-grad)"
-                stroke="rgba(255,255,255,0.30)"
-                strokeWidth="0.5"
-            />
-        </svg>
-    );
-}
-
-// ============================================================
-//   HEADER
-// ============================================================
-function AsteriaHeader({ user }: { user: AuthUser | null }): ReactNode
-{
-    return (
-        <header className="asteria-header">
-            <a href="/" className="asteria-logo">
-                <AsteriaMark />
-                <span className="asteria-logo__name">Asteria</span>
-            </a>
-            <nav className="asteria-nav">
-                <a href="/" className="is-active">Home</a>
-                <a href="/community/photos">Community</a>
-                <a href="/shop">Shop</a>
-                <a href="/habbo-nft">Collezionabili</a>
-                <a href="/playing-habbo">Guida</a>
-            </nav>
-            <div className="asteria-user">
-                {user ? <UserPill user={user} /> : (
-                    <>
-                        <a href="#login" className="asteria-btn asteria-btn--ghost">Accedi</a>
-                        <a href="/registration" className="asteria-btn">Iscriviti</a>
-                    </>
-                )}
-            </div>
-        </header>
-    );
-}
-
-function UserPill({ user }: { user: AuthUser }): ReactNode
-{
-    const qc = useQueryClient();
-    async function logout(): Promise<void>
-    {
-        await fetch('/api/v2/auth/logout', { method: 'POST', credentials: 'include' });
-        broadcastAuth('logout');
-        await qc.invalidateQueries({ queryKey: ['auth', 'me'] });
-    }
-    return (
-        <>
-            <div className="asteria-pill" title={user.motto}>
-                <img src={avatarUrl(user.look, { size: 's', headOnly: true })} alt="" />
-                <span>{user.username}</span>
-            </div>
-            {user.rank >= 5 && (
-                <a href="/admin" className="asteria-btn asteria-btn--ghost" title="Pannello staff">⚡</a>
-            )}
-            <button type="button" className="asteria-btn asteria-btn--ghost" onClick={logout} title="Esci">⏻</button>
-        </>
-    );
-}
-
-// ============================================================
-//   LIVE MARQUEE — ticker scrolling con eventi live
-// ============================================================
-function LiveMarquee(): ReactNode
-{
-    const items = [
-        'Roller Disco live ora',
-        '12 stanze full',
-        '127 utenti online',
-        'Nuovo: comandi italiani',
-        'MFA staff abilitata',
-        'Nitro V3 in produzione',
-        'Asteria Core build #142',
-        'Eventi questo weekend',
-        'Daily streak resetta a mezzanotte'
-    ];
-    // Duplica per loop infinito
-    const looped = [...items, ...items];
-    return (
-        <div className="asteria-marquee">
-            <div className="asteria-marquee__track">
-                {looped.map((s, i) => (
-                    <span key={i} className="asteria-marquee__item">{s}</span>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-// ============================================================
-//   COUNT-UP HOOK
-// ============================================================
-function useCountUp(target: number, duration = 2000): number
+function useCountUp(target: number, duration = 1800): { value: number; ref: (el: HTMLElement | null) => void }
 {
     const [val, setVal] = useState(0);
+    const [seen, setSeen] = useState(false);
+    const observerRef = useRef<IntersectionObserver | null>(null);
+
+    const ref = (el: HTMLElement | null): void =>
+    {
+        if(observerRef.current) observerRef.current.disconnect();
+        if(!el || seen) return;
+        observerRef.current = new IntersectionObserver(entries =>
+        {
+            if(entries[0]?.isIntersecting) { setSeen(true); observerRef.current?.disconnect(); }
+        }, { threshold: 0.1 });
+        observerRef.current.observe(el);
+    };
+
     useEffect(() =>
     {
+        if(!seen) return;
         let raf = 0;
         const startTime = performance.now();
         function step(now: number): void
         {
             const t = Math.min((now - startTime) / duration, 1);
-            // Easing out cubic
             const eased = 1 - Math.pow(1 - t, 3);
             setVal(Math.floor(target * eased));
             if(t < 1) raf = requestAnimationFrame(step);
         }
         raf = requestAnimationFrame(step);
         return () => cancelAnimationFrame(raf);
-    }, [target, duration]);
-    return val;
+    }, [seen, target, duration]);
+
+    return { value: val, ref };
 }
 
 function CountUpValue({ value, suffix = '' }: { value: number; suffix?: string }): ReactNode
 {
-    const v = useCountUp(value, 1800);
-    return <>{v.toLocaleString('it-IT')}{suffix}</>;
+    const { value: v, ref } = useCountUp(value, 1800);
+    return <span ref={ref}>{v.toLocaleString('it-IT')}{suffix}</span>;
 }
 
 // ============================================================

@@ -23,10 +23,19 @@ import { StaffPanelPage } from './routes/StaffPanelPage';
 import { ShopPrepaidPage } from './routes/ShopPrepaidPage';
 import { ShopPurchasesPage } from './routes/ShopPurchasesPage';
 import { StaticInfoPage } from './routes/StaticInfoPage';
+import { hydrateTheme } from './lib/theme';
+import './styles/themes.css';
 
 // NB: il CSS ufficiale habbo.it (app.a8ea7435.css) è caricato direttamente
 // in index.html via <link>. Niente Tailwind/global.css qui — sarebbero
 // override imprevedibili sopra la CSS ufficiale.
+//
+// ECCEZIONE: themes.css. Contiene SOLO regole sotto html[data-theme="..."]
+// (specificità mirata) per applicare temi alternativi alla palette base.
+// Hydratiamo il tema PRIMA del render React per evitare flash of unstyled
+// content (FOUC) — l'attributo data-theme è settato sul <html> prima che
+// React monti.
+hydrateTheme();
 
 const queryClient = new QueryClient({
     defaultOptions: {

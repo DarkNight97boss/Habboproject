@@ -1,6 +1,7 @@
 import { type FormEvent, type ReactNode, useState } from 'react';
 import { Navigate, useParams } from 'react-router';
 import { AuthedShell } from '../components/AuthedShell';
+import { ThemePicker } from '../components/ThemePicker';
 import { useAuth } from '../hooks/useAuth';
 
 /**
@@ -19,7 +20,7 @@ import { useAuth } from '../hooks/useAuth';
  * Sezioni: privacy (default) | password | email | motto. Le altre
  * (2FA, personaggi, wallet) le aggiungeremo quando avranno backend.
  */
-type Section = 'privacy' | 'account-protection' | '2fa' | 'password' | 'email' | 'characters' | 'motto';
+type Section = 'privacy' | 'account-protection' | '2fa' | 'password' | 'email' | 'characters' | 'motto' | 'appearance';
 
 const SECTIONS: { key: Section; label: string }[] = [
     { key: 'privacy', label: 'Privacy' },
@@ -28,7 +29,8 @@ const SECTIONS: { key: Section; label: string }[] = [
     { key: 'password', label: 'Password' },
     { key: 'email', label: 'Email' },
     { key: 'characters', label: 'Personaggi' },
-    { key: 'motto', label: 'Motto' }
+    { key: 'motto', label: 'Motto' },
+    { key: 'appearance', label: 'Aspetto' }
 ];
 
 export function SettingsPage(): ReactNode
@@ -75,6 +77,7 @@ export function SettingsPage(): ReactNode
                         {validSection === 'email' && <EmailSection currentEmail={user.mail} />}
                         {validSection === 'characters' && <CharactersSection username={user.username} />}
                         {validSection === 'motto' && <MottoSection currentMotto={user.motto} />}
+                        {validSection === 'appearance' && <ThemePicker />}
                     </habbo-compile>
                     <habbo-web-pages className="aside aside--box aside--fixed">
                         <aside className="static-content">

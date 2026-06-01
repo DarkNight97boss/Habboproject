@@ -23,6 +23,11 @@ import { StaffPanelPage } from './routes/StaffPanelPage';
 import { ShopPrepaidPage } from './routes/ShopPrepaidPage';
 import { ShopPurchasesPage } from './routes/ShopPurchasesPage';
 import { StaticInfoPage } from './routes/StaticInfoPage';
+import { AsteriaLoginPage } from './asteria/AsteriaLoginPage';
+import { AsteriaMePage } from './asteria/AsteriaMePage';
+import { AsteriaRegistrationPage } from './asteria/AsteriaRegistrationPage';
+import { AsteriaShopPage } from './asteria/AsteriaShopPage';
+import { AsteriaShopCancelPage, AsteriaShopSuccessPage } from './asteria/AsteriaShopResultPages';
 import { hydrateSkin } from './lib/skin';
 import { useSkin } from './hooks/useSkin';
 import { type ReactNode } from 'react';
@@ -58,6 +63,20 @@ function ThemeApplier(): ReactNode
     return null;
 }
 
+/**
+ * Switch skin-aware: se lo skin attivo è 'asteria-nebula' renderizza il
+ * componente proprietario Asteria, altrimenti quello classic (habbo-style).
+ * Usato in main routing per /login, /registration, /me, /shop.
+ */
+function SkinAware({ asteria, classic }: { asteria: ReactNode; classic: ReactNode }): ReactNode
+{
+    const skin = useSkin();
+    return skin?.meta.slug === 'asteria-nebula' ? asteria : classic;
+}
+
+/** Redirect helper per pagine che non hanno controparte classic. */
+function ToHomeRedirect(): ReactNode { return <Navigate to="/" replace />; }
+
 createRoot(root).render(
     <StrictMode>
         <QueryClientProvider client={queryClient}>
@@ -65,7 +84,9 @@ createRoot(root).render(
             <BrowserRouter>
                 <Routes>
                     <Route path="/" element={<HomePage />} />
-                    <Route path="/registration" element={<RegistrationPage />} />
+                    <Route path="/login" element={<SkinAware asteria={<AsteriaLoginPage />} classic={<ToHomeRedirect />} />} />
+                    <Route path="/registration" element={<SkinAware asteria={<AsteriaRegistrationPage />} classic={<RegistrationPage />} />} />
+                    <Route path="/me" element={<SkinAware asteria={<AsteriaMePage />} classic={<ToHomeRedirect />} />} />
                     <Route path="/messaging" element={<MessagingPage />} />
                     <Route path="/community" element={<Navigate to="/community/photos" replace />} />
                     <Route path="/community/photos" element={<CommunityPhotosPage />} />
@@ -74,7 +95,9 @@ createRoot(root).render(
                     <Route path="/community/category" element={<Navigate to="/community/category/all" replace />} />
                     <Route path="/community/category/:category" element={<CommunityNewsPage />} />
                     <Route path="/community/article/:slug" element={<CommunityArticlePage />} />
-                    <Route path="/shop" element={<ShopPage />} />
+                    <Route path="/shop" element={<SkinAware asteria={<AsteriaShopPage />} classic={<ShopPage />} />} />
+                    <Route path="/shop/success" element={<AsteriaShopSuccessPage />} />
+                    <Route path="/shop/cancel" element={<AsteriaShopCancelPage />} />
                     <Route path="/shop/prepagate" element={<ShopPrepaidPage />} />
                     <Route path="/shop/acquisti" element={<ShopPurchasesPage />} />
                     <Route path="/playing-habbo" element={<PlayingHabboPage />} />

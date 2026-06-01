@@ -818,3 +818,509 @@
     -webkit-text-fill-color: transparent;
     font-weight: 600;
 }
+
+/* ============================================================
+   FORM — labels + checkbox + helper rows
+   ============================================================ */
+.asteria-form__label {
+    display: block;
+    margin-bottom: 14px;
+}
+.asteria-form__label > span {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+}
+.asteria-form__hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+}
+.asteria-form__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 4px 0 14px;
+    font-size: 13px;
+}
+.asteria-form__link {
+    color: #c4b5fd;
+    text-decoration: none;
+    font-size: 12px;
+}
+.asteria-form__link:hover { color: #ec4899; }
+.asteria-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #cbd5e1;
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+}
+.asteria-checkbox input { accent-color: #a855f7; width: 16px; height: 16px; }
+.asteria-checkbox a { color: #c4b5fd; text-decoration: underline; }
+
+.asteria-strength {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+}
+.asteria-strength__bar {
+    height: 4px;
+    flex: 1;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.08);
+    overflow: hidden;
+    position: relative;
+}
+.asteria-strength__bar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--strength-color, #64748b);
+    width: var(--strength-width, 25%);
+    transition: all 240ms ease-out;
+}
+.asteria-strength__bar.score-0::after { --strength-color: #ef4444; --strength-width: 10%; }
+.asteria-strength__bar.score-1::after { --strength-color: #ef4444; --strength-width: 25%; }
+.asteria-strength__bar.score-2::after { --strength-color: #f59e0b; --strength-width: 50%; }
+.asteria-strength__bar.score-3::after { --strength-color: #10b981; --strength-width: 75%; }
+.asteria-strength__bar.score-4::after { --strength-color: #06b6d4; --strength-width: 100%; }
+.asteria-strength__label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    min-width: 80px;
+    text-align: right;
+}
+
+/* ============================================================
+   REGISTRATION — layout 2 colonne con preview avatar
+   ============================================================ */
+.asteria-register__layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 32px;
+    max-width: 920px;
+    margin: 40px auto 0;
+    text-align: left;
+    align-items: start;
+}
+@media (max-width: 760px) {
+    .asteria-register__layout { grid-template-columns: 1fr; }
+}
+.asteria-register__preview {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 24px;
+    text-align: center;
+}
+.asteria-register__avatar-frame {
+    width: 220px;
+    height: 220px;
+    margin: 0 auto 20px;
+    border-radius: 18px;
+    background:
+        radial-gradient(circle at center, rgba(168,85,247,0.20) 0%, transparent 60%),
+        rgba(0,0,0,0.30);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.asteria-register__avatar-frame img {
+    max-width: 100%;
+    max-height: 100%;
+    filter: drop-shadow(0 4px 24px rgba(168,85,247,0.30));
+    transform: scale(1.4);
+}
+.asteria-register__looks-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 4px;
+}
+.asteria-register__look-btn {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 6px;
+    cursor: pointer;
+    transition: all 180ms ease-out;
+}
+.asteria-register__look-btn:hover {
+    border-color: rgba(168,85,247,0.50);
+    transform: translateY(-2px);
+}
+.asteria-register__look-btn.is-active {
+    border-color: #a855f7;
+    background: rgba(168,85,247,0.15);
+    box-shadow: 0 0 24px rgba(168,85,247,0.30);
+}
+.asteria-register__look-btn img { width: 100%; max-height: 48px; object-fit: contain; }
+
+/* ============================================================
+   ME PAGE — hero personale grande con avatar
+   ============================================================ */
+.asteria-me__hero {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 48px;
+    max-width: 1280px;
+    margin: 60px auto 80px;
+    padding: 0 32px;
+    align-items: center;
+    position: relative;
+    z-index: 5;
+}
+@media (max-width: 800px) {
+    .asteria-me__hero { grid-template-columns: 1fr; text-align: center; }
+    .asteria-me__avatar-frame { margin: 0 auto; }
+}
+.asteria-me__avatar-frame {
+    width: 280px;
+    height: 320px;
+    background:
+        radial-gradient(circle at center, rgba(168,85,247,0.25) 0%, transparent 65%),
+        rgba(0,0,0,0.30);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+        0 24px 80px rgba(168,85,247,0.25),
+        inset 0 1px 0 rgba(255,255,255,0.10);
+    backdrop-filter: blur(20px);
+}
+.asteria-me__avatar-frame img {
+    filter: drop-shadow(0 8px 32px rgba(168,85,247,0.40));
+    transform: scale(1.2);
+}
+.asteria-me__info { min-width: 0; }
+.asteria-me__motto {
+    font-style: italic;
+    color: #94a3b8;
+    font-size: 18px;
+    margin: 12px 0 16px;
+}
+.asteria-me__badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.asteria-me__badge {
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border: 1px solid rgba(255,255,255,0.10);
+}
+.asteria-me__badge--rank { background: rgba(168,85,247,0.20); color: #c4b5fd; }
+.asteria-me__badge--staff { background: linear-gradient(135deg, #f59e0b, #ec4899); color: #fff; border-color: rgba(255,255,255,0.30); }
+
+/* ============================================================
+   ORDERS list
+   ============================================================ */
+.asteria-orders {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+.asteria-order {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+}
+.asteria-order__cover {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+.asteria-order__body { flex: 1; min-width: 0; }
+.asteria-order__name {
+    font-weight: 600;
+    color: #fff;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.asteria-order__meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 2px;
+}
+.asteria-order__status {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    border-radius: 4px;
+    font-weight: 500;
+}
+.asteria-order__status--paid { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+.asteria-order__status--pending { background: rgba(245,158,11,0.15); color: #fcd34d; }
+.asteria-order__status--failed { background: rgba(244,63,94,0.15); color: #fda4af; }
+.asteria-order__status--refunded { background: rgba(148,163,184,0.15); color: #cbd5e1; }
+
+/* ============================================================
+   SHOP — filtri categoria + grid prodotti
+   ============================================================ */
+.asteria-shop__filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+    justify-content: center;
+}
+.asteria-shop__filter {
+    padding: 8px 18px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: #cbd5e1;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.asteria-shop__filter:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+.asteria-shop__filter.is-active {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.30), rgba(6, 182, 212, 0.20));
+    color: #fff;
+    border-color: rgba(168, 85, 247, 0.50);
+    box-shadow: 0 0 24px rgba(168, 85, 247, 0.30);
+}
+
+.asteria-shop__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 18px;
+}
+.asteria-shop__card {
+    position: relative;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 320ms cubic-bezier(0.22, 1, 0.36, 1);
+    display: flex;
+    flex-direction: column;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.asteria-shop__card.is-featured {
+    border-color: rgba(168, 85, 247, 0.50);
+    box-shadow:
+        0 16px 48px rgba(168, 85, 247, 0.25),
+        inset 0 1px 0 rgba(255,255,255,0.10);
+}
+.asteria-shop__card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(168, 85, 247, 0.50);
+    box-shadow: 0 24px 64px rgba(168, 85, 247, 0.30), inset 0 1px 0 rgba(255,255,255,0.12);
+}
+.asteria-shop__featured-tag {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 3;
+    background: linear-gradient(135deg, #fbbf24, #ef4444);
+    color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    box-shadow: 0 4px 16px rgba(239,68,68,0.40);
+}
+.asteria-shop__cover {
+    aspect-ratio: 16/10;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: end;
+    padding: 18px;
+    background-size: cover;
+    background-position: center;
+}
+.asteria-shop__cover::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 30%, rgba(5,5,17,0.50) 100%);
+}
+.asteria-shop__cover-amount {
+    position: relative;
+    z-index: 2;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.asteria-shop__cover-amount > div {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+.asteria-shop__cover-amount strong {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+.asteria-shop__cover-amount span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    opacity: 0.85;
+}
+.asteria-shop__badge-chip {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 3px 10px;
+    background: rgba(0,0,0,0.30);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.20);
+    border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.asteria-shop__body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+}
+.asteria-shop__cat {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+.asteria-shop__name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: #fff;
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+.asteria-shop__desc {
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0;
+    flex: 1;
+}
+.asteria-shop__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+.asteria-shop__price {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+.asteria-shop__price-amount {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.02em;
+}
+.asteria-shop__price-currency {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #94a3b8;
+    text-transform: uppercase;
+}
+
+/* ============================================================
+   SHOP SUCCESS / LOADER
+   ============================================================ */
+.asteria-loader {
+    max-width: 320px;
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 32px auto 0;
+}
+.asteria-loader__bar {
+    height: 100%;
+    background: linear-gradient(90deg, #a855f7, #06b6d4, #ec4899);
+    background-size: 200% 100%;
+    width: 40%;
+    animation: asteria-loader-slide 1.4s ease-in-out infinite, asteria-gradient-flow 6s ease-in-out infinite;
+}
+@keyframes asteria-loader-slide {
+    0%, 100% { margin-left: 0%; width: 30%; }
+    50%      { margin-left: 70%; width: 30%; }
+}
+.asteria-shop__success-list {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 24px 36px;
+    background: rgba(16,185,129,0.10);
+    border: 1px solid rgba(16,185,129,0.30);
+    border-radius: 16px;
+    font-size: 18px;
+    color: #d1fae5;
+    margin: 0 auto;
+}
+.asteria-shop__success-list strong {
+    color: #6ee7b7;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+}

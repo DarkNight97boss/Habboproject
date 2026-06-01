@@ -12,9 +12,11 @@ import authRoute from './routes/auth.js';
 import communityRoute from './routes/community.js';
 import meRoute from './routes/me.js';
 import profileRoute from './routes/profile.js';
+import shopRoute from './routes/shop.js';
 import siteRoute from './routes/site.js';
 import { skinSiteRoutes, default as skinsListRoute } from './routes/skin.js';
 import staffRoute from './routes/staff.js';
+import { ensureShopSeeded } from './services/shop-seed.js';
 import { ensureSkinsSeeded } from './services/skin-seed.js';
 
 const log = pino({
@@ -51,6 +53,7 @@ app.route('/api/v2/auth', authRoute);
 app.route('/api/v2/me', meRoute);
 app.route('/api/v2/community', communityRoute);
 app.route('/api/v2/profile', profileRoute);
+app.route('/api/v2/shop', shopRoute);
 app.route('/api/v2/site', siteRoute);
 app.route('/api/v2/site', skinSiteRoutes);
 app.route('/api/v2/skins', skinsListRoute);
@@ -84,6 +87,10 @@ const server = serve({
     ensureSkinsSeeded()
         .then(() => log.info('   Skin Engine: builtin skins seeded'))
         .catch(e => log.error({ err: e }, 'failed to seed builtin skins'));
+
+    ensureShopSeeded()
+        .then(() => log.info('   Shop: catalog seeded'))
+        .catch(e => log.error({ err: e }, 'failed to seed shop catalog'));
 });
 
 // Graceful shutdown

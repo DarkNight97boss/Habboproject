@@ -14,7 +14,7 @@ import './asteria.css';
  * Già loggato → redirect a /me.
  */
 
-const DEFAULT_LOOKS = [
+const DEFAULT_LOOKS: readonly string[] = [
     'hd-180-1.ch-210-66.lg-270-82.sh-290-91',
     'hd-180-2.ch-215-71.lg-270-82.sh-300-1408',
     'hd-185-1.ch-225-78.lg-275-86.sh-295-1408',
@@ -28,7 +28,7 @@ export function AsteriaRegistrationPage(): ReactNode
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirm, setConfirm] = useState('');
-    const [look, setLook] = useState(DEFAULT_LOOKS[0]);
+    const [look, setLook] = useState<string>(DEFAULT_LOOKS[0]!);
     const [gender, setGender] = useState<'M' | 'F'>('M');
     const [terms, setTerms] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -154,16 +154,19 @@ export function AsteriaRegistrationPage(): ReactNode
     );
 }
 
-function computeStrength(pw: string): { score: 0 | 1 | 2 | 3 | 4; label: string }
+type StrengthScore = 0 | 1 | 2 | 3 | 4;
+const STRENGTH_LABELS: Record<StrengthScore, string> = {
+    0: 'Troppo corta', 1: 'Debole', 2: 'Media', 3: 'Buona', 4: 'Eccellente'
+};
+function computeStrength(pw: string): { score: StrengthScore; label: string }
 {
     if(pw.length === 0) return { score: 0, label: '' };
-    let score = 0;
-    if(pw.length >= 8) score++;
-    if(pw.length >= 12) score++;
-    if(/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
-    if(/\d/.test(pw)) score++;
-    if(/[^a-zA-Z0-9]/.test(pw)) score++;
-    score = Math.min(4, score) as 0 | 1 | 2 | 3 | 4;
-    const labels: Record<number, string> = { 0: 'Troppo corta', 1: 'Debole', 2: 'Media', 3: 'Buona', 4: 'Eccellente' };
-    return { score, label: labels[score] };
+    let raw = 0;
+    if(pw.length >= 8) raw++;
+    if(pw.length >= 12) raw++;
+    if(/[A-Z]/.test(pw) && /[a-z]/.test(pw)) raw++;
+    if(/\d/.test(pw)) raw++;
+    if(/[^a-zA-Z0-9]/.test(pw)) raw++;
+    const score: StrengthScore = (raw >= 4 ? 4 : raw === 3 ? 3 : raw === 2 ? 2 : raw === 1 ? 1 : 0);
+    return { score, label: STRENGTH_LABELS[score] };
 }

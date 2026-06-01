@@ -75,7 +75,7 @@ export function useAuth()
         queryKey: ['auth', 'me'],
         queryFn: async () =>
         {
-            const r = await fetch('/api/v2/me', { credentials: 'include' });
+            const r = await fetch('/api/v2/me', { credentials: 'include', cache: 'no-store' });
             if(r.status === 401) return null;
             if(!r.ok) throw new Error('me_failed_' + r.status);
             return r.json() as Promise<AuthUser>;
@@ -100,7 +100,7 @@ export function useNotifications(enabled: boolean)
         queryKey: ['me', 'notifications'],
         queryFn: async () =>
         {
-            const r = await fetch('/api/v2/me/notifications', { credentials: 'include' });
+            const r = await fetch('/api/v2/me/notifications', { credentials: 'include', cache: 'no-store' });
             if(r.status === 401) return null;
             if(!r.ok) throw new Error('notif_failed_' + r.status);
             return r.json() as Promise<Notifications>;

@@ -250,11 +250,19 @@ html[data-skin="asteria-nebula"] body::after {
             rgba(236, 72, 153, 0.18) 180deg,
             rgba(168, 85, 247, 0.20) 270deg,
             rgba(168, 85, 247, 0.20) 360deg);
-    filter: blur(80px);
-    animation: asteria-aurora-flow 60s ease-in-out infinite, asteria-aurora-pulse 8s ease-in-out infinite;
+    filter: blur(60px);
+    animation: asteria-aurora-flow 90s ease-in-out infinite;
     pointer-events: none;
     z-index: 0;
-    opacity: 0.35;
+    opacity: 0.25;
+    will-change: transform;
+    contain: layout style paint;
+}
+
+/* Mobile: disabilita aurora e particle per perf (CPU/GPU integrata) */
+@media (max-width: 768px), (prefers-reduced-motion: reduce) {
+    html[data-skin="asteria-nebula"] body::after,
+    html[data-skin="asteria-nebula"] body::before { animation: none; opacity: 0.10; }
 }
 
 /* Layer 2: pattern stelle drift (subtile) */
@@ -303,8 +311,8 @@ html[data-skin="asteria-nebula"] .news-list__item,
 html[data-skin="asteria-nebula"] .aside,
 html[data-skin="asteria-nebula"] .aside--box {
     background-color: rgba(255, 255, 255, 0.04) !important;
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
     border: 1px solid rgba(255, 255, 255, 0.10) !important;
     border-radius: 16px !important;
     box-shadow:
@@ -369,16 +377,16 @@ html[data-skin="asteria-nebula"] .news-list__item h3 {
 html[data-skin="asteria-nebula"] habbo-header-small,
 html[data-skin="asteria-nebula"] .habbo-header-small {
     background-color: rgba(5, 5, 17, 0.55) !important;
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 html[data-skin="asteria-nebula"] .nav__nav,
 html[data-skin="asteria-nebula"] .nav--horizontal {
     background-color: rgba(15, 15, 30, 0.70) !important;
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
@@ -420,8 +428,8 @@ html[data-skin="asteria-nebula"] .nav__link:hover::after {
 html[data-skin="asteria-nebula"] .habbo-rounded-box,
 html[data-skin="asteria-nebula"] .static-content {
     background-color: rgba(255, 255, 255, 0.04) !important;
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
     border: 1px solid rgba(255, 255, 255, 0.10) !important;
     border-radius: 16px !important;
     box-shadow:

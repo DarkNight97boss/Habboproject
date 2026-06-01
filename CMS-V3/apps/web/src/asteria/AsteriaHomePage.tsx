@@ -20,7 +20,7 @@ export function AsteriaHomePage(): ReactNode
     return (
         <div className="asteria-root">
             <Spotlight />
-            <ParticleField count={36} />
+            <ParticleField count={18} />
             <AsteriaHeader user={isAuthed ? user : null} />
             <LiveMarquee />
             {isAuthed ? <AuthedHero user={user} /> : <AnonHero />}

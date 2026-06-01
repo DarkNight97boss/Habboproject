@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { type ReactNode } from 'react';
 import { Navigate } from 'react-router';
 import { type AuthUser, avatarUrl, useAuth } from '../hooks/useAuth';
+import { AsteriaNewsBento } from './AsteriaNewsBento';
 import { AsteriaShell } from './AsteriaShell';
 import './asteria.css';
 
@@ -26,6 +27,7 @@ export function AsteriaMePage(): ReactNode
             <MePanel user={user} />
             <MeStats user={user} />
             <MeQuickActions />
+            <AsteriaNewsBento title="Ultime news" subtitle="Cosa succede in Asteria" />
             <MeOrders />
         </AsteriaShell>
     );

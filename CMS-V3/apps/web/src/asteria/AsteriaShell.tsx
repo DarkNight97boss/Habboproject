@@ -22,7 +22,7 @@ export function AsteriaShell({ activeNav, children, hideMarquee = false }: { act
     return (
         <div className="asteria-root">
             <Spotlight />
-            <ParticleField count={36} />
+            <ParticleField count={18} />
             <AsteriaHeader user={user ?? null} active={activeNav} />
             {!hideMarquee && <LiveMarquee />}
             {children}

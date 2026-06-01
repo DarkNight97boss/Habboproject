@@ -223,14 +223,17 @@ html[data-layout="compact"] .wrapper--content {
     to   { background-position: -1000px 500px; }
 }
 
-/* Layer 0: nero cosmic + radial gradient base */
-html[data-skin="asteria-nebula"] body {
+/* Layer 0: nero cosmic + radial gradient base. !important per battere
+   le regole habbo.it ufficiali (es. .wrapper bg blu hardcoded). */
+html[data-skin="asteria-nebula"] body,
+html[data-skin="asteria-nebula"] body.habbo-header-small-on,
+html[data-skin="asteria-nebula"] html {
     background:
-        radial-gradient(ellipse at 0% 0%,   rgba(168, 85, 247, 0.18) 0%, transparent 50%),
-        radial-gradient(ellipse at 100% 100%, rgba(6, 182, 212, 0.15) 0%, transparent 50%),
-        radial-gradient(ellipse at 50% 50%, rgba(236, 72, 153, 0.10) 0%, transparent 60%),
+        radial-gradient(ellipse at 0% 0%,   rgba(168, 85, 247, 0.22) 0%, transparent 55%),
+        radial-gradient(ellipse at 100% 100%, rgba(6, 182, 212, 0.18) 0%, transparent 55%),
+        radial-gradient(ellipse at 50% 50%, rgba(236, 72, 153, 0.12) 0%, transparent 60%),
         #050511 !important;
-    color: #f1f5f9;
+    color: #f1f5f9 !important;
     min-height: 100vh;
     position: relative;
 }
@@ -251,7 +254,7 @@ html[data-skin="asteria-nebula"] body::after {
     animation: asteria-aurora-flow 60s ease-in-out infinite, asteria-aurora-pulse 8s ease-in-out infinite;
     pointer-events: none;
     z-index: 0;
-    opacity: 0.55;
+    opacity: 0.35;
 }
 
 /* Layer 2: pattern stelle drift (subtile) */
@@ -274,11 +277,83 @@ html[data-skin="asteria-nebula"] body::before {
     opacity: 0.4;
 }
 
-/* Asicura che il content stia SOPRA gli effetti background */
+/* Asicura che il content stia SOPRA gli effetti background + transparent
+   per lasciare vedere aurora. Tutti i wrappers/main devono essere trasparenti
+   altrimenti coprono il bg cosmic con il blu habbo.it. */
 html[data-skin="asteria-nebula"] #root,
-html[data-skin="asteria-nebula"] .wrapper {
+html[data-skin="asteria-nebula"] .wrapper,
+html[data-skin="asteria-nebula"] .wrapper--content,
+html[data-skin="asteria-nebula"] main,
+html[data-skin="asteria-nebula"] .main,
+html[data-skin="asteria-nebula"] .main--fixed,
+html[data-skin="asteria-nebula"] .container,
+html[data-skin="asteria-nebula"] section {
     position: relative;
     z-index: 1;
+    background-color: transparent !important;
+}
+
+/* News card grandi della HomePage — classi specifiche habbo.it */
+html[data-skin="asteria-nebula"] .news-header,
+html[data-skin="asteria-nebula"] .news-header__wrapper,
+html[data-skin="asteria-nebula"] .news-header__info,
+html[data-skin="asteria-nebula"] .news-card,
+html[data-skin="asteria-nebula"] .news-list,
+html[data-skin="asteria-nebula"] .news-list__item,
+html[data-skin="asteria-nebula"] .aside,
+html[data-skin="asteria-nebula"] .aside--box {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    border-radius: 16px !important;
+    box-shadow:
+        0 8px 32px rgba(168, 85, 247, 0.15),
+        0 1px 3px rgba(0, 0, 0, 0.40),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+    color: #f1f5f9 !important;
+    transition: all 280ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+html[data-skin="asteria-nebula"] .news-header:hover,
+html[data-skin="asteria-nebula"] .news-card:hover,
+html[data-skin="asteria-nebula"] .news-list__item:hover {
+    transform: translateY(-2px);
+    border-color: rgba(168, 85, 247, 0.40) !important;
+    box-shadow:
+        0 16px 48px rgba(168, 85, 247, 0.30),
+        0 4px 12px rgba(0, 0, 0, 0.50),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+/* h2 dentro queste card → titolo gradient */
+html[data-skin="asteria-nebula"] .news-header h2,
+html[data-skin="asteria-nebula"] .news-card h2,
+html[data-skin="asteria-nebula"] .news-header h1,
+html[data-skin="asteria-nebula"] section > h2 {
+    background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 60%, #06b6d4 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-family: "Space Grotesk", "Inter", sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+/* Hero della HomePage anon (immagine hotel) + carosello news */
+html[data-skin="asteria-nebula"] .home-hero,
+html[data-skin="asteria-nebula"] .home-anonymous,
+html[data-skin="asteria-nebula"] .hero {
+    background: transparent !important;
+}
+
+/* News title overlay sulle thumb — testo bianco con shadow leggibile */
+html[data-skin="asteria-nebula"] .news-card__title,
+html[data-skin="asteria-nebula"] .news-list__item h3 {
+    color: #ffffff !important;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.80), 0 0 24px rgba(168, 85, 247, 0.40);
+    font-family: "Space Grotesk", "Inter", sans-serif;
+    font-weight: 600;
 }
 
 /* Reduced motion: disabilita animazioni */

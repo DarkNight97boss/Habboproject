@@ -76,6 +76,8 @@ export function StaffPanelPage(): ReactNode
                     {section === 'actions'    && <ActionsSection />}
                     {section === 'appearance' && <AppearanceSection />}
                     {section === 'skinbuilder' && <SkinBuilder />}
+                    {section === 'analytics'  && <AnalyticsSection />}
+                    {section === 'moderation' && <ModerationSection />}
                 </main>
             </div>
         </div>
@@ -110,6 +112,7 @@ function Sidebar(): ReactNode
 
             <div className="admin-sidebar__group">Moderazione</div>
             <ul className="admin-sidebar__nav">
+                {item('/admin/moderation', '🛡', 'Coda CFH')}
                 {item('/admin/users', '◐', 'Utenti')}
                 {item('/admin/bans', '⛔', 'Ban')}
                 {item('/admin/logs', '☷', 'Log')}
@@ -124,6 +127,7 @@ function Sidebar(): ReactNode
 
             <div className="admin-sidebar__group">Economia</div>
             <ul className="admin-sidebar__nav">
+                {item('/admin/analytics', '📊', 'Analytics')}
                 {item('/admin/vouchers', '◆', 'Voucher')}
             </ul>
 
@@ -144,6 +148,166 @@ function AppearanceSection(): ReactNode
         <div className="admin-section">
             <h2 className="admin-section__title">Aspetto del sito (Skin Engine)</h2>
             <SkinPicker />
+        </div>
+    );
+}
+
+// =====================================================================
+// SECTION — ANALYTICS SHOP (Fase 20)
+// =====================================================================
+interface ShopAnalytics {
+    totals: { orders: number; paid: number; revenueCents: number; conversionPct: number };
+    byStatus: { status: string; count: number }[];
+    series: { day: string; revenueCents: number; orders: number }[];
+    topItems: { name: string; count: number; revenueCents: number }[];
+}
+interface OrderRow {
+    id: number; userId: number; username: string | null; item: string | null;
+    status: string; amountCents: number; currency: string;
+    createdAt: string; paidAt: string | null; deliveryLog: string | null;
+}
+
+function statusTone(s: string): string
+{
+    if(s === 'paid') return 'success';
+    if(s === 'failed') return 'danger';
+    if(s === 'refunded') return 'warning';
+    return 'neutral';
+}
+const eur = (cents: number): string => `€ ${(cents / 100).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+function AnalyticsSection(): ReactNode
+{
+    const q = useQuery({ queryKey: [ 'staff', 'shop-analytics' ], queryFn: () => apiGet<ShopAnalytics>('/shop/analytics'), refetchInterval: 60_000 });
+    const ord = useQuery({ queryKey: [ 'staff', 'shop-orders' ], queryFn: () => apiGet<{ orders: OrderRow[] }>('/shop/orders') });
+    const a = q.data;
+    const maxRev = Math.max(1, ...(a?.series.map(s => s.revenueCents) ?? [ 0 ]));
+
+    return (
+        <div className="admin-section">
+            <h2 className="admin-section__title">Analytics shop <span className="admin-card__hint">ricavi &amp; ordini · refresh 60s</span></h2>
+            {q.isLoading && <div className="admin-card">Caricamento…</div>}
+            {q.isError && <div className="admin-alert admin-alert--error">Errore nel caricamento delle analytics.</div>}
+            {a && (
+                <>
+                    <div className="admin-stats">
+                        <div className="admin-stat admin-stat--highlight"><div className="admin-stat__value">{eur(a.totals.revenueCents)}</div><div className="admin-stat__label">Ricavi (pagati)</div></div>
+                        <div className="admin-stat"><div className="admin-stat__value">{a.totals.orders.toLocaleString('it-IT')}</div><div className="admin-stat__label">Ordini totali</div></div>
+                        <div className="admin-stat"><div className="admin-stat__value">{a.totals.paid.toLocaleString('it-IT')}</div><div className="admin-stat__label">Pagati</div></div>
+                        <div className="admin-stat"><div className="admin-stat__value">{a.totals.conversionPct}%</div><div className="admin-stat__label">Conversione</div></div>
+                    </div>
+
+                    <div className="admin-card">
+                        <div className="admin-card__title">Ordini per stato</div>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            {a.byStatus.length === 0 ? <span className="admin-table__empty">Nessun ordine.</span>
+                                : a.byStatus.map(s => <span key={s.status} className={`admin-tag admin-tag--${statusTone(s.status)}`}>{s.status}: {s.count}</span>)}
+                        </div>
+                    </div>
+
+                    <div className="admin-card">
+                        <div className="admin-card__title">Ricavi ultimi 30 giorni</div>
+                        {a.series.length === 0 ? <div className="admin-table__empty">Nessun ordine pagato nel periodo.</div>
+                            : (
+                                <div className="an-bars">
+                                    {a.series.map(s => (
+                                        <div key={s.day} className="an-bar" title={`${s.day} · ${eur(s.revenueCents)} · ${s.orders} ordini`}>
+                                            <div className="an-bar__fill" style={{ height: `${Math.max(2, Math.round((s.revenueCents / maxRev) * 100))}%` }} />
+                                            <span className="an-bar__lbl">{s.day.slice(5)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                    </div>
+
+                    <div className="admin-card">
+                        <div className="admin-card__title">Top prodotti</div>
+                        <div className="admin-table-wrap">
+                            <table className="admin-table">
+                                <thead><tr><th>Prodotto</th><th>Vendite</th><th>Ricavi</th></tr></thead>
+                                <tbody>
+                                    {a.topItems.length === 0 ? <tr><td colSpan={3} className="admin-table__empty">Nessun dato.</td></tr>
+                                        : a.topItems.map((t, i) => <tr key={i}><td>{t.name}</td><td>{t.count}</td><td>{eur(t.revenueCents)}</td></tr>)}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div className="admin-card">
+                        <div className="admin-card__title">Ordini recenti</div>
+                        <div className="admin-table-wrap">
+                            <table className="admin-table">
+                                <thead><tr><th>#</th><th>Utente</th><th>Prodotto</th><th>Stato</th><th>Importo</th><th>Data</th></tr></thead>
+                                <tbody>
+                                    {(ord.data?.orders ?? []).length === 0 ? <tr><td colSpan={6} className="admin-table__empty">Nessun ordine.</td></tr>
+                                        : (ord.data?.orders ?? []).slice(0, 25).map(o => (
+                                            <tr key={o.id}>
+                                                <td className="admin-table__id">#{o.id}</td>
+                                                <td>{o.username ?? '—'}</td>
+                                                <td>{o.item ?? '—'}</td>
+                                                <td><span className={`admin-tag admin-tag--${statusTone(o.status)}`}>{o.status}</span></td>
+                                                <td>{eur(o.amountCents)}</td>
+                                                <td className="admin-table__mono">{(o.createdAt ?? '').slice(0, 16).replace('T', ' ')}</td>
+                                            </tr>
+                                        ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </>
+            )}
+        </div>
+    );
+}
+
+// =====================================================================
+// SECTION — CODA MODERAZIONE (CFH, read-only — Fase 20)
+// =====================================================================
+interface ModTicket {
+    id: number; state: number; type: number; timestamp: number; score: number; issue: string;
+    sender: string | null; senderId: number; reported: string | null; reportedId: number;
+    mod: string | null; room: string | null;
+}
+interface ModQueue { tickets: ModTicket[]; counts: { state: number; count: number }[] }
+
+function ModerationSection(): ReactNode
+{
+    const q = useQuery({ queryKey: [ 'staff', 'mod-queue' ], queryFn: () => apiGet<ModQueue>('/moderation/queue'), refetchInterval: 30_000 });
+    const d = q.data;
+    const stateLabel = (s: number): string => s === 0 ? 'Aperto' : s === 1 ? 'Preso' : `Stato ${s}`;
+
+    return (
+        <div className="admin-section">
+            <h2 className="admin-section__title">Coda moderazione <span className="admin-card__hint">CFH / segnalazioni · refresh 30s</span></h2>
+            <div className="admin-alert admin-alert--info" style={{ marginBottom: 14 }}>
+                Sola lettura: per intervenire usa <strong>Azioni rapide</strong> / <strong>Ban</strong> o gli strumenti in-game — così non si desincronizza lo stato dei ticket gestito live dall'EMU.
+            </div>
+            {q.isLoading && <div className="admin-card">Caricamento…</div>}
+            {q.isError && <div className="admin-alert admin-alert--error">Errore nel caricamento della coda.</div>}
+            {d && (
+                <div className="admin-card">
+                    <div className="admin-card__title">Segnalazioni aperte <span className="admin-card__hint">{d.tickets.length} in coda</span></div>
+                    <div className="admin-table-wrap">
+                        <table className="admin-table">
+                            <thead><tr><th>#</th><th>Stato</th><th>Segnalante</th><th>Segnalato</th><th>Stanza</th><th>Messaggio</th><th>Quando</th></tr></thead>
+                            <tbody>
+                                {d.tickets.length === 0 ? <tr><td colSpan={7} className="admin-table__empty">Nessuna segnalazione aperta. 🎉</td></tr>
+                                    : d.tickets.map(t => (
+                                        <tr key={t.id}>
+                                            <td className="admin-table__id">#{t.id}</td>
+                                            <td><span className={`admin-tag admin-tag--${t.state === 0 ? 'warning' : 'info'}`}>{stateLabel(t.state)}</span></td>
+                                            <td>{t.sender ?? `#${t.senderId}`}</td>
+                                            <td><strong>{t.reported ?? `#${t.reportedId}`}</strong></td>
+                                            <td>{t.room ?? '—'}</td>
+                                            <td className="admin-audit-details" title={t.issue}>{t.issue || '—'}</td>
+                                            <td className="admin-table__mono">{fmtDate(t.timestamp)}</td>
+                                        </tr>
+                                    ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

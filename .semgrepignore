@@ -1,0 +1,17 @@
+# Semgrep ignore — esclude codice vendored / di terze parti / copie di
+# riferimento dallo scan, così i finding restano sul codice NOSTRO.
+# (node_modules, .git, test fixtures sono già ignorati dai default Semgrep.)
+
+# Copie di riferimento upstream (non è il nostro codice)
+strumenti/Arcturus-Community/
+strumenti/Nitro-Default/
+
+# JS/asset vendored del vecchio CMS PHP (jQuery, UIkit, ...)
+CMS/app/tpl/skins/ZabboME/assets/
+
+# Asset mirrorati da habbo.it (bundle minificati di terze parti)
+CMS-V3/apps/web/public/assets/
+
+# Bundle minificati generici
+*.min.js
+**/vendor.*.js

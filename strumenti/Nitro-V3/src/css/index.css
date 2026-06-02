@@ -295,12 +295,10 @@ body {
     }
 
     .nitro-card-shell:not(.nitro-wired) {
-        border: 1px solid rgba(167, 139, 250, 0.30) !important;
-        border-radius: 13px;
-        background: rgba(17, 21, 38, 0.94);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+        border: 2px solid #000 !important;
+        border-radius: 10px;
+        background: #f2f2eb;
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
         overflow: hidden;
         max-width: min(calc(100vw - 16px), 100%);
         max-height: calc(100vh - 16px);
@@ -308,9 +306,9 @@ body {
 
     .nitro-card-shell:not(.nitro-wired) .nitro-card-header-shell {
         border: none;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.25);
-        border-radius: 12px 12px 0 0;
-        background: linear-gradient(120deg, rgba(124, 58, 237, 0.96), rgba(34, 211, 238, 0.86));
+        border-bottom: 2px solid rgba(0, 0, 0, 0.35);
+        border-radius: 8px 8px 0 0;
+        background: linear-gradient(120deg, #7c3aed 0%, #22d3ee 100%);
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.20);
         padding: 5px;
     }
@@ -392,10 +390,10 @@ body {
     .nitro-card-shell:not(.nitro-wired) .nitro-card-content-shell {
         border: 0;
         border-top: 0;
-        border-radius: 0 0 12px 12px;
-        background: rgba(13, 16, 30, 0.55);
+        border-radius: 0 0 8px 8px;
+        background: #f2f2eb;
         font-family: Ubuntu, sans-serif;
-        color: #d7e0ee;
+        color: #000;
     }
 
     .nitro-card-shell:not(.nitro-wired),
@@ -409,7 +407,7 @@ body {
             font-family: UbuntuCondensed, Ubuntu, sans-serif;
             font-weight: 400;
             line-height: 1.1;
-            color: #fff;
+            color: #111;
             font-size: 16px;
         }
 
@@ -424,7 +422,7 @@ body {
         select,
         button {
             font-family: Ubuntu, sans-serif;
-            color: #d7e0ee;
+            color: #111;
         }
 
         p,
@@ -442,57 +440,55 @@ body {
     }
 
     .nitro-card-tabs-shell {
-        background: rgba(9, 12, 24, 0.70);
+        background: #d9ded7;
         border-top: 0;
-        border-bottom: 1px solid rgba(167, 139, 250, 0.22);
+        border-bottom: 2px solid #c4cabf;
     }
 
     .nitro-card-tab-item {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(167, 139, 250, 0.18);
+        background: #d2d7cf;
+        border: 2px solid #000;
         border-bottom: 0;
-        color: #c7d2e6;
-        box-shadow: none;
+        color: #000;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
     }
 
     .nitro-card-tab-item-active {
-        background: linear-gradient(180deg, rgba(124, 58, 237, 0.42), rgba(124, 58, 237, 0.10));
-        border-bottom: 2px solid #22d3ee;
-        color: #fff;
+        background: #f2f2eb;
     }
 
     .nitro-card-panel {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(167, 139, 250, 0.18) !important;
-        border-radius: 8px !important;
+        background: rgba(0, 0, 0, 0.045) !important;
+        border: 1px solid #c4cabf !important;
+        border-radius: 6px !important;
         box-shadow: none !important;
     }
 
     .nitro-card-row {
-        background: rgba(255, 255, 255, 0.04) !important;
-        border: 1px solid rgba(167, 139, 250, 0.15) !important;
-        border-radius: 8px !important;
+        background: rgba(0, 0, 0, 0.035) !important;
+        border: 1px solid #c4cabf !important;
+        border-radius: 6px !important;
         box-shadow: none !important;
         transition: background-color .15s ease, border-color .15s ease;
     }
 
     .nitro-card-row:hover {
-        background: rgba(255, 255, 255, 0.08) !important;
-        border-color: rgba(34, 211, 238, 0.35) !important;
+        background: rgba(0, 0, 0, 0.07) !important;
+        border-color: #aeb7aa !important;
     }
 
     .nitro-card-divider {
-        border-color: rgba(167, 139, 250, 0.18) !important;
+        border-color: #c4cabf !important;
         box-shadow: none !important;
     }
 
     .nitro-card-shell :where(.bg-muted, .bg-light, .bg-light-dark, .bg-white, .bg-white\/50, .bg-white\/80) {
-        background: rgba(255, 255, 255, 0.05) !important;
+        background: rgba(0, 0, 0, 0.045) !important;
         box-shadow: none !important;
     }
 
     .nitro-card-shell :where(.border, .border-muted, .border-card-grid-item-border, .border-card-grid-item-border-active, .border-white, .border-white\/10, .border-white\/20, .border-white\/30) {
-        border-color: rgba(167, 139, 250, 0.18) !important;
+        border-color: #c4cabf !important;
         box-shadow: none !important;
     }
 

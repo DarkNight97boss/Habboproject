@@ -57,7 +57,9 @@ export async function dbQuery<T = unknown>(
     params: Record<string, unknown> | unknown[] = {}
 ): Promise<T[]>
 {
-    const [rows] = await getDbPool().execute(sql, params);
+    // mysql2 tipizza `values` come ExecuteValues: l'unione object|array del nostro
+    // helper non combacia con un singolo overload → cast interno all'adapter.
+    const [rows] = await getDbPool().execute(sql, params as never);
     return rows as T[];
 }
 
@@ -70,7 +72,7 @@ export async function dbExecute(
     params: Record<string, unknown> | unknown[] = {}
 ): Promise<{ affectedRows: number; insertId: number }>
 {
-    const [result] = await getDbPool().execute(sql, params);
+    const [result] = await getDbPool().execute(sql, params as never);
     const r = result as { affectedRows: number; insertId: number };
     return { affectedRows: r.affectedRows, insertId: r.insertId };
 }

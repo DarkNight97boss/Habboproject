@@ -145,7 +145,7 @@ export const App: FC<{}> = props =>
 
         const baseUrl = window.location.origin + '/';
         setHomeUrl(baseUrl);
-        setErrorMessage('Your session has expired.\nPlease log in again to enter the hotel.');
+        setErrorMessage('La tua sessione è scaduta.\nEffettua di nuovo l’accesso per entrare nell’hotel.');
         setIsReady(false);
         setShowLogin(false);
         setIsEnteringHotel(false);
@@ -534,7 +534,7 @@ export const App: FC<{}> = props =>
                         if(configInitError)
                         {
                             setHomeUrl(window.location.origin + '/');
-                            setErrorMessage(`Unable to load renderer-config.json.\n${ String((configInitError as Error)?.message ?? configInitError) }`);
+                            setErrorMessage(`Impossibile caricare renderer-config.json.\n${ String((configInitError as Error)?.message ?? configInitError) }`);
                             setIsReady(false);
                             setShowLogin(false);
                             setIsEnteringHotel(false);

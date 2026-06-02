@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router';
 import { AsteriaShell } from './AsteriaShell';
 import { AsteriaArticleCard } from './AsteriaArticlesPage';
 import { useArticle, useNewsList } from '../hooks/useNews';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import './asteria.css';
 
 /**
@@ -19,6 +20,7 @@ export function AsteriaArticlePage(): ReactNode
     const { data, isLoading, error } = useArticle(slug);
     const { data: all } = useNewsList();
     const related = (all ?? []).filter(n => n.slug !== slug).slice(0, 3);
+    useDocumentTitle(data?.title); // titolo reale articolo (sovrascrive RouteTitle)
 
     return (
         <AsteriaShell activeNav="community">

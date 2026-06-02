@@ -488,20 +488,20 @@ auth.get('/play', async c =>
     //   (EMU di PROD). Su dev il client si connetterebbe quindi all'EMU prod
     //   con un ticket dev → l'EMU rifiuta → schermata "session expired".
     //
-    //   SOLUZIONE: se env.NITRO_SOCKET_URL è settata (SOLO dev), appendiamo a
-    //   `config.urls` un override inline (data: URL con {"socket.url": <ws dev>}).
-    //   GetConfiguration().init() (bootstrap.ts) fetcha le config.urls IN ORDINE
-    //   e mergia con last-wins, quindi l'override appeso per ultimo vince su
-    //   renderer-config.json. Il data: URL non passa dal secure-fetch (non è
-    //   /api/ né /nitro-sec/file) → fetch nativo, nessun blocco.
+    //   SOLUZIONE: se env.NITRO_SOCKET_URL è settata (SOLO dev), settiamo
+    //   socket.url DIRETTAMENTE nel base window.NitroConfig. Il
+    //   ConfigurationManager (Nitro_Render_V3) parsa il base con overrides=TRUE
+    //   PRIMA, poi i file di config.urls (renderer-config.json, …) con
+    //   overrides=FALSE — quindi un file NON sovrascrive una chiave già nel
+    //   base. Mettendo socket.url nel base, il socket.url=PROD di
+    //   renderer-config.json viene skippato → vince il nostro valore dev.
+    //   (NB: appendere a config.urls NON funziona — il merge dei file è
+    //   first-wins e renderer-config.json è il primo della lista.)
     //
     //   In PROD env.NITRO_SOCKET_URL è assente ⇒ overrideScript = '' ⇒ l'HTML
     //   iniettato è identico a prima ⇒ comportamento di produzione invariato.
-    const overrideUrl = env.NITRO_SOCKET_URL
-        ? 'data:application/json,' + encodeURIComponent(JSON.stringify({ 'socket.url': env.NITRO_SOCKET_URL }))
-        : '';
-    const overrideScript = overrideUrl
-        ? `if(Array.isArray(x['config.urls'])){x['config.urls']=x['config.urls'].concat([${JSON.stringify(overrideUrl)}])}`
+    const overrideScript = env.NITRO_SOCKET_URL
+        ? `x['socket.url']=${JSON.stringify(env.NITRO_SOCKET_URL)};`
         : '';
 
     const inject = `<base href="${baseHref}"><script>(function(){var t=${ticketJson},v;Object.defineProperty(window,'NitroConfig',{get:function(){return v},set:function(x){v=x;if(x&&typeof x==='object'){x['sso.ticket']=t;${overrideScript}}},configurable:true})})();</script>`;

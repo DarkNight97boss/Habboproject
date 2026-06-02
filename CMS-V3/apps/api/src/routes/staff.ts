@@ -1048,4 +1048,101 @@ staff.get('/staff-list', async c =>
     });
 });
 
+// =================================================================
+// 9. SHOP ANALYTICS + ORDINI (Fase 20)
+// =================================================================
+staff.get('/shop/analytics', async (c) =>
+{
+    const totalsRows = await dbQuery<{ orders: number; paid: number; revenue: number }>(
+        "SELECT COUNT(*) AS orders, COALESCE(SUM(status = 'paid'), 0) AS paid, " +
+        "COALESCE(SUM(CASE WHEN status = 'paid' THEN amount_cents ELSE 0 END), 0) AS revenue " +
+        'FROM cms_v3_shop_orders'
+    );
+    const totalsRow = totalsRows[0];
+    const byStatus = await dbQuery<{ status: string; count: number }>(
+        'SELECT status, COUNT(*) AS count FROM cms_v3_shop_orders GROUP BY status'
+    );
+    const series = await dbQuery<{ day: string; revenue: number; orders: number }>(
+        "SELECT DATE_FORMAT(paid_at, '%Y-%m-%d') AS day, COALESCE(SUM(amount_cents), 0) AS revenue, COUNT(*) AS orders " +
+        "FROM cms_v3_shop_orders WHERE status = 'paid' AND paid_at IS NOT NULL AND paid_at >= (NOW() - INTERVAL 30 DAY) " +
+        'GROUP BY day ORDER BY day ASC'
+    );
+    const topItems = await dbQuery<{ name: string; count: number; revenue: number }>(
+        "SELECT COALESCE(i.name, CONCAT('#', o.item_id)) AS name, COUNT(*) AS count, COALESCE(SUM(o.amount_cents), 0) AS revenue " +
+        'FROM cms_v3_shop_orders o LEFT JOIN cms_v3_shop_items i ON i.id = o.item_id ' +
+        "WHERE o.status = 'paid' GROUP BY o.item_id, i.name ORDER BY revenue DESC LIMIT 8"
+    );
+    const orders = Number(totalsRow?.orders ?? 0);
+    const paid = Number(totalsRow?.paid ?? 0);
+    return c.json({
+        totals: {
+            orders,
+            paid,
+            revenueCents: Number(totalsRow?.revenue ?? 0),
+            conversionPct: orders > 0 ? Math.round((paid / orders) * 1000) / 10 : 0
+        },
+        byStatus: byStatus.map(r => ({ status: r.status, count: Number(r.count) })),
+        series: series.map(r => ({ day: r.day, revenueCents: Number(r.revenue), orders: Number(r.orders) })),
+        topItems: topItems.map(r => ({ name: r.name, count: Number(r.count), revenueCents: Number(r.revenue) }))
+    });
+});
+
+staff.get('/shop/orders', async (c) =>
+{
+    const status = c.req.query('status');
+    const valid = [ 'pending', 'paid', 'failed', 'refunded' ];
+    const useFilter = !!status && valid.includes(status);
+    const rows = await dbQuery<{ id: number; user_id: number; username: string | null; item_name: string | null; status: string; amount_cents: number; currency: string; created_at: string; paid_at: string | null; delivery_log: string | null }>(
+        'SELECT o.id, o.user_id, u.username, i.name AS item_name, o.status, o.amount_cents, o.currency, o.created_at, o.paid_at, o.delivery_log ' +
+        'FROM cms_v3_shop_orders o LEFT JOIN cms_v3_shop_items i ON i.id = o.item_id LEFT JOIN users u ON u.id = o.user_id ' +
+        (useFilter ? 'WHERE o.status = ? ' : '') +
+        'ORDER BY o.created_at DESC LIMIT 100',
+        useFilter ? [ status as string ] : []
+    );
+    return c.json({
+        orders: rows.map(r => ({
+            id: r.id, userId: r.user_id, username: r.username, item: r.item_name,
+            status: r.status, amountCents: Number(r.amount_cents), currency: r.currency,
+            createdAt: r.created_at, paidAt: r.paid_at, deliveryLog: r.delivery_log
+        }))
+    });
+});
+
+// =================================================================
+// 10. CODA MODERAZIONE — CFH / support_tickets (read-only, Fase 20)
+// =================================================================
+// support_tickets.state Arcturus: 0 = aperto, 1 = preso in carico. Mostriamo
+// questi due per il triage. Le AZIONI (mute/ban/kick) restano negli strumenti
+// esistenti (Azioni rapide / Ban) o in-game, per non desincronizzare lo stato
+// dei ticket gestito live dall'EMU.
+staff.get('/moderation/queue', async (c) =>
+{
+    const tickets = await dbQuery<{
+        id: number; state: number; type: number; timestamp: number; score: number; issue: string;
+        sender_id: number; sender_name: string | null; reported_id: number; reported_name: string | null;
+        mod_id: number; mod_name: string | null; room_id: number; room_name: string | null;
+    }>(
+        'SELECT t.id, t.state, t.type, t.timestamp, t.score, t.issue, ' +
+        't.sender_id, su.username AS sender_name, t.reported_id, ru.username AS reported_name, ' +
+        't.mod_id, mu.username AS mod_name, t.room_id, r.name AS room_name ' +
+        'FROM support_tickets t ' +
+        'LEFT JOIN users su ON su.id = t.sender_id ' +
+        'LEFT JOIN users ru ON ru.id = t.reported_id ' +
+        'LEFT JOIN users mu ON mu.id = t.mod_id ' +
+        'LEFT JOIN rooms r ON r.id = t.room_id ' +
+        'WHERE t.state IN (0, 1) ORDER BY t.timestamp DESC LIMIT 100'
+    );
+    const counts = await dbQuery<{ state: number; count: number }>(
+        'SELECT state, COUNT(*) AS count FROM support_tickets GROUP BY state'
+    );
+    return c.json({
+        tickets: tickets.map(t => ({
+            id: t.id, state: t.state, type: t.type, timestamp: t.timestamp, score: t.score,
+            issue: t.issue, sender: t.sender_name, senderId: t.sender_id,
+            reported: t.reported_name, reportedId: t.reported_id, mod: t.mod_name, room: t.room_name
+        })),
+        counts: counts.map(r => ({ state: r.state, count: Number(r.count) }))
+    });
+});
+
 export default staff;

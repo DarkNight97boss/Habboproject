@@ -250,3 +250,56 @@ body:has(.admin-shell), html:has(.admin-shell) { background: var(--admin-bg) !im
    pannello admin è montato → davvero indipendente dal tema. */
 html:has(.admin-root), html:has(.admin-root) body { background: var(--admin-bg) !important; }
 html:has(.admin-root) body::before, html:has(.admin-root) body::after { display: none !important; content: none !important; }
+
+/* ============================================================
+   SKIN BUILDER (Fase 19) — editor visuale temi
+   ============================================================ */
+.sb-hint { color: var(--admin-fg-muted); font-style: normal; font-weight: 400; text-transform: none; }
+
+.sb-layout { display: grid; grid-template-columns: 1fr 380px; gap: 18px; align-items: start; }
+.sb-editor { display: flex; flex-direction: column; gap: 14px; }
+.sb-editor .admin-card { margin: 0; }
+.sb-preview-col { position: sticky; top: 16px; }
+
+.sb-preview-frame { border: 1px solid var(--admin-border-strong); border-radius: var(--admin-radius-lg); overflow: hidden; box-shadow: var(--admin-shadow); background: #000; }
+.sb-preview-bar { display: flex; gap: 6px; padding: 8px 10px; background: var(--admin-surface); border-bottom: 1px solid var(--admin-border); }
+.sb-preview-bar span { width: 10px; height: 10px; border-radius: 50%; background: var(--admin-border-strong); }
+.sb-preview-bar span:first-child { background: #f43f5e; }
+.sb-preview-bar span:nth-child(2) { background: #f59e0b; }
+.sb-preview-bar span:nth-child(3) { background: #10b981; }
+
+.sb-colors-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+
+.sb-color { display: flex; align-items: center; gap: 8px; }
+.sb-color__pick { width: 34px; height: 34px; min-width: 34px; padding: 0; border: 1px solid var(--admin-border-strong); border-radius: 8px; background: none; cursor: pointer; }
+.sb-color__pick::-webkit-color-swatch-wrapper { padding: 2px; }
+.sb-color__pick::-webkit-color-swatch { border: none; border-radius: 6px; }
+.sb-color__body { flex: 1; min-width: 0; }
+.sb-color__label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--admin-fg-muted); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-color__text { font-family: var(--admin-font-mono); font-size: 12px; padding: 5px 7px; }
+
+.sb-range { width: 100%; accent-color: var(--admin-accent); }
+
+.sb-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.sb-chip { display: inline-flex; align-items: center; border: 1px solid var(--admin-border-strong); border-radius: 999px; overflow: hidden; background: var(--admin-bg-elev-2); }
+.sb-chip__name { background: none; border: none; color: var(--admin-fg); font-size: 13px; padding: 6px 12px; cursor: pointer; font-weight: 500; }
+.sb-chip__name:hover { color: var(--admin-fg-strong); }
+.sb-chip__act, .sb-chip__del { background: none; border: none; border-left: 1px solid var(--admin-border); color: var(--admin-fg-muted); padding: 6px 9px; cursor: pointer; font-size: 12px; line-height: 1; }
+.sb-chip__act:hover { color: var(--admin-success); }
+.sb-chip__del:hover { color: var(--admin-danger); }
+
+.sb-actions { display: flex; gap: 10px; align-items: center; padding-top: 4px; }
+
+@media (max-width: 920px) {
+    .sb-layout { grid-template-columns: 1fr; }
+    .sb-preview-col { position: static; }
+}
+
+/* ============================================================
+   ANALYTICS (Fase 20) — mini grafico a barre
+   ============================================================ */
+.an-bars { display: flex; align-items: flex-end; gap: 4px; height: 140px; padding: 8px 0 18px; overflow-x: auto; }
+.an-bar { flex: 1 0 16px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 16px; }
+.an-bar__fill { width: 70%; min-height: 2px; background: linear-gradient(180deg, var(--admin-cyan), var(--admin-accent)); border-radius: 3px 3px 0 0; transition: height 0.2s ease; }
+.an-bar:hover .an-bar__fill { filter: brightness(1.25); }
+.an-bar__lbl { margin-top: 5px; font-size: 9px; color: var(--admin-fg-muted); white-space: nowrap; }

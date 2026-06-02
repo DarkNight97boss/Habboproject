@@ -24,6 +24,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Navigate, NavLink, useParams } from 'react-router';
 import { SkinPicker } from '../components/SkinPicker';
+import { SkinBuilder } from '../components/admin/SkinBuilder';
 import { avatarUrl, useAuth } from '../hooks/useAuth';
 import '../styles/admin.css';
 
@@ -74,6 +75,7 @@ export function StaffPanelPage(): ReactNode
                     {section === 'staff'      && <StaffListSection />}
                     {section === 'actions'    && <ActionsSection />}
                     {section === 'appearance' && <AppearanceSection />}
+                    {section === 'skinbuilder' && <SkinBuilder />}
                 </main>
             </div>
         </div>
@@ -103,6 +105,7 @@ function Sidebar(): ReactNode
                 {item('/admin', '◉', 'Panoramica')}
                 {item('/admin/actions', '⚡', 'Azioni rapide')}
                 {item('/admin/appearance', '◈', 'Aspetto sito')}
+                {item('/admin/skinbuilder', '✚', 'Skin Builder')}
             </ul>
 
             <div className="admin-sidebar__group">Moderazione</div>

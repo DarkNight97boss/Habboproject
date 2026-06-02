@@ -62,6 +62,15 @@ jobs:
         working-directory: strumenti/Nitro-V3
         run: |
           corepack enable || npm i -g yarn
+          # Il client risolve pixi.js / howler / pixi-filters da
+          # ../Nitro_Render_V3/node_modules (vedi alias in vite.config.mjs):
+          # il renderer va quindi installato PRIMA del client, altrimenti il
+          # build fallisce con UNLOADABLE_DEPENDENCY.
+          if [ -d ../Nitro_Render_V3 ]; then
+            echo "::group::Install renderer (Nitro_Render_V3)"
+            ( cd ../Nitro_Render_V3 && ( yarn install --frozen-lockfile || yarn install ) )
+            echo "::endgroup::"
+          fi
           yarn install --frozen-lockfile
           yarn build
 
@@ -95,7 +104,12 @@ jobs:
             exit 1
           fi
           DEST="s3://${BUCKET}/${PREFIX}"
-          EXTRA="--size-only"
+          # Sync per size+mtime (NON --size-only): i filename sono content-hashed
+          # a lunghezza fissa, quindi un manifest/loader rigenerato può avere la
+          # stessa dimensione ma contenuto diverso — --size-only lo salterebbe,
+          # lasciando il bundle che referenzia i chunk vecchi. Il build CI dà
+          # mtime fresche → il sync di default ricarica correttamente i file cambiati.
+          EXTRA=""
           if [ "$DO_DELETE" = "true" ]; then
             echo "::warning::--delete attivo: oggetti non presenti in '$SRC' verranno RIMOSSI da $DEST"
             EXTRA="$EXTRA --delete"

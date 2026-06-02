@@ -67,10 +67,10 @@ createRoot(document.getElementById('root')).render(
                 fallbackRender={ ({ error }) => (
                     <LoadingView
                         isError={ true }
-                        message={ `Something went wrong.\n${ (error as Error)?.message ?? 'Unknown error' }` }
+                        message={ `Qualcosa è andato storto.\n${ (error as Error)?.message ?? 'Errore sconosciuto' }` }
                         homeUrl={ window.location.origin + '/' } />
                 ) }>
-                <Suspense fallback={ <LoadingView message="Loading…" /> }>
+                <Suspense fallback={ <LoadingView message="Caricamento…" /> }>
                     <App />
                 </Suspense>
             </ErrorBoundary>

@@ -361,7 +361,7 @@ export const App: FC<{}> = props =>
         warmupPromiseRef.current = (async () =>
         {
             await GetConfiguration().init();
-            bumpProgress(25, taskLabel('loader.waiting', 'Loading content...'));
+            bumpProgress(25, taskLabel('loader.waiting', 'Caricamento contenuti...'));
 
             GetTicker().maxFPS = GetConfiguration().getValue<number>('system.fps.max', 24);
             NitroLogger.LOG_DEBUG = GetConfiguration().getValue<boolean>('system.log.debug', true);
@@ -399,10 +399,10 @@ export const App: FC<{}> = props =>
             gamedataUrls.forEach(url => preloadUrl(url));
 
             const warmupTasks: { promise: Promise<any>; label: string }[] = [
-                { promise: GetAssetManager().downloadAssets(assetUrls), label: taskLabel('loading.task.assets', 'Loading game assets...') },
-                { promise: GetLocalizationManager().init(), label: taskLabel('loading.task.localization', 'Loading translations...') },
-                { promise: GetAvatarRenderManager().init(), label: taskLabel('loading.task.avatar', 'Loading wardrobe...') },
-                { promise: GetSoundManager().init(), label: taskLabel('loading.task.sounds', 'Loading sounds...') }
+                { promise: GetAssetManager().downloadAssets(assetUrls), label: taskLabel('loading.task.assets', 'Caricamento risorse di gioco...') },
+                { promise: GetLocalizationManager().init(), label: taskLabel('loading.task.localization', 'Caricamento traduzioni...') },
+                { promise: GetAvatarRenderManager().init(), label: taskLabel('loading.task.avatar', 'Caricamento guardaroba...') },
+                { promise: GetSoundManager().init(), label: taskLabel('loading.task.sounds', 'Caricamento suoni...') }
             ];
             let warmupDone = 0;
             const warmupStart = 25;
@@ -451,7 +451,7 @@ export const App: FC<{}> = props =>
                 hasUrlSso: !!new URLSearchParams(window.location.search).get('sso')
             });
 
-            const bootLabel = taskLabel('loader', 'Booting...');
+            const bootLabel = taskLabel('loader', 'Avvio in corso...');
             setLoadingProgress(0);
             setLoadingTask(bootLabel);
             bumpProgress(5, bootLabel);
@@ -482,7 +482,7 @@ export const App: FC<{}> = props =>
                     console.warn('[App] failed to persist remember token from URL', e);
                 }
 
-                bumpProgress(10, taskLabel('loading.task.session', 'Verifying session...'));
+                bumpProgress(10, taskLabel('loading.task.session', 'Verifica della sessione...'));
 
                 if(!ssoTicket || ssoTicket === '')
                 {
@@ -547,23 +547,23 @@ export const App: FC<{}> = props =>
                 }
 
                 const renderer = await startRenderer(width, height);
-                bumpProgress(20, taskLabel('loading.task.renderer', 'Initializing renderer...'));
+                bumpProgress(20, taskLabel('loading.task.renderer', 'Inizializzazione del renderer...'));
 
                 await startWarmup(width, height);
-                bumpProgress(70, taskLabel('loading.task.startsession', 'Starting session...'));
+                bumpProgress(70, taskLabel('loading.task.startsession', 'Avvio della sessione...'));
 
                 if(!gameInitPromiseRef.current)
                 {
                     gameInitPromiseRef.current = (async () =>
                     {
                         await GetSessionDataManager().init();
-                        bumpProgress(78, taskLabel('loading.task.userdata', 'Loading user data...'));
+                        bumpProgress(78, taskLabel('loading.task.userdata', 'Caricamento dati utente...'));
                         await GetRoomSessionManager().init();
-                        bumpProgress(85, taskLabel('loading.task.rooms', 'Loading rooms...'));
+                        bumpProgress(85, taskLabel('loading.task.rooms', 'Caricamento stanze...'));
                         await GetRoomEngine().init();
-                        bumpProgress(92, taskLabel('loading.task.engine', 'Loading graphics engine...'));
+                        bumpProgress(92, taskLabel('loading.task.engine', 'Caricamento del motore grafico...'));
                         await GetCommunication().init();
-                        bumpProgress(98, taskLabel('generic.reconnecting', 'Connecting to server...'));
+                        bumpProgress(98, taskLabel('generic.reconnecting', 'Connessione al server...'));
                     })();
                 }
 
@@ -592,7 +592,7 @@ export const App: FC<{}> = props =>
                     GetTicker().add(ticker => GetTexturePool().run());
                 }
 
-                bumpProgress(100, taskLabel('onboarding.button.ready', 'Ready!'));
+                bumpProgress(100, taskLabel('onboarding.button.ready', 'Pronto!'));
                 setIsReady(true);
                 setShowLogin(false);
                 setIsEnteringHotel(false);

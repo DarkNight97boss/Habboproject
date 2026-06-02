@@ -95,7 +95,12 @@ jobs:
             exit 1
           fi
           DEST="s3://${BUCKET}/${PREFIX}"
-          EXTRA="--size-only"
+          # Sync per size+mtime (NON --size-only): i filename sono content-hashed
+          # a lunghezza fissa, quindi un manifest/loader rigenerato può avere la
+          # stessa dimensione ma contenuto diverso — --size-only lo salterebbe,
+          # lasciando il bundle che referenzia i chunk vecchi. Il build CI dà
+          # mtime fresche → il sync di default ricarica correttamente i file cambiati.
+          EXTRA=""
           if [ "$DO_DELETE" = "true" ]; then
             echo "::warning::--delete attivo: oggetti non presenti in '$SRC' verranno RIMOSSI da $DEST"
             EXTRA="$EXTRA --delete"

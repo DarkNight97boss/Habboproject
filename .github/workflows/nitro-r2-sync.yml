@@ -62,6 +62,15 @@ jobs:
         working-directory: strumenti/Nitro-V3
         run: |
           corepack enable || npm i -g yarn
+          # Il client risolve pixi.js / howler / pixi-filters da
+          # ../Nitro_Render_V3/node_modules (vedi alias in vite.config.mjs):
+          # il renderer va quindi installato PRIMA del client, altrimenti il
+          # build fallisce con UNLOADABLE_DEPENDENCY.
+          if [ -d ../Nitro_Render_V3 ]; then
+            echo "::group::Install renderer (Nitro_Render_V3)"
+            ( cd ../Nitro_Render_V3 && ( yarn install --frozen-lockfile || yarn install ) )
+            echo "::endgroup::"
+          fi
           yarn install --frozen-lockfile
           yarn build
 

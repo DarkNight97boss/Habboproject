@@ -480,7 +480,31 @@ auth.get('/play', async c =>
     //    Usiamo JSON.stringify per escape pulito (no XSS via ticket).
     const ticketJson = JSON.stringify(ticket);
     const baseHref = `${CDN_BASE}/`;
-    const inject = `<base href="${baseHref}"><script>(function(){var t=${ticketJson},v;Object.defineProperty(window,'NitroConfig',{get:function(){return v},set:function(x){v=x;if(x&&typeof x==='object'){x['sso.ticket']=t}},configurable:true})})();</script>`;
+
+    // 3b. (DEV-only) Override socket.url verso l'EMU dev.
+    //
+    //   PROBLEMA: il client carica la config CONDIVISA dal CDN
+    //   (renderer-config.json) dove "socket.url" = wss://hotel.asteriacore.online/
+    //   (EMU di PROD). Su dev il client si connetterebbe quindi all'EMU prod
+    //   con un ticket dev → l'EMU rifiuta → schermata "session expired".
+    //
+    //   SOLUZIONE: se env.NITRO_SOCKET_URL è settata (SOLO dev), settiamo
+    //   socket.url DIRETTAMENTE nel base window.NitroConfig. Il
+    //   ConfigurationManager (Nitro_Render_V3) parsa il base con overrides=TRUE
+    //   PRIMA, poi i file di config.urls (renderer-config.json, …) con
+    //   overrides=FALSE — quindi un file NON sovrascrive una chiave già nel
+    //   base. Mettendo socket.url nel base, il socket.url=PROD di
+    //   renderer-config.json viene skippato → vince il nostro valore dev.
+    //   (NB: appendere a config.urls NON funziona — il merge dei file è
+    //   first-wins e renderer-config.json è il primo della lista.)
+    //
+    //   In PROD env.NITRO_SOCKET_URL è assente ⇒ overrideScript = '' ⇒ l'HTML
+    //   iniettato è identico a prima ⇒ comportamento di produzione invariato.
+    const overrideScript = env.NITRO_SOCKET_URL
+        ? `x['socket.url']=${JSON.stringify(env.NITRO_SOCKET_URL)};`
+        : '';
+
+    const inject = `<base href="${baseHref}"><script>(function(){var t=${ticketJson},v;Object.defineProperty(window,'NitroConfig',{get:function(){return v},set:function(x){v=x;if(x&&typeof x==='object'){x['sso.ticket']=t;${overrideScript}}},configurable:true})})();</script>`;
 
     const modified = nitroHtml.replace(/<head>/i, '<head>' + inject);
 

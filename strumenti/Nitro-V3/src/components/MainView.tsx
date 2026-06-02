@@ -1,7 +1,6 @@
 import { AddLinkEventTracker, GetCommunication, GetRoomSessionManager, HabboWebTools, ILinkEventTracker, RemoveLinkEventTracker, RoomSessionEvent } from '@nitrots/nitro-renderer';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FC, useEffect, useState } from 'react';
-import { GetConfigurationValue } from '../api';
 import { useNitroEventReducer } from '../hooks';
 import { AchievementsView } from './achievements/AchievementsView';
 import { AvatarEditorView } from './avatar-editor';
@@ -28,7 +27,6 @@ import { HousekeepingView } from './housekeeping/HousekeepingView';
 import { RareValuesView } from './rare-values/RareValuesView';
 import { FortuneWheelView } from './fortune-wheel/FortuneWheelView';
 import { SoundboardView } from './soundboard/SoundboardView';
-import { RadioView } from './radio/RadioView';
 import { InventoryView } from './inventory/InventoryView';
 import { ModToolsView } from './mod-tools/ModToolsView';
 import { NavigatorView } from './navigator/NavigatorView';
@@ -189,7 +187,6 @@ export const MainView: FC<{}> = props =>
             <RareValuesView />
             <FortuneWheelView />
             <SoundboardView />
-            { GetConfigurationValue<boolean>('radio_ui', true) && <RadioView /> }
             <ExternalPluginLoader />
             <StaffMfaView />
             <DailyStreakView />

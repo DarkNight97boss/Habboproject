@@ -401,3 +401,25 @@
         font-size: 0.55rem;
     }
 }
+
+/* ============================================================
+   ASTERIA — accento vetro coerente con la chrome delle finestre.
+   Il purse era già scuro/glass: aggiungiamo solo tinta viola/ciano
+   + blur + header con sfumatura Asteria.
+   ============================================================ */
+.nitro-purse {
+    border: 1px solid rgba(167, 139, 250, 0.28);
+    background: rgba(13, 16, 30, 0.62);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+}
+
+.nitro-purse__header {
+    background: linear-gradient(180deg, rgba(124, 58, 237, 0.22), rgba(34, 211, 238, 0.06));
+    border-bottom-color: rgba(167, 139, 250, 0.20);
+}
+
+.nitro-purse__header-toggle {
+    background: rgba(124, 58, 237, 0.25);
+}

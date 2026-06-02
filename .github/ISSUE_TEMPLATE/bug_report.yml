@@ -1,0 +1,42 @@
+name: 🐛 Bug report
+description: Segnala un problema su Asteria Core
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: Cosa succede
+      description: Descrizione del bug e comportamento atteso
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - EMU (game server)
+        - CMS-V3 web
+        - CMS-V3 api
+        - Nitro client
+        - Deploy / Infra
+        - Altro
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Ambiente
+      placeholder: prod / dev / locale
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passi per riprodurre
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log / screenshot
+      render: shell

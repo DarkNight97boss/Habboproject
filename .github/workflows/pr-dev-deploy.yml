@@ -54,6 +54,7 @@ concurrency:
 # -----------------------------------------------------------------------------
 permissions:
   contents: read
+  pull-requests: read   # detect-changes (dorny/paths-filter) lista i file della PR via API
 
 # -----------------------------------------------------------------------------
 # Variabili d'ambiente globali condivise tra job (host VPS, dominio dev, ecc.)

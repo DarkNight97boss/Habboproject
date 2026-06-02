@@ -1,0 +1,105 @@
+# Nitro → R2 — sync manuale degli asset del client Nitro V3 sul bucket R2.
+#
+# MANUALE (workflow_dispatch): builda Nitro V3 (opzionale) e carica una
+# directory sul bucket R2 dell'ambiente scelto, via API S3-compatibile di R2.
+#
+# ⚠️ GUARDRAIL DI SICUREZZA:
+#  - `--delete` è DISATTIVO di default. Attivarlo cancella dal bucket gli
+#    oggetti non presenti nel source: confermare il layout del bucket prima di
+#    usarlo (asteria-gamedata contiene anche i ~23K asset gamedata!).
+#  - `dest_prefix` permette di puntare a una sottocartella del bucket invece
+#    della root, per non mischiare app-build e gamedata.
+#  - Le chiavi R2 sono account-scoped (stesso pair per dev e prod): qui usiamo
+#    i secret repo R2_DEV_*; il bucket cambia in base a `target`.
+
+name: Nitro → R2 Sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Bucket R2 di destinazione'
+        type: choice
+        options: [ dev, prod ]
+        default: dev
+      source_path:
+        description: 'Directory locale da caricare'
+        type: string
+        default: 'strumenti/Nitro-V3/dist'
+      dest_prefix:
+        description: 'Prefisso (sottocartella) nel bucket — vuoto = root'
+        type: string
+        default: ''
+      build:
+        description: 'Builda Nitro prima del sync'
+        type: boolean
+        default: false
+      delete:
+        description: '⚠️ Cancella dal bucket gli oggetti non più presenti (DISTRUTTIVO)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    name: Sync ${{ inputs.source_path }} → R2 (${{ inputs.target }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 24
+        if: ${{ inputs.build }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Build Nitro V3
+        if: ${{ inputs.build }}
+        working-directory: strumenti/Nitro-V3
+        run: |
+          corepack enable || npm i -g yarn
+          yarn install --frozen-lockfile
+          yarn build
+
+      - name: Risolvi bucket
+        id: r2
+        run: |
+          if [ "${{ inputs.target }}" = "prod" ]; then
+            echo "bucket=asteria-gamedata" >> "$GITHUB_OUTPUT"
+          else
+            echo "bucket=asteria-gamedata-dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Sync su R2 (S3 API)
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_DEV_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_DEV_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          # R2 + aws-cli v2: disattiva il checksum CRC di default (R2 lo rifiuta).
+          AWS_REQUEST_CHECKSUM_CALCULATION: WHEN_REQUIRED
+          AWS_RESPONSE_CHECKSUM_VALIDATION: WHEN_REQUIRED
+          CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID }}
+          SRC: ${{ inputs.source_path }}
+          PREFIX: ${{ inputs.dest_prefix }}
+          BUCKET: ${{ steps.r2.outputs.bucket }}
+          DO_DELETE: ${{ inputs.delete }}
+        run: |
+          set -euo pipefail
+          ENDPOINT="https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          if [ ! -d "$SRC" ]; then
+            echo "::error::Directory sorgente '$SRC' inesistente. Abilita 'build' o committa la dist."
+            exit 1
+          fi
+          DEST="s3://${BUCKET}/${PREFIX}"
+          EXTRA="--size-only"
+          if [ "$DO_DELETE" = "true" ]; then
+            echo "::warning::--delete attivo: oggetti non presenti in '$SRC' verranno RIMOSSI da $DEST"
+            EXTRA="$EXTRA --delete"
+          fi
+          echo "Sync '$SRC' → '$DEST' (endpoint $ENDPOINT)"
+          aws s3 sync "$SRC" "$DEST" --endpoint-url "$ENDPOINT" $EXTRA
+          echo "::notice::Sync R2 completato verso bucket ${BUCKET}"

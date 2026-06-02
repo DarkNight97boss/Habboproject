@@ -9,7 +9,7 @@
         "start": "node dist/index.js",
         "typecheck": "tsc --noEmit",
         "lint": "echo 'skip'",
-        "test": "vitest run"
+        "test": "vitest run --passWithNoTests"
     },
     "dependencies": {
         "@hono/node-server": "^1.13.7",

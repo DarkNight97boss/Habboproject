@@ -87,7 +87,8 @@ shop.post('/checkout', requireAuth, async (c) =>
                     currency: item.currency.toLowerCase(),
                     product_data: {
                         name: item.name,
-                        description: item.description.substring(0, 500) || undefined
+                        // exactOptionalPropertyTypes: ometti description se vuota (no `| undefined`)
+                        ...(item.description ? { description: item.description.substring(0, 500) } : {})
                     },
                     unit_amount: item.price_cents
                 },
@@ -98,7 +99,7 @@ shop.post('/checkout', requireAuth, async (c) =>
             mode: 'payment',
             line_items: [lineItem],
             client_reference_id: String(user.id),
-            customer_email: user.mail || undefined,
+            ...(user.mail ? { customer_email: user.mail } : {}),
             metadata: {
                 user_id: String(user.id),
                 username: user.username,

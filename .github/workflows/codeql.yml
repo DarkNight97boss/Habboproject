@@ -1,16 +1,14 @@
-# CodeQL static analysis per Java.
+# CodeQL static analysis — Java/Kotlin (EMU) + JavaScript/TypeScript (CMS-V3 + Nitro).
 #
-# Gira a ogni push su main + ogni PR + settimanale (drift detection sui
-# CVE che escono dopo la nostra patch). I finding appaiono in Security ->
+# Gira a ogni push su main + ogni PR + settimanale (drift detection sui CVE
+# che escono dopo la nostra patch). I finding appaiono in Security →
 # Code scanning alerts sul repo GitHub.
 #
-# Costo: 0 per repo pubblici. Tempo medio per run: ~6-8 min su questo
-# codebase (~1800 file Java).
-#
-# Strategia query suite:
-#   - default + security-extended (vale i bug "ad alto rumore" come
-#     hardcoded password / weak crypto che la default skip-pa).
-#   - language: java-kotlin (CodeQL ha unificato i due nel 2024).
+# Strategia query suite: security-extended + security-and-quality (vale anche i
+# bug "ad alto rumore" come hardcoded password / weak crypto / XSS).
+# Matrix:
+#   - java-kotlin           → richiede build Maven (JDK 11, come storico).
+#   - javascript-typescript → nessun build, CodeQL analizza il source.
 
 name: CodeQL
 
@@ -19,14 +17,17 @@ on:
     branches: [ "main" ]
     paths:
       - 'EMU/**'
+      - 'CMS-V3/**'
+      - 'strumenti/Nitro-V3/**'
       - '.github/workflows/codeql.yml'
   pull_request:
     branches: [ "main" ]
     paths:
       - 'EMU/**'
+      - 'CMS-V3/**'
+      - 'strumenti/Nitro-V3/**'
   schedule:
-    # Lunedi alle 06:00 UTC (08:00 Roma). Cattura CVE pubblicate
-    # nel weekend prima che le veda l'utente.
+    # Lunedì alle 06:00 UTC (08:00 Roma).
     - cron: '0 6 * * 1'
 
 permissions:
@@ -36,15 +37,22 @@ permissions:
 
 jobs:
   analyze:
-    name: Analyze (Java)
+    name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: java-kotlin
+          - language: javascript-typescript
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up JDK 11
+        if: matrix.language == 'java-kotlin'
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -54,10 +62,11 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: java-kotlin
+          languages: ${{ matrix.language }}
           queries: security-extended,security-and-quality
 
-      - name: Build EMU
+      - name: Build EMU (Java)
+        if: matrix.language == 'java-kotlin'
         run: |
           cd EMU
           mvn -B -DskipTests -Dmaven.javadoc.skip=true package
@@ -65,4 +74,4 @@ jobs:
       - name: Run CodeQL analysis
         uses: github/codeql-action/analyze@v3
         with:
-          category: "/language:java-kotlin"
+          category: "/language:${{ matrix.language }}"

@@ -1,0 +1,41 @@
+# Secret scanning — gitleaks su PR, push e settimanale.
+#
+# Cattura credenziali committate per errore (chiavi SSH, token Cloudflare/R2,
+# password DB, webhook). Particolarmente utile in questo repo dove girano
+# parecchi secret durante setup e deploy.
+#
+# Su account personali gitleaks-action è gratuito (nessuna GITLEAKS_LICENSE).
+# I finding compaiono nel log del job e, se configurato, come SARIF in
+# Security → Code scanning.
+
+name: Secret Scan
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+  schedule:
+    # Lunedì 05:00 UTC — drift detection settimanale.
+    - cron: '0 5 * * 1'
+
+permissions:
+  contents: read
+  pull-requests: read   # gitleaks-action lista i commit della PR via API
+
+jobs:
+  gitleaks:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

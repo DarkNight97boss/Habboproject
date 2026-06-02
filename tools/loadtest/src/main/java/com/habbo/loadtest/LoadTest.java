@@ -56,7 +56,8 @@ public final class LoadTest {
             exec.submit(() -> {
                 long t0 = System.nanoTime();
                 inflight.incrementAndGet();
-                try (Socket s = new Socket()) {
+                // Tool di load-test: il protocollo del game server è TCP plain.
+                try (Socket s = new Socket()) { // nosemgrep
                     s.connect(addr, a.connectTimeoutMs);
                     long dt = System.nanoTime() - t0;
                     samples[idx] = dt;

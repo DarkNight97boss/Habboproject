@@ -638,7 +638,8 @@ SQL
     # Seed staff dev
     mysql_cmd <<'SQL'
 INSERT IGNORE INTO users (username, password, mail, account_created, rank)
-VALUES ('devstaff', '$2a$10$placeholderhashreplaceonloginflowbcryptcost10aaaaaaaaaaaaaaaaa', 'dev@asteriacore.online', UNIX_TIMESTAMP(), 7);
+-- placeholder dev (sostituito al primo login), non un secret reale:
+VALUES ('devstaff', '$2a$10$placeholderhashreplaceonloginflowbcryptcost10aaaaaaaaaaaaaaaaa', 'dev@asteriacore.online', UNIX_TIMESTAMP(), 7); # nosemgrep
 SQL
 
 elif [[ "$MODE" == "tracked" ]]; then

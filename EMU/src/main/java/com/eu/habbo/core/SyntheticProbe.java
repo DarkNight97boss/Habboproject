@@ -85,7 +85,8 @@ public final class SyntheticProbe {
             int timeoutMs = Emulator.getConfig().getInt("synthetic.probe.timeout_ms", 2000);
 
             long t0 = System.nanoTime();
-            try (Socket s = new Socket()) {
+            // Health probe verso 127.0.0.1 (loopback): TLS non pertinente.
+            try (Socket s = new Socket()) { // nosemgrep
                 s.setSoTimeout(timeoutMs);
                 s.connect(new InetSocketAddress(host, port), timeoutMs);
                 long dt = System.nanoTime() - t0;

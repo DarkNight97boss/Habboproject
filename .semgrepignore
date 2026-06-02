@@ -6,6 +6,10 @@
 strumenti/Arcturus-Community/
 strumenti/Nitro-Default/
 
+# Nitro V3 è un sotto-progetto con branch, CI e SAST propri (.github/workflows
+# nel suo repo): si scansiona da sé, non dal repo padre.
+strumenti/Nitro-V3/
+
 # JS/asset vendored del vecchio CMS PHP (jQuery, UIkit, ...)
 CMS/app/tpl/skins/ZabboME/assets/
 

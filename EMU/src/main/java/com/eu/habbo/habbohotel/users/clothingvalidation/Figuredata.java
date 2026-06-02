@@ -58,7 +58,9 @@ public class Figuredata {
             factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
             factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
         } catch (IllegalArgumentException ignored) {}
-        DocumentBuilder builder = factory.newDocumentBuilder();
+        // XXE: la factory è già hardenata sopra (righe 47-60: disallow-doctype-decl,
+        // no external entities, secure-processing). Falso positivo del pattern Semgrep.
+        DocumentBuilder builder = factory.newDocumentBuilder(); // nosemgrep
         Document document = builder.parse(uri);
 
         Element rootElement = document.getDocumentElement();

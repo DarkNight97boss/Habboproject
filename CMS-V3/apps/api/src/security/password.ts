@@ -26,7 +26,8 @@ const BCRYPT_COST = 12;
  * esiste, dobbiamo comunque "perdere tempo" per non rivelarlo al chiamante
  * via timing oracle). Pre-generato con bcrypt.hashSync(rand_str, 12).
  */
-const TIMING_SAFE_DUMMY_HASH = '$2b$12$FH1ojtNyKLf2XHfyQA8hxukJzZL9TPsBSZetDTmasd5nFJSmto4L2';
+// Dummy hash per timing-safe verify: NON è un credential reale.
+const TIMING_SAFE_DUMMY_HASH = '$2b$12$FH1ojtNyKLf2XHfyQA8hxukJzZL9TPsBSZetDTmasd5nFJSmto4L2'; // nosemgrep
 
 export async function hashPassword(plain: string): Promise<string>
 {

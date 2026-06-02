@@ -1,0 +1,64 @@
+# Semgrep SAST — sostituisce CodeQL (che su repo privato richiede GitHub
+# Advanced Security, non disponibile sul piano Free).
+#
+# Semgrep gira SENZA account né GHAS: usa i ruleset OSS della Registry
+# (env SEMGREP_RULES) e NON carica nulla su GitHub code scanning.
+#
+#  - Sulle PR: scan DIFF-AWARE (semgrep ci rileva la base) → blocca solo i
+#    NUOVI finding introdotti dalla PR, non il debito legacy preesistente.
+#  - Schedule / manuale: full scan dell'intero repo ma INFORMATIVO
+#    (continue-on-error) → niente badge rosso perenne per il legacy.
+#
+# Copre Java (EMU) + TypeScript/React (CMS-V3, Nitro).
+# I finding compaiono nel log del job. Per la dashboard cloud (opzionale)
+# basta aggiungere il secret SEMGREP_APP_TOKEN: semgrep ci lo usa in automatico.
+
+name: Semgrep
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '0 6 * * 1'   # lunedì 06:00 UTC — full scan settimanale
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: semgrep-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  semgrep:
+    name: Semgrep SAST
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Le PR di Dependabot sono bump di dipendenze (niente codice da analizzare)
+    # e girano con token ridotto → le saltiamo.
+    if: github.actor != 'dependabot[bot]'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # storia completa per il diff-aware sulle PR
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Semgrep
+        run: pip install --quiet semgrep
+
+      - name: Semgrep scan
+        run: semgrep ci
+        # PR → blocca i nuovi finding; schedule/manuale → solo informativo.
+        continue-on-error: ${{ github.event_name != 'pull_request' }}
+        env:
+          SEMGREP_RULES: >-
+            p/security-audit
+            p/secrets
+            p/java
+            p/typescript
+            p/react

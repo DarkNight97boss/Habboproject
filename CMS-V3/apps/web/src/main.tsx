@@ -26,23 +26,30 @@ import { StaticInfoPage } from './routes/StaticInfoPage';
 import { AsteriaLeaderboardPage } from './asteria/AsteriaLeaderboardPage';
 import { AsteriaLoginPage } from './asteria/AsteriaLoginPage';
 import { AsteriaMePage } from './asteria/AsteriaMePage';
-import { AsteriaPlaceholderPage } from './asteria/AsteriaPlaceholderPage';
 import { AsteriaRegistrationPage } from './asteria/AsteriaRegistrationPage';
 import { AsteriaShopPage } from './asteria/AsteriaShopPage';
 import { AsteriaShopCancelPage, AsteriaShopSuccessPage } from './asteria/AsteriaShopResultPages';
+import { AsteriaArticlesPage } from './asteria/AsteriaArticlesPage';
+import { AsteriaArticlePage } from './asteria/AsteriaArticlePage';
+import { AsteriaProfilePage } from './asteria/AsteriaProfilePage';
+import { AsteriaSettingsPage } from './asteria/AsteriaSettingsPage';
+import { AsteriaPhotosPage } from './asteria/AsteriaPhotosPage';
+import { AsteriaRoomsPage } from './asteria/AsteriaRoomsPage';
+import { AsteriaPhotoDetailPage } from './asteria/AsteriaPhotoDetailPage';
+import { AsteriaPurchasesPage } from './asteria/AsteriaPurchasesPage';
+import { AsteriaGuidePage, AsteriaHelpPage, AsteriaCollectiblesPage, AsteriaStaticInfoPage, AsteriaMessagingPage, AsteriaForumPage, AsteriaPrepaidPage } from './asteria/AsteriaContentPages';
 import { hydrateSkin } from './lib/skin';
 import { useSkin } from './hooks/useSkin';
 import { type ReactNode } from 'react';
-import './styles/themes.css';
 import './styles/skin-engine.css';
 
+// Asteria: suite pagine completa (profilo, settings, community, shop, guida, info).
 // NB: il CSS ufficiale habbo.it (app.a8ea7435.css) è caricato direttamente
 // in index.html via <link>. Niente Tailwind/global.css qui — sarebbero
 // override imprevedibili sopra la CSS ufficiale.
 //
-// ECCEZIONI: themes.css (legacy v1, palette only) + skin-engine.css (v2,
-// consuma CSS vars scritte da applySkin a runtime). Hydratiamo lo skin
-// cached PRIMA del render React per evitare FOUC.
+// ECCEZIONE: skin-engine.css (v2, consuma CSS vars scritte da applySkin a
+// runtime). Hydratiamo lo skin cached PRIMA del render React per evitare FOUC.
 hydrateSkin();
 
 const queryClient = new QueryClient({
@@ -90,28 +97,28 @@ createRoot(root).render(
                     <Route path="/registration" element={<SkinAware asteria={<AsteriaRegistrationPage />} classic={<RegistrationPage />} />} />
                     <Route path="/me" element={<SkinAware asteria={<AsteriaMePage />} classic={<ToHomeRedirect />} />} />
                     <Route path="/leaderboard" element={<SkinAware asteria={<AsteriaLeaderboardPage />} classic={<ToHomeRedirect />} />} />
-                    <Route path="/messaging" element={<SkinAware asteria={<AsteriaPlaceholderPage title="Messaggi" eyebrow="Inbox" subtitle="Sistema messaggistica privata in arrivo. Per ora usa la chat in-game." activeNav="home" />} classic={<MessagingPage />} />} />
+                    <Route path="/messaging" element={<SkinAware asteria={<AsteriaMessagingPage />} classic={<MessagingPage />} />} />
                     <Route path="/community" element={<Navigate to="/community/photos" replace />} />
-                    <Route path="/community/photos" element={<SkinAware asteria={<AsteriaPlaceholderPage title="Photos" eyebrow="Community · Photo" subtitle="Galleria foto dalla community Asteria. Sezione design proprietario in arrivo." activeNav="community" />} classic={<CommunityPhotosPage />} />} />
-                    <Route path="/community/rooms" element={<SkinAware asteria={<AsteriaPlaceholderPage title="Stanze" eyebrow="Community · Rooms" subtitle="Top rooms della community. Vai sul client per esplorarle live." activeNav="community" />} classic={<CommunityRoomsPage />} />} />
-                    <Route path="/community/forum" element={<SkinAware asteria={<AsteriaPlaceholderPage title="Forum" eyebrow="Community · Forum" subtitle="Forum gruppi e discussioni. Sezione in design." activeNav="community" />} classic={<CommunityForumPage />} />} />
+                    <Route path="/community/photos" element={<SkinAware asteria={<AsteriaPhotosPage />} classic={<CommunityPhotosPage />} />} />
+                    <Route path="/community/rooms" element={<SkinAware asteria={<AsteriaRoomsPage />} classic={<CommunityRoomsPage />} />} />
+                    <Route path="/community/forum" element={<SkinAware asteria={<AsteriaForumPage />} classic={<CommunityForumPage />} />} />
                     <Route path="/community/category" element={<Navigate to="/community/category/all" replace />} />
-                    <Route path="/community/category/:category" element={<SkinAware asteria={<AsteriaPlaceholderPage title="News" eyebrow="Community · News" subtitle="Tutte le news Asteria suddivise per categoria." activeNav="community" />} classic={<CommunityNewsPage />} />} />
-                    <Route path="/community/article/:slug" element={<SkinAware asteria={<AsteriaPlaceholderPage title="Articolo" eyebrow="News" subtitle="Lettura articolo singolo con design proprietario in arrivo." activeNav="community" />} classic={<CommunityArticlePage />} />} />
+                    <Route path="/community/category/:category" element={<SkinAware asteria={<AsteriaArticlesPage />} classic={<CommunityNewsPage />} />} />
+                    <Route path="/community/article/:slug" element={<SkinAware asteria={<AsteriaArticlePage />} classic={<CommunityArticlePage />} />} />
                     <Route path="/shop" element={<SkinAware asteria={<AsteriaShopPage />} classic={<ShopPage />} />} />
                     <Route path="/shop/success" element={<AsteriaShopSuccessPage />} />
                     <Route path="/shop/cancel" element={<AsteriaShopCancelPage />} />
-                    <Route path="/shop/prepagate" element={<SkinAware asteria={<AsteriaPlaceholderPage title="Prepagate" eyebrow="Shop" subtitle="Codici prepagati e voucher. Inserisci il tuo codice nello shop principale." activeNav="shop" />} classic={<ShopPrepaidPage />} />} />
-                    <Route path="/shop/acquisti" element={<SkinAware asteria={<AsteriaPlaceholderPage title="I tuoi acquisti" eyebrow="Shop" subtitle="Vedi la cronologia ordini nel tuo profilo." activeNav="shop" />} classic={<ShopPurchasesPage />} />} />
-                    <Route path="/playing-habbo" element={<SkinAware asteria={<AsteriaPlaceholderPage title="Guida" eyebrow="Playing Asteria" subtitle="Tutto quello che devi sapere per iniziare." activeNav="guida" />} classic={<PlayingHabboPage />} />} />
-                    <Route path="/playing-habbo/:slug" element={<SkinAware asteria={<AsteriaPlaceholderPage title="Info" eyebrow="Playing Asteria" subtitle="Sezione informativa." activeNav="guida" />} classic={<StaticInfoPage />} />} />
-                    <Route path="/help/:slug" element={<SkinAware asteria={<AsteriaPlaceholderPage title="Aiuto" eyebrow="Help · Articolo" activeNav="guida" />} classic={<StaticInfoPage />} />} />
-                    <Route path="/habbo-nft" element={<SkinAware asteria={<AsteriaPlaceholderPage title="Collezionabili" eyebrow="NFT · Drop" subtitle="Asset esclusivi della community Asteria. Sezione in arrivo." activeNav="collezionabili" />} classic={<CollectiblesPage />} />} />
-                    <Route path="/profile/:username" element={<SkinAware asteria={<AsteriaPlaceholderPage title="Profilo" eyebrow="Profilo pubblico" subtitle="Pagina profilo Asteria-style in arrivo. Per ora vedi il tuo /me." activeNav="home" />} classic={<ProfilePage />} />} />
-                    <Route path="/profile/:user/photo/:id" element={<SkinAware asteria={<AsteriaPlaceholderPage title="Foto" eyebrow="Photo detail" activeNav="community" />} classic={<PhotoDetailPage />} />} />
+                    <Route path="/shop/prepagate" element={<SkinAware asteria={<AsteriaPrepaidPage />} classic={<ShopPrepaidPage />} />} />
+                    <Route path="/shop/acquisti" element={<SkinAware asteria={<AsteriaPurchasesPage />} classic={<ShopPurchasesPage />} />} />
+                    <Route path="/playing-habbo" element={<SkinAware asteria={<AsteriaGuidePage />} classic={<PlayingHabboPage />} />} />
+                    <Route path="/playing-habbo/:slug" element={<SkinAware asteria={<AsteriaStaticInfoPage />} classic={<StaticInfoPage />} />} />
+                    <Route path="/help/:slug" element={<SkinAware asteria={<AsteriaStaticInfoPage />} classic={<StaticInfoPage />} />} />
+                    <Route path="/habbo-nft" element={<SkinAware asteria={<AsteriaCollectiblesPage />} classic={<CollectiblesPage />} />} />
+                    <Route path="/profile/:username" element={<SkinAware asteria={<AsteriaProfilePage />} classic={<ProfilePage />} />} />
+                    <Route path="/profile/:user/photo/:id" element={<SkinAware asteria={<AsteriaPhotoDetailPage />} classic={<PhotoDetailPage />} />} />
                     <Route path="/settings" element={<Navigate to="/settings/privacy" replace />} />
-                    <Route path="/settings/:section" element={<SkinAware asteria={<AsteriaPlaceholderPage title="Impostazioni" eyebrow="Settings" subtitle="Privacy, sicurezza, account. Sezione in design proprietario." activeNav="home" />} classic={<SettingsPage />} />} />
-                    <Route path="/help" element={<SkinAware asteria={<AsteriaPlaceholderPage title="Help center" eyebrow="Aiuto" subtitle="Domande frequenti e supporto." activeNav="guida" />} classic={<HelpPage />} />} />
+                    <Route path="/settings/:section" element={<SkinAware asteria={<AsteriaSettingsPage />} classic={<SettingsPage />} />} />
+                    <Route path="/help" element={<SkinAware asteria={<AsteriaHelpPage />} classic={<HelpPage />} />} />
                     <Route path="/admin" element={<StaffPanelPage />} />
                     <Route path="/admin/:section" element={<StaffPanelPage />} />
                     <Route path="*" element={<NotFoundPage />} />

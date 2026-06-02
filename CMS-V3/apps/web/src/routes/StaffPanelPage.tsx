@@ -23,7 +23,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Navigate, NavLink, useParams } from 'react-router';
-import { AuthedShell } from '../components/AuthedShell';
 import { SkinPicker } from '../components/SkinPicker';
 import { avatarUrl, useAuth } from '../hooks/useAuth';
 import '../styles/admin.css';
@@ -41,39 +40,43 @@ export function StaffPanelPage(): ReactNode
     if(!user) return <Navigate to="/" replace />;
     if(user.rank < 5) return <Navigate to="/" replace />;
 
+    // Standalone: NESSUNA chrome habbo/AuthedShell → il pannello è indipendente
+    // dallo skin del sito (design proprio in admin.css).
     return (
-        <AuthedShell user={user}>
-            <habbo-web-pages>
-                <div className="admin-shell">
-                    <Sidebar />
-                    <main className="admin-main">
-                        <header className="admin-header">
-                            <div>
-                                <h1 className="admin-header__title">Pannello Amministrazione</h1>
-                                <p className="admin-header__subtitle">
-                                    Strumenti staff Arcturus · porting CMS legacy housekeeping
-                                </p>
-                            </div>
-                            <div>
-                                <span className="admin-header__badge">RANK {user.rank}</span>
-                            </div>
-                        </header>
-
-                        {section === 'overview'   && <OverviewSection />}
-                        {section === 'users'      && <UsersSection />}
-                        {section === 'bans'       && <BansSection />}
-                        {section === 'logs'       && <LogsSection />}
-                        {section === 'iptool'     && <IpToolSection />}
-                        {section === 'wordfilter' && <WordfilterSection />}
-                        {section === 'vouchers'   && <VouchersSection />}
-                        {section === 'news'       && <NewsSection />}
-                        {section === 'staff'      && <StaffListSection />}
-                        {section === 'actions'    && <ActionsSection />}
-                        {section === 'appearance' && <AppearanceSection />}
-                    </main>
+        <div className="admin-root">
+            <div className="admin-topbar">
+                <div className="admin-topbar__brand"><span className="admin-topbar__logo">✦</span> Asteria <strong>Admin</strong></div>
+                <div className="admin-topbar__right">
+                    <span className="admin-topbar__user">{user.username}</span>
+                    <span className="admin-header__badge">RANK {user.rank}</span>
+                    <a href="/" className="admin-btn admin-btn--ghost admin-btn--small">← Torna al sito</a>
                 </div>
-            </habbo-web-pages>
-        </AuthedShell>
+            </div>
+            <div className="admin-shell">
+                <Sidebar />
+                <main className="admin-main">
+                    <header className="admin-header">
+                        <div>
+                            <h1 className="admin-header__title">Pannello Amministrazione</h1>
+                            <p className="admin-header__subtitle">Strumenti staff · gestione hotel Asteria</p>
+                        </div>
+                        <div><span className="admin-header__badge">RANK {user.rank}</span></div>
+                    </header>
+
+                    {section === 'overview'   && <OverviewSection />}
+                    {section === 'users'      && <UsersSection />}
+                    {section === 'bans'       && <BansSection />}
+                    {section === 'logs'       && <LogsSection />}
+                    {section === 'iptool'     && <IpToolSection />}
+                    {section === 'wordfilter' && <WordfilterSection />}
+                    {section === 'vouchers'   && <VouchersSection />}
+                    {section === 'news'       && <NewsSection />}
+                    {section === 'staff'      && <StaffListSection />}
+                    {section === 'actions'    && <ActionsSection />}
+                    {section === 'appearance' && <AppearanceSection />}
+                </main>
+            </div>
+        </div>
     );
 }
 

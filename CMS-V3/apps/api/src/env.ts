@@ -60,7 +60,17 @@ const envSchema = z.object({
     // <base href> per far risolvere tutti gli asset relativi dal CDN.
     // Default: cdn.asteriacore.online (production). Per dev: override con
     // dev-cdn.asteriacore.online o test bucket separato.
-    CDN_BASE_URL: z.string().url().default('https://cdn.asteriacore.online')
+    CDN_BASE_URL: z.string().url().default('https://cdn.asteriacore.online'),
+
+    // DEV-only: WebSocket dell'EMU dev per il client Nitro. Quando settata
+    // (solo ambiente dev), /play appende a `config.urls` un override che forza
+    // `socket.url` su questo valore. Serve perché il client dev carica la
+    // config CONDIVISA dal CDN (renderer-config.json) dove `socket.url` punta
+    // all'EMU di PRODUZIONE (wss://hotel.asteriacore.online); senza override il
+    // client dev si connetterebbe all'EMU prod con un ticket dev → "session
+    // expired". In PROD questa var NON va settata: assente ⇒ /play non inietta
+    // nulla ⇒ comportamento invariato. Es. dev: wss://dev-hotel.asteriacore.online/websockets
+    NITRO_SOCKET_URL: z.string().optional()
 });
 
 const parsed = envSchema.safeParse(process.env);

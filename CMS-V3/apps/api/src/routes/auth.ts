@@ -480,7 +480,31 @@ auth.get('/play', async c =>
     //    Usiamo JSON.stringify per escape pulito (no XSS via ticket).
     const ticketJson = JSON.stringify(ticket);
     const baseHref = `${CDN_BASE}/`;
-    const inject = `<base href="${baseHref}"><script>(function(){var t=${ticketJson},v;Object.defineProperty(window,'NitroConfig',{get:function(){return v},set:function(x){v=x;if(x&&typeof x==='object'){x['sso.ticket']=t}},configurable:true})})();</script>`;
+
+    // 3b. (DEV-only) Override socket.url verso l'EMU dev.
+    //
+    //   PROBLEMA: il client carica la config CONDIVISA dal CDN
+    //   (renderer-config.json) dove "socket.url" = wss://hotel.asteriacore.online/
+    //   (EMU di PROD). Su dev il client si connetterebbe quindi all'EMU prod
+    //   con un ticket dev → l'EMU rifiuta → schermata "session expired".
+    //
+    //   SOLUZIONE: se env.NITRO_SOCKET_URL è settata (SOLO dev), appendiamo a
+    //   `config.urls` un override inline (data: URL con {"socket.url": <ws dev>}).
+    //   GetConfiguration().init() (bootstrap.ts) fetcha le config.urls IN ORDINE
+    //   e mergia con last-wins, quindi l'override appeso per ultimo vince su
+    //   renderer-config.json. Il data: URL non passa dal secure-fetch (non è
+    //   /api/ né /nitro-sec/file) → fetch nativo, nessun blocco.
+    //
+    //   In PROD env.NITRO_SOCKET_URL è assente ⇒ overrideScript = '' ⇒ l'HTML
+    //   iniettato è identico a prima ⇒ comportamento di produzione invariato.
+    const overrideUrl = env.NITRO_SOCKET_URL
+        ? 'data:application/json,' + encodeURIComponent(JSON.stringify({ 'socket.url': env.NITRO_SOCKET_URL }))
+        : '';
+    const overrideScript = overrideUrl
+        ? `if(Array.isArray(x['config.urls'])){x['config.urls']=x['config.urls'].concat([${JSON.stringify(overrideUrl)}])}`
+        : '';
+
+    const inject = `<base href="${baseHref}"><script>(function(){var t=${ticketJson},v;Object.defineProperty(window,'NitroConfig',{get:function(){return v},set:function(x){v=x;if(x&&typeof x==='object'){x['sso.ticket']=t;${overrideScript}}},configurable:true})})();</script>`;
 
     const modified = nitroHtml.replace(/<head>/i, '<head>' + inject);
 

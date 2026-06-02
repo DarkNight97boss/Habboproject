@@ -1,0 +1,26 @@
+# Config per actions/labeler@v5 — etichetta automaticamente le PR per area.
+# Le label devono esistere nel repo (vengono create con `gh label create`).
+
+'area: emu':
+  - changed-files:
+      - any-glob-to-any-file: 'EMU/**'
+
+'area: cms-v3':
+  - changed-files:
+      - any-glob-to-any-file: 'CMS-V3/**'
+
+'area: nitro':
+  - changed-files:
+      - any-glob-to-any-file: ['strumenti/Nitro-V3/**', 'client-patches/**']
+
+'area: ci':
+  - changed-files:
+      - any-glob-to-any-file: '.github/**'
+
+'area: deploy':
+  - changed-files:
+      - any-glob-to-any-file: ['deploy/**', 'docker-compose.yml', '*.ps1']
+
+'area: sql':
+  - changed-files:
+      - any-glob-to-any-file: ['**/*.sql', '**/migrations/**']

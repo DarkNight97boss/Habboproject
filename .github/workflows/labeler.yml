@@ -1,0 +1,23 @@
+# Auto-labeler — applica label "area: *" alle PR in base ai file toccati.
+# Config in .github/labeler.yml. Le PR di questo repo arrivano da branch interni
+# (autori in allowlist), quindi `pull_request` con token write è sufficiente.
+
+name: Labeler
+
+on:
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  label:
+    name: Apply area labels
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/labeler@v5
+        with:
+          sync-labels: true

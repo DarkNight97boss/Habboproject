@@ -144,7 +144,7 @@ jobs:
       nitro: ${{ steps.filter.outputs.nitro }}
     steps:
       - name: Checkout (shallow, serve solo per il filter)
-        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.1.0
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
         with:
           fetch-depth: 2
 
@@ -198,7 +198,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sparse (solo EMU/)
-        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.1.0
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           sparse-checkout: |
@@ -236,7 +236,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sparse (solo CMS-V3/)
-        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.1.0
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           sparse-checkout: |
@@ -283,7 +283,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sparse (solo CMS-V3/)
-        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.1.0
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           sparse-checkout: |

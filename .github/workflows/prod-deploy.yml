@@ -169,7 +169,7 @@ jobs:
       nitro: ${{ steps.filter.outputs.nitro || steps.force.outputs.nitro }}
     steps:
       - name: Checkout (full history per diff path-filter)
-        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.1.0
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
         with:
           ref: ${{ needs.guard.outputs.deploy_sha }}
           fetch-depth: 0   # necessario per dorny/paths-filter su push
@@ -233,7 +233,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.1.0
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
         with:
           ref: ${{ needs.guard.outputs.deploy_sha }}
 
@@ -290,7 +290,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.1.0
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
         with:
           ref: ${{ needs.guard.outputs.deploy_sha }}
 
@@ -354,7 +354,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.1.0
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
         with:
           ref: ${{ needs.guard.outputs.deploy_sha }}
 
@@ -419,7 +419,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.1.0
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
         with:
           ref: ${{ needs.guard.outputs.deploy_sha }}
 
@@ -1141,7 +1141,7 @@ jobs:
       contents: write    # necessario per creare tag + release
     steps:
       - name: Checkout (full history per git log)
-        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.1.0
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
         with:
           ref: ${{ needs.guard.outputs.deploy_sha }}
           fetch-depth: 0

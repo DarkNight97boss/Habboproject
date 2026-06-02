@@ -40,6 +40,7 @@ import { AsteriaPurchasesPage } from './asteria/AsteriaPurchasesPage';
 import { AsteriaGuidePage, AsteriaHelpPage, AsteriaCollectiblesPage, AsteriaStaticInfoPage, AsteriaMessagingPage, AsteriaForumPage, AsteriaPrepaidPage } from './asteria/AsteriaContentPages';
 import { hydrateSkin } from './lib/skin';
 import { useSkin } from './hooks/useSkin';
+import { RouteTitle } from './components/RouteTitle';
 import { type ReactNode } from 'react';
 import './styles/skin-engine.css';
 
@@ -91,6 +92,7 @@ createRoot(root).render(
         <QueryClientProvider client={queryClient}>
             <ThemeApplier />
             <BrowserRouter>
+                <RouteTitle />
                 <Routes>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/login" element={<SkinAware asteria={<AsteriaLoginPage />} classic={<ToHomeRedirect />} />} />

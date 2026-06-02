@@ -24,6 +24,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Navigate, NavLink, useParams } from 'react-router';
 import { AuthedShell } from '../components/AuthedShell';
+import { SkinPicker } from '../components/SkinPicker';
 import { avatarUrl, useAuth } from '../hooks/useAuth';
 import '../styles/admin.css';
 
@@ -68,6 +69,7 @@ export function StaffPanelPage(): ReactNode
                         {section === 'news'       && <NewsSection />}
                         {section === 'staff'      && <StaffListSection />}
                         {section === 'actions'    && <ActionsSection />}
+                        {section === 'appearance' && <AppearanceSection />}
                     </main>
                 </div>
             </habbo-web-pages>
@@ -97,6 +99,7 @@ function Sidebar(): ReactNode
             <ul className="admin-sidebar__nav">
                 {item('/admin', '◉', 'Panoramica')}
                 {item('/admin/actions', '⚡', 'Azioni rapide')}
+                {item('/admin/appearance', '◈', 'Aspetto sito')}
             </ul>
 
             <div className="admin-sidebar__group">Moderazione</div>
@@ -123,6 +126,19 @@ function Sidebar(): ReactNode
                 {item('/admin/staff', '★', 'Staff')}
             </ul>
         </nav>
+    );
+}
+
+// =====================================================================
+// SECTION — APPEARANCE (tema sito globale)
+// =====================================================================
+function AppearanceSection(): ReactNode
+{
+    return (
+        <div className="admin-section">
+            <h2 className="admin-section__title">Aspetto del sito (Skin Engine)</h2>
+            <SkinPicker />
+        </div>
     );
 }
 

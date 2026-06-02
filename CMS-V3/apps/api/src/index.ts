@@ -12,7 +12,12 @@ import authRoute from './routes/auth.js';
 import communityRoute from './routes/community.js';
 import meRoute from './routes/me.js';
 import profileRoute from './routes/profile.js';
+import shopRoute from './routes/shop.js';
+import siteRoute from './routes/site.js';
+import { skinSiteRoutes, default as skinsListRoute } from './routes/skin.js';
 import staffRoute from './routes/staff.js';
+import { ensureShopSeeded } from './services/shop-seed.js';
+import { ensureSkinsSeeded } from './services/skin-seed.js';
 
 const log = pino({
     level: env.LOG_LEVEL,
@@ -48,6 +53,10 @@ app.route('/api/v2/auth', authRoute);
 app.route('/api/v2/me', meRoute);
 app.route('/api/v2/community', communityRoute);
 app.route('/api/v2/profile', profileRoute);
+app.route('/api/v2/shop', shopRoute);
+app.route('/api/v2/site', siteRoute);
+app.route('/api/v2/site', skinSiteRoutes);
+app.route('/api/v2/skins', skinsListRoute);
 app.route('/api/v2/staff', staffRoute);
 
 // === 404 fallback ===
@@ -71,6 +80,17 @@ const server = serve({
     log.info(`✅ CMS-V3 API listening on http://${info.address}:${info.port}`);
     log.info(`   Env: ${env.NODE_ENV} | DB: ${env.DB_HOST}:${env.DB_PORT}/${env.DB_NAME}`);
     log.info(`   Allowed origins: ${env.ALLOWED_ORIGINS.join(', ')}`);
+
+    // Auto-seed dei 3 skin builtin (idempotente). Esegue UPDATE se i manifest
+    // sono cambiati nel codice — così deploy aggiorna automaticamente i temi
+    // builtin senza migration manuale.
+    ensureSkinsSeeded()
+        .then(() => log.info('   Skin Engine: builtin skins seeded'))
+        .catch(e => log.error({ err: e }, 'failed to seed builtin skins'));
+
+    ensureShopSeeded()
+        .then(() => log.info('   Shop: catalog seeded'))
+        .catch(e => log.error({ err: e }, 'failed to seed shop catalog'));
 });
 
 // Graceful shutdown

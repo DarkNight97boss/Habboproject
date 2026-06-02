@@ -1,0 +1,239 @@
+/**
+ * Theme system CMS-V3.
+ *
+ * Il CSS ufficiale habbo.it ha selettori con specificità alta — qui usiamo
+ * override mirati per host (body, .wrapper, header, footer, link) sotto
+ * `html[data-theme="..."]` con specificità (id+class) sufficiente per
+ * vincere senza !important quando possibile.
+ *
+ * Tema default = "habbo-classico" (palette habbo.it originale). NO override
+ * applicati: i selettori sotto restano inerti se data-theme non è settato
+ * (graceful fallback).
+ *
+ * Aggiungere nuovo tema: copia un blocco [data-theme="..."], cambia le
+ * variabili --theme-*, e le regole sotto fanno l'override automatico.
+ */
+
+/* ============================================================
+   Variabili tema (default = habbo-classico)
+   ============================================================ */
+html[data-theme="habbo-classico"] {
+    --theme-page-bg: #0c3a65;
+    --theme-page-fg: #7ECAEE;
+    --theme-header-bg: #0a3b6e;
+    --theme-header-fg: #FFFFFF;
+    --theme-navtop-bg: #E8F0F5;
+    --theme-navtop-fg: #0a3b6e;
+    --theme-navsub-bg: #0A1620;
+    --theme-navsub-fg: #7ECAEE;
+    --theme-card-bg: #102f4d;
+    --theme-card-border: #A1B5C8;
+    --theme-card-header-bg: #2A6495;
+    --theme-card-header-fg: #FFFFFF;
+    --theme-accent: #FFB900;
+    --theme-accent-fg: #0a3b6e;
+    --theme-button-bg: #0F7DBC;
+    --theme-button-fg: #FFFFFF;
+    --theme-button-border: #2A6495;
+    --theme-link: #FFB900;
+    --theme-link-hover: #FFEA00;
+    --theme-text-muted: #A1B5C8;
+    --theme-success: #8EDA55;
+    --theme-warning: #FF8F3A;
+    --theme-error: #D37871;
+}
+
+html[data-theme="habbo-dark"] {
+    --theme-page-bg: #0a0a0f;
+    --theme-page-fg: #c0d8ee;
+    --theme-header-bg: #14141c;
+    --theme-header-fg: #FFFFFF;
+    --theme-navtop-bg: #1a1a26;
+    --theme-navtop-fg: #c0d8ee;
+    --theme-navsub-bg: #050507;
+    --theme-navsub-fg: #9bb5d4;
+    --theme-card-bg: #1a1a26;
+    --theme-card-border: #2a2a3a;
+    --theme-card-header-bg: #25b8ee;
+    --theme-card-header-fg: #0a0a0f;
+    --theme-accent: #25b8ee;
+    --theme-accent-fg: #0a0a0f;
+    --theme-button-bg: #25b8ee;
+    --theme-button-fg: #0a0a0f;
+    --theme-button-border: #1a8fc8;
+    --theme-link: #25b8ee;
+    --theme-link-hover: #6ad4ff;
+    --theme-text-muted: #7080a0;
+    --theme-success: #4ade80;
+    --theme-warning: #fbbf24;
+    --theme-error: #f87171;
+}
+
+html[data-theme="habbo-sunset"] {
+    --theme-page-bg: #2d1a3e;
+    --theme-page-fg: #ffd4a8;
+    --theme-header-bg: #ff6b35;
+    --theme-header-fg: #FFFFFF;
+    --theme-navtop-bg: #fde0c8;
+    --theme-navtop-fg: #2d1a3e;
+    --theme-navsub-bg: #1a0d28;
+    --theme-navsub-fg: #ff9c5a;
+    --theme-card-bg: #3d2451;
+    --theme-card-border: #ff6b35;
+    --theme-card-header-bg: #e84a5f;
+    --theme-card-header-fg: #FFFFFF;
+    --theme-accent: #ffba08;
+    --theme-accent-fg: #2d1a3e;
+    --theme-button-bg: #ff6b35;
+    --theme-button-fg: #FFFFFF;
+    --theme-button-border: #e84a5f;
+    --theme-link: #ffba08;
+    --theme-link-hover: #ffd900;
+    --theme-text-muted: #b89cc9;
+    --theme-success: #8EDA55;
+    --theme-warning: #ffba08;
+    --theme-error: #e84a5f;
+}
+
+html[data-theme="minimal-light"] {
+    --theme-page-bg: #f4f6fa;
+    --theme-page-fg: #11243a;
+    --theme-header-bg: #FFFFFF;
+    --theme-header-fg: #11243a;
+    --theme-navtop-bg: #FFFFFF;
+    --theme-navtop-fg: #11243a;
+    --theme-navsub-bg: #e9eef5;
+    --theme-navsub-fg: #11243a;
+    --theme-card-bg: #FFFFFF;
+    --theme-card-border: #d0d8e2;
+    --theme-card-header-bg: #11243a;
+    --theme-card-header-fg: #FFFFFF;
+    --theme-accent: #2563eb;
+    --theme-accent-fg: #FFFFFF;
+    --theme-button-bg: #2563eb;
+    --theme-button-fg: #FFFFFF;
+    --theme-button-border: #1d4ed8;
+    --theme-link: #2563eb;
+    --theme-link-hover: #1e40af;
+    --theme-text-muted: #6b7280;
+    --theme-success: #16a34a;
+    --theme-warning: #ea580c;
+    --theme-error: #dc2626;
+}
+
+/* ============================================================
+   Override CSS habbo.it — applicato a TUTTI i temi non-default
+   ============================================================ */
+html[data-theme="habbo-dark"] body,
+html[data-theme="habbo-sunset"] body,
+html[data-theme="minimal-light"] body {
+    background-color: var(--theme-page-bg) !important;
+    color: var(--theme-page-fg);
+}
+
+html[data-theme="habbo-dark"] .wrapper,
+html[data-theme="habbo-sunset"] .wrapper,
+html[data-theme="minimal-light"] .wrapper {
+    background-color: var(--theme-page-bg) !important;
+    color: var(--theme-page-fg);
+}
+
+/* Header habbo-header-small */
+html[data-theme="habbo-dark"] habbo-header-small,
+html[data-theme="habbo-sunset"] habbo-header-small,
+html[data-theme="minimal-light"] habbo-header-small,
+html[data-theme="habbo-dark"] .habbo-header-small,
+html[data-theme="habbo-sunset"] .habbo-header-small,
+html[data-theme="minimal-light"] .habbo-header-small {
+    background-color: var(--theme-header-bg) !important;
+    color: var(--theme-header-fg) !important;
+}
+
+/* Nav top (bianco di default) */
+html[data-theme="habbo-dark"] .nav__nav,
+html[data-theme="habbo-sunset"] .nav__nav,
+html[data-theme="minimal-light"] .nav__nav,
+html[data-theme="habbo-dark"] .nav--horizontal,
+html[data-theme="habbo-sunset"] .nav--horizontal,
+html[data-theme="minimal-light"] .nav--horizontal {
+    background-color: var(--theme-navtop-bg) !important;
+    color: var(--theme-navtop-fg) !important;
+}
+
+/* Nav sub (nero di default) */
+html[data-theme="habbo-dark"] .sub-nav,
+html[data-theme="habbo-sunset"] .sub-nav,
+html[data-theme="minimal-light"] .sub-nav,
+html[data-theme="habbo-dark"] .nav--sub,
+html[data-theme="habbo-sunset"] .nav--sub,
+html[data-theme="minimal-light"] .nav--sub {
+    background-color: var(--theme-navsub-bg) !important;
+    color: var(--theme-navsub-fg) !important;
+}
+
+/* Footer */
+html[data-theme="habbo-dark"] habbo-footer,
+html[data-theme="habbo-sunset"] habbo-footer,
+html[data-theme="minimal-light"] habbo-footer,
+html[data-theme="habbo-dark"] .habbo-footer,
+html[data-theme="habbo-sunset"] .habbo-footer,
+html[data-theme="minimal-light"] .habbo-footer {
+    background-color: var(--theme-header-bg) !important;
+    color: var(--theme-header-fg) !important;
+}
+
+/* Card (article preview, room cards, ecc) */
+html[data-theme="habbo-dark"] .habbo-rounded-box,
+html[data-theme="habbo-sunset"] .habbo-rounded-box,
+html[data-theme="minimal-light"] .habbo-rounded-box,
+html[data-theme="habbo-dark"] .static-content,
+html[data-theme="habbo-sunset"] .static-content,
+html[data-theme="minimal-light"] .static-content {
+    background-color: var(--theme-card-bg) !important;
+    border-color: var(--theme-card-border) !important;
+    color: var(--theme-page-fg);
+}
+
+/* Card header (titoli sezione) */
+html[data-theme="habbo-dark"] .habbo-rounded-box h2,
+html[data-theme="habbo-sunset"] .habbo-rounded-box h2,
+html[data-theme="minimal-light"] .habbo-rounded-box h2,
+html[data-theme="habbo-dark"] .static-content h3,
+html[data-theme="habbo-sunset"] .static-content h3,
+html[data-theme="minimal-light"] .static-content h3 {
+    color: var(--theme-card-header-fg);
+    background-color: var(--theme-card-header-bg);
+}
+
+/* Link */
+html[data-theme="habbo-dark"] a:not(.btn):not(.nav__link):not(.habbo-button),
+html[data-theme="habbo-sunset"] a:not(.btn):not(.nav__link):not(.habbo-button),
+html[data-theme="minimal-light"] a:not(.btn):not(.nav__link):not(.habbo-button) {
+    color: var(--theme-link);
+}
+html[data-theme="habbo-dark"] a:not(.btn):not(.nav__link):not(.habbo-button):hover,
+html[data-theme="habbo-sunset"] a:not(.btn):not(.nav__link):not(.habbo-button):hover,
+html[data-theme="minimal-light"] a:not(.btn):not(.nav__link):not(.habbo-button):hover {
+    color: var(--theme-link-hover);
+}
+
+/* Bottoni primary */
+html[data-theme="habbo-dark"] .habbo-button--primary,
+html[data-theme="habbo-sunset"] .habbo-button--primary,
+html[data-theme="minimal-light"] .habbo-button--primary {
+    background-color: var(--theme-button-bg) !important;
+    color: var(--theme-button-fg) !important;
+    border-color: var(--theme-button-border) !important;
+}
+
+/* Minimal Light: dark text su sfondi chiari (override readability) */
+html[data-theme="minimal-light"] body,
+html[data-theme="minimal-light"] .wrapper,
+html[data-theme="minimal-light"] .habbo-rounded-box,
+html[data-theme="minimal-light"] .static-content {
+    color: var(--theme-page-fg);
+}
+html[data-theme="minimal-light"] .nav--horizontal a,
+html[data-theme="minimal-light"] .nav__link {
+    color: var(--theme-navtop-fg) !important;
+}

@@ -35,24 +35,26 @@ name: Production Deploy
 
 on:
   # ---------------------------------------------------------------------------
-  # Push diretto su main: scatta automaticamente quando una PR viene mergiata
-  # oppure quando un maintainer pusha un hotfix direttamente. Filtriamo per
-  # path: deploy solo se sono toccati componenti runtime (no docs/.github/etc).
+  # DISABILITATO TEMPORANEAMENTE: l'auto-trigger push su main e' OFF perche'
+  # le migration 003/004/005 (site_settings, skins, shop) non sono ancora
+  # applicate su DB prod 'ms'. Riabilitare quando si vuole rollout completo
+  # del Skin Engine + Stripe in produzione.
+  #
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - 'EMU/**'
+  #     - 'CMS-V3/**'
+  #     - 'Nitro-V3/**'
+  #     - 'CMS/react/**'
+  #     - '.github/workflows/prod-deploy.yml'
   # ---------------------------------------------------------------------------
-  push:
-    branches:
-      - main
-    paths:
-      - 'EMU/**'
-      - 'CMS-V3/**'
-      - 'Nitro-V3/**'
-      - 'CMS/react/**'
-      - '.github/workflows/prod-deploy.yml'
 
   # ---------------------------------------------------------------------------
-  # Trigger manuale per hotfix: si puo' specificare uno sha alternativo
-  # (utile per re-deploy di un commit precedente o per rollforward dopo un
-  # incidente).
+  # Trigger manuale: per ora UNICO modo per deployare in prod.
+  # Permette di specificare uno sha alternativo (utile per re-deploy di un
+  # commit precedente o per rollforward dopo un incidente).
   # ---------------------------------------------------------------------------
   workflow_dispatch:
     inputs:

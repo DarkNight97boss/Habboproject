@@ -9,6 +9,64 @@
     <title>Conosci nuovi amici, divertiti, fatti notare! - Habbo</title>
 
     <!--
+        SKIN PRE-HYDRATION — anti-FOUC critico.
+
+        Lo skin attivo è in localStorage (`cms-v3-skin-cache`, scritto da
+        applySkin al primo fetch /api/v2/site/skin). Lo leggiamo SUBITO,
+        PRIMA del CSS habbo.it, e impostiamo `data-skin` su <html> +
+        background body al colore cosmic, così l'utente non vede flash blu
+        Habbo prima che React monti.
+
+        Se è il primo accesso (cache vuota) non possiamo sapere lo skin
+        attivo finché /api/v2/site/skin non risponde, quindi default a
+        background NEUTRO scuro che vale per tutti gli skin moderni.
+    -->
+    <script>
+        (function () {
+            try {
+                var raw = localStorage.getItem('cms-v3-skin-cache');
+                if (raw) {
+                    var m = JSON.parse(raw);
+                    if (m && m.meta && m.meta.slug) {
+                        document.documentElement.setAttribute('data-skin', m.meta.slug);
+                        if (m.layout && m.layout.variant) {
+                            document.documentElement.setAttribute('data-layout', m.layout.variant);
+                        }
+                        if (m.meta.slug === 'asteria-nebula') {
+                            document.documentElement.style.backgroundColor = '#050511';
+                        }
+                    }
+                }
+            } catch (e) { /* silent: fallback al default */ }
+        })();
+    </script>
+    <style>
+        /* Anti-FOUC: se siamo in skin Asteria, nascondi qualunque DOM habbo.it
+           (header-small, wrapper) finché React non ha montato AsteriaShell.
+           AsteriaShell aggiunge body.asteria-mounted al primo render. */
+        html[data-skin="asteria-nebula"] { background: #050511 !important; }
+        html[data-skin="asteria-nebula"] body { background: #050511 !important; color: #f1f5f9; }
+        html[data-skin="asteria-nebula"] body:not(.asteria-mounted) > div:not(#root),
+        html[data-skin="asteria-nebula"] body:not(.asteria-mounted) habbo-header-small,
+        html[data-skin="asteria-nebula"] body:not(.asteria-mounted) habbo-header-large,
+        html[data-skin="asteria-nebula"] body:not(.asteria-mounted) habbo-footer,
+        html[data-skin="asteria-nebula"] body:not(.asteria-mounted) habbo-web-pages {
+            visibility: hidden !important;
+        }
+        /* Mini loader gradient sotto il root per ~300ms se React tarda a montare */
+        html[data-skin="asteria-nebula"] body:not(.asteria-mounted) #root::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 0% 0%, rgba(168,85,247,0.30) 0%, transparent 60%),
+                radial-gradient(ellipse at 100% 100%, rgba(6,182,212,0.20) 0%, transparent 60%),
+                #050511;
+            z-index: 0;
+        }
+    </style>
+
+    <!--
         Tutti gli asset chrome (CSS + sprite + background + font + favicon)
         sono mirrorati in locale sotto /assets/habbo/. Vedi
         `apps/web/scripts/download-habbo-assets.mjs`:

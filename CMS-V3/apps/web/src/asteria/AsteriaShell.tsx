@@ -22,6 +22,15 @@ export function AsteriaShell({ activeNav, children, hideMarquee = false }: { act
     const { data: user } = useAuth();
     const [cmdOpen, setCmdOpen] = useState(false);
 
+    // Anti-FOUC: signala a index.html che AsteriaShell è montato → CSS gate
+    // (`html[data-skin="asteria-nebula"] body:not(.asteria-mounted) > div:not(#root) { visibility: hidden }`)
+    // rivela il DOM solo dopo che il nostro <AsteriaShell> è renderizzato.
+    useEffect(() =>
+    {
+        document.body.classList.add('asteria-mounted');
+        return () => { document.body.classList.remove('asteria-mounted'); };
+    }, []);
+
     // Cmd+K shortcut globale (lightweight, no event-loop overhead).
     useEffect(() =>
     {

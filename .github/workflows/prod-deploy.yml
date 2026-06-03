@@ -542,7 +542,7 @@ jobs:
             set -euo pipefail
             . /root/.asteria-secrets/db.env
             mysqldump --single-transaction --quick --routines --events \
-              -u root -p"${MYSQL_ROOT_PASSWORD}" ms
+              -u root -p"${DB_ROOT_PASS}" ms
           ' | gzip -9 > "${STAGE}/ms.sql.gz"
 
           # 2) EMU jar corrente
@@ -761,7 +761,7 @@ jobs:
             sudo EMU_DIR="${EMU_DIR}" CMS_DIR="${CMS_DIR}" bash -c '
               set -euo pipefail
               . /root/.asteria-secrets/db.env
-              MYSQL_BIN="mysql -u root -p${MYSQL_ROOT_PASSWORD} -N -B ms"
+              MYSQL_BIN="mysql -u root -p${DB_ROOT_PASS} -N -B ms"
               ${MYSQL_BIN} -e "CREATE TABLE IF NOT EXISTS schema_migrations (filename VARCHAR(255) PRIMARY KEY, applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, checksum CHAR(64) NOT NULL) ENGINE=InnoDB"
               for DIR in "${EMU_DIR}" "${CMS_DIR}"; do
                 [ -d "${DIR}" ] || continue
@@ -876,7 +876,7 @@ jobs:
               . /root/.asteria-secrets/db.env
               MSG="Aggiornamento server tra 30s. Riconnessione automatica al termine."
               # Tabella commands MUS: alert_broadcast (sintassi Arcturus)
-              mysql -u root -p"${MYSQL_ROOT_PASSWORD}" ms -e "
+              mysql -u root -p"${DB_ROOT_PASS}" ms -e "
                 INSERT INTO emulator_texts (\`key\`, value)
                 VALUES (\"_deploy_broadcast_msg\", \"${MSG}\")
                 ON DUPLICATE KEY UPDATE value=VALUES(value);
@@ -1088,7 +1088,7 @@ jobs:
             sudo bash -c '
               set -euo pipefail
               . /root/.asteria-secrets/db.env
-              gunzip -c "'"${STAGE}"'/ms.sql.gz" | mysql -u root -p"${MYSQL_ROOT_PASSWORD}" ms
+              gunzip -c "'"${STAGE}"'/ms.sql.gz" | mysql -u root -p"${DB_ROOT_PASS}" ms
             '
           fi
 

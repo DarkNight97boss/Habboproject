@@ -1,7 +1,8 @@
 // Deploy prod: questo entry viene buildato (tsc) → CMS-V3/apps/api/dist e servito
 // da systemd `cms-api` (ExecStart .../apps/api/dist/index.js). L'automazione vive
 // in .github/workflows/prod-deploy.yml (auto su push a main, filtrato per path,
-// con migration incrementali via tracker schema_migrations + smoke-test/rollback).
+// con backup pre-deploy + migration incrementali (tracker schema_migrations) +
+// smoke-test e rollback automatico in caso di fallimento).
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';

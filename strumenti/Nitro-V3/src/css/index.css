@@ -305,11 +305,10 @@ body {
     }
 
     .nitro-card-shell:not(.nitro-wired) .nitro-card-header-shell {
-        border: none;
-        border-bottom: 2px solid rgba(0, 0, 0, 0.35);
+        border: 2px solid #3c88a6;
+        border-bottom-color: #000;
         border-radius: 8px 8px 0 0;
-        background: linear-gradient(120deg, #7c3aed 0%, #22d3ee 100%);
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.20);
+        background: #30728c;
         padding: 5px;
     }
 

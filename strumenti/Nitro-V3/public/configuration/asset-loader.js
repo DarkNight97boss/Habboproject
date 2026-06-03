@@ -57,10 +57,11 @@
   const renderShell = () => {
     const root = document.getElementById("root");
     if(!root || root.firstChild) return;
-    // Match the React LoadingView background so the pre-React shell paints
-    // the same gradient — no light-blue login-skeleton flash before the
-    // loader takes over.
-    root.innerHTML = '<div style="position:fixed;inset:0;background:radial-gradient(#1d1a24,#003a6b);overflow:hidden;z-index:1"></div>';
+    // Match the React LoadingView background (.al-stage) EXACTLY so the
+    // pre-React shell paints the same Asteria nebula — niente flash del
+    // vecchio gradiente navy prima che il loader monti. Tieni in sync con
+    // src/components/loading/LoadingView.tsx (.al-stage).
+    root.innerHTML = '<div style="position:fixed;inset:0;background:radial-gradient(ellipse 120% 90% at 50% 32%,#1c1146 0%,#0a0a22 52%,#03030c 100%);overflow:hidden;z-index:1"></div>';
   };
 
   const decodeAsset = (bytes) => {

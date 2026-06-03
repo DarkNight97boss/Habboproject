@@ -945,10 +945,11 @@ jobs:
   smoke-test-prod:
     name: Smoke-test produzione
     needs: [guard, deploy-prod]
-    # Gira su OGNI deploy riuscito (push o dispatch). NB: NIENTE riferimenti a
-    # `inputs.*` qui: su evento push mandano in fault la valutazione dell'if e
-    # il job veniva skippato (era il vero motivo per cui lo smoke non partiva).
-    if: ${{ needs.deploy-prod.result == 'success' }}
+    # always() è OBBLIGATORIO: deploy-prod ha needs skippati (build-emu/web) e
+    # senza una funzione di stato GHA propaga lo "skip" e salta lo smoke-test
+    # (era il vero motivo, non inputs/event). always() forza la valutazione;
+    # poi il job gira solo se il deploy è andato a buon fine.
+    if: ${{ always() && needs.deploy-prod.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -956,17 +957,22 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Retry (5 tentativi, 4s) per assorbire il reload-or-restart dell'API
+          # appena deployata ed evitare falsi fallimenti (→ rollback inutile).
           check_http() {
             local URL="$1"
             local EXPECT="$2"
-            echo "[smoke] GET ${URL} (expect ${EXPECT})"
-            CODE=$(curl -s -o /tmp/body -w '%{http_code}' --max-time 15 "${URL}" || echo '000')
-            if [ "${CODE}" != "${EXPECT}" ]; then
-              echo "[smoke] FAIL ${URL} code=${CODE}"
-              head -c 500 /tmp/body || true
-              return 1
-            fi
-            echo "[smoke] OK ${URL}"
+            local i CODE
+            for i in 1 2 3 4 5; do
+              echo "[smoke] GET ${URL} (expect ${EXPECT}) [tentativo ${i}]"
+              CODE=$(curl -s -o /tmp/body -w '%{http_code}' --max-time 15 "${URL}" || echo '000')
+              if [ "${CODE}" = "${EXPECT}" ]; then echo "[smoke] OK ${URL}"; return 0; fi
+              echo "[smoke] code=${CODE}, ritento tra 4s..."
+              sleep 4
+            done
+            echo "[smoke] FAIL ${URL} code=${CODE}"
+            head -c 500 /tmp/body || true
+            return 1
           }
 
           # Endpoint REALI e affidabili (200 su prod sana): web (home Asteria),

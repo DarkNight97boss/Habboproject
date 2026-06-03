@@ -200,7 +200,7 @@ jobs:
       # sovrascriviamo tutti gli output a 'true' per forzare full deploy.
       - name: Force all (workflow_dispatch override)
         id: force
-        if: ${{ inputs.force_all == true }}
+        if: ${{ inputs.force_all == true || inputs.force_all == 'true' }}
         run: |
           echo "emu=true"     >> "$GITHUB_OUTPUT"
           echo "cms_web=true" >> "$GITHUB_OUTPUT"

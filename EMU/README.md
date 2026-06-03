@@ -1,5 +1,10 @@
 # Asteria Core
 
+> **Deploy automatico:** ogni push a `main` che tocca `EMU/**` ricostruisce il jar
+> (Maven) e lo ridispiega in produzione via `.github/workflows/prod-deploy.yml` —
+> con backup pre-deploy, restart `habbo-emu` (broadcast in-game) e smoke-test su
+> `:2096` + rollback automatico se l'EMU non riparte.
+
 **Asteria Core** è un server di gioco real-time per ambienti virtuali, derivato da
 [Arcturus Morningstar](https://git.krews.org/morningstar/Arcturus-Community) di
 TheGeneral. Distribuito sotto licenza

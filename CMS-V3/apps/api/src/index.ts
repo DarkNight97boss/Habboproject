@@ -2,7 +2,7 @@
 // da systemd `cms-api` (ExecStart .../apps/api/dist/index.js). L'automazione vive
 // in .github/workflows/prod-deploy.yml (auto su push a main, filtrato per path,
 // con backup pre-deploy + migration incrementali (tracker schema_migrations) +
-// smoke-test e rollback automatico in caso di fallimento).
+// smoke-test (web + API + asset di gioco) e rollback automatico in caso di fallimento).
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';

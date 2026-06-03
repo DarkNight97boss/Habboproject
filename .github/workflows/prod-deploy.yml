@@ -947,7 +947,7 @@ jobs:
     needs: [guard, deploy-prod]
     # inputs.skip_smoke esiste solo su workflow_dispatch; su push e' null e
     # la condizione "!= true" e' true (= eseguiamo smoke), come atteso.
-    if: ${{ needs.deploy-prod.result == 'success' && inputs.skip_smoke != true }}
+    if: ${{ needs.deploy-prod.result == 'success' && (github.event_name != 'workflow_dispatch' || inputs.skip_smoke != true) }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -968,45 +968,23 @@ jobs:
             echo "[smoke] OK ${URL}"
           }
 
+          # Endpoint REALI e affidabili (200 su prod sana): web (home Asteria),
+          # API (stats reali) e asset di gioco (gamedata + client Nitro su CDN).
+          # I vecchi check (/health → 404, hotel/gamedata → 403) erano assunzioni
+          # mai testate, perché il trigger push era disattivato.
           check_http "https://asteriacore.online" "200"
-          check_http "https://api.asteriacore.online/health" "200"
-          check_http "https://hotel.asteriacore.online/gamedata/external_variables.txt" "200"
+          check_http "https://asteriacore.online/api/v2/community/stats" "200"
+          check_http "https://cdn.asteriacore.online/gamedata/FigureData.json" "200"
+          check_http "https://cdn.asteriacore.online/index.html" "200"
 
-          # Validazione contenuto /health (deve contenere "ok")
-          if ! grep -qi 'ok' /tmp/body 2>/dev/null; then
-            # /tmp/body ora ha il content dell'ultima call (external_variables);
-            # rifacciamo il fetch /health esplicito per assert
-            curl -s --max-time 10 https://api.asteriacore.online/health | tee /tmp/health
-            if ! grep -qi 'ok' /tmp/health; then
-              echo "[smoke] /health non contiene 'ok'"
-              exit 1
-            fi
-          fi
-
-      - name: TCP check gameserver :2096 (via VPS, no porta pubblica)
-        env:
-          DEPLOY_SHA: ${{ needs.guard.outputs.deploy_sha }}
-        run: |
-          set -euo pipefail
-          # La porta 2096 NON e' pubblicamente esposta (tunnel CF la inoltra al
-          # client Nitro via SSL). Verifichiamo via SSH che il listener locale
-          # sul VPS sia su.
-          # Per evitare di richiedere SSH key qui, usiamo invece il check HTTP
-          # del client Nitro che, se la connessione gameserver fallisce, ritorna
-          # un errore visibile. Approccio: fetch della pagina hotel e cerca un
-          # marker che il client esiste (es. <div id="nitro-client" o asset key).
-          BODY=$(curl -s --max-time 15 https://hotel.asteriacore.online/ || true)
-          if [ -z "${BODY}" ]; then
-            echo "[smoke] hotel landing vuota"
+          # Validazione contenuto API: lo stats deve essere JSON con onlineUsers.
+          curl -s --max-time 15 https://asteriacore.online/api/v2/community/stats > /tmp/stats
+          if ! grep -qi 'onlineUsers' /tmp/stats; then
+            echo "[smoke] /community/stats non contiene 'onlineUsers'"
+            cat /tmp/stats || true
             exit 1
           fi
-          # Heuristic minimo: la pagina hotel deve avere "nitro" o "asteria" nel body
-          if ! echo "${BODY}" | grep -qiE 'nitro|asteria|client'; then
-            echo "[smoke] hotel landing NON contiene marker atteso"
-            echo "${BODY}" | head -c 500
-            exit 1
-          fi
-          echo "[smoke] hotel landing OK"
+          echo "[smoke] tutti i check passati."
 
   # ===========================================================================
   # JOB 10: rollback

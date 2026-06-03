@@ -197,7 +197,9 @@ function renderEvent(e: FeedEvent): { icon: string; text: ReactNode }
         case 'streak.claimed':  return { icon: '🔥', text: <><strong>{who}</strong> ha riscattato uno streak di {String(p.streak ?? '?')} giorni</> };
         case 'shop.purchase':   return { icon: '🛒', text: <><strong>{who}</strong> ha acquistato {String(p.item ?? 'un articolo')}</> };
         case 'badge.earned':    return { icon: '🏅', text: <><strong>{who}</strong> ha ottenuto un distintivo</> };
-        case 'room.created':    return { icon: '🏠', text: <><strong>{who}</strong> ha creato una stanza</> };
+        case 'room.created':    return { icon: '🏠', text: <><strong>{who}</strong> ha creato la stanza {p.room ? <em>«{String(p.room)}»</em> : 'una stanza'}</> };
+        case 'guild.created':   return { icon: '🛡️', text: <><strong>{who}</strong> ha fondato il gruppo {p.guild ? <em>«{String(p.guild)}»</em> : ''}</> };
+        case 'photo.posted':    return { icon: '📸', text: <><strong>{who}</strong> ha pubblicato una foto</> };
         default:                return { icon: '✨', text: <><strong>{who}</strong> · {e.type}</> };
     }
 }

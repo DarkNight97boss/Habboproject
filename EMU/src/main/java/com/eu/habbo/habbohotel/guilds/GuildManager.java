@@ -116,6 +116,18 @@ public class GuildManager {
 
         habbo.getHabboStats().addGuild(guild.getId());
 
+        // Event-bus CMS (best-effort, async, no-op se non configurato).
+        try {
+            if (guild.getId() > 0) {
+                com.google.gson.JsonObject cmsPayload = new com.google.gson.JsonObject();
+                cmsPayload.addProperty("guild", name);
+                cmsPayload.addProperty("guildId", guild.getId());
+                com.eu.habbo.core.CmsEventPublisher.publish("guild.created", habbo.getHabboInfo().getId(), habbo.getHabboInfo().getUsername(), cmsPayload);
+            }
+        } catch (Throwable ignored) {
+            // intenzionalmente ignorato
+        }
+
         return guild;
     }
 

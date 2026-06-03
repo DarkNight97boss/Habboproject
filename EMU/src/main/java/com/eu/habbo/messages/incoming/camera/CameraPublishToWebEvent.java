@@ -72,6 +72,13 @@ public class CameraPublishToWebEvent extends MessageHandler {
 
                         habbo.givePoints(CameraPublishToWebEvent.CAMERA_PUBLISH_POINTS_TYPE, -CameraPublishToWebEvent.CAMERA_PUBLISH_POINTS);
                         isOk = true;
+
+                        // Event-bus CMS (best-effort, async, no-op se non configurato).
+                        try {
+                            com.eu.habbo.core.CmsEventPublisher.publish("photo.posted", habbo.getHabboInfo().getId(), habbo.getHabboInfo().getUsername(), null);
+                        } catch (Throwable ignored) {
+                            // intenzionalmente ignorato
+                        }
                     } catch (SQLException e) {
                         // DB insert failed -> roll back the cooldown reservation.
                         habbo.getHabboInfo().setWebPublishTimestamp(habbo.getHabboInfo().getWebPublishTimestamp());

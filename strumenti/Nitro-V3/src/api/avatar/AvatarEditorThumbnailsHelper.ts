@@ -214,29 +214,48 @@ export class AvatarEditorThumbnailsHelper
 
         if(cached) return cached;
 
-        return new Promise(async (resolve, reject) =>
+        return new Promise(resolve =>
         {
-            const resetFigure = async (figure: string) =>
-            {
-                const avatarImage = GetAvatarRenderManager().createAvatarImage(figure, AvatarScaleType.LARGE, null, { resetFigure, dispose: null, disposed: false });
+            let settled = false;
 
+            // Stesso percorso di rendering dell'anteprima che FUNZIONA
+            // (LayoutAvatarImageView, headOnly): createAvatarImage ->
+            // setDirection(HEAD) -> processAsImageUrl(HEAD). Il vecchio
+            // processAsTexture + ritaglio manuale produceva immagini vuote.
+            const resetFigure = (figure: string): void =>
+            {
+                if(settled) return;
+
+                const avatarImage = GetAvatarRenderManager().createAvatarImage(figure || figureString, AvatarScaleType.LARGE, null, { resetFigure, dispose: null, disposed: false });
+
+                if(!avatarImage)
+                {
+                    settled = true;
+                    resolve(null);
+                    return;
+                }
+
+                // Asset non ancora scaricati: il render manager richiamerà
+                // resetFigure a download completato. NON fare dispose qui,
+                // altrimenti annulli lo scaricamento e la miniatura resta vuota.
                 if(avatarImage.isPlaceholder()) return;
 
-                const texture = avatarImage.processAsTexture(AvatarSetType.HEAD, false);
-                const sprite = new NitroSprite(texture);
-                if(isDisabled) sprite.filters = [ AvatarEditorThumbnailsHelper.ALPHA_FILTER ];
-                const frame = AvatarEditorThumbnailsHelper.findOpaqueBoundsFrame(sprite, texture.width, texture.height);
-                const imageUrl = await TextureUtils.generateImageUrl({
-                    target: sprite,
-                    frame
-                });
+                avatarImage.setDirection(AvatarSetType.HEAD, 2);
 
-                sprite.destroy();
+                const imageUrl = avatarImage.processAsImageUrl(AvatarSetType.HEAD);
+
                 avatarImage.dispose();
+                settled = true;
 
-                AvatarEditorThumbnailsHelper.THUMBNAIL_CACHE.set(thumbnailKey, imageUrl);
-
-                resolve(imageUrl);
+                if(imageUrl && imageUrl.length)
+                {
+                    AvatarEditorThumbnailsHelper.THUMBNAIL_CACHE.set(thumbnailKey, imageUrl);
+                    resolve(imageUrl);
+                }
+                else
+                {
+                    resolve(null);
+                }
             };
 
             resetFigure(figureString);

@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { type AuthUser, broadcastAuth, useAuth } from '../hooks/useAuth';
 import { AsteriaNewsBento } from './AsteriaNewsBento';
+import { CommunityFeed } from './CommunityFeed';
 import { AsteriaShell } from './AsteriaShell';
 import './asteria.css';
 
@@ -26,6 +27,7 @@ export function AsteriaHomePage(): ReactNode
             <StatsStrip />
             {isAuthed && <QuickActions />}
             <AsteriaNewsBento />
+            <CommunityFeed />
             <SpotlightCTA isAuthed={!!isAuthed} />
         </AsteriaShell>
     );

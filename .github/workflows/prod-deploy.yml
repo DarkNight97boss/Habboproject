@@ -951,6 +951,7 @@ jobs:
     # poi il job gira solo se il deploy è andato a buon fine.
     if: ${{ always() && needs.deploy-prod.result == 'success' }}
     runs-on: ubuntu-latest
+    environment: production   # necessario per il secret SSH_PRIVATE_KEY_PROD (env)
     timeout-minutes: 5
     steps:
       # Cloudflare blocca le richieste HTTP dai runner GitHub (IP datacenter →

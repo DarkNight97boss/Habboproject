@@ -1,6 +1,6 @@
 // Entry API: build (tsc) → CMS-V3/apps/api/dist, servito da systemd `cms-api`.
 // Deploy automatico su push a main: .github/workflows/prod-deploy.yml
-// (backup → build → swap atomico → smoke-test via SSH/localhost → rollback).
+// (backup → build → swap atomico → smoke-test SSH localhost → rollback auto).
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';

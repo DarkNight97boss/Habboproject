@@ -23,21 +23,26 @@
     -->
     <script>
         (function () {
+            // Default allo skin ATTIVO (asteria-nebula) anche a cache VUOTA
+            // (primo accesso / incognito / dopo svuotamento cache) → niente
+            // flash blu Habbo prima che React monti e fetchi lo skin reale.
+            var slug = 'asteria-nebula';
             try {
                 var raw = localStorage.getItem('cms-v3-skin-cache');
                 if (raw) {
                     var m = JSON.parse(raw);
                     if (m && m.meta && m.meta.slug) {
-                        document.documentElement.setAttribute('data-skin', m.meta.slug);
+                        slug = m.meta.slug;
                         if (m.layout && m.layout.variant) {
                             document.documentElement.setAttribute('data-layout', m.layout.variant);
                         }
-                        if (m.meta.slug === 'asteria-nebula') {
-                            document.documentElement.style.backgroundColor = '#050511';
-                        }
                     }
                 }
-            } catch (e) { /* silent: fallback al default */ }
+            } catch (e) { /* silent: fallback allo slug di default */ }
+            document.documentElement.setAttribute('data-skin', slug);
+            if (slug === 'asteria-nebula') {
+                document.documentElement.style.backgroundColor = '#050511';
+            }
         })();
     </script>
     <style>

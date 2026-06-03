@@ -256,7 +256,7 @@ export class AvatarEditorThumbnailsHelper
                 // La testa è resa in un canvas a figura intera (testa in alto,
                 // resto trasparente) → senza ritaglio resta piccola. Ritaglio
                 // ai pixel opachi così RIEMPIE il box della miniatura.
-                AvatarEditorThumbnailsHelper.cropImageUrlToOpaque(rawUrl).then(imageUrl =>
+                AvatarEditorThumbnailsHelper.cropImageUrlToOpaque(rawUrl, isDisabled).then(imageUrl =>
                 {
                     AvatarEditorThumbnailsHelper.THUMBNAIL_CACHE.set(thumbnailKey, imageUrl);
                     resolve(imageUrl);
@@ -270,7 +270,7 @@ export class AvatarEditorThumbnailsHelper
     // Ritaglia una data-URL ai suoi pixel opachi (bounding box della testa),
     // così la miniatura riempie il box invece di restare piccola al centro di
     // un canvas trasparente. Su qualsiasi errore torna l'immagine originale.
-    private static cropImageUrlToOpaque(imageUrl: string): Promise<string>
+    private static cropImageUrlToOpaque(imageUrl: string, dim: boolean = false): Promise<string>
     {
         return new Promise<string>(resolve =>
         {
@@ -326,6 +326,10 @@ export class AvatarEditorThumbnailsHelper
                 if(!outCtx) { resolve(imageUrl); return; }
 
                 outCtx.imageSmoothingEnabled = false;
+                // Sbiadisce le facce HC bloccate (item HC + utente non-HC), come
+                // le altre parti dell'editor (ALPHA_FILTER 0.2). Sbiadisce solo
+                // l'immagine: la spilla HC è un elemento separato e resta piena.
+                if(dim) outCtx.globalAlpha = 0.2;
                 outCtx.drawImage(canvas, minX, minY, cw, ch, 0, 0, cw, ch);
 
                 resolve(out.toDataURL());

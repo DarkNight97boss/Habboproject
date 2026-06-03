@@ -953,45 +953,44 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: HTTP checks
+      # Cloudflare blocca le richieste HTTP dai runner GitHub (IP datacenter →
+      # 403/challenge): lo smoke "pubblico" falliva su deploy SANI. Quindi gira
+      # VIA SSH contro localhost sul VPS, bypassando CF e testando l'origine
+      # reale (API Hono su 127.0.0.1:8092 + nginx vhost).
+      - name: Setup ssh-agent (chiave dedicata PROD)
+        uses: webfactory/ssh-agent@dc588b651fe13675774614f8e6a936a468676387 # v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_PROD }}
+
+      - name: Configura known_hosts (host pinning)
         run: |
           set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
-          # Retry (5 tentativi, 4s) per assorbire il reload-or-restart dell'API
-          # appena deployata ed evitare falsi fallimenti (→ rollback inutile).
-          check_http() {
-            local URL="$1"
-            local EXPECT="$2"
-            local i CODE
+      - name: Smoke-test localhost del VPS (bypassa Cloudflare)
+        env:
+          VPS_TARGET: ${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}
+          SMOKE_SCRIPT: |
+            set -euo pipefail
+            # 1) API /healthz con retry 5x/4s (assorbe il reload-or-restart).
             for i in 1 2 3 4 5; do
-              echo "[smoke] GET ${URL} (expect ${EXPECT}) [tentativo ${i}]"
-              CODE=$(curl -s -o /tmp/body -w '%{http_code}' --max-time 15 "${URL}" || echo '000')
-              if [ "${CODE}" = "${EXPECT}" ]; then echo "[smoke] OK ${URL}"; return 0; fi
-              echo "[smoke] code=${CODE}, ritento tra 4s..."
-              sleep 4
+              curl -fsS --max-time 8 http://127.0.0.1:8092/healthz >/dev/null && break || { echo "[smoke] healthz retry $i"; sleep 4; }
             done
-            echo "[smoke] FAIL ${URL} code=${CODE}"
-            head -c 500 /tmp/body || true
-            return 1
-          }
-
-          # Endpoint REALI e affidabili (200 su prod sana): web (home Asteria),
-          # API (stats reali) e asset di gioco (gamedata + client Nitro su CDN).
-          # I vecchi check (/health → 404, hotel/gamedata → 403) erano assunzioni
-          # mai testate, perché il trigger push era disattivato.
-          check_http "https://asteriacore.online" "200"
-          check_http "https://asteriacore.online/api/v2/community/stats" "200"
-          check_http "https://cdn.asteriacore.online/gamedata/FigureData.json" "200"
-          check_http "https://cdn.asteriacore.online/index.html" "200"
-
-          # Validazione contenuto API: lo stats deve essere JSON con onlineUsers.
-          curl -s --max-time 15 https://asteriacore.online/api/v2/community/stats > /tmp/stats
-          if ! grep -qi 'onlineUsers' /tmp/stats; then
-            echo "[smoke] /community/stats non contiene 'onlineUsers'"
-            cat /tmp/stats || true
-            exit 1
-          fi
-          echo "[smoke] tutti i check passati."
+            curl -fsS --max-time 8 http://127.0.0.1:8092/healthz | grep -q ok || { echo "[smoke] FAIL /healthz"; exit 1; }
+            echo "[smoke] OK /healthz"
+            # 2) API /community/stats: DB raggiungibile + payload corretto.
+            curl -fsS --max-time 8 http://127.0.0.1:8092/api/v2/community/stats | grep -q onlineUsers || { echo "[smoke] FAIL /community/stats"; exit 1; }
+            echo "[smoke] OK /community/stats"
+            # 3) Web servito da nginx (vhost asteriacore.online): 200/301/302 = up.
+            W=$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 -H 'Host: asteriacore.online' http://127.0.0.1/ || echo 000)
+            case "$W" in 200|301|302) echo "[smoke] OK web nginx ($W)" ;; *) echo "[smoke] FAIL web nginx ($W)"; exit 1 ;; esac
+            echo "[smoke] tutti i check localhost passati."
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "$VPS_TARGET" bash -s <<< "$SMOKE_SCRIPT"
 
   # ===========================================================================
   # JOB 10: rollback

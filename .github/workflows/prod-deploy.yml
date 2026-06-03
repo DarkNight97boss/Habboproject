@@ -989,7 +989,11 @@ jobs:
             W=$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 -H 'Host: asteriacore.online' http://127.0.0.1/ || echo 000)
             case "$W" in 200|301|302) echo "[smoke] OK web nginx ($W)" ;; *) echo "[smoke] FAIL web nginx ($W)"; exit 1 ;; esac
             # 4) EMU game server (Arcturus): porta :2096 in ascolto = EMU su.
-            #    Così un deploy EMU che rompe l'avvio fa scattare il rollback.
+            #    Retry 12x/5s (=60s): al restart l'EMU impiega ~30-60s a ribindare
+            #    la porta (boot Arcturus). Così un EMU che NON riparte fa rollback.
+            for i in $(seq 1 12); do
+              ss -ltn | awk '{print $4}' | grep -qE ':2096$' && break || { echo "[smoke] EMU :2096 retry $i"; sleep 5; }
+            done
             ss -ltn | awk '{print $4}' | grep -qE ':2096$' || { echo "[smoke] FAIL EMU :2096 non in ascolto"; exit 1; }
             echo "[smoke] OK EMU :2096"
             echo "[smoke] tutti i check localhost passati."

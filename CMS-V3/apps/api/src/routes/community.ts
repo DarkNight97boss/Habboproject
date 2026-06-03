@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
-import { dbQuery } from '../db/pool.js';
+import { dbExecute, dbQuery } from '../db/pool.js';
+import { requireAuth } from '../middleware/auth.js';
+import { isFeatureEnabled } from '../services/flags.js';
 import { ensureNewsTable, fetchNewsBySlug, fetchNewsList } from '../services/news.js';
 
 const community = new Hono();
@@ -112,6 +114,48 @@ community.get('/rooms', async c =>
         limit,
         offset
     });
+});
+
+// =================================================================
+// Stanze seguite (#12) — preferiti stanza, gated dietro flag room_follow.
+// La notifica evento arriverà col ponte EMU (Fase 2).
+// =================================================================
+
+community.get('/rooms/followed', requireAuth, async c =>
+{
+    if(!(await isFeatureEnabled('room_follow'))) return c.json({ enabled: false, rooms: [] });
+    const userId = Number(c.var.user!.sub);
+    const rows = await dbQuery<{ id: number; name: string; users: number; users_max: number; owner_name: string }>(
+        `SELECT r.id, r.name, r.users, r.users_max, r.owner_name
+         FROM cms_v3_room_follows f INNER JOIN rooms r ON r.id = f.room_id
+         WHERE f.user_id = ? ORDER BY f.created_at DESC LIMIT 50`,
+        [userId]
+    );
+    return c.json({
+        enabled: true,
+        rooms: rows.map(r => ({ id: r.id, name: r.name, users: r.users, maxUsers: r.users_max, ownerName: r.owner_name }))
+    });
+});
+
+community.post('/rooms/:id/follow', requireAuth, async c =>
+{
+    if(!(await isFeatureEnabled('room_follow'))) return c.json({ error: 'feature_disabled' }, 403);
+    const roomId = Number(c.req.param('id'));
+    if(!Number.isFinite(roomId) || roomId <= 0) return c.json({ error: 'bad_id' }, 400);
+    const userId = Number(c.var.user!.sub);
+    const exists = (await dbQuery<{ id: number }>('SELECT id FROM rooms WHERE id = ? LIMIT 1', [roomId]))[0];
+    if(!exists) return c.json({ error: 'room_not_found' }, 404);
+    await dbExecute('INSERT IGNORE INTO cms_v3_room_follows (user_id, room_id) VALUES (?, ?)', [userId, roomId]);
+    return c.json({ ok: true, following: true });
+});
+
+community.delete('/rooms/:id/follow', requireAuth, async c =>
+{
+    const roomId = Number(c.req.param('id'));
+    if(!Number.isFinite(roomId) || roomId <= 0) return c.json({ error: 'bad_id' }, 400);
+    const userId = Number(c.var.user!.sub);
+    await dbExecute('DELETE FROM cms_v3_room_follows WHERE user_id = ? AND room_id = ?', [userId, roomId]);
+    return c.json({ ok: true, following: false });
 });
 
 // =================================================================

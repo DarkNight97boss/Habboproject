@@ -30,6 +30,7 @@ export function AsteriaMePage(): ReactNode
             <MeQuickActions />
             <AsteriaNewsBento title="Ultime news" subtitle="Cosa succede in Asteria" />
             <MeActivity />
+            <MeFollowedRooms />
             <MeOrders />
         </AsteriaShell>
     );
@@ -241,6 +242,48 @@ function MeActivity(): ReactNode
                         </div>
                     );
                 })}
+            </div>
+        </div>
+    );
+}
+
+interface FollowedRoom { id: number; name: string; users: number; maxUsers: number; ownerName: string; }
+
+/**
+ * Stanze seguite (#12). Visibile se flag `room_follow` ON e l'utente ne segue
+ * almeno una. "Entra" porta al client (il deep-link alla stanza specifica
+ * arriverà col ponte EMU, Fase 2).
+ */
+function MeFollowedRooms(): ReactNode
+{
+    const { data, isLoading } = useQuery<{ enabled: boolean; rooms: FollowedRoom[] }>({
+        queryKey: ['me', 'followed-rooms'],
+        queryFn: async () =>
+        {
+            const r = await fetch('/api/v2/community/rooms/followed', { credentials: 'include' });
+            if(!r.ok) throw new Error('followed_failed');
+            return r.json();
+        },
+        staleTime: 20_000
+    });
+    if(isLoading) return null;
+    if(!data?.enabled) return null;
+    const rooms = data.rooms || [];
+    if(!rooms.length) return null;
+    return (
+        <div className="asteria-section">
+            <div className="asteria-section__head">
+                <h2 className="asteria-section__title">⭐ Stanze seguite</h2>
+                <a href="/community/rooms" className="asteria-section__subtitle" style={{ textDecoration: 'none', color: '#a855f7' }}>SCOPRI STANZE ↗</a>
+            </div>
+            <div className="asteria-feed">
+                {rooms.map(r => (
+                    <div key={r.id} className="asteria-feed__item">
+                        <span className="asteria-feed__icon">🏠</span>
+                        <span className="asteria-feed__text"><strong>{r.name}</strong> · {r.users}/{r.maxUsers} online</span>
+                        <a className="asteria-feed__time" href="/gioca" style={{ color: '#22d3ee', textDecoration: 'none' }}>Entra ▶</a>
+                    </div>
+                ))}
             </div>
         </div>
     );

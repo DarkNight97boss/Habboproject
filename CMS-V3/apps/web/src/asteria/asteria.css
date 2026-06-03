@@ -1523,6 +1523,28 @@
 .asteria-feed__text strong { color: #fff; }
 .asteria-feed__time { font-size: 12px; opacity: 0.5; white-space: nowrap; }
 
+/* Toggle "segui stanza" (#12) — heart in alto a sx sulla thumb della room card. */
+.asteria-room__follow {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, transform 0.1s;
+}
+.asteria-room__follow:hover { background: rgba(0, 0, 0, 0.65); transform: scale(1.1); }
+.asteria-room__follow.is-on { color: #ec4899; }
+
 /* ============================================================
    NEWS / ARTICOLI — /community/category/:cat + /community/article/:slug
    ============================================================ */

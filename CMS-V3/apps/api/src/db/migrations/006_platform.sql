@@ -1,6 +1,11 @@
 -- =========================================================================
 --  CMS-V3 — Platform foundation (Feature Flags + Event Bus)
 --
+--  NOTA deploy (2026-06-03): i 76 sqlupdates EMU storici sono stati
+--  baseline-ati nel tracker schema_migrations (erano già applicati a mano),
+--  così il tracker applica solo le migrations CMS nuove. In combinazione col
+--  fix del loop SQL del deploy (glob vs $(ls), per i nomi file con spazi).
+--
 --  Fase 1 del programma "35 feature EMU". Due tabelle-piattaforma su cui si
 --  agganceranno molte feature successive (daily streak, happy hour, activity
 --  feed, season pass, marketplace v2, ...).

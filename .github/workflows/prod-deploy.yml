@@ -765,7 +765,12 @@ jobs:
               ${MYSQL_BIN} -e "CREATE TABLE IF NOT EXISTS schema_migrations (filename VARCHAR(255) PRIMARY KEY, applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, checksum CHAR(64) NOT NULL) ENGINE=InnoDB"
               for DIR in "${EMU_DIR}" "${CMS_DIR}"; do
                 [ -d "${DIR}" ] || continue
-                for f in $(ls "${DIR}"/*.sql 2>/dev/null | sort); do
+                # glob diretto (NON $(ls ...)): preserva i nomi file con spazi
+                # (Arcturus ha es. "2_3_0-RC-3 TO 2_3_0.sql", "Update 3_5_0 to
+                # 3_5_2.sql"). Il $(ls) non quotato faceva word-splitting e
+                # rompeva sha256sum. bash espande i glob già ordinati.
+                for f in "${DIR}"/*.sql; do
+                  [ -e "$f" ] || continue
                   BN="$(basename "$f")"
                   CKSUM="$(sha256sum "$f" | cut -d" " -f1)"
                   EXISTS=$(${MYSQL_BIN} -e "SELECT COUNT(*) FROM schema_migrations WHERE filename=\"${BN}\"")

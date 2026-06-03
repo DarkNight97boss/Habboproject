@@ -7,6 +7,7 @@ import { env } from '../env.js';
 import { makeRateLimit } from '../middleware/rate-limit.js';
 import { isArgon2Hash, isPasswordPwned, hashPassword, verifyPassword, timingSafeDummyVerify } from '../security/password.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../security/jwt.js';
+import { emitActivity } from '../services/activity.js';
 
 const auth = new Hono();
 
@@ -270,6 +271,10 @@ auth.post(
             profilePublic: !!parsed.data.profilePublic,
             newsletter: !!parsed.data.newsletter
         });
+
+        // Activity feed: benvenuto pubblico (fire-and-forget, best-effort —
+        // non aggiunge latenza alla registrazione, non la fa fallire).
+        void emitActivity({ type: 'user.registered', actorId: insertedId, actorName: parsed.data.username });
 
         c.header('Set-Cookie', `cms_v3_access=${access.token}; ${cookieOpts(env.JWT_ACCESS_TTL_SECONDS)}`, { append: true });
         c.header('Set-Cookie', `cms_v3_refresh=${refresh.token}; ${cookieOpts(env.REFRESH_TOKEN_TTL_DAYS * 24 * 3600)}`, { append: true });

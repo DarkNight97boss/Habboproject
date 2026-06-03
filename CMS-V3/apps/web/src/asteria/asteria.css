@@ -1507,6 +1507,22 @@
 .asteria-streak__done { font-weight: 700; color: #22d3ee; }
 .asteria-streak__err { font-size: 13px; color: #f87171; }
 
+/* Activity feed di community (#11). */
+.asteria-feed { display: flex; flex-direction: column; gap: 2px; }
+.asteria-feed__item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    transition: background 0.15s;
+}
+.asteria-feed__item:hover { background: rgba(255, 255, 255, 0.04); }
+.asteria-feed__icon { font-size: 20px; flex-shrink: 0; }
+.asteria-feed__text { flex: 1; font-size: 15px; opacity: 0.9; }
+.asteria-feed__text strong { color: #fff; }
+.asteria-feed__time { font-size: 12px; opacity: 0.5; white-space: nowrap; }
+
 /* ============================================================
    NEWS / ARTICOLI — /community/category/:cat + /community/article/:slug
    ============================================================ */

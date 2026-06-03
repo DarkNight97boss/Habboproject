@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { dbExecute, dbQuery } from '../db/pool.js';
 import { env } from '../env.js';
+import { isFeatureEnabled } from '../services/flags.js';
 
 /**
  * Activity / Event-bus (/api/v2/activity) — Fase 1 della piattaforma.
@@ -65,11 +66,13 @@ activity.get('/feed', async c =>
 {
     // limit clampato a [1,50] e coerced a int → safe da inlinare (evita il
     // quirk di mysql2 sui placeholder in LIMIT).
+    if(!(await isFeatureEnabled('activity_feed'))) return c.json({ enabled: false, events: [] });
+
     const limit = Math.min(50, Math.max(1, Number(c.req.query('limit') ?? 20))) | 0;
     const rows = await dbQuery<EventRow>(
         `SELECT id, actor_name, type, payload, created_at FROM cms_v3_activity_events WHERE visibility = 'public' ORDER BY id DESC LIMIT ${limit}`
     );
-    return c.json({ events: rows.map(r => ({ ...r, payload: safeParse(r.payload) })) });
+    return c.json({ enabled: true, events: rows.map(r => ({ ...r, payload: safeParse(r.payload) })) });
 });
 
 export default activity;

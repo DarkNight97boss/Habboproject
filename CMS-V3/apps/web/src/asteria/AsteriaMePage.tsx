@@ -29,6 +29,7 @@ export function AsteriaMePage(): ReactNode
             <MeStreak />
             <MeQuickActions />
             <AsteriaNewsBento title="Ultime news" subtitle="Cosa succede in Asteria" />
+            <MeActivity />
             <MeOrders />
         </AsteriaShell>
     );
@@ -171,6 +172,75 @@ function MeStreak(): ReactNode
                     )}
                     {error && <div className="asteria-streak__err">Errore, riprova</div>}
                 </div>
+            </div>
+        </div>
+    );
+}
+
+interface FeedEvent
+{
+    id: number;
+    actor_name: string;
+    type: string;
+    payload: unknown;
+    created_at: string;
+}
+
+function renderEvent(e: FeedEvent): { icon: string; text: ReactNode }
+{
+    const who = e.actor_name || 'Qualcuno';
+    const p = (e.payload && typeof e.payload === 'object') ? e.payload as Record<string, unknown> : {};
+    switch(e.type)
+    {
+        case 'user.registered': return { icon: '🎉', text: <><strong>{who}</strong> si è unito ad Asteria</> };
+        case 'streak.claimed':  return { icon: '🔥', text: <><strong>{who}</strong> ha riscattato uno streak di {String(p.streak ?? '?')} giorni</> };
+        case 'shop.purchase':   return { icon: '🛒', text: <><strong>{who}</strong> ha acquistato {String(p.item ?? 'un articolo')}</> };
+        case 'badge.earned':    return { icon: '🏅', text: <><strong>{who}</strong> ha ottenuto un distintivo</> };
+        case 'room.created':    return { icon: '🏠', text: <><strong>{who}</strong> ha creato una stanza</> };
+        default:                return { icon: '✨', text: <><strong>{who}</strong> · {e.type}</> };
+    }
+}
+
+/**
+ * Activity feed di community (#11). Consuma /api/v2/activity/feed (event-bus).
+ * Visibile solo se il flag `activity_feed` è ON (API → {enabled:false} se OFF).
+ * Gli eventi in-game (badge/stanze) arriveranno dal ponte EMU (Fase 2); per ora
+ * mostra gli eventi CMS-side (registrazioni, streak, acquisti).
+ */
+function MeActivity(): ReactNode
+{
+    const { data, isLoading } = useQuery<{ enabled: boolean; events: FeedEvent[] }>({
+        queryKey: ['community', 'activity'],
+        queryFn: async () =>
+        {
+            const r = await fetch('/api/v2/activity/feed?limit=12', { credentials: 'include' });
+            if(!r.ok) throw new Error('feed_failed');
+            return r.json();
+        },
+        staleTime: 20_000
+    });
+    if(isLoading) return null;
+    if(!data?.enabled) return null;
+    const events = data.events || [];
+    if(!events.length) return null;
+    return (
+        <div className="asteria-section">
+            <div className="asteria-section__head">
+                <h2 className="asteria-section__title">Attività di community</h2>
+                <span className="asteria-section__subtitle">Gli ultimi movimenti</span>
+            </div>
+            <div className="asteria-feed">
+                {events.map(e =>
+                {
+                    const { icon, text } = renderEvent(e);
+                    return (
+                        <div key={e.id} className="asteria-feed__item">
+                            <span className="asteria-feed__icon">{icon}</span>
+                            <span className="asteria-feed__text">{text}</span>
+                            <span className="asteria-feed__time">{relativeFrom(Math.floor(new Date(e.created_at).getTime() / 1000))}</span>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );

@@ -70,7 +70,12 @@ const envSchema = z.object({
     // client dev si connetterebbe all'EMU prod con un ticket dev → "session
     // expired". In PROD questa var NON va settata: assente ⇒ /play non inietta
     // nulla ⇒ comportamento invariato. Es. dev: wss://dev-hotel.asteriacore.online/websockets
-    NITRO_SOCKET_URL: z.string().optional()
+    NITRO_SOCKET_URL: z.string().optional(),
+
+    // Secret condiviso per l'ingest interno dell'event-bus (EMU→CMS via POST
+    // /api/v2/activity/ingest). Vuoto ⇒ endpoint disabilitato (503): nessun
+    // rischio di ingest anonimo finché non viene configurato.
+    INTERNAL_API_SECRET: z.string().default('')
 });
 
 const parsed = envSchema.safeParse(process.env);

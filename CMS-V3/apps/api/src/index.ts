@@ -18,6 +18,8 @@ import profileRoute from './routes/profile.js';
 import shopRoute from './routes/shop.js';
 import { skinSiteRoutes, default as skinsListRoute } from './routes/skin.js';
 import staffRoute from './routes/staff.js';
+import activityRoute from './routes/activity.js';
+import flagsRoute from './routes/flags.js';
 import { ensureShopSeeded } from './services/shop-seed.js';
 import { ensureSkinsSeeded } from './services/skin-seed.js';
 
@@ -54,6 +56,8 @@ app.get('/version', c => c.json({ name: 'cms-v3-api', version: '0.1.0', env: env
 app.route('/api/v2/auth', authRoute);
 app.route('/api/v2/me', meRoute);
 app.route('/api/v2/community', communityRoute);
+app.route('/api/v2/flags', flagsRoute);
+app.route('/api/v2/activity', activityRoute);
 app.route('/api/v2/profile', profileRoute);
 app.route('/api/v2/shop', shopRoute);
 app.route('/api/v2/site', skinSiteRoutes);

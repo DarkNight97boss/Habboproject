@@ -175,7 +175,7 @@ function AuthedHero({ user }: { user: AuthUser }): ReactNode
                 Pronto a tornare in gioco?
             </p>
             <div className="asteria-hero__cta">
-                <a href="/api/v2/auth/play" className="asteria-btn asteria-btn--xl">
+                <a href="/gioca" className="asteria-btn asteria-btn--xl">
                     ▶ Entra nel hotel
                 </a>
                 <a href={`/profile/${user.username}`} className="asteria-btn asteria-btn--ghost asteria-btn--xl">
@@ -359,7 +359,7 @@ function SpotlightCTA({ isAuthed }: { isAuthed: boolean }): ReactNode
             </p>
             <div className="asteria-hero__cta">
                 {isAuthed ? (
-                    <a href="/api/v2/auth/play" className="asteria-btn asteria-btn--xl">▶ Entra nel hotel</a>
+                    <a href="/gioca" className="asteria-btn asteria-btn--xl">▶ Entra nel hotel</a>
                 ) : (
                     <>
                         <a href="/registration" className="asteria-btn asteria-btn--xl">Crea il tuo account →</a>

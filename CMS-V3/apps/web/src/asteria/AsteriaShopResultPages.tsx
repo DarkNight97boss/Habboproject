@@ -100,7 +100,7 @@ function SuccessState({ order }: { order: VerifyResponse['order'] }): ReactNode
                 {order.badge_code && <div><strong>+ Badge</strong> {order.badge_code}</div>}
             </div>
             <div className="asteria-hero__cta" style={{ marginTop: 32 }}>
-                <a href="/api/v2/auth/play" className="asteria-btn asteria-btn--xl">▶ Entra nel hotel</a>
+                <a href="/gioca" className="asteria-btn asteria-btn--xl">▶ Entra nel hotel</a>
                 <a href="/me" className="asteria-btn asteria-btn--ghost asteria-btn--xl">Vedi il mio account</a>
             </div>
         </>

@@ -58,7 +58,7 @@ export function AsteriaRoomsPage(): ReactNode
                     ))}
                 </div>
                 <div style={{ textAlign: 'center', marginTop: 32 }}>
-                    <a href="/api/v2/auth/play" className="asteria-btn asteria-btn--xl">▶ Entra e visita le stanze</a>
+                    <a href="/gioca" className="asteria-btn asteria-btn--xl">▶ Entra e visita le stanze</a>
                 </div>
             </section>
         </AsteriaShell>

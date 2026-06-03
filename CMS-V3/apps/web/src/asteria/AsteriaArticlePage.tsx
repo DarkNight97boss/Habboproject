@@ -69,7 +69,7 @@ export function AsteriaArticlePage(): ReactNode
 
                         <div className="asteria-article__back">
                             <Link to="/community/category/all" className="asteria-btn asteria-btn--ghost">← Tutte le news</Link>
-                            <a href="/api/v2/auth/play" className="asteria-btn">▶ Entra nel hotel</a>
+                            <a href="/gioca" className="asteria-btn">▶ Entra nel hotel</a>
                         </div>
                     </article>
 

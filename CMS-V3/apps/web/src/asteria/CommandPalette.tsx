@@ -50,7 +50,7 @@ export function CommandPalette({ open, onClose, user }: { open: boolean; onClose
         ...(user
             ? [
                 { id: 'me',       label: 'Il tuo profilo',      icon: '◐', section: 'Account', onSelect: nav('/me'),                  matchOn: 'me account profile' },
-                { id: 'play',     label: 'Entra nel hotel',     icon: '▶', section: 'Account', onSelect: nav('/api/v2/auth/play'),    matchOn: 'gioca play hotel' },
+                { id: 'play',     label: 'Entra nel hotel',     icon: '▶', section: 'Account', onSelect: nav('/gioca'),    matchOn: 'gioca play hotel' },
                 { id: 'settings', label: 'Impostazioni',        icon: '⚙', section: 'Account', onSelect: nav('/settings/privacy'),    matchOn: 'config preferenze' },
                 ...(user.rank >= 5 ? [{ id: 'admin', label: 'Pannello admin',     icon: '⚡', section: 'Account', onSelect: nav('/admin'),               matchOn: 'staff housekeeping' }] : [])
             ] as PaletteItem[]

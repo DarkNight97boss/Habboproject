@@ -42,7 +42,7 @@ function PlayCta(): ReactNode
 {
     return (
         <div className="asteria-content__cta">
-            <a href="/api/v2/auth/play" className="asteria-btn asteria-btn--xl">▶ Entra nel hotel</a>
+            <a href="/gioca" className="asteria-btn asteria-btn--xl">▶ Entra nel hotel</a>
             <Link to="/registration" className="asteria-btn asteria-btn--ghost asteria-btn--xl">Crea account</Link>
         </div>
     );
@@ -148,7 +148,7 @@ export function AsteriaMessagingPage(): ReactNode
                 <p>{notif && notif.unreadMessages > 0
                     ? <>Hai <strong>{notif.unreadMessages}</strong> messaggi non letti nel client.</>
                     : 'Nessun nuovo messaggio.'}</p>
-                <a href="/api/v2/auth/play" className="asteria-btn">Apri il messenger in gioco</a>
+                <a href="/gioca" className="asteria-btn">Apri il messenger in gioco</a>
             </div>
         </AsteriaContentPage>
     );

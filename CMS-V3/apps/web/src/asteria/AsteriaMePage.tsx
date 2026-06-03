@@ -51,7 +51,7 @@ function MePanel({ user }: { user: AuthUser }): ReactNode
                     {user.rank >= 5 && <span className="asteria-me__badge asteria-me__badge--staff">STAFF</span>}
                 </div>
                 <div className="asteria-hero__cta" style={{ marginTop: 24 }}>
-                    <a href="/api/v2/auth/play" className="asteria-btn asteria-btn--xl">▶ Entra nel hotel</a>
+                    <a href="/gioca" className="asteria-btn asteria-btn--xl">▶ Entra nel hotel</a>
                     <a href={`/profile/${user.username}`} className="asteria-btn asteria-btn--ghost asteria-btn--xl">Profilo pubblico</a>
                 </div>
             </div>

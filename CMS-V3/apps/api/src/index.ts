@@ -1,8 +1,5 @@
-// Deploy prod: questo entry viene buildato (tsc) → CMS-V3/apps/api/dist e servito
-// da systemd `cms-api` (ExecStart .../apps/api/dist/index.js). L'automazione vive
-// in .github/workflows/prod-deploy.yml (auto su push a main, filtrato per path,
-// con backup pre-deploy + migration incrementali (tracker schema_migrations) +
-// smoke-test (web + API + asset di gioco) e rollback automatico in caso di fallimento).
+// Entry API: build (tsc) → CMS-V3/apps/api/dist, servito da systemd `cms-api`.
+// Deploy automatico su push a main: .github/workflows/prod-deploy.yml.
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';

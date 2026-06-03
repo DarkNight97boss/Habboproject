@@ -945,9 +945,10 @@ jobs:
   smoke-test-prod:
     name: Smoke-test produzione
     needs: [guard, deploy-prod]
-    # inputs.skip_smoke esiste solo su workflow_dispatch; su push e' null e
-    # la condizione "!= true" e' true (= eseguiamo smoke), come atteso.
-    if: ${{ needs.deploy-prod.result == 'success' && (github.event_name != 'workflow_dispatch' || inputs.skip_smoke != true) }}
+    # Gira su OGNI deploy riuscito (push o dispatch). NB: NIENTE riferimenti a
+    # `inputs.*` qui: su evento push mandano in fault la valutazione dell'if e
+    # il job veniva skippato (era il vero motivo per cui lo smoke non partiva).
+    if: ${{ needs.deploy-prod.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

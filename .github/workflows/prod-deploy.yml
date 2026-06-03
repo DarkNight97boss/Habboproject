@@ -35,21 +35,21 @@ name: Production Deploy
 
 on:
   # ---------------------------------------------------------------------------
-  # DISABILITATO TEMPORANEAMENTE: l'auto-trigger push su main e' OFF perche'
-  # le migration 003/004/005 (site_settings, skins, shop) non sono ancora
-  # applicate su DB prod 'ms'. Riabilitare quando si vuole rollout completo
-  # del Skin Engine + Stripe in produzione.
-  #
-  # push:
-  #   branches:
-  #     - main
-  #   paths:
-  #     - 'EMU/**'
-  #     - 'CMS-V3/**'
-  #     - 'Nitro-V3/**'
-  #     - 'CMS/react/**'
-  #     - '.github/workflows/prod-deploy.yml'
+  # Auto-deploy su push a 'main', filtrato per path. Le migration 003/004/005
+  # (site_settings/skins/shop) sono state applicate su DB prod 'ms' e registrate
+  # nel tracker schema_migrations (2026-06-03) → rollout completo (Skin Engine +
+  # Stripe) ATTIVO. Il runner migration è idempotente (CREATE TABLE IF NOT
+  # EXISTS + tracker per filename) → salta le migration già registrate.
   # ---------------------------------------------------------------------------
+  push:
+    branches:
+      - main
+    paths:
+      - 'EMU/**'
+      - 'CMS-V3/**'
+      - 'Nitro-V3/**'
+      - 'CMS/react/**'
+      - '.github/workflows/prod-deploy.yml'
 
   # ---------------------------------------------------------------------------
   # Trigger manuale: per ora UNICO modo per deployare in prod.

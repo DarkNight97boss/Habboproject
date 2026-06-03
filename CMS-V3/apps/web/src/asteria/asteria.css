@@ -1479,6 +1479,34 @@
    ============================================================ */
 .asteria-section, .asteria-stats, .asteria-quick, .asteria-orders { content-visibility: auto; contain-intrinsic-size: 0 400px; }
 
+/* Daily Streak widget (#1) — card coerente col tema nebula. */
+.asteria-streak {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    flex-wrap: wrap;
+    padding: 24px 28px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(6, 182, 212, 0.08));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.asteria-streak__count { text-align: center; }
+.asteria-streak__num {
+    font-size: clamp(48px, 8vw, 84px);
+    font-weight: 800;
+    line-height: 1;
+    background: linear-gradient(135deg, #f5e9ff, #a855f7);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.asteria-streak__unit { font-size: 12px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.08em; }
+.asteria-streak__meta { display: flex; flex-direction: column; gap: 8px; font-size: 15px; opacity: 0.85; }
+.asteria-streak__meta strong { font-size: 20px; color: #fff; }
+.asteria-streak__action { margin-left: auto; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+.asteria-streak__done { font-weight: 700; color: #22d3ee; }
+.asteria-streak__err { font-size: 13px; color: #f87171; }
+
 /* ============================================================
    NEWS / ARTICOLI — /community/category/:cat + /community/article/:slug
    ============================================================ */

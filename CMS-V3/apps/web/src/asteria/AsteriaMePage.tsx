@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { type ReactNode } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { type ReactNode, useState } from 'react';
 import { Navigate } from 'react-router';
 import { type AuthUser, avatarUrl, useAuth } from '../hooks/useAuth';
 import { AsteriaNewsBento } from './AsteriaNewsBento';
@@ -26,6 +26,7 @@ export function AsteriaMePage(): ReactNode
         <AsteriaShell activeNav="home">
             <MePanel user={user} />
             <MeStats user={user} />
+            <MeStreak />
             <MeQuickActions />
             <AsteriaNewsBento title="Ultime news" subtitle="Cosa succede in Asteria" />
             <MeOrders />
@@ -78,6 +79,98 @@ function MeStats({ user }: { user: AuthUser }): ReactNode
             <div className="asteria-stat">
                 <div className="asteria-stat__value">{relativeFrom(user.last_online)}</div>
                 <div className="asteria-stat__label">Ultima volta</div>
+            </div>
+        </div>
+    );
+}
+
+interface StreakState
+{
+    enabled: boolean;
+    currentStreak?: number;
+    longestStreak?: number;
+    totalClaims?: number;
+    claimableToday?: boolean;
+    nextReward?: number | null;
+}
+
+/**
+ * Widget Daily Streak (#1). Visibile solo se il flag `daily_streak` è ON
+ * (l'API risponde {enabled:false} se OFF → il widget non si renderizza).
+ * Premio in crediti consegnato server-side via RCON; al claim invalidiamo
+ * sia lo stato streak sia ['auth','me'] (crediti aggiornati).
+ */
+function MeStreak(): ReactNode
+{
+    const qc = useQueryClient();
+    const { data, isLoading } = useQuery<StreakState>({
+        queryKey: ['me', 'streak'],
+        queryFn: async () =>
+        {
+            const r = await fetch('/api/v2/streak', { credentials: 'include' });
+            if(!r.ok) throw new Error('streak_fetch_failed');
+            return r.json();
+        },
+        staleTime: 30_000
+    });
+
+    const [claiming, setClaiming] = useState(false);
+    const [claimed, setClaimed] = useState<{ reward: number; delivered: boolean } | null>(null);
+    const [error, setError] = useState(false);
+
+    async function doClaim(): Promise<void>
+    {
+        if(claiming) return;
+        setClaiming(true);
+        setError(false);
+        try
+        {
+            const r = await fetch('/api/v2/streak/claim', { method: 'POST', credentials: 'include' });
+            const body = await r.json().catch(() => ({}));
+            if(!r.ok) throw new Error('claim_failed');
+            setClaimed({ reward: Number(body.reward ?? 0), delivered: body.rewardDelivered !== false });
+            void qc.invalidateQueries({ queryKey: ['me', 'streak'] });
+            void qc.invalidateQueries({ queryKey: ['auth', 'me'] });
+        }
+        catch { setError(true); }
+        finally { setClaiming(false); }
+    }
+
+    if(isLoading) return null;
+    if(!data?.enabled) return null; // feature flag OFF → widget invisibile
+
+    const streak = data.currentStreak ?? 0;
+    const claimable = (data.claimableToday ?? false) && !claimed;
+
+    return (
+        <div className="asteria-section">
+            <div className="asteria-section__head">
+                <h2 className="asteria-section__title">🔥 Streak giornaliero</h2>
+                <span className="asteria-section__subtitle">Torna ogni giorno, accumula bonus</span>
+            </div>
+            <div className="asteria-streak">
+                <div className="asteria-streak__count">
+                    <div className="asteria-streak__num">{streak}</div>
+                    <div className="asteria-streak__unit">giorni di fila</div>
+                </div>
+                <div className="asteria-streak__meta">
+                    <div><strong>{data.longestStreak ?? 0}</strong> record</div>
+                    <div><strong>{data.totalClaims ?? 0}</strong> riscatti totali</div>
+                </div>
+                <div className="asteria-streak__action">
+                    {claimed ? (
+                        <div className="asteria-streak__done">
+                            +{claimed.reward} crediti!{!claimed.delivered && ' (in arrivo a breve)'}
+                        </div>
+                    ) : claimable ? (
+                        <button className="asteria-btn asteria-btn--xl" disabled={claiming} onClick={() => void doClaim()}>
+                            {claiming ? '…' : `Riscatta +${data.nextReward ?? 10} crediti`}
+                        </button>
+                    ) : (
+                        <div className="asteria-streak__done">Già riscattato oggi · torna domani</div>
+                    )}
+                    {error && <div className="asteria-streak__err">Errore, riprova</div>}
+                </div>
             </div>
         </div>
     );

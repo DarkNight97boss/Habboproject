@@ -988,6 +988,10 @@ jobs:
             # 3) Web servito da nginx (vhost asteriacore.online): 200/301/302 = up.
             W=$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 -H 'Host: asteriacore.online' http://127.0.0.1/ || echo 000)
             case "$W" in 200|301|302) echo "[smoke] OK web nginx ($W)" ;; *) echo "[smoke] FAIL web nginx ($W)"; exit 1 ;; esac
+            # 4) EMU game server (Arcturus): porta :2096 in ascolto = EMU su.
+            #    Così un deploy EMU che rompe l'avvio fa scattare il rollback.
+            ss -ltn | awk '{print $4}' | grep -qE ':2096$' || { echo "[smoke] FAIL EMU :2096 non in ascolto"; exit 1; }
+            echo "[smoke] OK EMU :2096"
             echo "[smoke] tutti i check localhost passati."
         run: |
           set -euo pipefail

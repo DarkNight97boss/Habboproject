@@ -242,23 +242,97 @@ export class AvatarEditorThumbnailsHelper
 
                 avatarImage.setDirection(AvatarSetType.HEAD, 2);
 
-                const imageUrl = avatarImage.processAsImageUrl(AvatarSetType.HEAD);
+                const rawUrl = avatarImage.processAsImageUrl(AvatarSetType.HEAD);
 
                 avatarImage.dispose();
                 settled = true;
 
-                if(imageUrl && imageUrl.length)
+                if(!rawUrl || !rawUrl.length)
+                {
+                    resolve(null);
+                    return;
+                }
+
+                // La testa è resa in un canvas a figura intera (testa in alto,
+                // resto trasparente) → senza ritaglio resta piccola. Ritaglio
+                // ai pixel opachi così RIEMPIE il box della miniatura.
+                AvatarEditorThumbnailsHelper.cropImageUrlToOpaque(rawUrl).then(imageUrl =>
                 {
                     AvatarEditorThumbnailsHelper.THUMBNAIL_CACHE.set(thumbnailKey, imageUrl);
                     resolve(imageUrl);
-                }
-                else
-                {
-                    resolve(null);
-                }
+                });
             };
 
             resetFigure(figureString);
+        });
+    }
+
+    // Ritaglia una data-URL ai suoi pixel opachi (bounding box della testa),
+    // così la miniatura riempie il box invece di restare piccola al centro di
+    // un canvas trasparente. Su qualsiasi errore torna l'immagine originale.
+    private static cropImageUrlToOpaque(imageUrl: string): Promise<string>
+    {
+        return new Promise<string>(resolve =>
+        {
+            const img = new Image();
+
+            img.onload = () =>
+            {
+                const w = img.naturalWidth;
+                const h = img.naturalHeight;
+
+                if(!w || !h) { resolve(imageUrl); return; }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+
+                const ctx = canvas.getContext('2d');
+                if(!ctx) { resolve(imageUrl); return; }
+
+                ctx.drawImage(img, 0, 0);
+
+                let pixels: Uint8ClampedArray;
+                try { pixels = ctx.getImageData(0, 0, w, h).data; }
+                catch { resolve(imageUrl); return; }
+
+                const ALPHA_THRESHOLD = 8;
+                let minX = w, minY = h, maxX = -1, maxY = -1;
+
+                for(let y = 0; y < h; y++)
+                {
+                    for(let x = 0; x < w; x++)
+                    {
+                        if(pixels[(((y * w) + x) * 4) + 3] > ALPHA_THRESHOLD)
+                        {
+                            if(x < minX) minX = x;
+                            if(x > maxX) maxX = x;
+                            if(y < minY) minY = y;
+                            if(y > maxY) maxY = y;
+                        }
+                    }
+                }
+
+                if((maxX < minX) || (maxY < minY)) { resolve(imageUrl); return; }
+
+                const cw = (maxX - minX) + 1;
+                const ch = (maxY - minY) + 1;
+
+                const out = document.createElement('canvas');
+                out.width = cw;
+                out.height = ch;
+
+                const outCtx = out.getContext('2d');
+                if(!outCtx) { resolve(imageUrl); return; }
+
+                outCtx.imageSmoothingEnabled = false;
+                outCtx.drawImage(canvas, minX, minY, cw, ch, 0, 0, cw, ch);
+
+                resolve(out.toDataURL());
+            };
+
+            img.onerror = () => resolve(imageUrl);
+            img.src = imageUrl;
         });
     }
 

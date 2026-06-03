@@ -363,6 +363,20 @@ public class RoomManager {
 
         Emulator.getPluginManager().fireEvent(new NavigatorRoomCreatedEvent(habbo, room));
 
+        // Event-bus CMS (best-effort, async, no-op se non configurato): pubblica
+        // l'evento nel feed di community. Doppio try/catch a protezione: la
+        // creazione della stanza non deve MAI dipendere dal CMS.
+        try {
+            if (room != null) {
+                com.google.gson.JsonObject cmsPayload = new com.google.gson.JsonObject();
+                cmsPayload.addProperty("room", name);
+                cmsPayload.addProperty("roomId", room.getId());
+                com.eu.habbo.core.CmsEventPublisher.publish("room.created", habbo.getHabboInfo().getId(), habbo.getHabboInfo().getUsername(), cmsPayload);
+            }
+        } catch (Throwable ignored) {
+            // intenzionalmente ignorato
+        }
+
         return room;
     }
 

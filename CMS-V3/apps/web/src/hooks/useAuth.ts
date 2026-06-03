@@ -41,6 +41,51 @@ export function broadcastAuth(type: 'login' | 'logout'): void
 }
 
 /**
+ * Rinnova l'access token (15 min) usando il refresh cookie httpOnly (14 giorni):
+ * POST /auth/refresh — il cookie viaggia da solo con credentials:include, non
+ * serve (né si può) leggerlo da JS. Senza questo, la sessione moriva a ogni
+ * scadenza dell'access token.
+ *
+ * Single-flight per-tab + lock cross-tab (navigator.locks): più tab che si
+ * rinnovano in parallelo userebbero lo stesso refresh token → la rotation
+ * server-side ha reuse-detection che revocherebbe l'intera family (logout
+ * ovunque). Il lock serializza: la seconda tab usa il cookie già ruotato.
+ */
+let sessionRefreshPromise: Promise<boolean> | null = null;
+
+async function attemptSessionRefresh(): Promise<boolean>
+{
+    if(sessionRefreshPromise) return sessionRefreshPromise;
+
+    const run = async (): Promise<boolean> =>
+    {
+        try
+        {
+            const r = await fetch('/api/v2/auth/refresh', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'content-type': 'application/json' },
+                body: '{}'
+            });
+            return r.ok;
+        }
+        catch
+        {
+            return false;
+        }
+    };
+
+    const locks = (typeof navigator !== 'undefined')
+        ? (navigator as { locks?: { request<T>(name: string, cb: () => Promise<T>): Promise<T> } }).locks
+        : undefined;
+
+    sessionRefreshPromise = (locks ? locks.request('cms-v3-refresh', run) : run())
+        .finally(() => { sessionRefreshPromise = null; });
+
+    return sessionRefreshPromise;
+}
+
+/**
  * Hook auth: chiama GET /api/v2/me con i cookie httpOnly già emessi
  * dal login/register. Restituisce null se non autenticato (401).
  *
@@ -75,8 +120,19 @@ export function useAuth()
         queryKey: ['auth', 'me'],
         queryFn: async () =>
         {
-            const r = await fetch('/api/v2/me', { credentials: 'include', cache: 'no-store' });
-            if(r.status === 401) return null;
+            let r = await fetch('/api/v2/me', { credentials: 'include', cache: 'no-store' });
+
+            // Access token scaduto (15 min): prova a rinnovarlo col refresh
+            // cookie (14 giorni) e ritenta /me — così la sessione persiste
+            // senza dover rifare il login (anche dopo riapertura del browser).
+            if(r.status === 401)
+            {
+                const refreshed = await attemptSessionRefresh();
+                if(!refreshed) return null;
+                r = await fetch('/api/v2/me', { credentials: 'include', cache: 'no-store' });
+                if(r.status === 401) return null;
+            }
+
             if(!r.ok) throw new Error('me_failed_' + r.status);
             return r.json() as Promise<AuthUser>;
         },

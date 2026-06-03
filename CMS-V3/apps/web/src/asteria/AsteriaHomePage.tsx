@@ -189,25 +189,42 @@ function AuthedHero({ user }: { user: AuthUser }): ReactNode
 // ============================================================
 //   STATS — count-up animati
 // ============================================================
+interface HomeStats { onlineUsers: number; activeRooms: number; msgPerHour: number; totalUsers: number; }
+
 function StatsStrip(): ReactNode
 {
+    // Dati REALI da /api/v2/community/stats (utenti online, stanze attive,
+    // messaggi nell'ultima ora, iscritti). Fallback a 0 finché non arrivano
+    // o se l'API è giù — i CountUp animano fino al valore reale al fetch.
+    const [stats, setStats] = useState<HomeStats | null>(null);
+
+    useEffect(() =>
+    {
+        const ctrl = new AbortController();
+        fetch('/api/v2/community/stats', { signal: ctrl.signal })
+            .then(r => (r.ok ? r.json() : null))
+            .then((d: HomeStats | null) => { if(d) setStats(d); })
+            .catch(() => { /* rete/API giù: resta sul fallback */ });
+        return () => ctrl.abort();
+    }, []);
+
     return (
         <div className="asteria-stats">
             <div className="asteria-stat">
-                <div className="asteria-stat__value"><CountUpValue value={127} /></div>
+                <div className="asteria-stat__value"><CountUpValue value={stats?.onlineUsers ?? 0} /></div>
                 <div className="asteria-stat__label">Utenti online</div>
             </div>
             <div className="asteria-stat">
-                <div className="asteria-stat__value"><CountUpValue value={34} /></div>
+                <div className="asteria-stat__value"><CountUpValue value={stats?.activeRooms ?? 0} /></div>
                 <div className="asteria-stat__label">Stanze attive</div>
             </div>
             <div className="asteria-stat">
-                <div className="asteria-stat__value">1.8K</div>
+                <div className="asteria-stat__value"><CountUpValue value={stats?.msgPerHour ?? 0} /></div>
                 <div className="asteria-stat__label">Msg/ora</div>
             </div>
             <div className="asteria-stat">
-                <div className="asteria-stat__value">99.9<span style={{fontSize: 24}}>%</span></div>
-                <div className="asteria-stat__label">Uptime 30g</div>
+                <div className="asteria-stat__value"><CountUpValue value={stats?.totalUsers ?? 0} /></div>
+                <div className="asteria-stat__label">Iscritti</div>
             </div>
         </div>
     );

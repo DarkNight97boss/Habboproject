@@ -5,6 +5,44 @@ import { ensureNewsTable, fetchNewsBySlug, fetchNewsList } from '../services/new
 const community = new Hono();
 
 // =================================================================
+// GET /community/stats — statistiche pubbliche homepage (dati REALI)
+// =================================================================
+// Pubblico. Numeri live per la stats-strip della home:
+//  - onlineUsers : utenti collegati ora (users.online='1', settato dall'EMU)
+//  - activeRooms : stanze con >=1 utente (rooms.users>0, aggiornato dall'EMU)
+//  - msgPerHour  : messaggi chat nell'ultima ora (chatlogs_room.timestamp unix)
+//  - totalUsers  : iscritti totali
+// Cache in-memory 15s: la home è pubblica, evitiamo di martellare il DB.
+let statsCache: { data: Record<string, number>; expires: number } | null = null;
+
+community.get('/stats', async c =>
+{
+    const now = Date.now();
+    if(statsCache && statsCache.expires > now) return c.json(statsCache.data);
+
+    const rows = await dbQuery<{
+        online_users: number; active_rooms: number;
+        msg_per_hour: number; total_users: number;
+    }>(
+        `SELECT
+            (SELECT COUNT(*) FROM users WHERE online = '1') AS online_users,
+            (SELECT COUNT(*) FROM rooms WHERE users > 0) AS active_rooms,
+            (SELECT COUNT(*) FROM chatlogs_room WHERE timestamp > UNIX_TIMESTAMP() - 3600) AS msg_per_hour,
+            (SELECT COUNT(*) FROM users) AS total_users`
+    );
+
+    const data = {
+        onlineUsers: rows[0]?.online_users ?? 0,
+        activeRooms: rows[0]?.active_rooms ?? 0,
+        msgPerHour: rows[0]?.msg_per_hour ?? 0,
+        totalUsers: rows[0]?.total_users ?? 0
+    };
+
+    statsCache = { data, expires: now + 15_000 };
+    return c.json(data);
+});
+
+// =================================================================
 // GET /community/photos — feed pubblico delle foto camera
 // =================================================================
 // Pubblico (no auth required): chiunque vede le foto scattate via

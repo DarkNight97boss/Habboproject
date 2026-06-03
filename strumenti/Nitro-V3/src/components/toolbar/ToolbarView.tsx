@@ -1,7 +1,7 @@
 import { CreateLinkEvent, Dispose, DropBounce, EaseOut, JumpBy, Motions, NitroToolbarAnimateIconEvent, PerkAllowancesMessageEvent, PerkEnum, Queue, Wait, YouTubeRoomSettingsEvent } from '@nitrots/nitro-renderer';
 import { AnimatePresence, motion, Variants } from 'framer-motion';
 import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { GetConfigurationValue, isHousekeepingEnabled, MessengerIconState, OpenMessengerChat, setYoutubeRoomEnabled, VisitDesktop } from '../../api';
+import { isHousekeepingEnabled, MessengerIconState, OpenMessengerChat, setYoutubeRoomEnabled, VisitDesktop } from '../../api';
 import { Flex, LayoutAvatarImageView, LayoutItemCountView } from '../../common';
 import { useAchievements, useFriends, useHasPermission, useInventoryUnseenTracker, useMessageEvent, useMessenger, useModTools, useNitroEvent, useSessionInfo, useSoundboard, useWiredTools } from '../../hooks';
 import { ToolbarItemView } from './ToolbarItemView';
@@ -239,13 +239,9 @@ export const ToolbarView: FC<{ isInRoom: boolean }> = props =>
                     <motion.div variants={ itemVariants }>
                         <ToolbarItemView icon="rooms" onClick={ () => CreateLinkEvent('navigator/toggle') } className="tb-icon" />
                     </motion.div>
-                    { GetConfigurationValue('game.center.enabled') &&
-                        <motion.div variants={ itemVariants }>
-                            <ToolbarItemView icon="game" onClick={ () => CreateLinkEvent('games/toggle') } className="tb-icon" />
-                        </motion.div> }
-                    <motion.div variants={ itemVariants }>
-                        <ToolbarItemView icon="catalog" onClick={ () => CreateLinkEvent('catalog/toggle/normal') } className="tb-icon" />
-                    </motion.div>
+                    { /* ASTERIA: icone "Game Center" (controller) e "Catalogo" (carrello)
+                         nascoste dal client — il game center non è in uso e lo shop è
+                         gestito dal sito CMS. Per ripristinarle, vedi git history. */ }
                     <motion.div variants={ itemVariants } className="relative">
                         <AnimatePresence>
                             { isMeExpanded &&
@@ -357,13 +353,9 @@ export const ToolbarView: FC<{ isInRoom: boolean }> = props =>
                     <motion.div variants={ itemVariants }>
                         <ToolbarItemView icon="rooms" onClick={ () => CreateLinkEvent('navigator/toggle') } className="tb-icon" />
                     </motion.div>
-                    { GetConfigurationValue('game.center.enabled') &&
-                        <motion.div variants={ itemVariants }>
-                            <ToolbarItemView icon="game" onClick={ () => CreateLinkEvent('games/toggle') } className="tb-icon" />
-                        </motion.div> }
-                    <motion.div variants={ itemVariants }>
-                        <ToolbarItemView icon="catalog" onClick={ () => CreateLinkEvent('catalog/toggle/normal') } className="tb-icon" />
-                    </motion.div>
+                    { /* ASTERIA: icone "Game Center" (controller) e "Catalogo" (carrello)
+                         nascoste dal client — il game center non è in uso e lo shop è
+                         gestito dal sito CMS. Per ripristinarle, vedi git history. */ }
                     <motion.div variants={ itemVariants } className="relative shrink-0">
                         <AnimatePresence>
                             { isMeExpanded &&

@@ -108,7 +108,14 @@ shop.post('/checkout', requireAuth, async (c) =>
             },
             success_url: `${origin}/shop/success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${origin}/shop/cancel`,
-            locale: 'it'
+            locale: 'it',
+            // Offerte (#7): abilita i codici promozionali NATIVI di Stripe. DORMIENTE
+            // di default → senza codici configurati il checkout è identico a prima
+            // (nessuno sconto). Lo staff crea/gestisce codici e percentuali nella
+            // dashboard Stripe; nessuna matematica prezzi lato CMS (zero rischio di
+            // addebito errato). Il webhook accredita per ITEM (crediti invariati),
+            // quindi uno sconto incide solo sul prezzo pagato, mai sui crediti dati.
+            allow_promotion_codes: true
         });
 
         // Pre-record pending order (per audit anche se l'utente abbandona)
@@ -161,10 +168,13 @@ shop.post('/webhook', async (c) =>
         const userId = Number(session.metadata?.user_id || 0);
         const itemId = Number(session.metadata?.item_id || 0);
 
-        // Mark order paid
+        // Mark order paid. amount_cents → importo EFFETTIVO pagato (session.amount_total):
+        // così con un codice promo (#7) l'ordine riflette il prezzo scontato reale per
+        // l'audit/economia, non il prezzo pieno pre-registrato. COALESCE: se Stripe non
+        // fornisce amount_total, mantiene il valore già registrato.
         await dbExecute(
-            'UPDATE cms_v3_shop_orders SET status = ?, stripe_payment_intent = ?, paid_at = NOW() WHERE stripe_session_id = ? AND status = ?',
-            ['paid', session.payment_intent || null, session.id, 'pending']
+            'UPDATE cms_v3_shop_orders SET status = ?, stripe_payment_intent = ?, amount_cents = COALESCE(?, amount_cents), paid_at = NOW() WHERE stripe_session_id = ? AND status = ?',
+            ['paid', session.payment_intent || null, session.amount_total ?? null, session.id, 'pending']
         );
 
         // Delivery: credita user via RCON

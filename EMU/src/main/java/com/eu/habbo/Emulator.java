@@ -192,6 +192,9 @@ public final class Emulator {
             // Happy Hour (#5): bonus crediti periodico per gli online, gated dal
             // flag CMS happy_hour + finestra oraria (usa CmsFlags).
             com.eu.habbo.core.HappyHour.start();
+            // Shadow-mute (#19): poller del set di mute ombra dal CMS, gated dal
+            // flag shadow_mute (no-op se OFF). Vedi core/ShadowMute.
+            com.eu.habbo.core.ShadowMute.start();
 
             LOGGER.info("Asteria Core avviato correttamente.");
             LOGGER.info("Sistema avviato in: {}ms. Utilizzando {} thread!", (System.nanoTime() - startTime) / 1e6, Runtime.getRuntime().availableProcessors() * 2);

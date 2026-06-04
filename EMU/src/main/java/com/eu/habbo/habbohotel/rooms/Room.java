@@ -3587,7 +3587,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
             <= this.chatDistance || h.equals(habbo) || this.hasRights(h) || noChatLimit) && (
             tentRectangle == null || RoomLayout.tileInSquare(tentRectangle,
                 h.getRoomUnit().getCurrentLocation()))) {
-          if (!h.getHabboStats().userIgnored(habbo.getHabboInfo().getId())) {
+          // Shadow-mute (#19): nasconde il TALK del mittente shadow-mutato a tutti
+          // tranne lui e lo staff. No-op se il flag e' OFF (vedi core/ShadowMute).
+          if (!h.getHabboStats().userIgnored(habbo.getHabboInfo().getId())
+              && !com.eu.habbo.core.ShadowMute.hidesFrom(habbo, h)) {
             if (prefixMessage != null && !h.getHabboStats().preferOldChat) {
               h.getClient().sendResponse(prefixMessage);
             }
@@ -3608,7 +3611,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         // Mostra il messaggio
         // Se l'Habbo ricevente non ha ignorato l'Habbo mittente
         // E l'Habbo mittente NON è in una tenda OPPURE l'Habbo ricevente è nella stessa tenda dell'Habbo mittente
-        if (!h.getHabboStats().userIgnored(habbo.getHabboInfo().getId()) && (tentRectangle == null
+        // Shadow-mute (#19): nasconde lo SHOUT del mittente shadow-mutato a tutti
+        // tranne lui e lo staff. No-op se il flag e' OFF (vedi core/ShadowMute).
+        if (!h.getHabboStats().userIgnored(habbo.getHabboInfo().getId())
+            && !com.eu.habbo.core.ShadowMute.hidesFrom(habbo, h) && (tentRectangle == null
             || RoomLayout.tileInSquare(tentRectangle, h.getRoomUnit().getCurrentLocation()))) {
           if (prefixMessage != null && !h.getHabboStats().preferOldChat) {
             h.getClient().sendResponse(prefixMessage);

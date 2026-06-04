@@ -1507,6 +1507,34 @@
 .asteria-streak__done { font-weight: 700; color: #22d3ee; }
 .asteria-streak__err { font-size: 13px; color: #f87171; }
 
+/* Referral (#15) */
+.asteria-referral {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px 28px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(6, 182, 212, 0.08));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.asteria-referral__label { font-size: 12px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 8px; }
+.asteria-referral__code { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.asteria-referral__value {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: clamp(22px, 4vw, 32px);
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    padding: 6px 16px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #f5e9ff;
+}
+.asteria-referral__row { display: flex; gap: 10px; flex-wrap: wrap; }
+.asteria-referral__meta { font-size: 15px; opacity: 0.85; }
+.asteria-referral__meta strong { font-size: 20px; color: #fff; }
+.asteria-referral__ok { font-weight: 700; color: #22d3ee; }
+.asteria-referral__err { font-size: 13px; color: #f87171; }
+
 /* Activity feed di community (#11). */
 .asteria-feed { display: flex; flex-direction: column; gap: 2px; }
 .asteria-feed__item {

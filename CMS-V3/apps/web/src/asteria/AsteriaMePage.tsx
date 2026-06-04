@@ -27,6 +27,7 @@ export function AsteriaMePage(): ReactNode
             <MePanel user={user} />
             <MeStats user={user} />
             <MeStreak />
+            <MeReferral />
             <MeQuickActions />
             <AsteriaNewsBento title="Ultime news" subtitle="Cosa succede in Asteria" />
             <MeActivity />
@@ -178,6 +179,129 @@ function MeStreak(): ReactNode
     );
 }
 
+interface ReferralState
+{
+    enabled: boolean;
+    code: string | null;
+    rewardReferrer: number;
+    rewardReferred: number;
+    invited: { username: string | null; at: number; reward: number }[];
+    invitedCount: number;
+    alreadyRedeemed: boolean;
+}
+
+/**
+ * Referral (#15). Mostra il mio codice invito + riscatto (per account recenti).
+ * Visibile solo se il flag `referral` è ON (API → {enabled:false} se OFF).
+ */
+function MeReferral(): ReactNode
+{
+    const qc = useQueryClient();
+    const { data, isLoading } = useQuery<ReferralState>({
+        queryKey: ['me', 'referral'],
+        queryFn: async () =>
+        {
+            const r = await fetch('/api/v2/referral', { credentials: 'include' });
+            if(!r.ok) throw new Error('referral_fetch_failed');
+            return r.json();
+        },
+        staleTime: 30_000
+    });
+
+    const [code, setCode] = useState('');
+    const [busy, setBusy] = useState(false);
+    const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+    async function redeem(): Promise<void>
+    {
+        if(busy || !code.trim()) return;
+        setBusy(true);
+        setMsg(null);
+        try
+        {
+            const r = await fetch('/api/v2/referral/redeem', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ code: code.trim() })
+            });
+            const body = await r.json().catch(() => ({}));
+            if(!r.ok)
+            {
+                const errs: Record<string, string> = {
+                    already_redeemed: 'Hai già usato un codice invito.',
+                    account_too_old: 'I codici invito valgono solo per account recenti.',
+                    code_not_found: 'Codice non valido.',
+                    cannot_self_refer: 'Non puoi usare il tuo stesso codice.',
+                    feature_disabled: 'Funzione non attiva.'
+                };
+                setMsg({ ok: false, text: errs[String(body.error)] ?? 'Operazione non riuscita.' });
+            }
+            else
+            {
+                setMsg({ ok: true, text: `Fatto! +${Number(body.rewardReferred ?? 0)} crediti a te e +${Number(body.rewardReferrer ?? 0)} a chi ti ha invitato.` });
+                setCode('');
+                void qc.invalidateQueries({ queryKey: ['me', 'referral'] });
+                void qc.invalidateQueries({ queryKey: ['auth', 'me'] });
+            }
+        }
+        catch { setMsg({ ok: false, text: 'Errore di rete, riprova.' }); }
+        finally { setBusy(false); }
+    }
+
+    if(isLoading) return null;
+    if(!data?.enabled) return null; // feature flag OFF → invisibile
+
+    return (
+        <div className="asteria-section">
+            <div className="asteria-section__head">
+                <h2 className="asteria-section__title">🎁 Invita un amico</h2>
+                <span className="asteria-section__subtitle">+{data.rewardReferrer} crediti a te, +{data.rewardReferred} al tuo amico</span>
+            </div>
+            <div className="asteria-referral">
+                <div>
+                    <span className="asteria-referral__label">Il tuo codice</span>
+                    <div className="asteria-referral__code">
+                        <code className="asteria-referral__value">{data.code ?? '—'}</code>
+                        {data.code && (
+                            <button
+                                className="asteria-btn asteria-btn--ghost"
+                                onClick={() => { void navigator.clipboard?.writeText(data.code ?? '').catch(() => undefined); }}
+                            >Copia</button>
+                        )}
+                    </div>
+                </div>
+
+                {!data.alreadyRedeemed && (
+                    <div className="asteria-referral__redeem">
+                        <span className="asteria-referral__label">Hai un codice da un amico?</span>
+                        <div className="asteria-referral__row">
+                            <input
+                                className="asteria-input"
+                                value={code}
+                                onChange={e => setCode(e.target.value.toUpperCase())}
+                                placeholder="ABC123"
+                                maxLength={16}
+                            />
+                            <button className="asteria-btn" disabled={busy || !code.trim()} onClick={() => void redeem()}>
+                                {busy ? '…' : 'Riscatta'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {msg && <div className={msg.ok ? 'asteria-referral__ok' : 'asteria-referral__err'}>{msg.text}</div>}
+
+                {data.invitedCount > 0 && (
+                    <div className="asteria-referral__meta">
+                        <strong>{data.invitedCount}</strong> {data.invitedCount === 1 ? 'amico invitato' : 'amici invitati'}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 interface FeedEvent
 {
     id: number;
@@ -201,6 +325,7 @@ function renderEvent(e: FeedEvent): { icon: string; text: ReactNode }
         case 'guild.created':   return { icon: '🛡️', text: <><strong>{who}</strong> ha fondato il gruppo {p.guild ? <em>«{String(p.guild)}»</em> : ''}</> };
         case 'photo.posted':    return { icon: '📸', text: <><strong>{who}</strong> ha pubblicato una foto</> };
         case 'achievement.unlocked': return { icon: '🏆', text: <><strong>{who}</strong> ha sbloccato un obiettivo</> };
+        case 'referral.redeemed': return { icon: '🎁', text: <><strong>{who}</strong> si è unito tramite invito</> };
         default:                return { icon: '✨', text: <><strong>{who}</strong> · {e.type}</> };
     }
 }

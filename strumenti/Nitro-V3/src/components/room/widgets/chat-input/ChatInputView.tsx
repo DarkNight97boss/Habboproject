@@ -130,12 +130,26 @@ export const ChatInputView: FC<{}> = props =>
         inputRef.current?.focus();
     }, [ setIsTyping, inputRef ]);
 
-    const appendChatText = useCallback((text: string) =>
+    const sendDictatedText = useCallback((text: string) =>
     {
-        setChatValue(prev => (prev && !prev.endsWith(' ') ? prev + ' ' : prev) + text);
-        setIsTyping(true);
-        inputRef.current?.focus();
-    }, [ setIsTyping, inputRef ]);
+        const trimmed = text.trim();
+
+        if(!trimmed) return;
+
+        // Frase troppo lunga per un singolo messaggio: la lascio nell'input
+        // invece di scartarla (l'utente la rifinisce e invia a mano).
+        if(trimmed.length > maxChatLength)
+        {
+            setChatValue(prev => (prev && !prev.endsWith(' ') ? prev + ' ' : prev) + trimmed);
+            inputRef.current?.focus();
+            return;
+        }
+
+        // Auto-invio: ogni frase dettata parte subito come chat normale (no Invio).
+        setIsTyping(false);
+        setIsIdle(false);
+        sendChat(trimmed, ChatMessageTypeEnum.CHAT_DEFAULT, '', chatStyleId);
+    }, [ maxChatLength, setIsTyping, setIsIdle, sendChat, chatStyleId, inputRef ]);
 
     const onKeyDownEvent = useCallback((event: KeyboardEvent) =>
     {
@@ -305,7 +319,7 @@ export const ChatInputView: FC<{}> = props =>
                         <Text variant="danger">{ LocalizeText('chat.input.alert.flood', [ 'time' ], [ floodBlockedSeconds.toString() ]) } </Text> }
                 </div>
                 <ChatInputEmojiSelectorView addChatEmoji={ addChatEmoji } />
-                <ChatInputVoiceView onTranscript={ appendChatText } />
+                <ChatInputVoiceView onTranscript={ sendDictatedText } />
                 <ChatInputStyleSelectorView chatStyleId={ chatStyleId } chatStyleIds={ chatStyleIds } selectChatStyleId={ updateChatStyleId } />
             </div>, document.getElementById('toolbar-chat-input-container'))
     );

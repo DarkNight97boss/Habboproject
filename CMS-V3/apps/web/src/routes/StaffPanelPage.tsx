@@ -82,6 +82,7 @@ export function StaffPanelPage(): ReactNode
                     {section === 'flags'      && <FlagsSection />}
                     {section === 'shadowmute' && <ShadowMuteSection />}
                     {section === 'economy'    && <EconomySection />}
+                    {section === 'replay'     && <EventReplaySection />}
                 </main>
             </div>
         </div>
@@ -120,6 +121,7 @@ function Sidebar(): ReactNode
                 {item('/admin/alerts', '🚨', 'Alert staff')}
                 {item('/admin/flags', '🚩', 'Feature flag')}
                 {item('/admin/shadowmute', '🔇', 'Shadow-mute')}
+                {item('/admin/replay', '🎞', 'Replay stanza')}
                 {item('/admin/users', '◐', 'Utenti')}
                 {item('/admin/bans', '⛔', 'Ban')}
                 {item('/admin/logs', '☷', 'Log')}
@@ -698,6 +700,79 @@ function EconomySection(): ReactNode
                         </div>
                     </div>
                 </>
+            )}
+        </div>
+    );
+}
+
+// =====================================================================
+// SECTION — REPLAY STANZA (incident replay · #22)
+// =====================================================================
+interface ReplayEntry { userId: number; username: string | null; message: string; ts: number }
+
+function EventReplaySection(): ReactNode
+{
+    const [room, setRoom] = useState('');
+    const [windowMin, setWindowMin] = useState(15);
+    const [atLocal, setAtLocal] = useState('');
+    const [query, setQuery] = useState<{ room: string; window: number; at: number } | null>(null);
+
+    const q = useQuery({
+        queryKey: ['staff', 'replay', query],
+        enabled: query !== null,
+        queryFn: () =>
+        {
+            const cur = query;
+            if(!cur) throw new Error('no_query');
+            const p = new URLSearchParams({ room: cur.room, window: String(cur.window) });
+            if(cur.at) p.set('at', String(cur.at));
+            return apiGet<{ roomId: number; roomName: string | null; at: number; windowMin: number; entries: ReplayEntry[] }>(`/logs/room-replay?${p.toString()}`);
+        }
+    });
+
+    function run(): void
+    {
+        if(!room.trim()) return;
+        const at = atLocal ? Math.floor(new Date(atLocal).getTime() / 1000) : 0;
+        setQuery({ room: room.trim(), window: windowMin, at });
+    }
+
+    const d = q.data;
+    return (
+        <div className="admin-section">
+            <h2 className="admin-section__title">Replay stanza <span className="admin-card__hint">cronologia chat attorno a un momento</span></h2>
+            <div className="admin-alert admin-alert--info" style={{ marginBottom: 14 }}>
+                Rivedi il contesto di un incidente: la chat di una stanza in una finestra di ± minuti attorno a un momento (utile dopo un alert raid/macro). Sola lettura.
+            </div>
+            <section className="admin-card" style={{ marginBottom: 16 }}>
+                <div className="admin-row admin-row--3">
+                    <label className="admin-field"><span className="admin-field__label">Stanza (id o nome)</span><input className="admin-input" value={room} onChange={e => setRoom(e.target.value)} /></label>
+                    <label className="admin-field"><span className="admin-field__label">Minuti attorno (±)</span><input className="admin-input" type="number" min={1} max={120} value={windowMin} onChange={e => setWindowMin(Number(e.target.value))} /></label>
+                    <label className="admin-field"><span className="admin-field__label">Momento (vuoto = ora)</span><input className="admin-input" type="datetime-local" value={atLocal} onChange={e => setAtLocal(e.target.value)} /></label>
+                </div>
+                <button className="admin-btn admin-btn--primary" disabled={!room.trim()} onClick={run}>Mostra replay</button>
+            </section>
+            {q.isLoading && <div className="admin-card">Caricamento…</div>}
+            {q.isError && <Alert kind="error">Stanza non trovata o errore nel caricamento.</Alert>}
+            {d && (
+                <section className="admin-card">
+                    <div className="admin-card__title">{d.roomName ?? `#${d.roomId}`} <span className="admin-card__hint">{d.entries.length} messaggi · ±{d.windowMin} min</span></div>
+                    <div className="admin-table-wrap">
+                        <table className="admin-table">
+                            <thead><tr><th>Ora</th><th>Utente</th><th>Messaggio</th></tr></thead>
+                            <tbody>
+                                {d.entries.length === 0 ? <tr><td colSpan={3} className="admin-table__empty">Nessun messaggio in questa finestra.</td></tr>
+                                    : d.entries.map((e, i) => (
+                                        <tr key={i}>
+                                            <td className="admin-table__mono">{fmtDate(e.ts)}</td>
+                                            <td>{e.username ?? `#${e.userId}`}</td>
+                                            <td className="admin-audit-details">{e.message}</td>
+                                        </tr>
+                                    ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
             )}
         </div>
     );

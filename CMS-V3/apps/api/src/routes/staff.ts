@@ -545,6 +545,45 @@ staff.get('/logs/chat-room', async c =>
     });
 });
 
+// Replay incidenti (#22): chat di UNA stanza in una finestra temporale attorno
+// a un momento (per rivedere il contesto di un alert/segnalazione). Read-only.
+staff.get('/logs/room-replay', async c =>
+{
+    const roomParam = (c.req.query('room') ?? '').trim();
+    if(!roomParam) return c.json({ error: 'room_required' }, 400);
+    const windowMin = Math.min(120, Math.max(1, Number(c.req.query('window') ?? 15)));
+    const atRaw = Number(c.req.query('at'));
+    const at = Number.isFinite(atRaw) && atRaw > 0 ? Math.trunc(atRaw) : Math.floor(Date.now() / 1000);
+
+    let roomId: number | null = null;
+    let roomName: string | null = null;
+    if(/^\d+$/.test(roomParam))
+    {
+        roomId = Number(roomParam);
+        roomName = (await dbQuery<{ name: string }>('SELECT name FROM rooms WHERE id = ? LIMIT 1', [roomId]))[0]?.name ?? null;
+    }
+    else
+    {
+        const r = (await dbQuery<{ id: number; name: string }>('SELECT id, name FROM rooms WHERE name = ? LIMIT 1', [roomParam]))[0];
+        if(r) { roomId = r.id; roomName = r.name; }
+    }
+    if(roomId === null) return c.json({ error: 'room_not_found' }, 404);
+
+    const from = at - windowMin * 60;
+    const to = at + windowMin * 60;
+    const rows = await dbQuery<{ user_from_id: number; from_username: string | null; message: string; timestamp: number }>(
+        `SELECT cr.user_from_id, uf.username AS from_username, cr.message, cr.timestamp
+           FROM chatlogs_room cr LEFT JOIN users uf ON uf.id = cr.user_from_id
+          WHERE cr.room_id = ? AND cr.timestamp BETWEEN ? AND ?
+          ORDER BY cr.timestamp ASC LIMIT 500`,
+        [roomId, from, to]
+    );
+    return c.json({
+        roomId, roomName, at, windowMin,
+        entries: rows.map(r => ({ userId: r.user_from_id, username: r.from_username, message: r.message, ts: r.timestamp }))
+    });
+});
+
 staff.get('/logs/chat-pm', async c =>
 {
     const username = c.req.query('user')?.trim();

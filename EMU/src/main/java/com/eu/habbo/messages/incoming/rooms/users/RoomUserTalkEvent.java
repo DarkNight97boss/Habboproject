@@ -50,6 +50,13 @@ public class RoomUserTalkEvent extends MessageHandler {
                 com.eu.habbo.core.MacroGuard.observe(this.client.getHabbo(), message.getMessage());
             }
 
+            // Protezione minori (#21): segnala allo staff possibili dichiarazioni
+            // d'eta' sotto soglia. SOLO osservazione (nessun blocco/azione), gated
+            // dal flag minor_protection (no-op se OFF). Vedi core/MinorGuard.
+            if (!message.isCommand) {
+                com.eu.habbo.core.MinorGuard.observe(this.client.getHabbo(), message.getMessage());
+            }
+
             if (Emulator.getPluginManager().fireEvent(new UserTalkEvent(this.client.getHabbo(), message, RoomChatType.TALK)).isCancelled()) {
                 return;
             }

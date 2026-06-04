@@ -7,6 +7,7 @@ import { useChatCommandSelector, useChatInputWidget, useRoom, useSessionInfo, us
 import { ChatInputCommandSelectorView } from './ChatInputCommandSelectorView';
 import { ChatInputEmojiSelectorView } from './ChatInputEmojiSelectorView';
 import { ChatInputStyleSelectorView } from './ChatInputStyleSelectorView';
+import { ChatInputVoiceView } from './ChatInputVoiceView';
 
 export const ChatInputView: FC<{}> = props =>
 {
@@ -125,6 +126,13 @@ export const ChatInputView: FC<{}> = props =>
     const addChatEmoji = useCallback((emoji: string) =>
     {
         setChatValue(prev => prev + emoji);
+        setIsTyping(true);
+        inputRef.current?.focus();
+    }, [ setIsTyping, inputRef ]);
+
+    const appendChatText = useCallback((text: string) =>
+    {
+        setChatValue(prev => (prev && !prev.endsWith(' ') ? prev + ' ' : prev) + text);
         setIsTyping(true);
         inputRef.current?.focus();
     }, [ setIsTyping, inputRef ]);
@@ -297,6 +305,7 @@ export const ChatInputView: FC<{}> = props =>
                         <Text variant="danger">{ LocalizeText('chat.input.alert.flood', [ 'time' ], [ floodBlockedSeconds.toString() ]) } </Text> }
                 </div>
                 <ChatInputEmojiSelectorView addChatEmoji={ addChatEmoji } />
+                <ChatInputVoiceView onTranscript={ appendChatText } />
                 <ChatInputStyleSelectorView chatStyleId={ chatStyleId } chatStyleIds={ chatStyleIds } selectChatStyleId={ updateChatStyleId } />
             </div>, document.getElementById('toolbar-chat-input-container'))
     );

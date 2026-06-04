@@ -269,7 +269,7 @@ jobs:
           ls -la target/
 
       - name: Upload artifact EMU jar
-        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: emu-jar-${{ needs.guard.outputs.deploy_sha }}
           path: EMU/target/Habbo-*-jar-with-dependencies.jar
@@ -334,7 +334,7 @@ jobs:
         run: tar -czf cms-web-dist.tgz dist/
 
       - name: Upload artifact CMS web
-        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: cms-web-${{ needs.guard.outputs.deploy_sha }}
           path: CMS-V3/apps/web/cms-web-dist.tgz
@@ -397,7 +397,7 @@ jobs:
           ls -la cms-api-dist.tgz
 
       - name: Upload artifact CMS api
-        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: cms-api-${{ needs.guard.outputs.deploy_sha }}
           path: CMS-V3/apps/api/cms-api-dist.tgz
@@ -440,7 +440,7 @@ jobs:
 
       - name: Upload SQL bundle
         if: needs.detect-changes.outputs.sql == 'true'
-        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: sql-bundle-${{ needs.guard.outputs.deploy_sha }}
           path: sql-bundle.tgz
@@ -469,7 +469,7 @@ jobs:
 
       - name: Upload Nitro bundle
         if: needs.detect-changes.outputs.nitro == 'true'
-        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: nitro-bundle-${{ needs.guard.outputs.deploy_sha }}
           path: nitro-bundle.tgz

@@ -328,7 +328,8 @@ interface StaffEvent { id: number; actorId: number | null; actor: string; type: 
 const EVENT_META: Record<string, { icon: string; label: string }> = {
     'raid.detected':   { icon: '🚨', label: 'Possibile raid' },
     'macro.suspected': { icon: '🤖', label: 'Sospetta macro/bot' },
-    'minor.flag':      { icon: '⚠️', label: 'Possibile minore' }
+    'minor.flag':      { icon: '⚠️', label: 'Possibile minore' },
+    'economy.alert':   { icon: '💸', label: 'Anomalia economia' }
 };
 
 function describeStaffEvent(e: StaffEvent): string
@@ -340,6 +341,7 @@ function describeStaffEvent(e: StaffEvent): string
     {
         case 'raid.detected':   return `Stanza “${String(p.room ?? '?')}” · ${String(p.joins ?? '?')} ingressi in ${String(p.seconds ?? '?')}s`;
         case 'macro.suspected': return `Intervallo medio ${String(p.avgIntervalMs ?? '?')}ms · jitter ${String(p.jitterPct ?? '?')}%`;
+        case 'economy.alert':   return `Sorgente ${String(p.source ?? '?')}: ${String(p.count ?? '?')} erogazioni/${String(p.windowHours ?? 1)}h (${String(p.total ?? '?')} cr)`;
         default: {
             const keys = Object.keys(p);
             return keys.length ? keys.map(k => `${k}=${String(p[k])}`).join(' · ') : '—';

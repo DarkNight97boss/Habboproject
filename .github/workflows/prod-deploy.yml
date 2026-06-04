@@ -533,6 +533,19 @@ jobs:
           sudo mkdir -p "${BACKUP_DIR}"
           sudo chown asteria:asteria "${BACKUP_DIR}"
 
+          # Retention PRE-backup a tetto di NUMERO (oltre all'eta' a fine job): con
+          # molti deploy nello stesso giorno il solo -mtime +14 non contiene la
+          # crescita e il disco si riempie (blocca i deploy). Qui potiamo i piu'
+          # vecchi PRIMA di crearne uno nuovo, cosi' si libera spazio anche se il
+          # disco e' quasi pieno (rm non richiede spazio). Teniamo gli ultimi KEEP.
+          KEEP=4
+          echo "[backup] retention pre-backup: tengo gli ultimi ${KEEP}, poto i piu' vecchi"
+          ls -1t "${BACKUP_DIR}"/pre-deploy-*.tgz 2>/dev/null | tail -n +"$((KEEP + 1))" | while IFS= read -r OLD; do
+            echo "[backup] rimuovo backup vecchio: ${OLD} ($(du -h "${OLD}" 2>/dev/null | cut -f1))"
+            rm -f -- "${OLD}"
+          done
+          echo "[backup] spazio disco dopo la potatura:"; df -h "${BACKUP_DIR}" | tail -1
+
           STAGE="$(mktemp -d -t asteria-backup-XXXXXX)"
           trap "rm -rf -- '${STAGE}'" EXIT
 

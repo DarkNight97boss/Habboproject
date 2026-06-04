@@ -7,6 +7,7 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import pino from 'pino';
 
+import { dbQuery } from './db/pool.js';
 import { env } from './env.js';
 import { populateAuth } from './middleware/auth.js';
 import { makeRateLimit } from './middleware/rate-limit.js';
@@ -56,6 +57,20 @@ app.use('*', makeRateLimit('generic', env.RATE_LIMIT_GENERIC_PER_MIN, 60_000));
 // === Health check (per monitoring/uptime) ===
 app.get('/healthz', c => c.json({ ok: true, ts: Date.now() }));
 app.get('/version', c => c.json({ name: 'cms-v3-api', version: '0.1.0', env: env.NODE_ENV }));
+// Readiness: 200 solo se il DB risponde, 503 altrimenti. Distingue "processo vivo"
+// (/healthz) da "dipendenze pronte", utile per load-balancer/monitoring. Read-only.
+app.get('/readyz', async c =>
+{
+    try
+    {
+        await dbQuery('SELECT 1');
+        return c.json({ ok: true, db: 'up', ts: Date.now() });
+    }
+    catch
+    {
+        return c.json({ ok: false, db: 'down', ts: Date.now() }, 503);
+    }
+});
 
 // === Routes ===
 app.route('/api/v2/auth', authRoute);

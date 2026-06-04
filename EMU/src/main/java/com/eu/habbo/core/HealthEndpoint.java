@@ -47,6 +47,11 @@ public final class HealthEndpoint {
     public static final AtomicLong AUDIT_TOTAL = new AtomicLong(0);
     public static final AtomicLong PACKETS_REJECTED = new AtomicLong(0);
     public static final AtomicLong RATELIMIT_HITS = new AtomicLong(0);
+    /** Throughput per-feature (#28): messaggi chat (non-comando) e comandi eseguiti dal boot. */
+    public static final AtomicLong CHAT_MESSAGES = new AtomicLong(0);
+    public static final AtomicLong COMMANDS_RUN = new AtomicLong(0);
+    /** Alert moderazione emessi dalle guard (#16/#17/#19/#20/#21) dal boot. */
+    public static final AtomicLong MODERATION_FLAGS = new AtomicLong(0);
 
     /**
      * Histogram della durata di {@code MessageHandler.handle()} (SLI 3 in SLO.md).
@@ -160,6 +165,9 @@ public final class HealthEndpoint {
         appendGauge(sb, "habbo_audit_entries_total", "Cumulative audit_log entries written since boot", AUDIT_TOTAL.get());
         appendGauge(sb, "habbo_packets_rejected_total", "Packets rejected (ratelimit / unknown header / oversize)", PACKETS_REJECTED.get());
         appendGauge(sb, "habbo_ratelimit_hits_total", "Sliding-window ratelimit kicks (per-IP, per-user)", RATELIMIT_HITS.get());
+        appendGauge(sb, "habbo_chat_messages_total", "Chat messages processed (non-command) since boot", CHAT_MESSAGES.get());
+        appendGauge(sb, "habbo_commands_executed_total", "Chat commands executed since boot", COMMANDS_RUN.get());
+        appendGauge(sb, "habbo_moderation_flags_total", "Moderation alerts emitted by guards (raid/macro/minor/toxicity) since boot", MODERATION_FLAGS.get());
         // Histogram (SLI 3 latency + synthetic probe).
         PACKET_PROCESSING_SECONDS.appendTo(sb);
         SYNTHETIC_CONNECT_SECONDS.appendTo(sb);

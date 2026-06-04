@@ -77,6 +77,13 @@ public final class CmsEventPublisher {
         try {
             if (type == null || type.isEmpty()) return;
 
+            // Metrica moderazione (#28): conteggio locale degli alert delle guard,
+            // indipendente dal POST verso il CMS (HealthEndpoint e' nello stesso package).
+            if (type.startsWith("raid.") || type.startsWith("macro.")
+                    || type.startsWith("minor.") || type.startsWith("toxicity.")) {
+                HealthEndpoint.MODERATION_FLAGS.incrementAndGet();
+            }
+
             final String url = Emulator.getConfig().getValue("cms.events.url", "");
             final String secret = Emulator.getConfig().getValue("cms.events.secret", "");
             if (url == null || url.isEmpty() || secret == null || secret.isEmpty()) return; // disattivato

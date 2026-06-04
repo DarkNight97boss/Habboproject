@@ -71,6 +71,8 @@ public class RoomUserTalkEvent extends MessageHandler {
             room.talk(this.client.getHabbo(), message, RoomChatType.TALK);
 
             if (!message.isCommand) {
+                // Metrica throughput chat (#28): SLI per-feature esposta su /metrics.
+                com.eu.habbo.core.HealthEndpoint.CHAT_MESSAGES.incrementAndGet();
                 if (RoomChatMessage.SAVE_ROOM_CHATS) {
                     Emulator.getThreading().run(message);
                 }

@@ -107,6 +107,7 @@ public class CommandHandler {
                                             gameClient.getHabbo().getHabboInfo().getCurrentRoom().sendComposer(new RoomUserTypingComposer(gameClient.getHabbo().getRoomUnit(), false).compose());
 
                                         UserCommandEvent event = new UserCommandEvent(gameClient.getHabbo(), parts, command.handle(gameClient, parts));
+                                        com.eu.habbo.core.HealthEndpoint.COMMANDS_RUN.incrementAndGet(); // metrica throughput comandi (#28)
                                         Emulator.getPluginManager().fireEvent(event);
 
                                         succes = event.succes;

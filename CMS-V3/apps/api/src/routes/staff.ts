@@ -1145,4 +1145,31 @@ staff.get('/moderation/queue', async (c) =>
     });
 });
 
+// =================================================================
+// 11. FEED ALERT STAFF — eventi visibility='staff' (raid/macro/...)
+// =================================================================
+// Eventi prodotti dall'EMU/CMS con visibility='staff' (es. raid.detected,
+// macro.suspected) che NON compaiono nel feed pubblico. Sola lettura: la UI
+// del pannello li mostra in "Alert staff". I relativi flag (raid_detection,
+// anti_macro, ...) si accendono dalla sezione "Feature flag".
+staff.get('/activity', async (c) =>
+{
+    const limitRaw = Number(c.req.query('limit') ?? 60);
+    const limit = Math.min(200, Math.max(1, Number.isFinite(limitRaw) ? Math.trunc(limitRaw) : 60));
+    const events = await dbQuery<{
+        id: number; actor_id: number | null; actor_name: string; type: string;
+        payload: unknown; created_at: number;
+    }>(
+        'SELECT id, actor_id, actor_name, type, payload, UNIX_TIMESTAMP(created_at) AS created_at ' +
+        "FROM cms_v3_activity_events WHERE visibility = 'staff' " +
+        `ORDER BY id DESC LIMIT ${limit}`
+    );
+    return c.json({
+        events: events.map(e => ({
+            id: e.id, actorId: e.actor_id, actor: e.actor_name, type: e.type,
+            payload: e.payload, ts: e.created_at
+        }))
+    });
+});
+
 export default staff;

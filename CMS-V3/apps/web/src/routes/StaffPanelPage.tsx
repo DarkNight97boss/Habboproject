@@ -78,6 +78,8 @@ export function StaffPanelPage(): ReactNode
                     {section === 'skinbuilder' && <SkinBuilder />}
                     {section === 'analytics'  && <AnalyticsSection />}
                     {section === 'moderation' && <ModerationSection />}
+                    {section === 'alerts'     && <AlertsSection />}
+                    {section === 'flags'      && <FlagsSection />}
                 </main>
             </div>
         </div>
@@ -113,6 +115,8 @@ function Sidebar(): ReactNode
             <div className="admin-sidebar__group">Moderazione</div>
             <ul className="admin-sidebar__nav">
                 {item('/admin/moderation', '🛡', 'Coda CFH')}
+                {item('/admin/alerts', '🚨', 'Alert staff')}
+                {item('/admin/flags', '🚩', 'Feature flag')}
                 {item('/admin/users', '◐', 'Utenti')}
                 {item('/admin/bans', '⛔', 'Ban')}
                 {item('/admin/logs', '☷', 'Log')}
@@ -308,6 +312,187 @@ function ModerationSection(): ReactNode
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+// =====================================================================
+// SECTION — ALERT STAFF (eventi visibility='staff' prodotti dai guardiani EMU)
+// =====================================================================
+interface StaffEvent { id: number; actorId: number | null; actor: string; type: string; payload: unknown; ts: number }
+
+const EVENT_META: Record<string, { icon: string; label: string }> = {
+    'raid.detected':   { icon: '🚨', label: 'Possibile raid' },
+    'macro.suspected': { icon: '🤖', label: 'Sospetta macro/bot' },
+    'minor.flag':      { icon: '⚠️', label: 'Possibile minore' }
+};
+
+function describeStaffEvent(e: StaffEvent): string
+{
+    let p: Record<string, unknown> = {};
+    try { p = typeof e.payload === 'string' ? JSON.parse(e.payload) : ((e.payload as Record<string, unknown>) ?? {}); }
+    catch { p = {}; }
+    switch(e.type)
+    {
+        case 'raid.detected':   return `Stanza “${String(p.room ?? '?')}” · ${String(p.joins ?? '?')} ingressi in ${String(p.seconds ?? '?')}s`;
+        case 'macro.suspected': return `Intervallo medio ${String(p.avgIntervalMs ?? '?')}ms · jitter ${String(p.jitterPct ?? '?')}%`;
+        default: {
+            const keys = Object.keys(p);
+            return keys.length ? keys.map(k => `${k}=${String(p[k])}`).join(' · ') : '—';
+        }
+    }
+}
+
+function AlertsSection(): ReactNode
+{
+    const q = useQuery({ queryKey: ['staff', 'alerts'], queryFn: () => apiGet<{ events: StaffEvent[] }>('/activity'), refetchInterval: 20_000 });
+    const d = q.data;
+    return (
+        <div className="admin-section">
+            <h2 className="admin-section__title">Alert staff <span className="admin-card__hint">eventi di moderazione · refresh 20s</span></h2>
+            <div className="admin-alert admin-alert--info" style={{ marginBottom: 14 }}>
+                Eventi privati allo staff (non nel feed pubblico) prodotti dai guardiani in-game: <strong>raid</strong>, <strong>macro/bot</strong>, ecc. Si popolano solo quando i relativi feature flag sono accesi (vedi <strong>Feature flag</strong>).
+            </div>
+            {q.isLoading && <div className="admin-card">Caricamento…</div>}
+            {q.isError && <Alert kind="error">Errore nel caricamento degli alert.</Alert>}
+            {d && (
+                <div className="admin-card">
+                    <div className="admin-card__title">Ultimi alert <span className="admin-card__hint">{d.events.length}</span></div>
+                    <div className="admin-table-wrap">
+                        <table className="admin-table">
+                            <thead><tr><th>Quando</th><th>Tipo</th><th>Utente</th><th>Dettagli</th></tr></thead>
+                            <tbody>
+                                {d.events.length === 0 ? <tr><td colSpan={4} className="admin-table__empty">Nessun alert. Tutto tranquillo. 🌙</td></tr>
+                                    : d.events.map(e => {
+                                        const m = EVENT_META[e.type] ?? { icon: '✨', label: e.type };
+                                        return (
+                                            <tr key={e.id}>
+                                                <td className="admin-table__mono">{fmtDate(e.ts)}</td>
+                                                <td><span className="admin-tag admin-tag--warning">{m.icon} {m.label}</span></td>
+                                                <td>{e.actor ? <strong>{e.actor}</strong> : (e.actorId ? `#${e.actorId}` : '—')}</td>
+                                                <td className="admin-audit-details">{describeStaffEvent(e)}</td>
+                                            </tr>
+                                        );
+                                    })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// =====================================================================
+// SECTION — FEATURE FLAG (accensione feature, incl. dark-launch moderazione)
+// =====================================================================
+interface FlagRow { key: string; enabled: boolean; description: string; audience: string }
+
+// Flag noti di moderazione (dark-launch): gestibili anche se non ancora creati
+// nel DB — il PUT li crea on-demand.
+const KNOWN_MOD_FLAGS: { key: string; label: string; hint: string }[] = [
+    { key: 'raid_detection', label: 'Rilevamento raid', hint: 'Alert staff su flood di ingressi stanza (#20)' },
+    { key: 'shadow_mute',    label: 'Shadow-mute',       hint: 'Mute ombra: messaggi visibili solo a mittente + staff (#19)' },
+    { key: 'anti_macro',     label: 'Anti-macro / bot',  hint: 'Alert staff su chat a cadenza robotica (#17)' }
+];
+
+async function flagsGet(): Promise<{ flags: FlagRow[] }>
+{
+    const r = await fetch('/api/v2/flags/admin', { credentials: 'include' });
+    if(!r.ok) throw new Error(`${r.status}`);
+    return (await r.json()) as { flags: FlagRow[] };
+}
+
+function FlagToggleBtn({ enabled, busy, onToggle }: { enabled: boolean; busy: boolean; onToggle: () => void }): ReactNode
+{
+    return (
+        <button
+            className={`admin-btn admin-btn--small ${enabled ? 'admin-btn--danger' : 'admin-btn--primary'}`}
+            disabled={busy}
+            onClick={onToggle}
+        >{busy ? '…' : (enabled ? 'Disattiva' : 'Attiva')}</button>
+    );
+}
+
+function FlagsSection(): ReactNode
+{
+    const qc = useQueryClient();
+    const q = useQuery({ queryKey: ['staff', 'flags'], queryFn: flagsGet, refetchInterval: 30_000 });
+    const [busy, setBusy] = useState<string | null>(null);
+    const [err, setErr] = useState<string | null>(null);
+
+    const toggle = useMutation({
+        mutationFn: async ({ key, enabled }: { key: string; enabled: boolean }) =>
+        {
+            const r = await fetch(`/api/v2/flags/admin/${key}`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ enabled })
+            });
+            if(!r.ok) throw new Error(`${r.status}: ${await r.text().catch(() => '')}`);
+            return r.json();
+        },
+        onMutate: (v) => { setBusy(v.key); setErr(null); },
+        onError: (e: unknown) => setErr(e instanceof Error ? e.message : 'Errore'),
+        onSettled: () => { setBusy(null); void qc.invalidateQueries({ queryKey: ['staff', 'flags'] }); }
+    });
+
+    const existing = new Map((q.data?.flags ?? []).map(f => [f.key, f] as const));
+    const otherRows = (q.data?.flags ?? []).filter(f => !KNOWN_MOD_FLAGS.some(k => k.key === f.key));
+
+    return (
+        <div className="admin-section">
+            <h2 className="admin-section__title">Feature flag <span className="admin-card__hint">accensione feature · refresh 30s</span></h2>
+            {err && <Alert kind="error">{err}</Alert>}
+
+            <div className="admin-card" style={{ marginBottom: 16 }}>
+                <div className="admin-card__title">Moderazione (dark-launch)</div>
+                <div className="admin-alert admin-alert--info" style={{ marginBottom: 12 }}>
+                    Feature spedite a flag spento. Attivale qui per collaudarle; gli alert compaiono in <strong>Alert staff</strong>.
+                </div>
+                <div className="admin-table-wrap">
+                    <table className="admin-table">
+                        <thead><tr><th>Feature</th><th>Stato</th><th>Azione</th></tr></thead>
+                        <tbody>
+                            {KNOWN_MOD_FLAGS.map(m =>
+                            {
+                                const row = existing.get(m.key);
+                                const on = row?.enabled === true;
+                                return (
+                                    <tr key={m.key}>
+                                        <td><strong>{m.label}</strong><div className="admin-card__hint">{m.hint}</div></td>
+                                        <td>{row ? <span className={`admin-tag admin-tag--${on ? 'success' : 'neutral'}`}>{on ? 'ON' : 'OFF'}</span> : <span className="admin-tag admin-tag--neutral">non creato</span>}</td>
+                                        <td><FlagToggleBtn enabled={on} busy={busy === m.key} onToggle={() => toggle.mutate({ key: m.key, enabled: !on })} /></td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div className="admin-card">
+                <div className="admin-card__title">Altri flag</div>
+                {q.isLoading && <div style={{ padding: 8 }}>Caricamento…</div>}
+                <div className="admin-table-wrap">
+                    <table className="admin-table">
+                        <thead><tr><th>Chiave</th><th>Descrizione</th><th>Audience</th><th>Stato</th><th>Azione</th></tr></thead>
+                        <tbody>
+                            {otherRows.length === 0 ? <tr><td colSpan={5} className="admin-table__empty">Nessun altro flag.</td></tr>
+                                : otherRows.map(f => (
+                                    <tr key={f.key}>
+                                        <td className="admin-table__mono">{f.key}</td>
+                                        <td>{f.description || '—'}</td>
+                                        <td>{f.audience}</td>
+                                        <td><span className={`admin-tag admin-tag--${f.enabled ? 'success' : 'neutral'}`}>{f.enabled ? 'ON' : 'OFF'}</span></td>
+                                        <td><FlagToggleBtn enabled={f.enabled} busy={busy === f.key} onToggle={() => toggle.mutate({ key: f.key, enabled: !f.enabled })} /></td>
+                                    </tr>
+                                ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     );
 }

@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
- * Dettatura vocale per l'input chat. Usa la Web Speech API del browser
+ * Dettatura vocale CONTINUA per l'input chat. Usa la Web Speech API del browser
  * (`SpeechRecognition` / `webkitSpeechRecognition`, disponibile su Chrome/Edge)
  * per trascrivere il parlato in testo, in italiano (`it-IT`).
  *
- * Ritorna `{ supported, listening, toggle }`; su ogni frase riconosciuta chiama
+ * Resta in ascolto finche' l'utente non ferma con `toggle`: se la sessione si
+ * chiude da sola (timeout di silenzio del browser) viene riavviata
+ * automaticamente, cosi' si puo' dettare a lungo senza ri-cliccare.
+ *
+ * Ritorna `{ supported, listening, toggle }`; su ogni frase finale chiama
  * `onTranscript(testo)`. Self-contained: se l'API non c'e' `supported=false` e
  * il bottone microfono si nasconde. Nessuna dipendenza dal renderer.
  */
@@ -14,6 +18,7 @@ interface SpeechAlternativeLike { readonly transcript: string }
 interface SpeechResultLike { readonly isFinal: boolean; readonly length: number; readonly [index: number]: SpeechAlternativeLike }
 interface SpeechResultListLike { readonly length: number; readonly [index: number]: SpeechResultLike }
 interface SpeechRecognitionEventLike { readonly resultIndex: number; readonly results: SpeechResultListLike }
+interface SpeechRecognitionErrorLike { readonly error?: string }
 interface SpeechRecognitionLike
 {
     lang: string;
@@ -24,7 +29,7 @@ interface SpeechRecognitionLike
     abort(): void;
     onresult: ((event: SpeechRecognitionEventLike) => void) | null;
     onend: (() => void) | null;
-    onerror: (() => void) | null;
+    onerror: ((event: SpeechRecognitionErrorLike) => void) | null;
 }
 type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
 
@@ -42,6 +47,7 @@ export const useChatVoiceDictation = (onTranscript: (text: string) => void) =>
     const [ supported ] = useState<boolean>(() => getRecognitionCtor() !== null);
     const [ listening, setListening ] = useState(false);
     const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+    const manualStopRef = useRef(false);
     const onTranscriptRef = useRef(onTranscript);
 
     useEffect(() =>
@@ -51,6 +57,8 @@ export const useChatVoiceDictation = (onTranscript: (text: string) => void) =>
 
     const stop = useCallback(() =>
     {
+        manualStopRef.current = true;
+
         const recognition = recognitionRef.current;
 
         if(recognition)
@@ -58,6 +66,8 @@ export const useChatVoiceDictation = (onTranscript: (text: string) => void) =>
             try { recognition.stop(); }
             catch { /* la sessione potrebbe essere gia' chiusa */ }
         }
+
+        setListening(false);
     }, []);
 
     const start = useCallback(() =>
@@ -72,10 +82,12 @@ export const useChatVoiceDictation = (onTranscript: (text: string) => void) =>
             catch { /* noop */ }
         }
 
+        manualStopRef.current = false;
+
         const recognition = new RecognitionCtor();
 
         recognition.lang = 'it-IT';
-        recognition.continuous = false;
+        recognition.continuous = true;
         recognition.interimResults = false;
 
         recognition.onresult = (event) =>
@@ -94,8 +106,30 @@ export const useChatVoiceDictation = (onTranscript: (text: string) => void) =>
             if(text) onTranscriptRef.current(text);
         };
 
-        recognition.onend = () => setListening(false);
-        recognition.onerror = () => setListening(false);
+        recognition.onerror = (event) =>
+        {
+            // Errori fatali (permesso negato / servizio non disponibile): basta,
+            // niente riavvio. Gli altri (no-speech, network, aborted) li gestisce
+            // onend riavviando, cosi' l'ascolto resta continuo.
+            if(event && (event.error === 'not-allowed' || event.error === 'service-not-allowed'))
+            {
+                manualStopRef.current = true;
+                setListening(false);
+            }
+        };
+
+        recognition.onend = () =>
+        {
+            // Riavvio automatico finche' l'utente non ha fermato manualmente.
+            if(manualStopRef.current)
+            {
+                setListening(false);
+                return;
+            }
+
+            try { recognition.start(); }
+            catch { setListening(false); }
+        };
 
         recognitionRef.current = recognition;
 
@@ -120,6 +154,8 @@ export const useChatVoiceDictation = (onTranscript: (text: string) => void) =>
     {
         return () =>
         {
+            manualStopRef.current = true;
+
             const recognition = recognitionRef.current;
 
             if(recognition)

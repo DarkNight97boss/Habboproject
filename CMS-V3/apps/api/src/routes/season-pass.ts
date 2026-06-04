@@ -3,6 +3,7 @@ import { dbExecute, dbQuery } from '../db/pool.js';
 import { requireAuth } from '../middleware/auth.js';
 import { isFeatureEnabled } from '../services/flags.js';
 import { rcon } from '../services/rcon.js';
+import { logGrant } from '../services/economy.js';
 
 /**
  * Season Pass / Battle Pass (/api/v2/season-pass) — feature #2, v1.
@@ -127,6 +128,7 @@ seasonPass.post('/claim/:tier', async c =>
     }
 
     const res = await rcon.giveCredits(userId, reward).catch(() => ({ ok: false }));
+    void logGrant(userId, reward, 'season_pass');
     return c.json({ ok: true, tier, reward, delivered: res.ok });
 });
 

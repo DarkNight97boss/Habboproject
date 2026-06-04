@@ -4,6 +4,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { emitActivity } from '../services/activity.js';
 import { isFeatureEnabled } from '../services/flags.js';
 import { rcon } from '../services/rcon.js';
+import { logGrant } from '../services/economy.js';
 
 /**
  * Daily Streak (/api/v2/streak) — Fase 3, feature #1.
@@ -113,6 +114,7 @@ streak.post('/claim', async c =>
     // come la consegna dello shop). Se fallisce NON annulliamo il claim
     // (rollback racy): lo streak resta, segnaliamo rewardDelivered=false.
     const res = await rcon.giveCredits(userId, reward);
+    void logGrant(userId, reward, 'streak');
 
     const nameRow = (await dbQuery<{ username: string }>(
         'SELECT username FROM users WHERE id = ?', [userId]

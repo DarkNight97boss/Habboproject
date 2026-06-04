@@ -1172,4 +1172,31 @@ staff.get('/activity', async (c) =>
     });
 });
 
+// =================================================================
+// 12. TELEMETRIA ECONOMIA — grant CMS (faucet) da cms_v3_economy_log
+// =================================================================
+// Mostra quanto immettono i rubinetti CMS (streak/referral/missioni/season pass).
+// I flussi interni all'EMU (scambi, shop in-game) non passano da qui.
+staff.get('/economy', async (c) =>
+{
+    const totals = (await dbQuery<{ total30: number; grants30: number }>(
+        'SELECT COALESCE(SUM(amount),0) AS total30, COUNT(*) AS grants30 FROM cms_v3_economy_log WHERE created_at >= (NOW() - INTERVAL 30 DAY)'
+    ))[0];
+    const bySource = await dbQuery<{ source: string; n: number; total: number }>(
+        'SELECT source, COUNT(*) AS n, COALESCE(SUM(amount),0) AS total FROM cms_v3_economy_log WHERE created_at >= (NOW() - INTERVAL 30 DAY) GROUP BY source ORDER BY total DESC'
+    );
+    const byDay = await dbQuery<{ day: string; total: number }>(
+        'SELECT DATE(created_at) AS day, COALESCE(SUM(amount),0) AS total FROM cms_v3_economy_log WHERE created_at >= (NOW() - INTERVAL 14 DAY) GROUP BY DATE(created_at) ORDER BY day'
+    );
+    const recent = await dbQuery<{ ts: number; user_id: number; username: string | null; amount: number; source: string }>(
+        'SELECT UNIX_TIMESTAMP(e.created_at) AS ts, e.user_id, u.username, e.amount, e.source FROM cms_v3_economy_log e LEFT JOIN users u ON u.id = e.user_id ORDER BY e.id DESC LIMIT 40'
+    );
+    return c.json({
+        totals: { total30: Number(totals?.total30 ?? 0), grants30: Number(totals?.grants30 ?? 0) },
+        bySource: bySource.map(r => ({ source: r.source, count: Number(r.n), total: Number(r.total) })),
+        byDay: byDay.map(r => ({ day: r.day, total: Number(r.total) })),
+        recent: recent.map(r => ({ ts: r.ts, userId: r.user_id, username: r.username, amount: r.amount, source: r.source }))
+    });
+});
+
 export default staff;

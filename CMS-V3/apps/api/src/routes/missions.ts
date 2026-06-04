@@ -3,6 +3,7 @@ import { dbExecute, dbQuery } from '../db/pool.js';
 import { requireAuth } from '../middleware/auth.js';
 import { isFeatureEnabled } from '../services/flags.js';
 import { rcon } from '../services/rcon.js';
+import { logGrant } from '../services/economy.js';
 
 /**
  * Missioni (/api/v2/missions) — feature #3.
@@ -123,6 +124,7 @@ missions.post('/claim/:id', async c =>
     }
 
     const res = await rcon.giveCredits(userId, m.reward).catch(() => ({ ok: false }));
+    void logGrant(userId, m.reward, 'mission');
     return c.json({ ok: true, reward: m.reward, delivered: res.ok });
 });
 

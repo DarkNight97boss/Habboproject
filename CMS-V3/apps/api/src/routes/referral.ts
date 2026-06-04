@@ -5,6 +5,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { emitActivity } from '../services/activity.js';
 import { isFeatureEnabled } from '../services/flags.js';
 import { rcon } from '../services/rcon.js';
+import { logGrant } from '../services/economy.js';
 
 /**
  * Referral (/api/v2/referral) — feature #15.
@@ -131,6 +132,8 @@ referral.post('/redeem', async c =>
     // se un premio fallisce NON annulliamo il legame.
     const r1 = await rcon.giveCredits(owner.user_id, REWARD_REFERRER).catch(() => ({ ok: false }));
     const r2 = await rcon.giveCredits(userId, REWARD_REFERRED).catch(() => ({ ok: false }));
+    void logGrant(owner.user_id, REWARD_REFERRER, 'referral');
+    void logGrant(userId, REWARD_REFERRED, 'referral');
 
     const nameRow = (await dbQuery<{ username: string }>('SELECT username FROM users WHERE id = ?', [userId]))[0];
     await emitActivity({

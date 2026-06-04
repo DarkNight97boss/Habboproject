@@ -81,6 +81,7 @@ export function StaffPanelPage(): ReactNode
                     {section === 'alerts'     && <AlertsSection />}
                     {section === 'flags'      && <FlagsSection />}
                     {section === 'shadowmute' && <ShadowMuteSection />}
+                    {section === 'economy'    && <EconomySection />}
                 </main>
             </div>
         </div>
@@ -134,6 +135,7 @@ function Sidebar(): ReactNode
             <div className="admin-sidebar__group">Economia</div>
             <ul className="admin-sidebar__nav">
                 {item('/admin/analytics', '📊', 'Analytics')}
+                {item('/admin/economy', '💰', 'Economia')}
                 {item('/admin/vouchers', '◆', 'Voucher')}
             </ul>
 
@@ -605,6 +607,97 @@ function ShadowMuteSection(): ReactNode
                 </div>
             </section>
         </>
+    );
+}
+
+// =====================================================================
+// SECTION — ECONOMIA (telemetria rubinetti CMS · #8)
+// =====================================================================
+interface EconomyData
+{
+    totals: { total30: number; grants30: number };
+    bySource: { source: string; count: number; total: number }[];
+    byDay: { day: string; total: number }[];
+    recent: { ts: number; userId: number; username: string | null; amount: number; source: string }[];
+}
+
+function EconomySection(): ReactNode
+{
+    const q = useQuery({ queryKey: ['staff', 'economy'], queryFn: () => apiGet<EconomyData>('/economy'), refetchInterval: 60_000 });
+    const d = q.data;
+    const maxDay = d && d.byDay.length ? Math.max(1, ...d.byDay.map(x => x.total)) : 1;
+
+    return (
+        <div className="admin-section">
+            <h2 className="admin-section__title">Economia <span className="admin-card__hint">rubinetti CMS · 30 giorni · refresh 60s</span></h2>
+            <div className="admin-alert admin-alert--info" style={{ marginBottom: 14 }}>
+                Crediti immessi dai rubinetti gestiti dal CMS (streak, referral, missioni, season pass). I flussi interni all'EMU (scambi, shop in-game) non sono inclusi.
+            </div>
+            {q.isLoading && <div className="admin-card">Caricamento…</div>}
+            {q.isError && <Alert kind="error">Errore nel caricamento.</Alert>}
+            {d && (
+                <>
+                    <div className="admin-stats">
+                        <Stat value={d.totals.total30} label="Crediti erogati (30g)" highlight />
+                        <Stat value={d.totals.grants30} label="Erogazioni (30g)" />
+                        <Stat value={d.bySource.length} label="Sorgenti attive" />
+                    </div>
+
+                    <div className="admin-card" style={{ marginBottom: 16 }}>
+                        <div className="admin-card__title">Per sorgente (30g)</div>
+                        <div className="admin-table-wrap">
+                            <table className="admin-table">
+                                <thead><tr><th>Sorgente</th><th>Erogazioni</th><th>Crediti</th></tr></thead>
+                                <tbody>
+                                    {d.bySource.length === 0 ? <tr><td colSpan={3} className="admin-table__empty">Nessun dato ancora.</td></tr>
+                                        : d.bySource.map(s => (
+                                            <tr key={s.source}>
+                                                <td className="admin-table__mono">{s.source}</td>
+                                                <td>{s.count}</td>
+                                                <td><strong>{s.total}</strong></td>
+                                            </tr>
+                                        ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div className="admin-card" style={{ marginBottom: 16 }}>
+                        <div className="admin-card__title">Andamento (14g)</div>
+                        {d.byDay.length === 0 ? <div style={{ padding: 8, opacity: 0.6 }}>Nessun dato ancora.</div> : (
+                            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, minHeight: 110, paddingTop: 8 }}>
+                                {d.byDay.map(x => (
+                                    <div key={x.day} title={`${x.day}: ${x.total} cr`} style={{ flex: 1, textAlign: 'center', minWidth: 0 }}>
+                                        <div style={{ height: `${Math.max(2, Math.round((x.total / maxDay) * 90))}px`, background: 'linear-gradient(180deg,#a855f7,#22d3ee)', borderRadius: 4, marginBottom: 4 }} />
+                                        <span style={{ fontSize: 10, opacity: 0.6 }}>{x.day.slice(5)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="admin-card">
+                        <div className="admin-card__title">Erogazioni recenti</div>
+                        <div className="admin-table-wrap">
+                            <table className="admin-table">
+                                <thead><tr><th>Quando</th><th>Utente</th><th>Sorgente</th><th>Crediti</th></tr></thead>
+                                <tbody>
+                                    {d.recent.length === 0 ? <tr><td colSpan={4} className="admin-table__empty">Nessuna erogazione.</td></tr>
+                                        : d.recent.map((r, i) => (
+                                            <tr key={i}>
+                                                <td className="admin-table__mono">{fmtDate(r.ts)}</td>
+                                                <td>{r.username ?? `#${r.userId}`}</td>
+                                                <td className="admin-table__mono">{r.source}</td>
+                                                <td><strong>+{r.amount}</strong></td>
+                                            </tr>
+                                        ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </>
+            )}
+        </div>
     );
 }
 

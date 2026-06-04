@@ -224,9 +224,16 @@ public final class Emulator {
                     try {
                         String line = reader.readLine();
 
-                        if (line != null) {
-                            ConsoleCommand.handle(line);
+                        if (line == null) {
+                            // EOF su stdin (avvio sotto systemd senza TTY): senza questo
+                            // break il loop gira a vuoto ristampando il prompt all'infinito
+                            // → ha riempito /var/log/syslog di 64GB e brucia CPU. Quando
+                            // non c'è una console interattiva, disattiviamo il loop comandi.
+                            LOGGER.info("Console non interattiva (EOF su stdin) — loop comandi disattivato.");
+                            break;
                         }
+
+                        ConsoleCommand.handle(line);
                         System.out.println("In attesa di un comando: ");
                     } catch (Exception e) {
                         if (!(e instanceof IOException && e.getMessage().equals("Bad file descriptor"))) {

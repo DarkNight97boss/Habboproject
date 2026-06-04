@@ -43,6 +43,13 @@ public class RoomUserTalkEvent extends MessageHandler {
                 com.eu.habbo.core.OracoloManager.tryRecordRequest(this.client.getHabbo(), message.getMessage());
             }
 
+            // Anti-macro (#17): osserva la regolarita' temporale della chat per
+            // segnalare possibili bot. SOLO osservazione (nessun blocco/mute),
+            // gated dal flag anti_macro (no-op se OFF). Vedi core/MacroGuard.
+            if (!message.isCommand) {
+                com.eu.habbo.core.MacroGuard.observe(this.client.getHabbo(), message.getMessage());
+            }
+
             if (Emulator.getPluginManager().fireEvent(new UserTalkEvent(this.client.getHabbo(), message, RoomChatType.TALK)).isCancelled()) {
                 return;
             }

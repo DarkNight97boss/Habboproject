@@ -57,6 +57,13 @@ public class RoomUserTalkEvent extends MessageHandler {
                 com.eu.habbo.core.MinorGuard.observe(this.client.getHabbo(), message.getMessage());
             }
 
+            // Toxicity scoring (#16): punteggio di tossicita' (parole vietate +
+            // CAPS-rage + ripetizioni) -> alert staff oltre soglia. SOLO
+            // osservazione, gated dal flag toxicity_filter. Vedi core/ToxicityGuard.
+            if (!message.isCommand) {
+                com.eu.habbo.core.ToxicityGuard.observe(this.client.getHabbo(), message.getMessage());
+            }
+
             if (Emulator.getPluginManager().fireEvent(new UserTalkEvent(this.client.getHabbo(), message, RoomChatType.TALK)).isCancelled()) {
                 return;
             }

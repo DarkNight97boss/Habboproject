@@ -29,6 +29,7 @@ export function AsteriaMePage(): ReactNode
             <MeStreak />
             <MeReferral />
             <MeMissions />
+            <MeSeasonPass />
             <MeQuickActions />
             <AsteriaNewsBento title="Ultime news" subtitle="Cosa succede in Asteria" />
             <MeActivity />
@@ -375,6 +376,79 @@ function MeMissions(): ReactNode
                         </div>
                     );
                 })}
+            </div>
+        </div>
+    );
+}
+
+interface SeasonTier { tier: number; threshold: number; reward: number; claimed: boolean; claimable: boolean }
+interface SeasonState { enabled: boolean; season: string; xp: number; tier: number; maxTier: number; nextThreshold: number | null; tiers: SeasonTier[] }
+
+/**
+ * Season Pass (#2). XP = somma pesata degli activity event della stagione.
+ * Visibile solo se il flag `season_pass` è ON (API → {enabled:false} se OFF).
+ */
+function MeSeasonPass(): ReactNode
+{
+    const qc = useQueryClient();
+    const { data, isLoading } = useQuery<SeasonState>({
+        queryKey: ['me', 'season-pass'],
+        queryFn: async () =>
+        {
+            const r = await fetch('/api/v2/season-pass', { credentials: 'include' });
+            if(!r.ok) throw new Error('season_pass_failed');
+            return r.json();
+        },
+        staleTime: 20_000
+    });
+    const [busy, setBusy] = useState<number | null>(null);
+
+    async function claim(tier: number): Promise<void>
+    {
+        if(busy !== null) return;
+        setBusy(tier);
+        try
+        {
+            const r = await fetch(`/api/v2/season-pass/claim/${tier}`, { method: 'POST', credentials: 'include' });
+            if(r.ok) void qc.invalidateQueries({ queryKey: ['auth', 'me'] });
+        }
+        finally
+        {
+            setBusy(null);
+            void qc.invalidateQueries({ queryKey: ['me', 'season-pass'] });
+        }
+    }
+
+    if(isLoading) return null;
+    if(!data?.enabled) return null; // feature flag OFF → invisibile
+
+    const pctToNext = data.nextThreshold ? Math.min(100, Math.round((data.xp / data.nextThreshold) * 100)) : 100;
+
+    return (
+        <div className="asteria-section">
+            <div className="asteria-section__head">
+                <h2 className="asteria-section__title">🏆 Season Pass</h2>
+                <span className="asteria-section__subtitle">Stagione {data.season} · {data.xp} XP · livello {data.tier}/{data.maxTier}</span>
+            </div>
+            <div className="asteria-pass">
+                <div className="asteria-pass__bar"><span style={{ width: `${pctToNext}%` }} /></div>
+                <div className="asteria-pass__track">
+                    {data.tiers.map(t =>
+                    {
+                        const cls = t.claimed ? ' is-claimed' : t.claimable ? ' is-claimable' : t.tier <= data.tier ? '' : ' is-locked';
+                        return (
+                            <div key={t.tier} className={`asteria-pass__tier${cls}`}>
+                                <div className="asteria-pass__lvl">Lv {t.tier}</div>
+                                <div className="asteria-pass__reward">+{t.reward}</div>
+                                {t.claimed
+                                    ? <span className="asteria-pass__state">✓</span>
+                                    : t.claimable
+                                        ? <button className="asteria-btn asteria-btn--ghost" disabled={busy === t.tier} onClick={() => void claim(t.tier)}>{busy === t.tier ? '…' : 'Riscatta'}</button>
+                                        : <span className="asteria-pass__state asteria-pass__state--lock">{t.threshold} XP</span>}
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );

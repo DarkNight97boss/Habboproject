@@ -1555,6 +1555,32 @@
 .asteria-mission__done { font-weight: 700; color: #22d3ee; }
 .asteria-mission__todo { font-size: 13px; opacity: 0.6; }
 
+/* Season Pass (#2) */
+.asteria-pass { display: flex; flex-direction: column; gap: 16px; }
+.asteria-pass__bar { height: 8px; border-radius: 99px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.asteria-pass__bar > span { display: block; height: 100%; background: linear-gradient(90deg, #a855f7, #22d3ee); }
+.asteria-pass__track { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; }
+.asteria-pass__tier {
+    flex: 0 0 auto;
+    width: 96px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 8px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    text-align: center;
+}
+.asteria-pass__tier.is-claimable { border-color: rgba(168, 85, 247, 0.6); background: rgba(168, 85, 247, 0.12); }
+.asteria-pass__tier.is-claimed { opacity: 0.7; }
+.asteria-pass__tier.is-locked { opacity: 0.45; }
+.asteria-pass__lvl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.7; }
+.asteria-pass__reward { font-weight: 800; font-size: 18px; color: #f5e9ff; }
+.asteria-pass__state { font-size: 12px; font-weight: 700; color: #22d3ee; }
+.asteria-pass__state--lock { color: inherit; opacity: 0.6; font-weight: 600; }
+
 /* Activity feed di community (#11). */
 .asteria-feed { display: flex; flex-direction: column; gap: 2px; }
 .asteria-feed__item {

@@ -1315,4 +1315,27 @@ staff.get('/guilds', async (c) =>
     });
 });
 
+// =================================================================
+// 15. ABBONAMENTI (#9) — abbonamenti attivi (HC/VIP) con scadenza (read-only)
+// =================================================================
+staff.get('/subscriptions', async (c) =>
+{
+    const active = await dbQuery<{ user_id: number; username: string | null; subscription_type: string; timestamp_start: number; ends: number }>(
+        `SELECT s.user_id, u.username, s.subscription_type, s.timestamp_start,
+                (s.timestamp_start + s.duration) AS ends
+           FROM users_subscriptions s LEFT JOIN users u ON u.id = s.user_id
+          WHERE s.active = 1 AND (s.timestamp_start + s.duration) > UNIX_TIMESTAMP()
+          ORDER BY ends ASC LIMIT 200`
+    );
+    const byType = await dbQuery<{ subscription_type: string; n: number }>(
+        `SELECT subscription_type, COUNT(*) AS n FROM users_subscriptions
+          WHERE active = 1 AND (timestamp_start + duration) > UNIX_TIMESTAMP()
+          GROUP BY subscription_type ORDER BY n DESC`
+    );
+    return c.json({
+        active: active.map(r => ({ userId: r.user_id, username: r.username, type: r.subscription_type, started: r.timestamp_start, ends: r.ends })),
+        byType: byType.map(r => ({ type: r.subscription_type, count: Number(r.n) }))
+    });
+});
+
 export default staff;

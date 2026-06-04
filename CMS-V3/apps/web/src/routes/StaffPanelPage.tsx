@@ -85,6 +85,7 @@ export function StaffPanelPage(): ReactNode
                     {section === 'replay'     && <EventReplaySection />}
                     {section === 'achievements' && <AchievementsSection />}
                     {section === 'guilds'     && <GuildsAdminSection />}
+                    {section === 'subscriptions' && <SubscriptionsSection />}
                 </main>
             </div>
         </div>
@@ -142,6 +143,7 @@ function Sidebar(): ReactNode
             <ul className="admin-sidebar__nav">
                 {item('/admin/analytics', '📊', 'Analytics')}
                 {item('/admin/economy', '💰', 'Economia')}
+                {item('/admin/subscriptions', '👑', 'Abbonamenti')}
                 {item('/admin/vouchers', '◆', 'Voucher')}
             </ul>
 
@@ -903,6 +905,58 @@ function GuildsAdminSection(): ReactNode
                         </table>
                     </div>
                 </div>
+            )}
+        </div>
+    );
+}
+
+// =====================================================================
+// SECTION — ABBONAMENTI (#9 · HC/VIP attivi, read-only)
+// =====================================================================
+interface SubRow { userId: number; username: string | null; type: string; started: number; ends: number }
+
+function SubscriptionsSection(): ReactNode
+{
+    const q = useQuery({ queryKey: ['staff', 'subscriptions'], queryFn: () => apiGet<{ active: SubRow[]; byType: { type: string; count: number }[] }>('/subscriptions'), refetchInterval: 60_000 });
+    const d = q.data;
+    const now = Math.floor(Date.now() / 1000);
+
+    return (
+        <div className="admin-section">
+            <h2 className="admin-section__title">Abbonamenti <span className="admin-card__hint">attivi (HC/VIP) · refresh 60s</span></h2>
+            {q.isLoading && <div className="admin-card">Caricamento…</div>}
+            {q.isError && <Alert kind="error">Errore nel caricamento.</Alert>}
+            {d && (
+                <>
+                    <div className="admin-stats">
+                        {d.byType.length === 0
+                            ? <Stat value={0} label="Abbonamenti attivi" />
+                            : d.byType.map(t => <Stat key={t.type} value={t.count} label={t.type} highlight />)}
+                    </div>
+                    <div className="admin-card">
+                        <div className="admin-card__title">Attivi <span className="admin-card__hint">{d.active.length} · scadenza più vicina prima</span></div>
+                        <div className="admin-table-wrap">
+                            <table className="admin-table">
+                                <thead><tr><th>Utente</th><th>Tipo</th><th>Scade</th><th>Rimanente</th></tr></thead>
+                                <tbody>
+                                    {d.active.length === 0 ? <tr><td colSpan={4} className="admin-table__empty">Nessun abbonamento attivo.</td></tr>
+                                        : d.active.map((s, i) =>
+                                        {
+                                            const days = Math.max(0, Math.floor((s.ends - now) / 86400));
+                                            return (
+                                                <tr key={i}>
+                                                    <td>{s.username ?? `#${s.userId}`}</td>
+                                                    <td className="admin-table__mono">{s.type}</td>
+                                                    <td className="admin-table__mono">{fmtDate(s.ends)}</td>
+                                                    <td>{days} {days === 1 ? 'giorno' : 'giorni'}</td>
+                                                </tr>
+                                            );
+                                        })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </>
             )}
         </div>
     );

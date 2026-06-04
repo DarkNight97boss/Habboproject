@@ -80,6 +80,7 @@ export function StaffPanelPage(): ReactNode
                     {section === 'moderation' && <ModerationSection />}
                     {section === 'alerts'     && <AlertsSection />}
                     {section === 'flags'      && <FlagsSection />}
+                    {section === 'shadowmute' && <ShadowMuteSection />}
                 </main>
             </div>
         </div>
@@ -117,6 +118,7 @@ function Sidebar(): ReactNode
                 {item('/admin/moderation', '🛡', 'Coda CFH')}
                 {item('/admin/alerts', '🚨', 'Alert staff')}
                 {item('/admin/flags', '🚩', 'Feature flag')}
+                {item('/admin/shadowmute', '🔇', 'Shadow-mute')}
                 {item('/admin/users', '◐', 'Utenti')}
                 {item('/admin/bans', '⛔', 'Ban')}
                 {item('/admin/logs', '☷', 'Log')}
@@ -494,6 +496,115 @@ function FlagsSection(): ReactNode
                 </div>
             </div>
         </div>
+    );
+}
+
+// =====================================================================
+// SECTION — SHADOW-MUTE (gestione lista mute ombra · #19)
+// =====================================================================
+interface ShadowMuteRow { user_id: number; username: string | null; until_ts: number; reason: string; created_by: number; created_at: number }
+
+async function shadowMutesGet(): Promise<{ mutes: ShadowMuteRow[] }>
+{
+    const r = await fetch('/api/v2/moderation/shadow-mutes', { credentials: 'include' });
+    if(!r.ok) throw new Error(`${r.status}`);
+    return (await r.json()) as { mutes: ShadowMuteRow[] };
+}
+
+function ShadowMuteSection(): ReactNode
+{
+    const qc = useQueryClient();
+    const q = useQuery({ queryKey: ['staff', 'shadowmutes'], queryFn: shadowMutesGet, refetchInterval: 30_000 });
+
+    const addMut = useMutation<unknown, Error, { username: string; minutes: number; reason: string }>({
+        mutationFn: async (b) =>
+        {
+            const r = await fetch('/api/v2/moderation/shadow-mutes', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify(b)
+            });
+            const body = (await r.json().catch(() => ({}))) as { error?: string };
+            if(!r.ok) throw new Error(body.error ?? `${r.status}`);
+            return body;
+        },
+        onSuccess: () => void qc.invalidateQueries({ queryKey: ['staff', 'shadowmutes'] })
+    });
+    const delMut = useMutation<unknown, Error, number>({
+        mutationFn: async (userId) =>
+        {
+            const r = await fetch(`/api/v2/moderation/shadow-mutes/${userId}`, { method: 'DELETE', credentials: 'include' });
+            if(!r.ok) throw new Error(`${r.status}`);
+            return r.json();
+        },
+        onSuccess: () => void qc.invalidateQueries({ queryKey: ['staff', 'shadowmutes'] })
+    });
+
+    const [username, setUsername] = useState('');
+    const [minutes, setMinutes] = useState(0);
+    const [reason, setReason] = useState('');
+
+    const fmtUntil = (ts: number): string => ts === 0 ? 'Permanente' : fmtDate(ts);
+
+    return (
+        <>
+            <div className="admin-alert admin-alert--info" style={{ marginBottom: 14 }}>
+                I messaggi dell'utente in shadow-mute restano visibili solo a lui e allo staff. Ha effetto solo col flag <strong>shadow_mute</strong> acceso (vedi <strong>Feature flag</strong>).
+            </div>
+            <section className="admin-card">
+                <h2 className="admin-card__title">Applica shadow-mute</h2>
+                <form onSubmit={e =>
+                {
+                    e.preventDefault();
+                    if(!username.trim()) return;
+                    addMut.mutate(
+                        { username: username.trim(), minutes, reason: reason.trim() },
+                        { onSuccess: () => { setUsername(''); setMinutes(0); setReason(''); } }
+                    );
+                }}>
+                    <div className="admin-row admin-row--3">
+                        <label className="admin-field">
+                            <span className="admin-field__label">Username</span>
+                            <input className="admin-input" value={username} onChange={e => setUsername(e.target.value)} required />
+                        </label>
+                        <label className="admin-field">
+                            <span className="admin-field__label">Minuti (0 = permanente)</span>
+                            <input className="admin-input" type="number" min={0} max={43200} value={minutes} onChange={e => setMinutes(Number(e.target.value))} />
+                        </label>
+                        <label className="admin-field">
+                            <span className="admin-field__label">Motivo</span>
+                            <input className="admin-input" value={reason} onChange={e => setReason(e.target.value)} maxLength={255} />
+                        </label>
+                    </div>
+                    <button type="submit" disabled={addMut.isPending} className="admin-btn admin-btn--primary">Applica shadow-mute</button>
+                    {addMut.error && <Alert kind="error">{addMut.error.message}</Alert>}
+                    {addMut.isSuccess && <Alert kind="success">Shadow-mute applicata.</Alert>}
+                </form>
+            </section>
+
+            <section className="admin-card">
+                <h2 className="admin-card__title">Shadow-mute attive ({q.data?.mutes.length ?? 0})</h2>
+                {q.isLoading && <div style={{ padding: 8 }}>Caricamento…</div>}
+                <div className="admin-table-wrap">
+                    <table className="admin-table">
+                        <thead><tr><th>Utente</th><th>Scadenza</th><th>Motivo</th><th>Dal</th><th></th></tr></thead>
+                        <tbody>
+                            {(q.data?.mutes ?? []).length === 0 && <tr><td colSpan={5} className="admin-table__empty">Nessuna shadow-mute attiva.</td></tr>}
+                            {q.data?.mutes.map(m => (
+                                <tr key={m.user_id}>
+                                    <td><strong>{m.username ?? `#${m.user_id}`}</strong></td>
+                                    <td className="admin-table__mono">{fmtUntil(m.until_ts)}</td>
+                                    <td className="admin-audit-details">{m.reason || '—'}</td>
+                                    <td className="admin-table__mono">{fmtDate(m.created_at)}</td>
+                                    <td><button className="admin-btn admin-btn--small admin-btn--ghost" onClick={() => delMut.mutate(m.user_id)} disabled={delMut.isPending}>Rimuovi</button></td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </>
     );
 }
 

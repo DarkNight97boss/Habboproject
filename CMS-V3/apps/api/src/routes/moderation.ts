@@ -131,4 +131,54 @@ moderation.delete('/shadow-mutes/:userId', async c =>
     return c.json({ ok: true, deleted: res.affectedRows });
 });
 
+// Variante per-username (usata dal pannello staff): risolve username -> id e
+// applica la stessa upsert della PUT. Comodo perche' lo staff ragiona per nome.
+const postSchema = z.object({
+    username: z.string().min(1).max(64),
+    minutes: z.number().int().min(0).max(43200).optional(),
+    reason: z.string().max(255).optional()
+});
+
+moderation.post('/shadow-mutes', async c =>
+{
+    const parsed = postSchema.safeParse(await c.req.json().catch(() => ({})));
+    if(!parsed.success) return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400);
+
+    const actor = c.var.user;
+    if(!actor) return c.json({ error: 'unauthorized' }, 401);
+    const actorId = Number(actor.sub);
+
+    const target = (await dbQuery<{ id: number; username: string; rank: number }>(
+        'SELECT id, username, `rank` FROM users WHERE username = ? LIMIT 1', [parsed.data.username]
+    ))[0];
+    if(!target) return c.json({ error: 'user_not_found' }, 404);
+    if(target.id === actorId) return c.json({ error: 'cannot_target_self' }, 400);
+    if(Number(target.rank) >= Number(actor.rank)) return c.json({ error: 'target_rank_too_high' }, 403);
+
+    const minutes = parsed.data.minutes ?? 0;
+    const reason = parsed.data.reason ?? '';
+
+    if(minutes > 0)
+    {
+        await dbExecute(
+            `INSERT INTO cms_v3_shadow_mutes (user_id, until_ts, reason, created_by, created_at)
+               VALUES (?, UNIX_TIMESTAMP() + ?, ?, ?, UNIX_TIMESTAMP())
+             ON DUPLICATE KEY UPDATE until_ts=VALUES(until_ts), reason=VALUES(reason), created_by=VALUES(created_by), created_at=VALUES(created_at)`,
+            [target.id, minutes * 60, reason, actorId]
+        );
+    }
+    else
+    {
+        await dbExecute(
+            `INSERT INTO cms_v3_shadow_mutes (user_id, until_ts, reason, created_by, created_at)
+               VALUES (?, 0, ?, ?, UNIX_TIMESTAMP())
+             ON DUPLICATE KEY UPDATE until_ts=VALUES(until_ts), reason=VALUES(reason), created_by=VALUES(created_by), created_at=VALUES(created_at)`,
+            [target.id, reason, actorId]
+        );
+    }
+
+    await audit(actorId, 'moderation.shadowmute.set', reqIp(c), c.req.header('user-agent') ?? '', { userId: target.id, username: target.username, minutes, reason });
+    return c.json({ ok: true, userId: target.id, username: target.username, minutes, permanent: minutes === 0 });
+});
+
 export default moderation;

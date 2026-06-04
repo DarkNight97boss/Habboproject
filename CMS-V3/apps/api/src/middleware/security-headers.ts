@@ -16,10 +16,21 @@ import { randomBytes } from 'node:crypto';
  */
 export const securityHeaders: MiddlewareHandler = async (c, next) =>
 {
-    // Genera un request-id per tracing.
-    c.set('requestId', randomBytes(8).toString('hex'));
+    // Request-id per tracing/correlazione (#29). Riusa un X-Request-Id in ingresso
+    // se valido (propagazione cross-servizio: web/EMU/load-balancer → API),
+    // altrimenti ne genera uno nuovo. Validazione a charset sicuro + lunghezza
+    // massima per evitare header-injection quando lo facciamo "eco" in risposta.
+    const incoming = c.req.header('x-request-id');
+    const requestId = incoming && /^[A-Za-z0-9._-]{1,64}$/.test(incoming)
+        ? incoming
+        : randomBytes(8).toString('hex');
+    c.set('requestId', requestId);
 
     await next();
+
+    // Eco in risposta: il chiamante può citare l'X-Request-Id nei bug report e
+    // correlarlo ai log server (grep per requestId). Fondamento del tracing.
+    c.header('X-Request-Id', requestId);
 
     c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
     c.header('X-Frame-Options', 'DENY');

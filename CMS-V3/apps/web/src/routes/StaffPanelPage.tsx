@@ -84,6 +84,7 @@ export function StaffPanelPage(): ReactNode
                     {section === 'economy'    && <EconomySection />}
                     {section === 'replay'     && <EventReplaySection />}
                     {section === 'achievements' && <AchievementsSection />}
+                    {section === 'guilds'     && <GuildsAdminSection />}
                 </main>
             </div>
         </div>
@@ -123,6 +124,7 @@ function Sidebar(): ReactNode
                 {item('/admin/flags', '🚩', 'Feature flag')}
                 {item('/admin/shadowmute', '🔇', 'Shadow-mute')}
                 {item('/admin/replay', '🎞', 'Replay stanza')}
+                {item('/admin/guilds', '🛡', 'Gruppi')}
                 {item('/admin/users', '◐', 'Utenti')}
                 {item('/admin/bans', '⛔', 'Ban')}
                 {item('/admin/logs', '☷', 'Log')}
@@ -849,6 +851,54 @@ function AchievementsSection(): ReactNode
                                     : d.achievements.flatMap(a => a.levels.map(l => (
                                         <AchievementRow key={`${a.name}:${l.level}`} name={a.name} lvl={l} busy={save.isPending} onSave={(body) => save.mutate({ name: a.name, level: l.level, body })} />
                                     )))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// =====================================================================
+// SECTION — GRUPPI (#13 · elenco gruppi, read-only)
+// =====================================================================
+interface GuildRow { id: number; name: string; description: string; roomId: number; created: number; owner: string | null; members: number }
+
+function GuildsAdminSection(): ReactNode
+{
+    const [ q, setQ ] = useState('');
+    const [ query, setQuery ] = useState('');
+    const r = useQuery({ queryKey: ['staff', 'guilds', query], queryFn: () => apiGet<{ guilds: GuildRow[] }>(`/guilds${query ? '?q=' + encodeURIComponent(query) : ''}`) });
+    const d = r.data;
+
+    return (
+        <div className="admin-section">
+            <h2 className="admin-section__title">Gruppi <span className="admin-card__hint">i più numerosi · cerca per nome</span></h2>
+            <form className="admin-search" onSubmit={e => { e.preventDefault(); setQuery(q.trim()); }} style={{ marginBottom: 12 }}>
+                <input className="admin-input" value={q} onChange={e => setQ(e.target.value)} placeholder="Cerca per nome…" style={{ maxWidth: 280 }} />
+                <button className="admin-btn admin-btn--primary" type="submit">Cerca</button>
+            </form>
+            {r.isLoading && <div className="admin-card">Caricamento…</div>}
+            {r.isError && <Alert kind="error">Errore nel caricamento.</Alert>}
+            {d && (
+                <div className="admin-card">
+                    <div className="admin-card__title">{d.guilds.length} gruppi</div>
+                    <div className="admin-table-wrap">
+                        <table className="admin-table">
+                            <thead><tr><th>#</th><th>Nome</th><th>Proprietario</th><th>Membri</th><th>Stanza</th><th>Creato</th></tr></thead>
+                            <tbody>
+                                {d.guilds.length === 0 ? <tr><td colSpan={6} className="admin-table__empty">Nessun gruppo.</td></tr>
+                                    : d.guilds.map(g => (
+                                        <tr key={g.id}>
+                                            <td className="admin-table__id">#{g.id}</td>
+                                            <td><strong>{g.name}</strong><div className="admin-audit-details" title={g.description}>{g.description || '—'}</div></td>
+                                            <td>{g.owner ?? '—'}</td>
+                                            <td><strong>{g.members}</strong></td>
+                                            <td className="admin-table__mono">{g.roomId || '—'}</td>
+                                            <td className="admin-table__mono">{fmtDate(g.created)}</td>
+                                        </tr>
+                                    ))}
                             </tbody>
                         </table>
                     </div>

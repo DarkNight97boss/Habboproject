@@ -1294,4 +1294,25 @@ staff.patch('/achievements/:name/:level', async (c) =>
     return c.json({ ok: true, updated: res.affectedRows });
 });
 
+// =================================================================
+// 14. GRUPPI (#13) — elenco gruppi con proprietario + n. membri (read-only)
+// =================================================================
+staff.get('/guilds', async (c) =>
+{
+    const search = (c.req.query('q') ?? '').trim();
+    const baseSql =
+        `SELECT g.id, g.name, g.description, g.room_id, g.date_created, u.username AS owner,
+                (SELECT COUNT(*) FROM guilds_members gm WHERE gm.guild_id = g.id) AS members
+           FROM guilds g LEFT JOIN users u ON u.id = g.user_id `;
+    const rows = search
+        ? await dbQuery<{ id: number; name: string; description: string; room_id: number; date_created: number; owner: string | null; members: number }>(
+            baseSql + 'WHERE g.name LIKE ? ORDER BY members DESC, g.id DESC LIMIT 100', [`%${search}%`])
+        : await dbQuery<{ id: number; name: string; description: string; room_id: number; date_created: number; owner: string | null; members: number }>(
+            baseSql + 'ORDER BY members DESC, g.id DESC LIMIT 100');
+
+    return c.json({
+        guilds: rows.map(r => ({ id: r.id, name: r.name, description: r.description, roomId: r.room_id, created: r.date_created, owner: r.owner, members: Number(r.members) }))
+    });
+});
+
 export default staff;

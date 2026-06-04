@@ -30,6 +30,7 @@ function renderEvent(e: FeedEvent): { icon: string; text: ReactNode }
         case 'room.created':    return { icon: '🏠', text: <><strong>{who}</strong> ha creato la stanza {p.room ? <em>«{String(p.room)}»</em> : 'una stanza'}</> };
         case 'guild.created':   return { icon: '🛡️', text: <><strong>{who}</strong> ha fondato il gruppo {p.guild ? <em>«{String(p.guild)}»</em> : ''}</> };
         case 'photo.posted':    return { icon: '📸', text: <><strong>{who}</strong> ha pubblicato una foto</> };
+        case 'achievement.unlocked': return { icon: '🏆', text: <><strong>{who}</strong> ha sbloccato un obiettivo</> };
         default:                return { icon: '✨', text: <><strong>{who}</strong> · {e.type}</> };
     }
 }

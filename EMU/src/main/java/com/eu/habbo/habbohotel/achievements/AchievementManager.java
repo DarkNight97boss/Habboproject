@@ -132,6 +132,20 @@ public class AchievementManager {
             habbo.getClient().sendResponse(new AchievementProgressComposer(habbo, achievement));
             habbo.getClient().sendResponse(new AchievementUnlockedComposer(habbo, achievement));
 
+            // Event-bus CMS (best-effort, async, no-op se non configurato): pubblica
+            // SOLO il primo unlock dell'achievement (oldLevel == null) per evitare
+            // spam dai level-up successivi. Il gioco non dipende mai dal CMS.
+            try {
+                if (oldLevel == null) {
+                    com.google.gson.JsonObject cmsPayload = new com.google.gson.JsonObject();
+                    cmsPayload.addProperty("achievement", achievement.name);
+                    cmsPayload.addProperty("level", newLevel.level);
+                    com.eu.habbo.core.CmsEventPublisher.publish("achievement.unlocked", habbo.getHabboInfo().getId(), habbo.getHabboInfo().getUsername(), cmsPayload);
+                }
+            } catch (Throwable ignored) {
+                // intenzionalmente ignorato
+            }
+
             //Exception could possibly arise when the user disconnects while being in tour.
             //The achievement is then progressed but the user is already disposed so fetching
             //the badge would result in an nullpointer exception. This is normal behaviour.

@@ -94,6 +94,7 @@ export function AsteriaRoomsPage(): ReactNode
                                         <img loading="lazy" src={avatarUrl(r.ownerLook, { size: 's', headOnly: true })} alt="" />
                                         <span>{r.ownerName}</span>
                                     </div>
+                                    <a href={`/gioca?room=${ r.id }`} className="asteria-btn" style={{ display: 'block', textAlign: 'center', marginTop: 10 }}>▶ Gioca qui</a>
                                 </div>
                             </div>
                         );

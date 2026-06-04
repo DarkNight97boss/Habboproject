@@ -1238,4 +1238,60 @@ staff.get('/economy', async (c) =>
     });
 });
 
+// =================================================================
+// 13. ACHIEVEMENTS (#4) — definizioni data-driven dalla tabella `achievements`
+// =================================================================
+// Le achievement Arcturus sono righe nella tabella `achievements` (PK name+level).
+// Qui lo staff le sfoglia e ne modifica ricompensa/punti/progresso; per applicare
+// in gioco si esegue il comando :update_achievements (ricarica la cache EMU).
+staff.get('/achievements', async (c) =>
+{
+    const category = (c.req.query('category') ?? '').trim();
+    const rows = category
+        ? await dbQuery<{ name: string; category: string; level: number; reward_amount: number; reward_type: number; points: number; progress_needed: number }>(
+            'SELECT name, category, level, reward_amount, reward_type, points, progress_needed FROM achievements WHERE category = ? ORDER BY name, level', [category])
+        : await dbQuery<{ name: string; category: string; level: number; reward_amount: number; reward_type: number; points: number; progress_needed: number }>(
+            'SELECT name, category, level, reward_amount, reward_type, points, progress_needed FROM achievements ORDER BY category, name, level');
+
+    const map = new Map<string, { name: string; category: string; levels: { level: number; rewardAmount: number; rewardType: number; points: number; progressNeeded: number }[] }>();
+    for(const r of rows)
+    {
+        let g = map.get(r.name);
+        if(!g) { g = { name: r.name, category: r.category, levels: [] }; map.set(r.name, g); }
+        g.levels.push({ level: r.level, rewardAmount: r.reward_amount, rewardType: r.reward_type, points: r.points, progressNeeded: r.progress_needed });
+    }
+    const categories = await dbQuery<{ category: string }>('SELECT DISTINCT category FROM achievements ORDER BY category');
+    return c.json({ achievements: Array.from(map.values()), categories: categories.map(r => r.category) });
+});
+
+const achPatchSchema = z.object({
+    rewardAmount: z.number().int().min(0).max(1_000_000).optional(),
+    points: z.number().int().min(0).max(100_000).optional(),
+    progressNeeded: z.number().int().min(1).max(100_000_000).optional()
+});
+
+staff.patch('/achievements/:name/:level', async (c) =>
+{
+    const name = c.req.param('name');
+    const level = Number(c.req.param('level'));
+    if(!/^[A-Za-z0-9_]{1,64}$/.test(name) || !Number.isInteger(level) || level < 1) return c.json({ error: 'invalid_target' }, 400);
+
+    const parsed = achPatchSchema.safeParse(await c.req.json().catch(() => ({})));
+    if(!parsed.success) return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400);
+
+    const sets: string[] = [];
+    const params: unknown[] = [];
+    if(parsed.data.rewardAmount !== undefined) { sets.push('reward_amount = ?'); params.push(parsed.data.rewardAmount); }
+    if(parsed.data.points !== undefined) { sets.push('points = ?'); params.push(parsed.data.points); }
+    if(parsed.data.progressNeeded !== undefined) { sets.push('progress_needed = ?'); params.push(parsed.data.progressNeeded); }
+    if(sets.length === 0) return c.json({ error: 'nothing_to_update' }, 400);
+
+    params.push(name, level);
+    const res = await dbExecute(`UPDATE achievements SET ${sets.join(', ')} WHERE name = ? AND level = ?`, params);
+
+    const actor = c.var.user;
+    if(actor) await logRconAudit(Number(actor.sub), 'achievements.edit', clientIp(c), c.req.header('user-agent') ?? '', { name, level, ...parsed.data });
+    return c.json({ ok: true, updated: res.affectedRows });
+});
+
 export default staff;

@@ -83,6 +83,7 @@ export function StaffPanelPage(): ReactNode
                     {section === 'shadowmute' && <ShadowMuteSection />}
                     {section === 'economy'    && <EconomySection />}
                     {section === 'replay'     && <EventReplaySection />}
+                    {section === 'achievements' && <AchievementsSection />}
                 </main>
             </div>
         </div>
@@ -132,6 +133,7 @@ function Sidebar(): ReactNode
             <div className="admin-sidebar__group">Contenuti</div>
             <ul className="admin-sidebar__nav">
                 {item('/admin/news', '▤', 'News')}
+                {item('/admin/achievements', '🏆', 'Achievements')}
             </ul>
 
             <div className="admin-sidebar__group">Economia</div>
@@ -775,6 +777,82 @@ function EventReplaySection(): ReactNode
                         </table>
                     </div>
                 </section>
+            )}
+        </div>
+    );
+}
+
+// =====================================================================
+// SECTION — ACHIEVEMENTS (#4 · definizioni data-driven, gestibili dallo staff)
+// =====================================================================
+interface AchLevel { level: number; rewardAmount: number; rewardType: number; points: number; progressNeeded: number }
+interface AchGroup { name: string; category: string; levels: AchLevel[] }
+
+function AchievementRow({ name, lvl, busy, onSave }: { name: string; lvl: AchLevel; busy: boolean; onSave: (body: Record<string, number>) => void }): ReactNode
+{
+    const [ reward, setReward ] = useState(String(lvl.rewardAmount));
+    const [ points, setPoints ] = useState(String(lvl.points));
+    const [ progress, setProgress ] = useState(String(lvl.progressNeeded));
+    const dirty = reward !== String(lvl.rewardAmount) || points !== String(lvl.points) || progress !== String(lvl.progressNeeded);
+
+    return (
+        <tr>
+            <td className="admin-table__mono">{name}</td>
+            <td>{lvl.level}</td>
+            <td><input className="admin-input" type="number" min={0} value={reward} onChange={e => setReward(e.target.value)} style={{ width: 90 }} /></td>
+            <td><input className="admin-input" type="number" min={0} value={points} onChange={e => setPoints(e.target.value)} style={{ width: 70 }} /></td>
+            <td><input className="admin-input" type="number" min={1} value={progress} onChange={e => setProgress(e.target.value)} style={{ width: 90 }} /></td>
+            <td><button className="admin-btn admin-btn--small admin-btn--primary" disabled={busy || !dirty} onClick={() => onSave({ rewardAmount: Number(reward), points: Number(points), progressNeeded: Number(progress) })}>{busy ? '…' : 'Salva'}</button></td>
+        </tr>
+    );
+}
+
+function AchievementsSection(): ReactNode
+{
+    const qc = useQueryClient();
+    const [ category, setCategory ] = useState('identity');
+    const [ saved, setSaved ] = useState(false);
+
+    const q = useQuery({
+        queryKey: ['staff', 'achievements', category],
+        queryFn: () => apiGet<{ achievements: AchGroup[]; categories: string[] }>(`/achievements?category=${encodeURIComponent(category)}`)
+    });
+    const d = q.data;
+
+    const save = useMutation({
+        mutationFn: ({ name, level, body }: { name: string; level: number; body: Record<string, number> }) =>
+            apiSend(`/achievements/${encodeURIComponent(name)}/${level}`, 'PATCH', body),
+        onSuccess: () => { setSaved(true); void qc.invalidateQueries({ queryKey: ['staff', 'achievements', category] }); }
+    });
+
+    return (
+        <div className="admin-section">
+            <h2 className="admin-section__title">Achievements <span className="admin-card__hint">definizioni · ricompensa / punti / progresso</span></h2>
+            <div className="admin-alert admin-alert--info" style={{ marginBottom: 14 }}>
+                Modifica le definizioni delle achievement. Per applicarle in gioco esegui <strong>:update_achievements</strong> (ricarica la cache dell'EMU). {saved && <strong>· Salvato.</strong>}
+            </div>
+            <div style={{ marginBottom: 12 }}>
+                <select className="admin-input" value={category} onChange={e => { setCategory(e.target.value); setSaved(false); }} style={{ maxWidth: 240 }}>
+                    {(d?.categories ?? [category]).map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                </select>
+            </div>
+            {q.isLoading && <div className="admin-card">Caricamento…</div>}
+            {q.isError && <Alert kind="error">Errore nel caricamento.</Alert>}
+            {d && (
+                <div className="admin-card">
+                    <div className="admin-card__title">{d.achievements.length} achievement in «{category}»</div>
+                    <div className="admin-table-wrap">
+                        <table className="admin-table">
+                            <thead><tr><th>Achievement</th><th>Lv</th><th>Ricompensa</th><th>Punti</th><th>Progresso</th><th></th></tr></thead>
+                            <tbody>
+                                {d.achievements.length === 0 ? <tr><td colSpan={6} className="admin-table__empty">Nessuna achievement.</td></tr>
+                                    : d.achievements.flatMap(a => a.levels.map(l => (
+                                        <AchievementRow key={`${a.name}:${l.level}`} name={a.name} lvl={l} busy={save.isPending} onSave={(body) => save.mutate({ name: a.name, level: l.level, body })} />
+                                    )))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             )}
         </div>
     );

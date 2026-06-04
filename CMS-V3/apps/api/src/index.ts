@@ -23,6 +23,7 @@ import flagsRoute from './routes/flags.js';
 import streakRoute from './routes/streak.js';
 import moderationRoute from './routes/moderation.js';
 import referralRoute from './routes/referral.js';
+import missionsRoute from './routes/missions.js';
 import { ensureShopSeeded } from './services/shop-seed.js';
 import { ensureSkinsSeeded } from './services/skin-seed.js';
 
@@ -64,6 +65,7 @@ app.route('/api/v2/activity', activityRoute);
 app.route('/api/v2/streak', streakRoute);
 app.route('/api/v2/moderation', moderationRoute);
 app.route('/api/v2/referral', referralRoute);
+app.route('/api/v2/missions', missionsRoute);
 app.route('/api/v2/profile', profileRoute);
 app.route('/api/v2/shop', shopRoute);
 app.route('/api/v2/site', skinSiteRoutes);

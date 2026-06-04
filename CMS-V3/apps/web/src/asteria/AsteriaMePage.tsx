@@ -28,6 +28,7 @@ export function AsteriaMePage(): ReactNode
             <MeStats user={user} />
             <MeStreak />
             <MeReferral />
+            <MeMissions />
             <MeQuickActions />
             <AsteriaNewsBento title="Ultime news" subtitle="Cosa succede in Asteria" />
             <MeActivity />
@@ -297,6 +298,83 @@ function MeReferral(): ReactNode
                         <strong>{data.invitedCount}</strong> {data.invitedCount === 1 ? 'amico invitato' : 'amici invitati'}
                     </div>
                 )}
+            </div>
+        </div>
+    );
+}
+
+interface MissionRow { id: string; title: string; period: 'daily' | 'weekly'; target: number; reward: number; progress: number; claimed: boolean; claimable: boolean }
+
+/**
+ * Missioni (#3). Progresso calcolato lato server contando gli activity event.
+ * Visibile solo se il flag `missions` è ON (API → {enabled:false} se OFF).
+ */
+function MeMissions(): ReactNode
+{
+    const qc = useQueryClient();
+    const { data, isLoading } = useQuery<{ enabled: boolean; missions: MissionRow[] }>({
+        queryKey: ['me', 'missions'],
+        queryFn: async () =>
+        {
+            const r = await fetch('/api/v2/missions', { credentials: 'include' });
+            if(!r.ok) throw new Error('missions_failed');
+            return r.json();
+        },
+        staleTime: 20_000
+    });
+    const [busy, setBusy] = useState<string | null>(null);
+
+    async function claim(id: string): Promise<void>
+    {
+        if(busy) return;
+        setBusy(id);
+        try
+        {
+            const r = await fetch(`/api/v2/missions/claim/${id}`, { method: 'POST', credentials: 'include' });
+            if(r.ok) void qc.invalidateQueries({ queryKey: ['auth', 'me'] });
+        }
+        finally
+        {
+            setBusy(null);
+            void qc.invalidateQueries({ queryKey: ['me', 'missions'] });
+        }
+    }
+
+    if(isLoading) return null;
+    if(!data?.enabled) return null; // feature flag OFF → invisibile
+    const missions = data.missions || [];
+    if(!missions.length) return null;
+
+    return (
+        <div className="asteria-section">
+            <div className="asteria-section__head">
+                <h2 className="asteria-section__title">🎯 Missioni</h2>
+                <span className="asteria-section__subtitle">Completa e riscatta crediti</span>
+            </div>
+            <div className="asteria-missions">
+                {missions.map(m =>
+                {
+                    const pct = m.target > 0 ? Math.round((m.progress / m.target) * 100) : 0;
+                    return (
+                        <div key={m.id} className="asteria-mission">
+                            <div className="asteria-mission__info">
+                                <div className="asteria-mission__title">
+                                    {m.title}
+                                    <span className="asteria-mission__tag">{m.period === 'daily' ? 'Giornaliera' : 'Settimanale'}</span>
+                                </div>
+                                <div className="asteria-mission__bar"><span style={{ width: `${pct}%` }} /></div>
+                                <div className="asteria-mission__prog">{m.progress}/{m.target} · +{m.reward} crediti</div>
+                            </div>
+                            <div className="asteria-mission__action">
+                                {m.claimed
+                                    ? <span className="asteria-mission__done">✓ Riscattata</span>
+                                    : m.claimable
+                                        ? <button className="asteria-btn" disabled={busy === m.id} onClick={() => void claim(m.id)}>{busy === m.id ? '…' : 'Riscatta'}</button>
+                                        : <span className="asteria-mission__todo">In corso</span>}
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );

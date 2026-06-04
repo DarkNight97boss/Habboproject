@@ -1535,6 +1535,26 @@
 .asteria-referral__ok { font-weight: 700; color: #22d3ee; }
 .asteria-referral__err { font-size: 13px; color: #f87171; }
 
+/* Missioni (#3) */
+.asteria-missions { display: flex; flex-direction: column; gap: 12px; }
+.asteria-mission {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 18px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+}
+.asteria-mission__info { flex: 1; min-width: 0; }
+.asteria-mission__title { font-weight: 600; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.asteria-mission__tag { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.6; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 6px; padding: 1px 6px; }
+.asteria-mission__bar { height: 6px; border-radius: 99px; background: rgba(255, 255, 255, 0.08); margin: 8px 0 6px; overflow: hidden; }
+.asteria-mission__bar > span { display: block; height: 100%; background: linear-gradient(90deg, #a855f7, #22d3ee); border-radius: 99px; }
+.asteria-mission__prog { font-size: 12px; opacity: 0.7; }
+.asteria-mission__done { font-weight: 700; color: #22d3ee; }
+.asteria-mission__todo { font-size: 13px; opacity: 0.6; }
+
 /* Activity feed di community (#11). */
 .asteria-feed { display: flex; flex-direction: column; gap: 2px; }
 .asteria-feed__item {

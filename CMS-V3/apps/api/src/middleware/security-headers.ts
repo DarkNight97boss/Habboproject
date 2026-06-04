@@ -25,7 +25,10 @@ export const securityHeaders: MiddlewareHandler = async (c, next) =>
     c.header('X-Frame-Options', 'DENY');
     c.header('X-Content-Type-Options', 'nosniff');
     c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
-    c.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=(), payment=()');
+    // microphone=(self): la dettatura vocale in chat (Web Speech API sul client
+    // Nitro, stesso origine) ha bisogno del microfono. (self) consente SOLO la
+    // propria origine e l'utente riceve comunque il prompt del browser.
+    c.header('Permissions-Policy', 'geolocation=(), microphone=(self), camera=(), payment=()');
     c.header('X-Permitted-Cross-Domain-Policies', 'none');
     c.header('Cross-Origin-Opener-Policy', 'same-origin');
     c.header('Cross-Origin-Resource-Policy', 'same-origin');

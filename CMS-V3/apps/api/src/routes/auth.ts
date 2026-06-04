@@ -534,7 +534,9 @@ auth.get('/play', async c =>
     c.header('Referrer-Policy', 'no-referrer');
     c.header('X-Robots-Tag', 'noindex, nofollow');
     c.header('X-Content-Type-Options', 'nosniff');
-    c.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()');
+    // microphone=(self): la pagina /gioca ospita la dettatura vocale in chat
+    // (Web Speech API). (self) = solo questa origine; prompt utente comunque richiesto.
+    c.header('Permissions-Policy', 'geolocation=(), microphone=(self), camera=(), payment=(), usb=(), interest-cohort=()');
     return c.body(modified);
 });
 

@@ -65,6 +65,15 @@ public final class CmsEventPublisher {
      * @param payload   dati extra (puo' essere null)
      */
     public static void publish(String type, int actorId, String actorName, JsonObject payload) {
+        publish(type, actorId, actorName, payload, "public");
+    }
+
+    /**
+     * Come {@link #publish(String, int, String, JsonObject)} ma con visibilita'
+     * esplicita ("public" | "friends" | "staff"). Gli eventi "staff" non finiscono
+     * nel feed pubblico (filtrati lato CMS).
+     */
+    public static void publish(String type, int actorId, String actorName, JsonObject payload, String visibility) {
         try {
             if (type == null || type.isEmpty()) return;
 
@@ -77,7 +86,7 @@ public final class CmsEventPublisher {
             if (actorId > 0) body.addProperty("actorId", actorId);
             if (actorName != null && !actorName.isEmpty()) body.addProperty("actorName", actorName);
             if (payload != null) body.add("payload", payload);
-            body.addProperty("visibility", "public");
+            body.addProperty("visibility", (visibility == null || visibility.isEmpty()) ? "public" : visibility);
 
             EXECUTOR.submit(() -> doPost(url, secret, body));
         } catch (Throwable t) {

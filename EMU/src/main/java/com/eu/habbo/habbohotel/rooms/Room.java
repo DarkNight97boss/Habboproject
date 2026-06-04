@@ -2898,6 +2898,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
       this.unitCounter++;
       this.updateDatabaseUserCount();
     }
+
+    // Rilevamento raid/flood (#20) — additivo, gated dal flag CMS "raid_detection"
+    // (no-op se OFF). Solo osserva la frequenza di ingressi: non altera la stanza.
+    try { com.eu.habbo.core.RaidGuard.onJoin(this.getId(), this.getName()); } catch (Throwable ignored) { }
   }
 
   public void kickHabbo(Habbo habbo, boolean alert) {

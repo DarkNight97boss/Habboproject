@@ -289,6 +289,7 @@ public class CommandHandler {
         addCommand(new SummonRankCommand());
         addCommand(new BringRoomCommand());
         addCommand(new RollCommand());
+        addCommand(new PickWinnerCommand());
         addCommand(new SuperbanCommand());
         addCommand(new SuperPullCommand());
         addCommand(new TakeBadgeCommand());

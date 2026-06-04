@@ -189,6 +189,9 @@ public final class Emulator {
             // Lettore feature flag dal CMS (direzione CMS->EMU del ponte):
             // poll periodico di /api/v2/flags -> CmsFlags.isEnabled(...).
             com.eu.habbo.core.CmsFlags.start();
+            // Happy Hour (#5): bonus crediti periodico per gli online, gated dal
+            // flag CMS happy_hour + finestra oraria (usa CmsFlags).
+            com.eu.habbo.core.HappyHour.start();
 
             LOGGER.info("Asteria Core avviato correttamente.");
             LOGGER.info("Sistema avviato in: {}ms. Utilizzando {} thread!", (System.nanoTime() - startTime) / 1e6, Runtime.getRuntime().availableProcessors() * 2);

@@ -194,7 +194,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   public static int HAND_ITEM_TIME = 10;
   public static int IDLE_CYCLES = 240;
   public static int IDLE_CYCLES_KICK = 480;
-  public static String PREFIX_FORMAT = "[<font color=\"%color%\">%prefix%</font>] ";
+  public static String PREFIX_FORMAT = "<font color=\"%color%\">%prefix%</font> ";
   public static int ROLLERS_MAXIMUM_ROLL_AVATARS = 1;
   public static boolean MUTEAREA_CAN_WHISPER = false;
   public static double MAXIMUM_FURNI_HEIGHT = 40d;

@@ -59,6 +59,44 @@ activity.post('/ingest', async c =>
         [e.actorId ?? null, e.actorName ?? '', e.type, e.payload ? JSON.stringify(e.payload) : null, e.visibility]
     );
 
+    // Scala sanzioni (#18) — dark-launch OSSERVAZIONALE. Quando l'evento è una
+    // segnalazione di moderazione (raid/macro/minor/toxicity) di un utente, conta
+    // le sue segnalazioni nelle ultime 24h e, al raggiungimento di una soglia,
+    // SUGGERISCE allo staff un'azione (evento staff `sanction.suggested`). Non
+    // applica MAI sanzioni: solo segnalazione. Gated da `sanctions_ladder` (OFF di
+    // default → no-op). Non deve mai far fallire l'ingest (try/catch).
+    if(e.actorId && /^(raid|macro|minor|toxicity)\./.test(e.type) && await isFeatureEnabled('sanctions_ladder'))
+    {
+        try
+        {
+            const win = await dbQuery<{ n: number }>(
+                `SELECT COUNT(*) AS n FROM cms_v3_activity_events
+                   WHERE actor_id = ?
+                     AND (type LIKE 'raid.%' OR type LIKE 'macro.%' OR type LIKE 'minor.%' OR type LIKE 'toxicity.%')
+                     AND created_at >= (NOW() - INTERVAL 24 HOUR)`,
+                [e.actorId]
+            );
+            const count = Number(win[0]?.n ?? 0);
+            // Soglia → azione SUGGERITA. Scatta esattamente sull'evento che porta
+            // al valore-soglia, così emette una sola volta per gradino.
+            const ladder: Array<{ at: number; action: string }> = [
+                { at: 3, action: 'warn' }, { at: 6, action: 'mute' },
+                { at: 10, action: 'kick' }, { at: 15, action: 'ban' }
+            ];
+            const tier = ladder.find(t => t.at === count);
+            if(tier)
+            {
+                await dbExecute(
+                    'INSERT INTO cms_v3_activity_events (actor_id, actor_name, type, payload, visibility) VALUES (?, ?, ?, ?, ?)',
+                    [e.actorId, e.actorName ?? '', 'sanction.suggested',
+                        JSON.stringify({ userId: e.actorId, user: e.actorName ?? '', count, windowHours: 24, suggested: tier.action, trigger: e.type }),
+                        'staff']
+                );
+            }
+        }
+        catch { /* la scala sanzioni non deve mai far fallire l'ingest */ }
+    }
+
     return c.json({ ok: true }, 202);
 });
 

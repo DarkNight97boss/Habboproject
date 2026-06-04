@@ -338,7 +338,8 @@ const EVENT_META: Record<string, { icon: string; label: string }> = {
     'macro.suspected': { icon: '🤖', label: 'Sospetta macro/bot' },
     'minor.flag':      { icon: '⚠️', label: 'Possibile minore' },
     'economy.alert':   { icon: '💸', label: 'Anomalia economia' },
-    'toxicity.flag':   { icon: '☣️', label: 'Messaggio tossico' }
+    'toxicity.flag':   { icon: '☣️', label: 'Messaggio tossico' },
+    'sanction.suggested': { icon: '⚖️', label: 'Sanzione suggerita' }
 };
 
 function describeStaffEvent(e: StaffEvent): string
@@ -352,6 +353,7 @@ function describeStaffEvent(e: StaffEvent): string
         case 'macro.suspected': return `Intervallo medio ${String(p.avgIntervalMs ?? '?')}ms · jitter ${String(p.jitterPct ?? '?')}%`;
         case 'economy.alert':   return `Sorgente ${String(p.source ?? '?')}: ${String(p.count ?? '?')} erogazioni/${String(p.windowHours ?? 1)}h (${String(p.total ?? '?')} cr)`;
         case 'toxicity.flag':   return `Score ${String(p.score ?? '?')} · «${String(p.text ?? '')}»`;
+        case 'sanction.suggested': return `${String(p.count ?? '?')} segnalazioni/${String(p.windowHours ?? 24)}h → suggerita: ${String(p.suggested ?? '?').toUpperCase()} (da ${String(p.trigger ?? '?')})`;
         default: {
             const keys = Object.keys(p);
             return keys.length ? keys.map(k => `${k}=${String(p[k])}`).join(' · ') : '—';

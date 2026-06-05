@@ -54,14 +54,14 @@
     "@pixi/ticker": "~6.5.10",
     "@pixi/tilemap": "^3.2.2",
     "@pixi/utils": "~6.5.10",
-	"clientjs": "^0.2.1",
+    "clientjs": "^0.2.1",
     "gifuct-js": "^2.1.2",
     "howler": "^2.2.3",
     "pako": "^2.1.0"
   },
   "devDependencies": {
     "@rollup/plugin-typescript": "^10.0.1",
-	"@types/clientjs": "^0.2.0",
+    "@types/clientjs": "^0.2.0",
     "@types/howler": "^2.2.7",
     "@types/pako": "^2.0.0",
     "@typescript-eslint/eslint-plugin": "^5.30.7",

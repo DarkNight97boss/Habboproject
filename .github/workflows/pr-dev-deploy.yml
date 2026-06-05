@@ -218,7 +218,7 @@ jobs:
         run: mvn -B -DskipTests -Dmaven.javadoc.skip=true package
 
       - name: Upload artifact EMU jar
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: emu-jar
           path: EMU/target/Habbo-3.5.5-jar-with-dependencies.jar
@@ -265,7 +265,7 @@ jobs:
         run: yarn workspace @cms-v3/web build
 
       - name: Upload artifact dist web
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: cms-web-dist
           path: CMS-V3/apps/web/dist
@@ -327,7 +327,7 @@ jobs:
           ls -lh /tmp/cms-api-bundle.tar.gz
 
       - name: Upload artifact bundle API
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: cms-api-bundle
           path: /tmp/cms-api-bundle.tar.gz
@@ -612,7 +612,7 @@ jobs:
           steps.web.outputs.ok == 'false' ||
           steps.api.outputs.ok == 'false' ||
           steps.hotel.outputs.ok == 'false'
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: journal-${{ env.PR_SHA }}
           path: /tmp/journal.txt

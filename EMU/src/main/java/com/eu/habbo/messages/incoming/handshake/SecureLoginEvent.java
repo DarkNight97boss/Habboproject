@@ -98,8 +98,26 @@ public class SecureLoginEvent extends MessageHandler {
         // ticket-guessing without touching the DB.
         String peerIp = null;
         try {
-            if (this.client.getChannel() != null && this.client.getChannel().remoteAddress() instanceof java.net.InetSocketAddress) {
-                peerIp = ((java.net.InetSocketAddress) this.client.getChannel().remoteAddress()).getAddress().getHostAddress();
+            if (this.client.getChannel() != null) {
+                // Wave 19 dual-stack fix: il plugin NitroWebsockets-3.1 setta
+                // Channel.attr("WS_IP") con il valore di X-Real-IP letto dall'header
+                // HTTP upgrade (forwardato da nginx con $http_cf_connecting_ip).
+                // Questo è il VERO IP del client (IPv4 o IPv6 dal browser),
+                // non l'IP del TCP loopback (127.0.0.1) di nginx → EMU.
+                // Senza questo lookup, il bind_ip check verrebbe sempre fatto
+                // contro 127.0.0.1 e nessun ticket emesso da utenti reali matcherebbe.
+                io.netty.util.AttributeKey<String> wsIpKey = io.netty.util.AttributeKey.valueOf("WS_IP");
+                if (this.client.getChannel().hasAttr(wsIpKey)) {
+                    String wsIp = this.client.getChannel().attr(wsIpKey).get();
+                    if (wsIp != null && !wsIp.isEmpty()) {
+                        peerIp = wsIp;
+                    }
+                }
+                // Fallback: TCP-level remote address (loopback dietro nginx, ma corretto
+                // in setup dove l'EMU è esposto direttamente).
+                if (peerIp == null && this.client.getChannel().remoteAddress() instanceof java.net.InetSocketAddress) {
+                    peerIp = ((java.net.InetSocketAddress) this.client.getChannel().remoteAddress()).getAddress().getHostAddress();
+                }
             }
         } catch (Exception ignored) {
         }

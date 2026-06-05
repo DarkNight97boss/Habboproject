@@ -133,7 +133,7 @@ public class HabboManager {
         boolean ipBindEnabled = Emulator.getConfig().getBoolean("sso.ticket.bind_ip.enabled", true);
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                     "SELECT id, auth_ticket_issued_at, auth_ticket_bound_ip FROM users WHERE auth_ticket = ? LIMIT 1")) {
+                     "SELECT id, auth_ticket_issued_at, auth_ticket_bound_ip, auth_ticket_bound_ip_alt FROM users WHERE auth_ticket = ? LIMIT 1")) {
             statement.setString(1, sso);
             try (ResultSet s = statement.executeQuery()) {
                 if (s.next()) {
@@ -150,18 +150,54 @@ public class HabboManager {
                     } catch (SQLException missingColumn) {
                         boundIp = "";
                     }
+                    String boundIpAlt;
+                    try {
+                        boundIpAlt = s.getString("auth_ticket_bound_ip_alt");
+                        if (boundIpAlt == null) boundIpAlt = "";
+                    } catch (SQLException missingColumn) {
+                        boundIpAlt = "";
+                    }
                     int ttl = Emulator.getConfig().getInt("sso.ticket.ttl.seconds", 60);
                     if (issuedAt > 0 && ttl > 0 && Emulator.getIntUnixTimestamp() - issuedAt > ttl) {
                         LOGGER.warn("Ticket SSO scaduto rifiutato per l'utente {} (età {}s > ttl {}s)",
                                 s.getInt("id"), Emulator.getIntUnixTimestamp() - issuedAt, ttl);
                         return null;
                     }
-                    // IP binding check: mismatch tra peer-IP del WebSocket e
-                    // IP scritto dal CMS al momento del /play → rifiuto.
+                    // IP binding check (TOFU dual-stack):
+                    // 1. Se peerIp matcha boundIp (primary) → OK
+                    // 2. Else se boundIpAlt è popolata e matcha peerIp → OK (sealed)
+                    // 3. Else se boundIpAlt è vuota → TOFU: prova a sigillare atomicamente
+                    //    boundIpAlt = peerIp. Se UPDATE rowsAffected==1 → OK.
+                    //    Razionale: il browser può usare IPv4 per /api/v2/auth/play e
+                    //    IPv6 per il WebSocket (happy-eyeballs RFC 8305). Il primo
+                    //    connect riempie l'alt slot atomically; successive connessioni
+                    //    devono matchare uno dei due IP. Single-use ticket + TTL 300s
+                    //    limitano la finestra di abuso.
+                    // 4. Else (entrambi popolati e nessun match) → rifiuto.
                     if (ipBindEnabled && !boundIp.isEmpty() && peerIp != null && !peerIp.equals(boundIp)) {
-                        LOGGER.warn("Ticket SSO IP-mismatch per l'utente {} (bound={}, peer={}) — rifiutato",
-                                s.getInt("id"), boundIp, peerIp);
-                        return null;
+                        if (!boundIpAlt.isEmpty()) {
+                            if (!peerIp.equals(boundIpAlt)) {
+                                LOGGER.warn("Ticket SSO IP-mismatch per l'utente {} (bound={}, alt={}, peer={}) — rifiutato",
+                                        s.getInt("id"), boundIp, boundIpAlt, peerIp);
+                                return null;
+                            }
+                            // peerIp matcha alt — OK
+                        } else {
+                            // TOFU: sigilla atomicamente alt = peerIp
+                            try (PreparedStatement tofu = connection.prepareStatement(
+                                    "UPDATE users SET auth_ticket_bound_ip_alt = ? WHERE auth_ticket = ? AND (auth_ticket_bound_ip_alt IS NULL OR auth_ticket_bound_ip_alt = '') LIMIT 1")) {
+                                tofu.setString(1, peerIp);
+                                tofu.setString(2, sso);
+                                int sealed = tofu.executeUpdate();
+                                if (sealed != 1) {
+                                    LOGGER.warn("Ticket SSO TOFU race lost per l'utente {} (bound={}, peer={}) — rifiutato",
+                                            s.getInt("id"), boundIp, peerIp);
+                                    return null;
+                                }
+                                LOGGER.info("Ticket SSO TOFU dual-stack sealed per l'utente {} (bound={}, sealed_alt={})",
+                                        s.getInt("id"), boundIp, peerIp);
+                            }
+                        }
                     }
                     userId = s.getInt("id");
                 }

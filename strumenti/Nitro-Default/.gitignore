@@ -29,3 +29,7 @@ Thumbs.db
 .env
 public/renderer-config*
 public/ui-config*
+
+# Lockfile escluso — questo è materiale di reference, non viene buildato da CI.
+yarn.lock
+node_modules/

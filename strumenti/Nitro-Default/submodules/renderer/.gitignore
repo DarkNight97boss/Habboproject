@@ -49,3 +49,7 @@ Thumbs.db
 *.zip
 *.as
 *.bin
+
+# Lockfile escluso — materiale di reference.
+yarn.lock
+node_modules/

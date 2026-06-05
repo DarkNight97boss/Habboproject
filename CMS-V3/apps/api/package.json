@@ -28,7 +28,7 @@
         "zod": "^4.4.3"
     },
     "devDependencies": {
-        "@types/node": "^22.10.2",
+        "@types/node": "^25.9.1",
         "@types/qrcode": "^1.5.5",
         "tsx": "^4.19.2",
         "typescript": "^5.7.2",

@@ -1,12 +1,12 @@
 # Code owners — review obbligatoria su PR.
-*                                       @simoleo89
-/CMS-V3/apps/api/src/security/          @simoleo89
-/CMS-V3/apps/api/src/middleware/auth.ts @simoleo89
-/CMS-V3/apps/api/src/routes/auth.ts     @simoleo89
-/CMS-V3/apps/api/src/routes/shop.ts     @simoleo89
-/CMS-V3/apps/api/src/services/stripe.ts @simoleo89
-/EMU/src/main/java/com/eu/habbo/core/   @simoleo89
-/EMU/src/main/java/com/eu/habbo/database/ @simoleo89
-/.github/workflows/                     @simoleo89
-/deploy/                                @simoleo89
-*.sql                                   @simoleo89
+*                                       @DarkNight97boss
+/CMS-V3/apps/api/src/security/          @DarkNight97boss
+/CMS-V3/apps/api/src/middleware/auth.ts @DarkNight97boss
+/CMS-V3/apps/api/src/routes/auth.ts     @DarkNight97boss
+/CMS-V3/apps/api/src/routes/shop.ts     @DarkNight97boss
+/CMS-V3/apps/api/src/services/stripe.ts @DarkNight97boss
+/EMU/src/main/java/com/eu/habbo/core/   @DarkNight97boss
+/EMU/src/main/java/com/eu/habbo/database/ @DarkNight97boss
+/.github/workflows/                     @DarkNight97boss
+/deploy/                                @DarkNight97boss
+*.sql                                   @DarkNight97boss

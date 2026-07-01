@@ -248,7 +248,7 @@ jobs:
       # Cache esplicita (in aggiunta a setup-java) per ramo prod separato:
       # vogliamo cache deterministica basata su hash del pom.xml.
       - name: Cache Maven local repo
-        uses: actions/cache@0c907a75c2c80ebcb7f088228285e798b750cf8f # v4.2.1
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.m2/repository
           key: m2-prod-${{ runner.os }}-${{ hashFiles('EMU/pom.xml') }}
@@ -302,7 +302,7 @@ jobs:
           cache-dependency-path: CMS-V3/yarn.lock
 
       - name: Cache node_modules (CMS-V3 root + apps/web)
-        uses: actions/cache@0c907a75c2c80ebcb7f088228285e798b750cf8f # v4.2.1
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             CMS-V3/node_modules
@@ -366,7 +366,7 @@ jobs:
           cache-dependency-path: CMS-V3/yarn.lock
 
       - name: Cache node_modules (CMS-V3 root + apps/api)
-        uses: actions/cache@0c907a75c2c80ebcb7f088228285e798b750cf8f # v4.2.1
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             CMS-V3/node_modules

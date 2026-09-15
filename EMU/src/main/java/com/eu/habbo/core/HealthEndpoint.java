@@ -13,6 +13,10 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import com.sun.net.httpserver.BasicAuthenticator;
+import com.sun.net.httpserver.HttpContext;
 
 /**
  * Endpoint HTTP minimale per orchestratori (docker-compose healthcheck,
@@ -52,6 +56,8 @@ public final class HealthEndpoint {
     public static final AtomicLong COMMANDS_RUN = new AtomicLong(0);
     /** Alert moderazione emessi dalle guard (#16/#17/#19/#20/#21) dal boot. */
     public static final AtomicLong MODERATION_FLAGS = new AtomicLong(0);
+    /** Connessioni rifiutate dal cap per-IP (ConnectionLimiter) dal boot. */
+    public static final AtomicLong CONNECTIONS_REJECTED = new AtomicLong(0);
 
     /**
      * Histogram della durata di {@code MessageHandler.handle()} (SLI 3 in SLO.md).
@@ -86,8 +92,34 @@ public final class HealthEndpoint {
         try {
             server = HttpServer.create(new InetSocketAddress(host, port), 0);
             server.createContext("/healthz", ex -> respond(ex, 200, "OK\n"));
-            server.createContext("/readyz", HealthEndpoint::handleReady);
-            server.createContext("/metrics", HealthEndpoint::handleMetrics);
+            HttpContext readyCtx = server.createContext("/readyz", HealthEndpoint::handleReady);
+            HttpContext metricsCtx = server.createContext("/metrics", HealthEndpoint::handleMetrics);
+
+            // Basic-auth (security audit P2.7): health.metrics.basic_auth = "user:pass".
+            // Era documentata ma MAI implementata: chi bindava fuori da loopback credendosi
+            // protetto esponeva metriche e il ping DB (/readyz apre una connessione dal
+            // pool) in chiaro. Confronto in tempo costante. /healthz resta aperto: e' la
+            // liveness, non contiene dati sensibili.
+            String basic = Emulator.getConfig().getValue("health.metrics.basic_auth", "");
+            boolean loopback = host.equals("127.0.0.1") || host.equals("::1") || host.equalsIgnoreCase("localhost");
+            if (basic != null && basic.contains(":")) {
+                final byte[] expUser = basic.substring(0, basic.indexOf(':')).getBytes(StandardCharsets.UTF_8);
+                final byte[] expPass = basic.substring(basic.indexOf(':') + 1).getBytes(StandardCharsets.UTF_8);
+                BasicAuthenticator auth = new BasicAuthenticator("habbo-health") {
+                    @Override
+                    public boolean checkCredentials(String user, String pass) {
+                        byte[] u = String.valueOf(user).getBytes(StandardCharsets.UTF_8);
+                        byte[] p = String.valueOf(pass).getBytes(StandardCharsets.UTF_8);
+                        // & (non &&) per non cortocircuitare: tempo costante su entrambi.
+                        return MessageDigest.isEqual(expUser, u) & MessageDigest.isEqual(expPass, p);
+                    }
+                };
+                readyCtx.setAuthenticator(auth);
+                metricsCtx.setAuthenticator(auth);
+                LOGGER.info("HealthEndpoint -> basic-auth attiva su /readyz e /metrics");
+            } else if (!loopback) {
+                LOGGER.warn("HealthEndpoint bindato su {} SENZA health.metrics.basic_auth: /metrics e /readyz sono esposti in chiaro", host);
+            }
             // Pool minuscolo: i probe sono leggeri e infrequenti.
             server.setExecutor(Executors.newFixedThreadPool(2, r -> {
                 Thread t = new Thread(r, "HealthEndpoint");
@@ -168,6 +200,7 @@ public final class HealthEndpoint {
         appendGauge(sb, "habbo_chat_messages_total", "Chat messages processed (non-command) since boot", CHAT_MESSAGES.get());
         appendGauge(sb, "habbo_commands_executed_total", "Chat commands executed since boot", COMMANDS_RUN.get());
         appendGauge(sb, "habbo_moderation_flags_total", "Moderation alerts emitted by guards (raid/macro/minor/toxicity) since boot", MODERATION_FLAGS.get());
+        appendGauge(sb, "habbo_connections_rejected_total", "Connections refused by the per-IP connection cap since boot", CONNECTIONS_REJECTED.get());
         // Histogram (SLI 3 latency + synthetic probe).
         PACKET_PROCESSING_SECONDS.appendTo(sb);
         SYNTHETIC_CONNECT_SECONDS.appendTo(sb);

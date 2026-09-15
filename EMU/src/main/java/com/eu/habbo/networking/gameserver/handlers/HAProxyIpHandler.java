@@ -64,6 +64,11 @@ public class HAProxyIpHandler extends ChannelInboundHandlerAdapter {
                 String realIp = proxyMessage.sourceAddress();
                 if (realIp != null && !realIp.isEmpty()) {
                     ctx.channel().attr(GameServerAttributes.PROXY_REAL_IP).set(realIp);
+                    // Cap connessioni per IP REALE (audit P2.8): qui, non in channelActive,
+                    // perche' prima di questo header l'IP del socket e' quello del proxy.
+                    if (!ConnectionLimitHandler.apply(ctx, realIp)) {
+                        return; // canale chiuso dal limiter (il finally rilascia il messaggio)
+                    }
                 }
             } finally {
                 proxyMessage.release();

@@ -48,6 +48,11 @@ public class GameServer extends Server {
                     ch.pipeline().addLast("haproxyHandler", new com.eu.habbo.networking.gameserver.handlers.HAProxyIpHandler());
                 }
 
+                // Cap connessioni per IP (security audit P2.8). In proxy-mode il conteggio
+                // parte da HAProxyIpHandler (IP reale); qui in channelActive solo senza proxy.
+                // Loopback sempre esente (dietro nginx tutti i client sono 127.0.0.1).
+                ch.pipeline().addLast("connLimit", new com.eu.habbo.networking.gameserver.handlers.ConnectionLimitHandler(proxyOn));
+
                 ch.pipeline().addLast("logger", new LoggingHandler());
 
                 // Decoders.

@@ -84,6 +84,30 @@ public class RCONServer extends Server {
                 LOGGER.warn("L'allow-list RCON contiene un IP non-loopback {} — assicurati che il tuo firewall limiti la porta RCON ({}). executecommand = esecuzione di codice remoto.", trimmed, port);
             }
         }
+
+        // SECURITY (audit P2.10): rcon.token e' OBBLIGATORIO quando RCON e' raggiungibile
+        // fuori da loopback (bind host non-loopback OPPURE allow-list con IP non-loopback):
+        // altrimenti l'unica barriera resta l'allow-list IP, aggirabile da qualsiasi
+        // processo compromesso/sidecar/SSRF che raggiunga la porta -> executecommand = RCE.
+        // Su loopback puro il token resta opzionale (warn) per non rompere i setup esistenti.
+        String rconToken = Emulator.getConfig().getValue("rcon.token", "");
+        boolean tokenMissing = rconToken == null || rconToken.trim().isEmpty();
+        boolean bindLoopback = host == null || host.trim().isEmpty()
+                || host.equals("127.0.0.1") || host.equals("::1") || host.equalsIgnoreCase("localhost");
+        boolean anyRemoteAllowed = false;
+        for (String addr : this.allowedAdresses) {
+            String t = addr == null ? "" : addr.trim();
+            if (t.isEmpty()) continue;
+            boolean lb = t.equals("127.0.0.1") || t.equals("::1") || t.equalsIgnoreCase("localhost");
+            if (!lb) anyRemoteAllowed = true;
+        }
+        if (tokenMissing && (!bindLoopback || anyRemoteAllowed)) {
+            LOGGER.error("RCON raggiungibile fuori da loopback (host={}, allowed={}) SENZA rcon.token: avvio rifiutato. Imposta rcon.token (es. `openssl rand -hex 32`) e lo stesso valore in RCON_TOKEN del CMS.", host, this.allowedAdresses);
+            throw new IllegalStateException("rcon.token obbligatorio quando RCON non e' limitato a loopback");
+        }
+        if (tokenMissing) {
+            LOGGER.warn("rcon.token NON impostato: RCON e' protetto SOLO dal binding loopback. Imposta rcon.token (e RCON_TOKEN nel CMS) per difesa in profondita'.");
+        }
     }
 
     @Override

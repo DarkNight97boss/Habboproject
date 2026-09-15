@@ -1,0 +1,84 @@
+# =============================================================================
+# VPS - Diagnostica read-only (workflow_dispatch)
+# -----------------------------------------------------------------------------
+# Esegue sul VPS, con la stessa deploy key della pipeline, un set FISSO di
+# comandi di sola lettura (versioni Java, pacchetti Temurin, alternatives,
+# stato unit systemd, memoria/disco). Serve a verificare prerequisiti di
+# deploy (es. JRE 25) senza aprire sessioni SSH manuali.
+#
+# Sicurezza:
+#   - nessun input: NON e' un "esegui comando arbitrario sul VPS"
+#   - solo attori in PROD_DEPLOY_ALLOWLIST (stessa lista di prod-deploy)
+#   - permissions: contents:read; VPS_HOST/VPS_USER da secret (mascherati)
+#   - il repo e' pubblico -> il log e' pubblico: stampiamo SOLO versioni/stati,
+#     e mascheriamo comunque pattern tipo password/token nelle righe stampate
+# =============================================================================
+name: VPS - Diagnostica read-only
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: vps-diag
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  diag:
+    name: Diagnostica VPS (read-only)
+    runs-on: ubuntu-latest
+    if: contains(fromJSON(vars.PROD_DEPLOY_ALLOWLIST), github.actor)
+    steps:
+      - name: Setup ssh-agent con chiave deploy
+        uses: webfactory/ssh-agent@dc588b651fe13675774614f8e6a936a468676387 # v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Configura known_hosts (host pinning)
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Diagnostica remota (sola lettura)
+        run: |
+          set -uo pipefail
+          # Maschera difensiva su eventuali segreti nelle righe stampate.
+          MASK='s/(-p|--password[= ]|[Pp]ass(word)?[=:]|PWD=|[Ss]ecret[A-Za-z_]*[=:]|[Tt]oken[A-Za-z_]*[=:])[^ "'"'"']*/\1***/g'
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+              ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'bash -s' <<'REMOTE_SCRIPT' | sed -E "$MASK"
+          set -uo pipefail
+          sec() { echo; echo "===== $* ====="; }
+          sec "OS / uptime"
+          . /etc/os-release 2>/dev/null && echo "$PRETTY_NAME ($VERSION_CODENAME)"; uptime
+          sec "java -version (default)"
+          java -version 2>&1 || echo "java: NON trovato nel PATH"
+          echo "readlink /usr/bin/java -> $(readlink -f /usr/bin/java 2>/dev/null || echo 'n/d')"
+          sec "update-alternatives java"
+          update-alternatives --list java 2>&1 || echo "nessuna alternative registrata"
+          sec "JVM installate (/usr/lib/jvm)"
+          ls -1 /usr/lib/jvm 2>/dev/null || echo "/usr/lib/jvm assente"
+          sec "pacchetti temurin / openjdk installati"
+          dpkg-query -W -f='${Package}\t${Version}\t${Status}\n' 'temurin-*' 'openjdk-*' 2>/dev/null | grep -v 'not-installed' || echo "nessuno"
+          sec "repo Adoptium"
+          ls -l /etc/apt/sources.list.d/adoptium.list /etc/apt/keyrings/adoptium.gpg 2>&1
+          cat /etc/apt/sources.list.d/adoptium.list 2>/dev/null
+          echo "--- apt-cache policy temurin-25-jre ---"
+          apt-cache policy temurin-25-jre 2>&1 | head -6
+          sec "unit systemd"
+          for u in habbo-emu habbo-emu-dev cms-api cms-api-dev cloudflared nginx mariadb; do
+            printf '%-14s active=%-9s enabled=%s\n' "$u" "$(systemctl is-active "$u" 2>/dev/null)" "$(systemctl is-enabled "$u" 2>/dev/null)"
+          done
+          sec "ExecStart delle unit EMU (quale java usano)"
+          grep -H '^ExecStart' /etc/systemd/system/habbo-emu.service /etc/systemd/system/habbo-emu-dev.service 2>&1
+          sec "processi java in esecuzione"
+          ps -o pid,user,etimes,rss,args -C java 2>/dev/null | cut -c1-170 || echo "nessun processo java"
+          sec "memoria / disco"
+          free -m | head -2; df -h / | tail -1
+          sec "apply-sql.sh (righe 1-12, per il bug su \$2)"
+          sed -n '1,12p' /opt/asteria-scripts/apply-sql.sh 2>&1
+          REMOTE_SCRIPT
+          echo; echo "[diag] exit ssh: ${PIPESTATUS[0]}"

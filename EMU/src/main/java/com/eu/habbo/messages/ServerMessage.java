@@ -123,11 +123,18 @@ public class ServerMessage {
     public void appendShort(int obj) {
         // Clamp esplicito: il protocollo codifica short a 16 bit; un valore fuori
         // range (anche derivato da input del client) non deve fare wrap-around
-        // silenzioso (CodeQL java/tainted-numeric-cast).
-        if (obj > Short.MAX_VALUE) obj = Short.MAX_VALUE;
-        if (obj < Short.MIN_VALUE) obj = Short.MIN_VALUE;
+        // silenzioso. Il cast avviene SOLO nel ramo gia' limitato dal confronto:
+        // e' la forma che CodeQL (java/tainted-numeric-cast) riconosce come sicura.
+        final short bounded;
+        if (obj > Short.MAX_VALUE) {
+            bounded = Short.MAX_VALUE;
+        } else if (obj < Short.MIN_VALUE) {
+            bounded = Short.MIN_VALUE;
+        } else {
+            bounded = (short) obj;
+        }
         try {
-            this.stream.writeShort((short) obj);
+            this.stream.writeShort(bounded);
         } catch (IOException e) {
             throw new ServerMessageException(e);
         }

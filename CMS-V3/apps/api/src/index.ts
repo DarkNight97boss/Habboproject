@@ -10,6 +10,7 @@ import pino from 'pino';
 import { dbQuery } from './db/pool.js';
 import { env } from './env.js';
 import { populateAuth } from './middleware/auth.js';
+import { csrfGuard } from './middleware/csrf.js';
 import { makeRateLimit } from './middleware/rate-limit.js';
 import { securityHeaders } from './middleware/security-headers.js';
 import authRoute from './routes/auth.js';
@@ -52,6 +53,9 @@ app.use('*', cors({
 }));
 app.use('*', logger((msg) => log.info(msg)));
 app.use('*', populateAuth);
+// CSRF (P1.7): dopo CORS, prima delle rotte. Agisce solo su richieste non-safe
+// con cookie di sessione; vedi middleware/csrf.ts.
+app.use('*', csrfGuard);
 app.use('*', makeRateLimit('generic', env.RATE_LIMIT_GENERIC_PER_MIN, 60_000));
 
 // === Health check (per monitoring/uptime) ===

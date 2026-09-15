@@ -116,5 +116,15 @@ if(parsed.data.NODE_ENV === 'production' && !parsed.data.COOKIE_SECURE)
     process.exit(1);
 }
 
+// P1.7 (security audit): con SameSite=none il cookie di sessione viaggia su OGNI
+// richiesta cross-site e ogni endpoint state-changing diventa CSRF-abile (azioni
+// staff incluse). In produzione non e' ammesso: 'lax' o 'strict' soltanto.
+if(parsed.data.NODE_ENV === 'production' && parsed.data.COOKIE_SAMESITE === 'none')
+{
+    // eslint-disable-next-line no-console
+    console.error('❌ In NODE_ENV=production, COOKIE_SAMESITE non puo\' essere "none" (usa lax o strict).');
+    process.exit(1);
+}
+
 export const env = parsed.data;
 export type Env = typeof env;

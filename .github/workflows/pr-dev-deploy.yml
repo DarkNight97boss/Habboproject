@@ -200,7 +200,6 @@ jobs:
               - 'deploy/sql/**'
             nitro:
               - 'Nitro-V3/**'
-              - 'CMS/react/**'
 
       - name: Override su force_full_rebuild
         if: inputs.force_full_rebuild == true

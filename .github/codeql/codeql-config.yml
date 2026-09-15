@@ -1,0 +1,11 @@
+# Config CodeQL (setup avanzato, vedi .github/workflows/codeql.yml).
+# In produzione girano SOLO EMU/ (Java) e CMS-V3/ (TypeScript): il resto e'
+# codice legacy o vendored che gonfiava il pannello di 143 alert non azionabili.
+name: "Asteria CodeQL config"
+paths-ignore:
+  - "CMS/**"              # vecchio CMS PHP + skin ZabboME: non deployato (nginx serve CMS-V3/apps/web/dist)
+  - "strumenti/**"        # copie di riferimento: Nitro renderer, Arcturus upstream, tool
+  - "EMU/base database/**"
+  - "**/node_modules/**"
+  - "**/dist/**"
+  - "**/*.min.js"

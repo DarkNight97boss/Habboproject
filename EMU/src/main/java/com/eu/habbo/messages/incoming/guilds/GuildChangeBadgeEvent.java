@@ -51,7 +51,7 @@ public class GuildChangeBadgeEvent extends MessageHandler {
 
                     badge += (id < 100 ? "0" : "") + (id < 10 ? "0" : "") + id + (color < 10 ? "0" : "") + color + "" + pos;
 
-                    base += 3;
+                    base = (byte) (base + 3);
                 }
 
                 if (guild.getBadge().equalsIgnoreCase(badge))

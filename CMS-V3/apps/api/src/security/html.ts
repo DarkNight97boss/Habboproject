@@ -39,3 +39,27 @@ export function sanitizeNewsHtml(html: string): string
         /rel=/i.test(pre + post) ? `<a ${pre}target="_blank"${post}>` : `<a ${pre}target="_blank" rel="noopener noreferrer"${post}>`
     );
 }
+
+/**
+ * Literale JS sicuro da inserire dentro uno <script> inline generato server-side:
+ * JSON.stringify piu' escape di < > & (chiudono/aprono tag, es. "</script>") e
+ * dei line terminator U+2028/U+2029. Da usare per QUALSIASI valore che finisce
+ * in HTML costruito a mano (CodeQL js/bad-code-sanitization).
+ */
+export function jsStringLiteral(value: unknown): string {
+    return JSON.stringify(value ?? null)
+        .replace(/</g, '\\u003c')
+        .replace(/>/g, '\\u003e')
+        .replace(/&/g, '\\u0026')
+        .replace(/\u2028/g, '\\u2028')
+        .replace(/\u2029/g, '\\u2029');
+}
+
+/** Escape per un valore dentro un attributo HTML tra doppi apici. */
+export function htmlAttr(value: string): string {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}

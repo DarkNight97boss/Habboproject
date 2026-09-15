@@ -78,7 +78,8 @@ jobs:
           ps -o pid,user,etimes,rss,args -C java 2>/dev/null | cut -c1-170 || echo "nessun processo java"
           sec "memoria / disco"
           free -m | head -2; df -h / | tail -1
-          sec "apply-sql.sh (righe 1-12, per il bug su \$2)"
-          sed -n '1,12p' /opt/asteria-scripts/apply-sql.sh 2>&1
+          # Exit esplicito: lo status dell'ssh e' quello dell'ultimo comando remoto e
+          # un check fallito (es. file non leggibile) non deve far fallire la diagnostica.
+          exit 0
           REMOTE_SCRIPT
           echo; echo "[diag] exit ssh: ${PIPESTATUS[0]}"

@@ -4,6 +4,7 @@ import { dbExecute, dbQuery } from '../db/pool.js';
 import { requireAuth, requireRank } from '../middleware/auth.js';
 import { hashPassword } from '../security/password.js';
 import { fetchAllNewsAdmin, fetchNewsBySlug } from '../services/news.js';
+import { sanitizeNewsHtml } from '../security/html.js';
 import { rcon } from '../services/rcon.js';
 
 /**
@@ -961,7 +962,7 @@ staff.post('/news', async c =>
         category: z.string().max(40).default('aggiornamenti-su-habbo'),
         categoryLabel: z.string().max(60).default('Aggiornamenti su Habbo'),
         summary: z.string().min(10).max(500),
-        bodyHtml: z.string().min(10),
+        bodyHtml: z.string().min(10).max(50_000),
         image: z.string().max(255).default(''),
         published: z.boolean().default(true)
     }).safeParse(body);
@@ -982,7 +983,7 @@ staff.post('/news', async c =>
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 slug, parsed.data.title, parsed.data.category, parsed.data.categoryLabel,
-                parsed.data.summary, parsed.data.bodyHtml, parsed.data.image,
+                parsed.data.summary, sanitizeNewsHtml(parsed.data.bodyHtml), parsed.data.image,
                 Number(actor.sub), parsed.data.published ? 1 : 0, now, now
             ]
         );
@@ -1011,7 +1012,7 @@ staff.patch('/news/:id', async c =>
         category: z.string().max(40).optional(),
         categoryLabel: z.string().max(60).optional(),
         summary: z.string().min(10).max(500).optional(),
-        bodyHtml: z.string().min(10).optional(),
+        bodyHtml: z.string().min(10).max(50_000).optional(),
         image: z.string().max(255).optional(),
         published: z.boolean().optional()
     }).safeParse(body);
@@ -1028,7 +1029,7 @@ staff.patch('/news/:id', async c =>
     if(parsed.data.category !== undefined) { sets.push('category = ?'); vals.push(parsed.data.category); }
     if(parsed.data.categoryLabel !== undefined) { sets.push('category_label = ?'); vals.push(parsed.data.categoryLabel); }
     if(parsed.data.summary !== undefined) { sets.push('summary = ?'); vals.push(parsed.data.summary); }
-    if(parsed.data.bodyHtml !== undefined) { sets.push('body_html = ?'); vals.push(parsed.data.bodyHtml); }
+    if(parsed.data.bodyHtml !== undefined) { sets.push('body_html = ?'); vals.push(sanitizeNewsHtml(parsed.data.bodyHtml)); }
     if(parsed.data.image !== undefined) { sets.push('image = ?'); vals.push(parsed.data.image); }
     if(parsed.data.published !== undefined) { sets.push('published = ?'); vals.push(parsed.data.published ? 1 : 0); }
     if(!sets.length) return c.json({ error: 'no_changes' }, 400);

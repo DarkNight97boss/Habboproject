@@ -60,7 +60,7 @@
         "eslint-plugin-react-compiler": "19.1.0-rc.2",
         "eslint-plugin-react-hooks": "^7.1.1",
         "jsdom": "^29.1.1",
-        "postcss": "^8.5.15",
+        "postcss": "^8.5.23",
         "postcss-nested": "^7.0.2",
         "sass": "^1.99.0",
         "sirv": "^3.0.2",

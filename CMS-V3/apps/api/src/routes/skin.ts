@@ -80,7 +80,7 @@ const manifestSchema = z.object({
         swatches: z.tuple([ cssSafe(80), cssSafe(80), cssSafe(80), cssSafe(80) ])
     }),
     tokens: z.object({
-        colors: z.record(cssSafe(80)).refine(
+        colors: z.record(z.string(), cssSafe(80)).refine(
             o => { const k = Object.keys(o); return k.length >= 1 && k.length <= 60 && k.every(x => /^[a-z0-9-]{1,40}$/.test(x)); },
             'chiavi colore non valide (atteso: kebab-case, 1-60 voci)'
         ),

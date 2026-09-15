@@ -175,7 +175,9 @@ shop.post('/webhook', async (c) =>
         // Eroghiamo SOLO se il pagamento è effettivamente saldato. Con metodi a
         // notifica differita `checkout.session.completed` arriva con
         // payment_status='unpaid': non consegniamo ora, aspettiamo async_payment_succeeded.
-        if(session.payment_status && session.payment_status !== 'paid')
+        // 'no_payment_required' = sessione a importo zero (codice promo 100%): e' un
+        // ordine completato legittimamente, va consegnato come 'paid'.
+        if(session.payment_status && !['paid', 'no_payment_required'].includes(session.payment_status))
         {
             return c.json({ received: true, skipped: `payment_status_${session.payment_status}` });
         }

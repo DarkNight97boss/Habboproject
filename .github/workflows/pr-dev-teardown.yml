@@ -144,7 +144,7 @@ jobs:
           # Heredoc bash con -s passa lo script via stdin all'utente remoto.
           # Variabili d'ambiente vengono forwardate esplicitamente.
           REMOTE_OUTPUT=$(ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
-              ${{ vars.VPS_USER }}@${{ vars.VPS_HOST }} \
+              ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
               "PR_NUMBER='${PR_NUMBER}' PR_HEAD_SHA='${PR_HEAD_SHA}' PR_MERGED='${PR_MERGED}' STOP_IF_IDLE='${STOP_IF_IDLE}' bash -s" <<'REMOTE_SCRIPT'
           set -euo pipefail
 

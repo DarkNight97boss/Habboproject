@@ -18,7 +18,7 @@
 SET NAMES utf8mb4;
 
 ALTER TABLE `users`
-    ADD COLUMN IF NOT EXISTS `auth_ticket_bound_ip` VARCHAR(45) NOT NULL DEFAULT '' AFTER `auth_ticket_issued_at`,
+    ADD COLUMN IF NOT EXISTS `auth_ticket_bound_ip` VARCHAR(45) NOT NULL DEFAULT '',
     ADD COLUMN IF NOT EXISTS `auth_ticket_ua_hash`  CHAR(64)    NOT NULL DEFAULT '' AFTER `auth_ticket_bound_ip`;
 
 -- Pulizia ticket esistenti che NON hanno IP/UA bound (issued prima di questa

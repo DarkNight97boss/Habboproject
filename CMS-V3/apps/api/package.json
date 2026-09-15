@@ -12,19 +12,19 @@
         "test": "vitest run --passWithNoTests"
     },
     "dependencies": {
-        "@hono/node-server": "^1.19.15",
+        "@hono/node-server": "^2.1.1",
         "@node-rs/argon2": "^2.2.1",
         "bcryptjs": "^3.0.3",
         "dotenv": "^17.4.2",
         "hono": "^4.13.7",
-        "isomorphic-dompurify": "^2.19.0",
+        "isomorphic-dompurify": "^4.2.0",
         "jose": "^6.2.12",
         "mysql2": "^3.24.4",
         "otplib": "^13.5.0",
-        "pino": "^9.5.0",
+        "pino": "^10.3.1",
         "pino-pretty": "^13.0.0",
         "qrcode": "^1.5.4",
-        "stripe": "^18.3.0",
+        "stripe": "^22.6.2",
         "zod": "^4.6.2"
     },
     "devDependencies": {
@@ -32,6 +32,6 @@
         "@types/qrcode": "^1.5.5",
         "tsx": "^4.23.13",
         "typescript": "^5.7.2",
-        "vitest": "^4.1.0"
+        "vitest": "^4.1.11"
     }
 }

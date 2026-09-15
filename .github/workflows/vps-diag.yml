@@ -78,6 +78,15 @@ jobs:
           ps -o pid,user,etimes,rss,args -C java 2>/dev/null | cut -c1-170 || echo "nessun processo java"
           sec "memoria / disco"
           free -m | head -2; df -h / | tail -1
+          sec "release DEV (web/api): current -> ? e ultime release per mtime"
+          for d in /var/www/dev.asteriacore.online /opt/asteria-cms-api-dev; do
+            echo "$d/current -> $(readlink -f "$d/current" 2>/dev/null || echo 'n/d (link rotto?)')"
+            ls -1t "$d/releases" 2>/dev/null | head -4 | sed 's/^/  release: /'
+          done
+          sec "journal dev (ultime righe): cms-api-dev / habbo-emu-dev"
+          sudo journalctl -u cms-api-dev -n 12 --no-pager -o cat 2>&1 | cut -c1-160
+          echo "--- habbo-emu-dev ---"
+          sudo journalctl -u habbo-emu-dev -n 6 --no-pager -o cat 2>&1 | cut -c1-160
           # Exit esplicito: lo status dell'ssh e' quello dell'ultimo comando remoto e
           # un check fallito (es. file non leggibile) non deve far fallire la diagnostica.
           exit 0

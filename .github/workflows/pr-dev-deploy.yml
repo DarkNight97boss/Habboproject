@@ -507,10 +507,10 @@ jobs:
 
           # ================= apply-dev.sh (v3) =================
           SCRIPT=/opt/asteria-scripts/apply-dev.sh
-          if needs_gen "$SCRIPT" apply-dev.sh v3; then
+          if needs_gen "$SCRIPT" apply-dev.sh v4; then
           sudo tee "$SCRIPT" > /dev/null <<'SCRIPT_EOF'
           #!/usr/bin/env bash
-          # apply-dev.sh version: v3 (gestito da .github/workflows/pr-dev-deploy.yml:
+          # apply-dev.sh version: v4 (gestito da .github/workflows/pr-dev-deploy.yml:
           # le modifiche locali vengono sovrascritte al prossimo deploy, backup .bak-*)
           # =========================================================================
           # apply-dev.sh - Applica un nuovo deploy DEV (chiamato dal workflow GH)
@@ -578,9 +578,14 @@ jobs:
               sudo rsync -a --delete "${STAGING}/cms-web/" "${RELEASE_DIR}/"
               sudo ln -sfn "$RELEASE_DIR" "${DEV_WEB}/current"
               sudo chown -R www-data:www-data "${RELEASE_DIR}"
-              # Pulizia: tieni le ultime 3 release
-              sudo find "${DEV_WEB}/releases" -mindepth 1 -maxdepth 1 -type d \
-                | sort -r | tail -n +4 | xargs -r sudo rm -rf
+              # Pulizia: tieni le 3 release piu' RECENTI (mtime). I nomi sono SHA:
+              # `sort -r` ordinava per hex e poteva cancellare la release appena
+              # attivata (current -> dir sparita = nginx 500 / API 502).
+              CUR="$(readlink -f "${DEV_WEB}/current" || true)"
+              sudo ls -1t "${DEV_WEB}/releases" | tail -n +4 | while read -r r; do
+                [ "${DEV_WEB}/releases/${r}" = "$CUR" ] && continue
+                sudo rm -rf "${DEV_WEB}/releases/${r}"
+              done
             fi
           fi
 
@@ -595,9 +600,12 @@ jobs:
               sudo chown -R asteria:asteria "${RELEASE_DIR}"
               sudo systemctl restart cms-api-dev.service
               API_RESTARTED=true
-              # Pulizia release vecchie
-              sudo find "${DEV_API_ROOT}/releases" -mindepth 1 -maxdepth 1 -type d \
-                | sort -r | tail -n +4 | xargs -r sudo rm -rf
+              # Pulizia release vecchie (per mtime, mai la current: vedi sopra)
+              CUR="$(readlink -f "${DEV_API_ROOT}/current" || true)"
+              sudo ls -1t "${DEV_API_ROOT}/releases" | tail -n +4 | while read -r r; do
+                [ "${DEV_API_ROOT}/releases/${r}" = "$CUR" ] && continue
+                sudo rm -rf "${DEV_API_ROOT}/releases/${r}"
+              done
             fi
           fi
 

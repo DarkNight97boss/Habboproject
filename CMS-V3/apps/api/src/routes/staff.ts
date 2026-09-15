@@ -287,7 +287,7 @@ staff.patch('/user/:userId', async c =>
         rank: z.number().int().min(1).max(20).optional(),
         look: z.string().max(256).optional()
     }).safeParse(body);
-    if(!parsed.success) return c.json({ error: 'bad_request', details: parsed.error.errors }, 400);
+    if(!parsed.success) return c.json({ error: 'bad_request', details: parsed.error.issues }, 400);
 
     // Constraint sicurezza: non si modifica sé stessi tramite questo endpoint
     // (eviterebbe lock-out: uno staff abbassa la propria rank e perde accesso).
@@ -965,7 +965,7 @@ staff.post('/news', async c =>
         image: z.string().max(255).default(''),
         published: z.boolean().default(true)
     }).safeParse(body);
-    if(!parsed.success) return c.json({ error: 'bad_request', details: parsed.error.errors }, 400);
+    if(!parsed.success) return c.json({ error: 'bad_request', details: parsed.error.issues }, 400);
 
     const slug = parsed.data.slug && slugPattern.test(parsed.data.slug)
         ? parsed.data.slug
@@ -1015,7 +1015,7 @@ staff.patch('/news/:id', async c =>
         image: z.string().max(255).optional(),
         published: z.boolean().optional()
     }).safeParse(body);
-    if(!parsed.success) return c.json({ error: 'bad_request', details: parsed.error.errors }, 400);
+    if(!parsed.success) return c.json({ error: 'bad_request', details: parsed.error.issues }, 400);
 
     const sets: string[] = [];
     const vals: unknown[] = [];

@@ -40,7 +40,7 @@ const ingestSchema = z.object({
     type: z.string().min(1).max(48),
     actorId: z.number().int().positive().optional(),
     actorName: z.string().max(64).optional(),
-    payload: z.record(z.unknown()).optional(),
+    payload: z.record(z.string(), z.unknown()).optional(),
     visibility: z.enum(['public', 'friends', 'staff']).default('public')
 });
 

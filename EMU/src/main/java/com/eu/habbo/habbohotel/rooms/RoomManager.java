@@ -1,5 +1,7 @@
 package com.eu.habbo.habbohotel.rooms;
 
+import com.eu.habbo.core.SqlGuard;
+
 import com.eu.habbo.Emulator;
 import com.eu.habbo.core.RoomUserPetComposer;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
@@ -154,6 +156,11 @@ public class RoomManager {
 
     public THashMap<Integer, List<Room>> findRooms(NavigatorFilterField filterField, String value, int category, boolean showInvisible) {
         THashMap<Integer, List<Room>> rooms = new THashMap<>();
+        // navigator_filter.database_query viene dal DB: deve restare una singola SELECT read-only.
+        if (!SqlGuard.isReadOnlySelect(filterField.databaseQuery)) {
+            LOGGER.error("navigator_filter.database_query rifiutata: {}", filterField.databaseQuery);
+            return rooms;
+        }
         String query = filterField.databaseQuery + " AND rooms.state NOT LIKE " + (showInvisible ? "''" : "'invisible'") + (category >= 0 ? "AND rooms.category = '" + category + "'" : "") + "  ORDER BY rooms.users, rooms.id DESC LIMIT " + (page * NavigatorManager.MAXIMUM_RESULTS_PER_PAGE) + "" + ((page * NavigatorManager.MAXIMUM_RESULTS_PER_PAGE) + NavigatorManager.MAXIMUM_RESULTS_PER_PAGE);
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, (filterField.comparator == NavigatorFilterComparator.EQUALS ? value : "%" + value + "%"));

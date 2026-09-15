@@ -1,5 +1,7 @@
 package com.eu.habbo.habbohotel.commands;
 
+import com.eu.habbo.util.TextSanitizer;
+
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.modtool.ModToolBan;
@@ -54,7 +56,7 @@ public class UserInfoCommand extends Command {
         message.append(Emulator.getTexts().getValue("command.cmd_userinfo.banned")).append(": ").append(Emulator.getTexts().getValue(ban != null ? "generic.yes" : "generic.no")).append("\r\r");
         if (ban != null) {
             message.append("<b>").append(Emulator.getTexts().getValue("command.cmd_userinfo.ban_info")).append("</b>\r");
-            message.append(ban.listInfo()).append("\r");
+            message.append(TextSanitizer.noMarkup(ban.listInfo())).append("\r");
         }
 
         message.append("<b>").append(Emulator.getTexts().getValue("command.cmd_userinfo.currencies")).append("</b>\r");
@@ -77,7 +79,7 @@ public class UserInfoCommand extends Command {
         if (!nameChanges.isEmpty()) {
             message.append("\r<b>Latest name changes:<b><br/>");
             for (Map.Entry<Integer, String> entry : nameChanges) {
-                message.append(format.format(new Date((long) entry.getKey() * 1000L))).append(" : ").append(entry.getValue()).append("<br/>");
+                message.append(format.format(new Date((long) entry.getKey() * 1000L))).append(" : ").append(TextSanitizer.noMarkup(entry.getValue())).append("<br/>");
             }
         }
 

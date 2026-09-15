@@ -1,5 +1,7 @@
 package com.eu.habbo.habbohotel.hotelview;
 
+import com.eu.habbo.core.SqlGuard;
+
 import com.eu.habbo.Emulator;
 import gnu.trove.map.hash.THashMap;
 import org.slf4j.Logger;
@@ -29,7 +31,7 @@ public class HallOfFame {
         this.winners.clear();
 
         synchronized (this.winners) {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery(Emulator.getConfig().getValue("hotelview.halloffame.query"))) {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery(SqlGuard.readOnlySelectOrEmpty(Emulator.getConfig().getValue("hotelview.halloffame.query"), "hotelview.halloffame.query"))) {
                 while (set.next()) {
                     HallOfFameWinner winner = new HallOfFameWinner(set);
                     this.winners.put(winner.getId(), winner);

@@ -1,5 +1,7 @@
 package com.eu.habbo.habbohotel.commands;
 
+import com.eu.habbo.util.TextSanitizer;
+
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.messages.outgoing.generic.alerts.StaffAlertWithLinkComposer;
@@ -16,13 +18,17 @@ public class HotelAlertLinkCommand extends Command {
         }
 
         String url = params[1];
+        // Solo link http(s): niente javascript:/data: nel bottone dell'alert.
+        if (!url.matches("^https?://[^\\s<>\"']+$")) {
+            return false;
+        }
         StringBuilder message = new StringBuilder();
         for (int i = 2; i < params.length; i++) {
             message.append(params[i]);
             message.append(" ");
         }
 
-        message.append("\r\r-<b>").append(gameClient.getHabbo().getHabboInfo().getUsername()).append("</b>");
+        message.append("\r\r-<b>").append(TextSanitizer.noMarkup(gameClient.getHabbo().getHabboInfo().getUsername())).append("</b>");
 
         Emulator.getGameServer().getGameClientManager().sendBroadcastResponse(new StaffAlertWithLinkComposer(message.toString(), url).compose());
         return true;

@@ -15,6 +15,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -127,7 +129,7 @@ public class YoutubeManager {
         if(apiKey.isEmpty()) return null;
 
         YoutubePlaylist playlist;
-        URL playlistInfo = new URL("https://youtube.googleapis.com/youtube/v3/playlists?part=snippet&id=" + playlistId + "&maxResults=1&key=" + apiKey);
+        URL playlistInfo = new URL("https://youtube.googleapis.com/youtube/v3/playlists?part=snippet&id=" + URLEncoder.encode(playlistId, StandardCharsets.UTF_8) + "&maxResults=1&key=" + apiKey);
         HttpsURLConnection playlistCon = (HttpsURLConnection) playlistInfo.openConnection();
         if (playlistCon.getResponseCode() != 200) {
             InputStream errorInputStream = playlistCon.getErrorStream();
@@ -163,7 +165,7 @@ public class YoutubeManager {
             if (nextPageToken.isEmpty()) {
                 playlistItems = new URL("https://youtube.googleapis.com/youtube/v3/playlistItems?part=snippet%2Cstatus&playlistId=" + playlistId + "&maxResults=50&key=" + apiKey);
             } else {
-                playlistItems = new URL("https://youtube.googleapis.com/youtube/v3/playlistItems?part=snippet%2Cstatus&playlistId=" + playlistId + "&pageToken=" + nextPageToken + "&maxResults=50&key=" + apiKey);
+                playlistItems = new URL("https://youtube.googleapis.com/youtube/v3/playlistItems?part=snippet%2Cstatus&playlistId=" + URLEncoder.encode(playlistId, StandardCharsets.UTF_8) + "&pageToken=" + nextPageToken + "&maxResults=50&key=" + apiKey);
             }
 
             HttpsURLConnection con = (HttpsURLConnection) playlistItems.openConnection();
@@ -185,7 +187,7 @@ public class YoutubeManager {
             if (!videoIds.isEmpty()) {
                 URL VideoItems;
 
-                String commaSeparatedVideos = String.join(",", videoIds);
+                String commaSeparatedVideos = String.join(",", videoIds.stream().map(v -> URLEncoder.encode(v, StandardCharsets.UTF_8)).toList());
 
                 VideoItems = new URL("https://youtube.googleapis.com/youtube/v3/videos?part=contentDetails&id=" + commaSeparatedVideos + "&maxResults=50&key=" + apiKey);
                 HttpsURLConnection con1 = (HttpsURLConnection) VideoItems.openConnection();

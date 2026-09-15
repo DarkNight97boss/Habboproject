@@ -1,7 +1,6 @@
 package com.eu.habbo.util;
 
-import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
+import java.security.SecureRandom;
 
 public class HexUtils {
 
@@ -27,15 +26,13 @@ public class HexUtils {
         return data;
     }
 
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+    /** Hex casuale (minuscolo) di lunghezza esatta: usato per il machine-id dei ban. */
     public static String getRandom(int length){
-        Random r = ThreadLocalRandom.current();
-        StringBuilder sb = new StringBuilder();
-
-        while(sb.length() < length){
-            sb.append(Integer.toHexString(r.nextInt()));
-        }
-
-        return sb.toString().substring(0, length);
+        byte[] bytes = new byte[(length + 1) / 2];
+        SECURE_RANDOM.nextBytes(bytes);
+        return toHex(bytes).toLowerCase().substring(0, length);
     }
 
 }

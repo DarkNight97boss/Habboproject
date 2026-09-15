@@ -1,5 +1,7 @@
 package com.eu.habbo.habbohotel.commands;
 
+import com.eu.habbo.util.TextSanitizer;
+
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
@@ -19,7 +21,7 @@ public class BotsCommand extends Command {
         for (Object bot : gameClient.getHabbo().getHabboInfo().getCurrentRoom().getCurrentBots().values()) {
             if (bot instanceof Bot) {
                 data.append("\r");
-                data.append("<b>").append(Emulator.getTexts().getValue("generic.bot.name")).append("</b>: ").append(((Bot) bot).getName()).append(" <b>").append(Emulator.getTexts().getValue("generic.bot.id")).append("</b>: ").append(((Bot) bot).getId());
+                data.append("<b>").append(Emulator.getTexts().getValue("generic.bot.name")).append("</b>: ").append(TextSanitizer.noMarkup(((Bot) bot).getName())).append(" <b>").append(Emulator.getTexts().getValue("generic.bot.id")).append("</b>: ").append(((Bot) bot).getId());
             }
         }
 

@@ -457,6 +457,23 @@ jobs:
             "EMU/sqlupdates" "EMU/base database" "CMS-V3/apps/api/src/db/migrations" "deploy/sql" \
             "${VPS_USER}@${VPS_HOST}:/tmp/asteria-dev-${PR_SHA}/sql-repo/"
 
+      # Drop-in systemd dell'EMU (deploy/systemd/habbo-emu.service.d): la pipeline lo
+      # installa su habbo-emu-dev se cambia (poi restart). Sempre, e' un file.
+      - name: Checkout deploy/systemd
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
+        with:
+          ref: ${{ env.PR_SHA }}
+          path: systemd-src
+          sparse-checkout: |
+            deploy/systemd
+          sparse-checkout-cone-mode: true
+
+      - name: Rsync drop-in systemd
+        run: |
+          rsync -az -e "ssh -o StrictHostKeyChecking=yes" \
+            systemd-src/deploy/systemd/ \
+            "${VPS_USER}@${VPS_HOST}:/tmp/asteria-dev-${PR_SHA}/systemd/"
+
       - name: Rsync EMU jar (se presente)
         if: needs.detect-changes.outputs.emu == 'true'
         run: |
@@ -504,10 +521,10 @@ jobs:
 
           # ================= apply-dev.sh (v3) =================
           SCRIPT=/opt/asteria-scripts/apply-dev.sh
-          if needs_gen "$SCRIPT" apply-dev.sh v4; then
+          if needs_gen "$SCRIPT" apply-dev.sh v5; then
           sudo tee "$SCRIPT" > /dev/null <<'SCRIPT_EOF'
           #!/usr/bin/env bash
-          # apply-dev.sh version: v4 (gestito da .github/workflows/pr-dev-deploy.yml:
+          # apply-dev.sh version: v5 (gestito da .github/workflows/pr-dev-deploy.yml:
           # le modifiche locali vengono sovrascritte al prossimo deploy, backup .bak-*)
           # =========================================================================
           # apply-dev.sh - Applica un nuovo deploy DEV (chiamato dal workflow GH)
@@ -557,12 +574,26 @@ jobs:
             sudo systemctl restart habbo-emu-dev.service
           fi
 
+          # --- Drop-in systemd Java 25 (installa se cambiato -> restart) ---------------
+          EMU_RESTART=false
+          DROPIN_SRC="${STAGING}/systemd/habbo-emu.service.d/java25-hardening.conf"
+          DROPIN_DST="/etc/systemd/system/habbo-emu-dev.service.d/java25-hardening.conf"
+          if [ -f "$DROPIN_SRC" ] && ! sudo cmp -s "$DROPIN_SRC" "$DROPIN_DST"; then
+            log "Drop-in systemd Java 25 cambiato: install + daemon-reload (restart EMU dev)"
+            sudo install -D -m 0644 -o root -g root "$DROPIN_SRC" "$DROPIN_DST"
+            sudo systemctl daemon-reload
+            EMU_RESTART=true
+          fi
+
           # --- EMU jar -------------------------------------------------------------
           if [ "$CH_EMU" = "true" ] && [ -f "${STAGING}/emu/Habbo-3.5.5-jar-with-dependencies.jar" ]; then
             log "Deploy EMU jar"
             sudo install -o asteria -g asteria -m 0644 \
               "${STAGING}/emu/Habbo-3.5.5-jar-with-dependencies.jar" \
               "${EMU_JAR_DEV}"
+            EMU_RESTART=true
+          fi
+          if [ "$EMU_RESTART" = "true" ]; then
             sudo systemctl restart habbo-emu-dev.service
           fi
 

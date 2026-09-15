@@ -93,7 +93,7 @@ permissions:
 env:
   # Versioni toolchain (devono matchare il VPS per evitare sorprese a runtime)
   NODE_VERSION: '24'
-  JAVA_VERSION: '17'
+  JAVA_VERSION: '25'
   JAVA_DISTRIBUTION: 'temurin'
   # Path di staging sul VPS dove rsynciamo gli artifact prima di promuoverli
   STAGING_BASE: '/tmp/asteria-prod'

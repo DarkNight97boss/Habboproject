@@ -137,16 +137,25 @@ jobs:
     if: needs.guard.outputs.allowed == 'true'
     runs-on: ubuntu-latest
     outputs:
-      emu: ${{ steps.filter.outputs.emu }}
-      cmsweb: ${{ steps.filter.outputs.cmsweb }}
-      cmsapi: ${{ steps.filter.outputs.cmsapi }}
-      sql: ${{ steps.filter.outputs.sql }}
-      nitro: ${{ steps.filter.outputs.nitro }}
+      emu: ${{ steps.filter.outputs.emu || steps.force.outputs.emu }}
+      cmsweb: ${{ steps.filter.outputs.cmsweb || steps.force.outputs.cmsweb }}
+      cmsapi: ${{ steps.filter.outputs.cmsapi || steps.force.outputs.cmsapi }}
+      sql: ${{ steps.filter.outputs.sql || steps.force.outputs.sql }}
+      nitro: ${{ steps.filter.outputs.nitro || steps.force.outputs.nitro }}
     steps:
       - name: Checkout (shallow, serve solo per il filter)
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
         with:
           fetch-depth: 2
+
+      # force_full_rebuild (workflow_dispatch) era documentato ma NON collegato agli
+      # output: su dispatch il paths-filter non ha una base PR e i job di build
+      # restavano skipped. Stesso pattern di prod-deploy (steps.force).
+      - name: Force full rebuild (workflow_dispatch)
+        id: force
+        if: ${{ inputs.force_full_rebuild == true || inputs.force_full_rebuild == 'true' }}
+        run: |
+          for k in emu cmsweb cmsapi sql nitro; do echo "$k=true" >> "$GITHUB_OUTPUT"; done
 
       - name: Paths filter
         id: filter

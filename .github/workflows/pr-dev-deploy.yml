@@ -159,6 +159,10 @@ jobs:
 
       - name: Paths filter
         id: filter
+        # Con force_full_rebuild il filter va SALTATO: in GitHub Actions l'output
+        # stringa 'false' e' truthy in `||`, quindi 'false' || 'true' = 'false' e il
+        # force verrebbe ignorato. Step saltato => output vuoti => vince steps.force.
+        if: ${{ inputs.force_full_rebuild != true && inputs.force_full_rebuild != 'true' }}
         uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
         with:
           # Su workflow_dispatch non c'e' un base PR: forza tutti i filtri a true

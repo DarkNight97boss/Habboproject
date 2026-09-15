@@ -181,10 +181,12 @@ jobs:
           filters: |
             emu:
               - 'EMU/**'
-              # I soli test non cambiano il jar in produzione: niente rebuild+restart
-              # (ogni restart EMU disconnette i giocatori).
-              - '!EMU/src/test/**'
-              - '!EMU/.gitignore'
+              # NB: NIENTE pattern negati qui. dorny/paths-filter valuta ogni pattern con
+              # picomatch e marca il filtro se QUALSIASI file matcha QUALSIASI pattern:
+              # un pattern '!x' matcha tutti i file diversi da x -> non esclude nulla e
+              # fa scattare il rebuild EMU su ogni push (lezione 2026-09-15, #183).
+              # Conseguenza accettata: anche una PR di soli test EMU ricompila/riavvia
+              # l'EMU -> raggruppare i test con altre modifiche EMU.
             cms_web:
               - 'CMS-V3/apps/web/**'
               - 'CMS-V3/package.json'

@@ -60,8 +60,10 @@ permissions:
 # Variabili d'ambiente globali condivise tra job (host VPS, dominio dev, ecc.)
 # -----------------------------------------------------------------------------
 env:
-  VPS_HOST: ${{ vars.VPS_HOST }}
-  VPS_USER: ${{ vars.VPS_USER }}
+  # secrets, NON vars: il blocco env: viene stampato nel log di ogni step e il
+  # repo e' pubblico -> solo i secret vengono mascherati (***).
+  VPS_HOST: ${{ secrets.VPS_HOST }}
+  VPS_USER: ${{ secrets.VPS_USER }}
   DEV_DOMAIN: dev.asteriacore.online
   DEV_API_DOMAIN: dev-api.asteriacore.online
   DEV_HOTEL_DOMAIN: dev-hotel.asteriacore.online
@@ -155,7 +157,9 @@ jobs:
         id: force
         if: ${{ inputs.force_full_rebuild == true || inputs.force_full_rebuild == 'true' }}
         run: |
-          for k in emu cmsweb cmsapi sql nitro; do echo "$k=true" >> "$GITHUB_OUTPUT"; done
+          # Solo artifact ricostruibili: NON forzare sql (reset distruttivo di ms_dev, e
+          # apply-sql.sh sul VPS ha un bug noto su $2) ne' nitro (bundle assente).
+          for k in emu cmsweb cmsapi; do echo "$k=true" >> "$GITHUB_OUTPUT"; done
 
       - name: Paths filter
         id: filter

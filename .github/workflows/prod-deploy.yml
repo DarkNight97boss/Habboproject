@@ -524,7 +524,7 @@ jobs:
           # Lo script di backup vive INLINE per non dipendere da file VPS che
           # potrebbero essere stale. Cattura le ultime righe per estrarre path.
           REMOTE_OUTPUT=$(ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
-            ${{ vars.VPS_USER }}@${{ vars.VPS_HOST }} \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
             "DEPLOY_SHA='${DEPLOY_SHA}' bash -s" <<'REMOTE_SCRIPT'
           set -euo pipefail
 
@@ -715,7 +715,7 @@ jobs:
           set -euo pipefail
           STAGE_REMOTE="${{ env.STAGING_BASE }}-${DEPLOY_SHA}"
           ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
-            ${{ vars.VPS_USER }}@${{ vars.VPS_HOST }} \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
             "mkdir -p '${STAGE_REMOTE}' && chmod 755 '${STAGE_REMOTE}'"
 
           # Solo se la directory locale esiste rsynchiamo (i flag if: sopra
@@ -724,7 +724,7 @@ jobs:
             rsync -avz --delete \
               -e "ssh -o BatchMode=yes -o StrictHostKeyChecking=yes" \
               artifacts/ \
-              ${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}:"${STAGE_REMOTE}/"
+              ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:"${STAGE_REMOTE}/"
           fi
 
           echo "Staging remoto pronto: ${STAGE_REMOTE}"
@@ -743,7 +743,7 @@ jobs:
         run: |
           set -euo pipefail
           REMOTE_OUTPUT=$(ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
-            ${{ vars.VPS_USER }}@${{ vars.VPS_HOST }} \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
             "DEPLOY_SHA='${DEPLOY_SHA}' DEPLOY_EMU='${DEPLOY_EMU}' DEPLOY_CMS_WEB='${DEPLOY_CMS_WEB}' DEPLOY_CMS_API='${DEPLOY_CMS_API}' DEPLOY_SQL='${DEPLOY_SQL}' DEPLOY_NITRO='${DEPLOY_NITRO}' BACKUP_PATH='${BACKUP_PATH}' STAGING_BASE='${{ env.STAGING_BASE }}' bash -s" <<'REMOTE_SCRIPT'
           set -euo pipefail
 
@@ -1008,7 +1008,7 @@ jobs:
 
       - name: Smoke-test localhost del VPS (bypassa Cloudflare)
         env:
-          VPS_TARGET: ${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}
+          VPS_TARGET: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
           SMOKE_SCRIPT: |
             set -euo pipefail
             # 1) API /healthz con retry 5x/4s (assorbe il reload-or-restart).
@@ -1067,7 +1067,7 @@ jobs:
         run: |
           set -euo pipefail
           ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
-            ${{ vars.VPS_USER }}@${{ vars.VPS_HOST }} \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
             "BACKUP_PATH='${BACKUP_PATH}' DEPLOY_SHA='${DEPLOY_SHA}' bash -s" <<'REMOTE_SCRIPT'
           set -euo pipefail
 

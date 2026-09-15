@@ -21,14 +21,27 @@ profile.get('/:username', async c =>
         account_created: number;
         last_online: number;
         online: string;
+        hidden: number;
     }>(
         `SELECT id, username, motto, look, rank,
-                account_created, last_online, online
+                account_created, last_online, online, hidden
          FROM users WHERE username = ? LIMIT 1`,
         [username]
     );
     const u = userRows[0];
     if(!u) return c.json({ error: 'not_found' }, 404);
+
+    // Privacy (security audit P2.2): il flag `hidden` impostato da PATCH /me/privacy
+    // veniva scritto ma MAI onorato in lettura → "profilo nascosto" era una promessa
+    // vuota. Profilo nascosto = visibile solo al proprietario e allo staff (rank>=5);
+    // per tutti gli altri 403 esplicito (l'utente esiste, ma il profilo e' privato).
+    if(u.hidden === 1)
+    {
+        const viewer = c.var.user;
+        const isOwner = viewer !== undefined && Number(viewer.sub) === u.id;
+        const isStaff = viewer !== undefined && typeof viewer.rank === 'number' && viewer.rank >= 5;
+        if(!isOwner && !isStaff) return c.json({ error: 'profile_hidden' }, 403);
+    }
 
     // Stanze posseduto dall'utente, escluse invisibili.
     const rooms = await dbQuery<{

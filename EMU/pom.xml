@@ -43,7 +43,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.15.0</version>
+                <version>3.16.0</version>
                 <configuration>
                     <!-- Java 25 LTS (security audit): Java 8 e' del 2014 e fuori supporto
                          pubblico; 25 e' l'LTS corrente (09/2025) con fix di sicurezza,
@@ -98,7 +98,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.6</version>
+                <version>3.6.0</version>
                 <configuration>
                     <!-- Niente fork (test puri unit, nessuna risorsa esterna). -->
                     <forkCount>1</forkCount>
@@ -248,7 +248,7 @@
         <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
-            <version>2.14.2</version>
+            <version>2.14.3</version>
         </dependency>
 
         <!--

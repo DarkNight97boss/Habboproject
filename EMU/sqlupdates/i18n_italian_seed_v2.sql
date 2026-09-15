@@ -59,7 +59,7 @@ INSERT INTO `emulator_texts` (`key`, `value`) VALUES ('commands.succes.cmd_freez
 INSERT INTO `emulator_texts` (`key`, `value`) VALUES ('generic.cannot_do_that', 'Non puoi farlo.') ON DUPLICATE KEY UPDATE `value` = VALUES(`value`);
 INSERT INTO `emulator_texts` (`key`, `value`) VALUES ('commands.error.cmd_ha.forgot_message', 'Specifica un messaggio.') ON DUPLICATE KEY UPDATE `value` = VALUES(`value`);
 INSERT INTO `emulator_texts` (`key`, `value`) VALUES ('generic.pet.name', 'Nome') ON DUPLICATE KEY UPDATE `value` = VALUES(`value`);
-INSERT INTO `emulator_texts` (`key`, `value`) VALUES ('generic.pet.age', 'Eta'') ON DUPLICATE KEY UPDATE `value` = VALUES(`value`);
+INSERT INTO `emulator_texts` (`key`, `value`) VALUES ('generic.pet.age', 'Età') ON DUPLICATE KEY UPDATE `value` = VALUES(`value`);
 INSERT INTO `emulator_texts` (`key`, `value`) VALUES ('generic.pet.level', 'Livello') ON DUPLICATE KEY UPDATE `value` = VALUES(`value`);
 INSERT INTO `emulator_texts` (`key`, `value`) VALUES ('commands.generic.cmd_pet_info.stats', '<b>Statistiche pet:</b>') ON DUPLICATE KEY UPDATE `value` = VALUES(`value`);
 INSERT INTO `emulator_texts` (`key`, `value`) VALUES ('generic.pet.scratches', 'Carezze') ON DUPLICATE KEY UPDATE `value` = VALUES(`value`);

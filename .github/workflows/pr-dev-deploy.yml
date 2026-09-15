@@ -38,6 +38,11 @@ on:
         required: false
         type: boolean
         default: false
+      reset_dev_db:
+        description: 'Reset DB dev (DROP+CREATE, BaseDB + sqlupdates + migrations) come per un cambio schema'
+        required: false
+        type: boolean
+        default: false
 
 # -----------------------------------------------------------------------------
 # Concurrency: una sola run DEV alla volta. PR nuova => cancella precedente.
@@ -153,20 +158,24 @@ jobs:
       # force_full_rebuild (workflow_dispatch) era documentato ma NON collegato agli
       # output: su dispatch il paths-filter non ha una base PR e i job di build
       # restavano skipped. Stesso pattern di prod-deploy (steps.force).
-      - name: Force full rebuild (workflow_dispatch)
+      - name: Force full rebuild / reset DB dev (workflow_dispatch)
         id: force
-        if: ${{ inputs.force_full_rebuild == true || inputs.force_full_rebuild == 'true' }}
+        if: ${{ inputs.force_full_rebuild == true || inputs.force_full_rebuild == 'true' || inputs.reset_dev_db == true || inputs.reset_dev_db == 'true' }}
+        env:
+          FORCE: ${{ inputs.force_full_rebuild }}
+          RESET_DB: ${{ inputs.reset_dev_db }}
         run: |
-          # Solo artifact ricostruibili: NON forzare sql (reset distruttivo di ms_dev, e
-          # apply-sql.sh sul VPS ha un bug noto su $2) ne' nitro (bundle assente).
-          for k in emu cmsweb cmsapi; do echo "$k=true" >> "$GITHUB_OUTPUT"; done
+          # force: solo artifact ricostruibili (nitro non ha bundle su dispatch).
+          # sql = reset DISTRUTTIVO del DB dev: solo con l'input esplicito reset_dev_db.
+          if [ "$FORCE" = "true" ]; then for k in emu cmsweb cmsapi; do echo "$k=true" >> "$GITHUB_OUTPUT"; done; fi
+          if [ "$RESET_DB" = "true" ]; then echo "sql=true" >> "$GITHUB_OUTPUT"; fi
 
       - name: Paths filter
         id: filter
         # Con force_full_rebuild il filter va SALTATO: in GitHub Actions l'output
         # stringa 'false' e' truthy in `||`, quindi 'false' || 'true' = 'false' e il
         # force verrebbe ignorato. Step saltato => output vuoti => vince steps.force.
-        if: ${{ inputs.force_full_rebuild != true && inputs.force_full_rebuild != 'true' }}
+        if: ${{ inputs.force_full_rebuild != true && inputs.force_full_rebuild != 'true' && inputs.reset_dev_db != true && inputs.reset_dev_db != 'true' }}
         uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
         with:
           # Su workflow_dispatch non c'e' un base PR: forza tutti i filtri a true
@@ -424,6 +433,31 @@ jobs:
           ssh -o StrictHostKeyChecking=yes "${VPS_USER}@${VPS_HOST}" \
             "mkdir -p /tmp/asteria-dev-${PR_SHA}/{emu,cms-web,cms-api}"
 
+      # Sorgenti SQL per il reset del DB dev: apply-sql.sh (VPS) legge
+      # $REPO/EMU/sqlupdates, "$REPO/EMU/base database/BaseDB MS 3.5.5.sql" e
+      # $REPO/CMS-V3/apps/api/src/db/migrations. La sparse-checkout in
+      # /opt/habboproject-dev NON viene aggiornata dal deploy (sarebbe stale):
+      # mandiamo i sorgenti della PR in staging con lo stesso layout del repo.
+      - name: Checkout sorgenti SQL (solo se sql)
+        if: needs.detect-changes.outputs.sql == 'true'
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
+        with:
+          ref: ${{ env.PR_SHA }}
+          path: sql-src
+          sparse-checkout: |
+            EMU/sqlupdates
+            EMU/base database
+            CMS-V3/apps/api/src/db/migrations
+          sparse-checkout-cone-mode: true
+
+      - name: Rsync sorgenti SQL (solo se sql)
+        if: needs.detect-changes.outputs.sql == 'true'
+        run: |
+          cd sql-src
+          rsync -aR -e "ssh -o StrictHostKeyChecking=yes" \
+            "EMU/sqlupdates" "EMU/base database" "CMS-V3/apps/api/src/db/migrations" \
+            "${VPS_USER}@${VPS_HOST}:/tmp/asteria-dev-${PR_SHA}/sql-repo/"
+
       - name: Rsync EMU jar (se presente)
         if: needs.detect-changes.outputs.emu == 'true'
         run: |
@@ -448,21 +482,29 @@ jobs:
             /tmp/artifacts/cms-api-bundle/cms-api-bundle.tar.gz \
             "${VPS_USER}@${VPS_HOST}:/tmp/asteria-dev-${PR_SHA}/cms-api/"
 
-      - name: Garantisci apply-dev.sh sul VPS (genera inline se mancante)
-        # Fallback: se /opt/asteria-scripts/apply-dev.sh non esiste, lo creiamo.
-        # Lo script vero (firmato, owned by root) andrebbe provisioned via Ansible
-        # / cloud-init, ma per il "first run" del workflow lo generiamo qui.
+      - name: Garantisci apply-dev.sh sul VPS (genera/aggiorna alla versione del workflow)
+        # Il workflow e' la fonte di verita' dello script: se sul VPS manca o ha un
+        # marker di versione diverso, lo rigeneriamo (backup .bak-<ts> del precedente).
+        # Cosi' una fix qui arriva sul VPS senza interventi manuali.
         run: |
           ssh -o StrictHostKeyChecking=yes "${VPS_USER}@${VPS_HOST}" 'bash -s' <<'REMOTE_EOF'
           set -euo pipefail
           SCRIPT=/opt/asteria-scripts/apply-dev.sh
-          if [ -x "$SCRIPT" ]; then
-            echo "[remote] apply-dev.sh gia' presente, skip generazione"
+          WANT="v3"
+          if [ -x "$SCRIPT" ] && grep -q "^# apply-dev.sh version: ${WANT}\b" "$SCRIPT"; then
+            echo "[remote] apply-dev.sh ${WANT} gia' presente, skip generazione"
             exit 0
           fi
           sudo mkdir -p /opt/asteria-scripts
+          if [ -e "$SCRIPT" ]; then
+            BAK="${SCRIPT}.bak-$(date +%Y%m%d%H%M%S)"
+            sudo cp -a "$SCRIPT" "$BAK"
+            echo "[remote] apply-dev.sh presente ma non ${WANT}: backup in ${BAK}, rigenero"
+          fi
           sudo tee "$SCRIPT" > /dev/null <<'SCRIPT_EOF'
           #!/usr/bin/env bash
+          # apply-dev.sh version: v3 (gestito da .github/workflows/pr-dev-deploy.yml:
+          # le modifiche locali vengono sovrascritte al prossimo deploy, backup .bak-*)
           # =========================================================================
           # apply-dev.sh - Applica un nuovo deploy DEV (chiamato dal workflow GH)
           # Argomenti: $1=SHA  $2=PR_NUMBER  $3=changed_emu  $4=changed_web
@@ -486,13 +528,29 @@ jobs:
 
           log() { echo "[apply-dev $(date -Is)] $*"; }
 
-          # --- Reset DB ms_dev se schema cambiato ----------------------------------
+          # --- Reset DB dev se schema cambiato -------------------------------------
+          # apply-sql.sh vuole: DB_NAME DB_USER DB_PWD MODE REPO_PATH (prima veniva
+          # chiamato con il solo 'dev' -> "$2: parameter null or not set"). Credenziali
+          # = quelle dell'EMU dev (config.ini, letto da root); sorgenti SQL = staging
+          # sql-repo/ (layout del repo), non la sparse-checkout (stale).
+          API_RESTARTED=false
           if [ "$CH_SQL" = "true" ]; then
-            log "Reset DB ms_dev (schema changed)"
-            sudo -E /opt/asteria-scripts/apply-sql.sh dev || {
-              log "ERROR: apply-sql.sh dev fallito"
+            CFG="${DEV_ROOT}/EMU/config.ini"
+            ini() { sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*//p" "$CFG" | tr -d '\r' | head -1; }
+            DEV_DB="$(ini 'db\.database')"; DEV_DB_USER="$(ini 'db\.username')"; DEV_DB_PWD="$(ini 'db\.password')"
+            SQL_REPO="${STAGING}/sql-repo"
+            if [ -z "$DEV_DB" ] || [ -z "$DEV_DB_USER" ]; then log "ERROR: db.database/db.username mancanti in $CFG"; exit 1; fi
+            if [ ! -d "${SQL_REPO}/EMU/sqlupdates" ]; then log "ERROR: sorgenti SQL assenti in ${SQL_REPO}"; exit 1; fi
+            # Guardia: mai resettare un DB che non sia di dev (config.ini sbagliato = prod).
+            case "$DEV_DB" in *_dev) ;; *) log "ERROR: rifiuto il reset di '${DEV_DB}' (solo DB *_dev)"; exit 1 ;; esac
+            log "Reset DB ${DEV_DB} (schema changed) da ${SQL_REPO}"
+            /opt/asteria-scripts/apply-sql.sh "$DEV_DB" "$DEV_DB_USER" "${DEV_DB_PWD:-unused}" reset "$SQL_REPO" || {
+              log "ERROR: apply-sql.sh reset ${DEV_DB} fallito"
               exit 1
             }
+            # L'EMU tiene in cache utenti/stanze/catalogo: dopo un reset va riavviato
+            # anche se il jar non e' cambiato.
+            sudo systemctl restart habbo-emu-dev.service
           fi
 
           # --- EMU jar -------------------------------------------------------------
@@ -529,10 +587,16 @@ jobs:
               sudo ln -sfn "$RELEASE_DIR" "${DEV_API_ROOT}/current"
               sudo chown -R asteria:asteria "${RELEASE_DIR}"
               sudo systemctl restart cms-api-dev.service
+              API_RESTARTED=true
               # Pulizia release vecchie
               sudo find "${DEV_API_ROOT}/releases" -mindepth 1 -maxdepth 1 -type d \
                 | sort -r | tail -n +4 | xargs -r sudo rm -rf
             fi
+          fi
+
+          if [ "$CH_SQL" = "true" ] && [ "$API_RESTARTED" = "false" ]; then
+            log "Restart cms-api-dev dopo reset DB"
+            sudo systemctl restart cms-api-dev.service
           fi
 
           # --- Cleanup staging -----------------------------------------------------

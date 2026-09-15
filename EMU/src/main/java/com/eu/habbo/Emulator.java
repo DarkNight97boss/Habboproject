@@ -263,8 +263,8 @@ public final class Emulator {
         StringBuilder sb = new StringBuilder();
         try {
             String filepath = new File(Emulator.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getAbsolutePath();
-            // MD5 per il fingerprint NON-crypto del jar (build id), non per sicurezza.
-            MessageDigest md = MessageDigest.getInstance("MD5"); // nosemgrep
+            // Fingerprint del jar (build id, colonna emulator_errors.build_hash varchar(64)): SHA-256.
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
             FileInputStream fis = new FileInputStream(filepath);
             byte[] dataBytes = new byte[1024];
             int nread = 0;

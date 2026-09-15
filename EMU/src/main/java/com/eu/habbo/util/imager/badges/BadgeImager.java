@@ -128,7 +128,8 @@ public class BadgeImager {
                 if (set.getKey() == GuildPartType.SYMBOL || set.getKey() == GuildPartType.BASE) {
                     for (Map.Entry<Integer, GuildPart> map : set.getValue().entrySet()) {
                         for (String part : Arrays.asList(map.getValue().valueA, map.getValue().valueB)) {
-                            if (!part.isEmpty()) {
+                            // guild_parts.valueA/valueB vengono dal DB: mai usarli come path senza whitelist.
+                            if (!part.isEmpty() && part.matches("^[A-Za-z0-9_]+$")) {
                                 try {
                                     this.cachedImages.put(part, ImageIO.read(new File(Emulator.getConfig().getValue("imager.location.badgeparts"), "badgepart_" + part.replace(".gif", ".png"))));
                                 } catch (Exception e) {

@@ -246,11 +246,9 @@ jobs:
         run: mvn -B -Dmaven.javadoc.skip=true package
 
       - name: SpotBugs + FindSecBugs (categoria SECURITY)
-        # Prima esecuzione in modalita' osservazione (continue-on-error): il report
-        # viene caricato come artifact per la triage. Quando la baseline e' pulita,
-        # togliere continue-on-error per renderlo bloccante.
+        # Baseline triagiata (2026-09-15): BLOCCANTE. I falsi positivi documentati
+        # stanno in EMU/spotbugs-security-exclude.xml; un nuovo finding fa fallire la PR.
         working-directory: EMU
-        continue-on-error: true
         run: mvn -B -Dmaven.javadoc.skip=true spotbugs:check
 
       - name: Upload report SpotBugs

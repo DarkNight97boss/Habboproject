@@ -128,6 +128,8 @@
                     <effort>Max</effort>
                     <threshold>Medium</threshold>
                     <includeFilterFile>spotbugs-security-include.xml</includeFilterFile>
+                    <!-- Falsi positivi documentati (baseline triagiata 2026-09-15): vedi il file. -->
+                    <excludeFilterFile>spotbugs-security-exclude.xml</excludeFilterFile>
                     <xmlOutput>true</xmlOutput>
                     <failOnError>true</failOnError>
                     <plugins>

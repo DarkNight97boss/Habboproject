@@ -3,7 +3,7 @@
     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
         <withJansi>false</withJansi>
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%-14thread] %highlight(%-5level) %cyan(%-36logger{36}) - %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%-14thread] %highlight(%-5level) %cyan(%-36logger{36}) - %replace(%msg){'[\r\n]+', ' '}%n</pattern>
         </encoder>
     </appender>
 
@@ -20,7 +20,7 @@
             <maxHistory>7</maxHistory>
         </rollingPolicy>
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %level %logger - %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %level %logger - %replace(%msg){'[\r\n]+', ' '}%n</pattern>
         </encoder>
     </appender>
 
@@ -37,7 +37,7 @@
             <maxHistory>7</maxHistory>
         </rollingPolicy>
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %level %logger - %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %level %logger - %replace(%msg){'[\r\n]+', ' '}%n</pattern>
         </encoder>
     </appender>
 
@@ -50,7 +50,7 @@
             <maxHistory>7</maxHistory>
         </rollingPolicy>
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %level %logger - %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %level %logger - %replace(%msg){'[\r\n]+', ' '}%n</pattern>
         </encoder>
     </appender>
 

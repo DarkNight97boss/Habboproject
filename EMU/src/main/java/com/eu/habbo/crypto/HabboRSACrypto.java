@@ -7,9 +7,11 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.concurrent.ThreadLocalRandom;
+import java.security.SecureRandom;
 
 public class HabboRSACrypto {
+    // Padding PKCS#1: i byte casuali sono la parte che deve essere imprevedibile.
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final BigInteger e;
     private final BigInteger n;
@@ -120,7 +122,7 @@ public class HabboRSACrypto {
 
         if (padType == 2) {
             while (n > 2) {
-                result[--n] = (byte) ThreadLocalRandom.current().nextInt(1, 256);
+                result[--n] = (byte) SECURE_RANDOM.nextInt(1, 256);
             }
         } else {
             while (n > 2) {

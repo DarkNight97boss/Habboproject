@@ -6,7 +6,7 @@ import com.eu.habbo.util.HexUtils;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.ThreadLocalRandom;
+import java.security.SecureRandom;
 
 public class HabboDiffieHellman {
 
@@ -15,6 +15,8 @@ public class HabboDiffieHellman {
     // for defense-in-depth should encryption ever be enabled for flash clients.
     private static final int DH_PRIMES_BIT_SIZE = 256;
     private static final int DH_KEY_BIT_SIZE = 256;
+    // Primi e chiave privata dell'handshake: RNG crittografico, non ThreadLocalRandom.
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final HabboRSACrypto crypto;
 
@@ -38,8 +40,8 @@ public class HabboDiffieHellman {
     }
 
     private void generateDHPrimes() {
-        this.DHPrime = BigInteger.probablePrime(DH_PRIMES_BIT_SIZE, ThreadLocalRandom.current());
-        this.DHGenerator = BigInteger.probablePrime(DH_PRIMES_BIT_SIZE, ThreadLocalRandom.current());
+        this.DHPrime = BigInteger.probablePrime(DH_PRIMES_BIT_SIZE, SECURE_RANDOM);
+        this.DHGenerator = BigInteger.probablePrime(DH_PRIMES_BIT_SIZE, SECURE_RANDOM);
 
         if (this.DHGenerator.compareTo(this.DHPrime) > 0) {
             BigInteger temp = this.DHPrime;
@@ -50,7 +52,8 @@ public class HabboDiffieHellman {
     }
 
     private void generateDHKeys() {
-        this.DHPrivate = BigInteger.probablePrime(DH_KEY_BIT_SIZE, ThreadLocalRandom.current());
+        // Esponente privato uniforme in [2, 2^256): forzarlo primo riduceva lo spazio delle chiavi.
+        this.DHPrivate = BigInteger.TWO.add(new BigInteger(DH_KEY_BIT_SIZE - 1, SECURE_RANDOM));
         this.DHPublic = this.DHGenerator.modPow(this.DHPrivate, this.DHPrime);
     }
 

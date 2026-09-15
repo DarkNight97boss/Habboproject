@@ -74,6 +74,10 @@ jobs:
           done
           sec "ExecStart delle unit EMU (quale java usano)"
           grep -H '^ExecStart' /etc/systemd/system/habbo-emu.service /etc/systemd/system/habbo-emu-dev.service 2>&1
+          sec "unit EMU: ExecStart completo (flag JVM) e sandbox systemd"
+          for u in habbo-emu habbo-emu-dev; do echo "--- $u"; systemctl cat "$u" 2>/dev/null | grep -vE '^\s*#|^\s*$' | grep -E 'ExecStart|^\s+-|NoNewPrivileges|Protect|Private|ReadWritePaths|Restrict|CapabilityBoundingSet|SystemCallFilter|LimitNOFILE|MemoryMax|OOM' | cut -c1-160; done
+          sec "avvisi JVM all'avvio corrente (Unsafe / native access / restricted / WARNING)"
+          for u in habbo-emu habbo-emu-dev; do echo "--- $u (invocazione corrente)"; INV=$(systemctl show -p InvocationID --value "$u" 2>/dev/null); sudo journalctl -u "$u" _SYSTEMD_INVOCATION_ID="$INV" --no-pager -o cat 2>/dev/null | head -60 | grep -iE 'unsafe|native access|restricted|warning|deprecat|jni' | head -8 | cut -c1-200; done
           sec "processi java in esecuzione"
           ps -o pid,user,etimes,rss,args -C java 2>/dev/null | cut -c1-170 || echo "nessun processo java"
           sec "memoria / disco"

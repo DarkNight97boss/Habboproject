@@ -254,7 +254,7 @@ jobs:
       # Cache esplicita (in aggiunta a setup-java) per ramo prod separato:
       # vogliamo cache deterministica basata su hash del pom.xml.
       - name: Cache Maven local repo
-        uses: actions/cache@0c907a75c2c80ebcb7f088228285e798b750cf8f # v4.2.1
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.m2/repository
           key: m2-prod-${{ runner.os }}-${{ hashFiles('EMU/pom.xml') }}
@@ -301,14 +301,14 @@ jobs:
           ref: ${{ needs.guard.outputs.deploy_sha }}
 
       - name: Setup Node ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.0.3
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'yarn'
           cache-dependency-path: CMS-V3/yarn.lock
 
       - name: Cache node_modules (CMS-V3 root + apps/web)
-        uses: actions/cache@0c907a75c2c80ebcb7f088228285e798b750cf8f # v4.2.1
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             CMS-V3/node_modules
@@ -365,14 +365,14 @@ jobs:
           ref: ${{ needs.guard.outputs.deploy_sha }}
 
       - name: Setup Node ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.0.3
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'yarn'
           cache-dependency-path: CMS-V3/yarn.lock
 
       - name: Cache node_modules (CMS-V3 root + apps/api)
-        uses: actions/cache@0c907a75c2c80ebcb7f088228285e798b750cf8f # v4.2.1
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             CMS-V3/node_modules
@@ -668,35 +668,35 @@ jobs:
       # ---- Download artifact dai job di build (saltati se non necessari) ----
       - name: Download EMU jar
         if: needs.detect-changes.outputs.emu == 'true'
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: emu-jar-${{ needs.guard.outputs.deploy_sha }}
           path: artifacts/emu
 
       - name: Download CMS web
         if: needs.detect-changes.outputs.cms_web == 'true'
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: cms-web-${{ needs.guard.outputs.deploy_sha }}
           path: artifacts/cms-web
 
       - name: Download CMS api
         if: needs.detect-changes.outputs.cms_api == 'true'
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: cms-api-${{ needs.guard.outputs.deploy_sha }}
           path: artifacts/cms-api
 
       - name: Download SQL bundle
         if: needs.detect-changes.outputs.sql == 'true'
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: sql-bundle-${{ needs.guard.outputs.deploy_sha }}
           path: artifacts/sql
 
       - name: Download Nitro bundle
         if: needs.detect-changes.outputs.nitro == 'true'
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: nitro-bundle-${{ needs.guard.outputs.deploy_sha }}
           path: artifacts/nitro

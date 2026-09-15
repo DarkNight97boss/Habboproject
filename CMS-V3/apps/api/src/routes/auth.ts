@@ -151,7 +151,9 @@ auth.post(
         // (Vedi memory note "habboproject-cms-v3-pwhash-overflow".)
 
         // Genera coppia access + refresh.
-        const access = await signAccessToken({ sub: String(u.id), username: u.username, rank: u.rank });
+        // Number(): un eventuale rank NULL a DB diventa 0 (nessun privilegio), mai
+        // un claim non numerico (che il verify ora rifiuta).
+        const access = await signAccessToken({ sub: String(u.id), username: u.username, rank: Number(u.rank) || 0 });
         const family = randomBytes(16).toString('hex');
         const refresh = await signRefreshToken(String(u.id), family);
 
@@ -180,8 +182,10 @@ auth.post(
 
 auth.post(
     '/register',
-    // Rate limit aggressivo per evitare account farming.
-    makeRateLimit('auth-register', 5, 60_000),
+    // Rate limit aggressivo per evitare account farming (P2.3): finestra ORARIA
+    // da env (default 3/h). Prima era hardcoded 5/min = 300/h e la variabile
+    // RATE_LIMIT_REGISTER_PER_HOUR era config morta.
+    makeRateLimit('auth-register', env.RATE_LIMIT_REGISTER_PER_HOUR, 3_600_000),
     async c =>
     {
         const body = await c.req.json().catch(() => null);
@@ -368,7 +372,7 @@ auth.post('/refresh', async c =>
     }
 
     // Genera nuova coppia (rotation).
-    const access = await signAccessToken({ sub: String(u.id), username: u.username, rank: u.rank });
+    const access = await signAccessToken({ sub: String(u.id), username: u.username, rank: Number(u.rank) || 0 });
     const newRefresh = await signRefreshToken(String(u.id), stored.family);
 
     await dbExecute(

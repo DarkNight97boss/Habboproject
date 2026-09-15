@@ -58,7 +58,10 @@ export function requireRank(minRank: number): MiddlewareHandler
     {
         const user = c.var.user;
         if(!user) return c.json({ error: 'unauthorized' }, 401);
-        if(user.rank < minRank) return c.json({ error: 'forbidden' }, 403);
+        // Fail-CLOSED (security audit P2.1): con `rank` mancante/null/non numerico
+        // `undefined < 5` e `null < 5` valgono false → il vecchio check lasciava
+        // passare. Un claim malformato non deve MAI concedere privilegi.
+        if(typeof user.rank !== 'number' || !Number.isFinite(user.rank) || user.rank < minRank) return c.json({ error: 'forbidden' }, 403);
         await next();
     };
 }

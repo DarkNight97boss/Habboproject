@@ -59,9 +59,24 @@ me.patch('/email', async c =>
 {
     const user = c.var.user!;
     const body = await c.req.json().catch(() => null);
-    const parsed = z.object({ email: z.string().email().max(500) }).safeParse(body);
+    // Accetta sia `email` che `newEmail` (nome usato dal frontend settings).
+    const parsed = z.object({
+        email: z.string().email().max(500).optional(),
+        newEmail: z.string().email().max(500).optional(),
+        currentPassword: z.string().min(1).max(256)
+    }).refine(d => Boolean(d.email ?? d.newEmail), { message: 'email richiesta' }).safeParse(body);
     if(!parsed.success) return c.json({ error: 'invalid_email' }, 400);
-    await dbExecute('UPDATE users SET mail = ? WHERE id = ?', [parsed.data.email, Number(user.sub)]);
+    const email = (parsed.data.email ?? parsed.data.newEmail)!;
+
+    // Re-auth (security audit P2.5): il cambio email e' un'operazione sensibile
+    // (ancora di piu' quando esistera' il recovery via mail): richiede la password
+    // corrente, esattamente come /me/password. Una sessione dirottata o un CSRF
+    // non devono poter riassegnare l'account a un indirizzo dell'attaccante.
+    const rows = await dbQuery<{ password: string }>('SELECT password FROM users WHERE id = ? LIMIT 1', [Number(user.sub)]);
+    const hash = rows[0]?.password;
+    if(!hash || !(await verifyPassword(hash, parsed.data.currentPassword))) return c.json({ error: 'invalid_password' }, 403);
+
+    await dbExecute('UPDATE users SET mail = ? WHERE id = ?', [email, Number(user.sub)]);
     return c.json({ ok: true });
 });
 

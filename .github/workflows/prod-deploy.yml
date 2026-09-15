@@ -922,6 +922,17 @@ jobs:
           fi
 
           # ===========================
+          # 5b) Persistenza al riavvio (idempotente)
+          # ===========================
+          # Incidente 2026-09-15: entrambi i backend (cms-api :8092, habbo-emu :2096)
+          # erano GIU' (502) mentre nginx, tunnel e MariaDB erano su; disco al 13%.
+          # Un servizio non 'enabled' non riparte al boot del VPS. Abilitiamo sempre
+          # le unit core: innocuo se gia' abilitate, NON riavvia nulla, || true se
+          # una unit non esiste. Cosi' ogni deploy lascia il VPS reboot-safe.
+          sudo systemctl enable mariadb.service nginx.service cloudflared.service cms-api.service habbo-emu.service 2>/dev/null || true
+          echo "[deploy] unit core abilitate al boot"
+
+          # ===========================
           # 6) Cleanup staging
           # ===========================
           echo "[deploy] cleanup staging ${STAGE}"

@@ -10,7 +10,7 @@
 #
 # Trigger:
 #   - push su 'main' con path filter sui componenti che cambiano
-#     (EMU/**, CMS-V3/**, Nitro-V3/**, CMS/react/**, sqlupdates, migrations)
+#     (EMU/**, CMS-V3/**, Nitro-V3/**, sqlupdates, migrations)
 #   - workflow_dispatch manuale per hotfix con possibilita' di specificare sha
 #
 # Differenze chiave vs dev:
@@ -48,7 +48,6 @@ on:
       - 'EMU/**'
       - 'CMS-V3/**'
       - 'Nitro-V3/**'
-      - 'CMS/react/**'
       - '.github/workflows/prod-deploy.yml'
 
   # ---------------------------------------------------------------------------
@@ -212,8 +211,7 @@ jobs:
               - 'CMS-V3/apps/api/src/db/migrations/**'
             nitro:
               - 'Nitro-V3/**'
-              - 'CMS/react/**'
-
+        
       # Se l'utente ha invocato workflow_dispatch con force_all=true,
       # sovrascriviamo tutti gli output a 'true' per forzare full deploy.
       - name: Force all (workflow_dispatch override)
@@ -470,9 +468,6 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p nitro-bundle
-          if [ -d CMS/react ]; then
-            cp -r CMS/react nitro-bundle/cms-react
-          fi
           if [ -d Nitro-V3 ]; then
             # Solo le cartelle di output da Nitro-V3, non i sorgenti
             # (lo build di Nitro deve essere gia' avvenuto - upstream policy).
@@ -572,8 +567,9 @@ jobs:
           sudo bash -c '
             set -euo pipefail
             . /root/.asteria-secrets/db.env
+            # unix_socket auth (siamo root): niente password in argv/ps (SECURITY-AUDIT P3)
             mysqldump --single-transaction --quick --routines --events \
-              -u root -p"${DB_ROOT_PASS}" ms
+              --protocol=socket -u root ms
           ' | gzip -9 > "${STAGE}/ms.sql.gz"
 
           # 2) EMU jar corrente
@@ -792,7 +788,7 @@ jobs:
             sudo EMU_DIR="${EMU_DIR}" CMS_DIR="${CMS_DIR}" bash -c '
               set -euo pipefail
               . /root/.asteria-secrets/db.env
-              MYSQL_BIN="mysql -u root -p${DB_ROOT_PASS} -N -B ms"
+              MYSQL_BIN="mysql --protocol=socket -u root -N -B ms"
               ${MYSQL_BIN} -e "CREATE TABLE IF NOT EXISTS schema_migrations (filename VARCHAR(255) PRIMARY KEY, applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, checksum CHAR(64) NOT NULL) ENGINE=InnoDB"
               for DIR in "${EMU_DIR}" "${CMS_DIR}"; do
                 [ -d "${DIR}" ] || continue
@@ -880,7 +876,7 @@ jobs:
           fi
 
           # ===========================
-          # 4) Nitro / CMS react bundle: rsync verso /opt/habboproject/CMS/react
+          # 4) Nitro bundle
           # ===========================
           if [ "${DEPLOY_NITRO}" = "true" ] && [ -f "${STAGE}/nitro/nitro-bundle.tgz" ]; then
             echo "[deploy] Nitro bundle: estrazione + sync ..."
@@ -889,10 +885,6 @@ jobs:
             sudo mkdir -p "${STAGED_NITRO}"
             sudo tar -xzf "${STAGE}/nitro/nitro-bundle.tgz" -C "${STAGED_NITRO}"
 
-            if [ -d "${STAGED_NITRO}/nitro-bundle/cms-react" ]; then
-              sudo rsync -a --delete "${STAGED_NITRO}/nitro-bundle/cms-react/" "${PROD_ROOT}/CMS/react/"
-            fi
-            sudo chown -R asteria:asteria "${PROD_ROOT}/CMS/react"
             sudo rm -rf "${STAGED_NITRO}"
             RESTARTED+=("nitro-bundle")
           fi
@@ -912,7 +904,7 @@ jobs:
               . /root/.asteria-secrets/db.env
               MSG="Aggiornamento server tra 30s. Riconnessione automatica al termine."
               # Tabella commands MUS: alert_broadcast (sintassi Arcturus)
-              mysql -u root -p"${DB_ROOT_PASS}" ms -e "
+              mysql --protocol=socket -u root ms -e "
                 INSERT INTO emulator_texts (\`key\`, value)
                 VALUES (\"_deploy_broadcast_msg\", \"${MSG}\")
                 ON DUPLICATE KEY UPDATE value=VALUES(value);
@@ -1128,7 +1120,7 @@ jobs:
             sudo bash -c '
               set -euo pipefail
               . /root/.asteria-secrets/db.env
-              gunzip -c "'"${STAGE}"'/ms.sql.gz" | mysql -u root -p"${DB_ROOT_PASS}" ms
+              gunzip -c "'"${STAGE}"'/ms.sql.gz" | mysql --protocol=socket -u root ms
             '
           fi
 

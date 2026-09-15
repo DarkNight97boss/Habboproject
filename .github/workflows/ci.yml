@@ -1,6 +1,7 @@
 # CI — quality gates su CMS-V3 (typecheck · lint · test · build).
 #
-# Gira su ogni PR verso main e su push a main che toccano CMS-V3/**.
+# Gira su OGNI PR verso main (nessun path-filter: e' un required status check)
+# e su push a main che toccano CMS-V3/**.
 # Oggi l'unico "check" prima del deploy DEV era che il build non esplodesse:
 # questo workflow aggiunge typecheck TypeScript, lint e test PRIMA del deploy,
 # così codice rotto viene bloccato in PR e non arriva mai su dev.asteriacore.online.
@@ -16,9 +17,10 @@ name: CI
 on:
   pull_request:
     branches: [ "main" ]
-    paths:
-      - 'CMS-V3/**'
-      - '.github/workflows/ci.yml'
+    # Nessun path-filter sulle PR: questo job e' uno STATUS CHECK OBBLIGATORIO su
+    # main, e un check richiesto che non gira resta "Expected" per sempre ->
+    # deadlock sulle PR non-CMS (workflow-only, EMU-only). Su PR senza modifiche
+    # CMS il job passa in ~1 min. Il filtro resta sui push a main (informativo).
   push:
     branches: [ "main" ]
     paths:

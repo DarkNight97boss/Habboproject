@@ -123,6 +123,22 @@ auth.post(
             return c.json({ error: 'invalid_credentials' }, 401);
         }
 
+        // Ban-check (P1.5 security audit): un utente bannato in-game NON deve poter
+        // autenticare sul CMS, altrimenti continua a incassare crediti reali via
+        // streak/missioni/season-pass/referral (rcon.giveCredits) pur essendo escluso
+        // dal gioco. Mirror del check dell'EMU (ModToolManager): ban account/super
+        // non ancora scaduti. Stesso check anche in /refresh, così un ban applicato
+        // a sessione attiva taglia l'accesso entro il TTL dell'access token (15 min).
+        const banRows = await dbQuery<{ ban_expire: number; ban_reason: string }>(
+            "SELECT ban_expire, ban_reason FROM bans WHERE user_id = ? AND ban_expire > UNIX_TIMESTAMP() AND type IN ('account', 'super') ORDER BY ban_expire DESC LIMIT 1",
+            [u.id]
+        );
+        if(banRows[0])
+        {
+            await logAudit(u.id, 'auth.login.failed.banned', ip, ua, { until: banRows[0].ban_expire });
+            return c.json({ error: 'account_banned', until: banRows[0].ban_expire, reason: String(banRows[0].ban_reason ?? '').slice(0, 200) }, 403);
+        }
+
         // Migrazione trasparente bcrypt→Argon2id DISABILITATA:
         // la colonna `users.password` è VARCHAR(64) (legacy schema Arcturus,
         // dimensionata per bcrypt $2y$10$...60-char). Un hash Argon2id completo
@@ -332,6 +348,24 @@ auth.post('/refresh', async c =>
     );
     const u = userRows[0];
     if(!u) return c.json({ error: 'invalid_token' }, 401);
+
+    // Ban-check anche al refresh (P1.5): se nel frattempo l'utente è stato bannato,
+    // non rinnoviamo la sessione e revochiamo l'intera refresh-family, così il ban
+    // ha effetto entro il TTL dell'access token invece che fino alla scadenza del
+    // refresh (14 giorni).
+    const banRows = await dbQuery<{ ban_expire: number }>(
+        "SELECT ban_expire FROM bans WHERE user_id = ? AND ban_expire > UNIX_TIMESTAMP() AND type IN ('account', 'super') LIMIT 1",
+        [u.id]
+    );
+    if(banRows[0])
+    {
+        await dbExecute(
+            'UPDATE cms_v3_refresh_tokens SET revoked_at = UNIX_TIMESTAMP() WHERE family = ? AND revoked_at IS NULL',
+            [stored.family]
+        );
+        await logAudit(u.id, 'auth.refresh.denied.banned', clientIP(c), c.req.header('user-agent') ?? '', { until: banRows[0].ban_expire, family: stored.family });
+        return c.json({ error: 'account_banned', until: banRows[0].ban_expire }, 403);
+    }
 
     // Genera nuova coppia (rotation).
     const access = await signAccessToken({ sub: String(u.id), username: u.username, rank: u.rank });

@@ -212,10 +212,29 @@ jobs:
           java-version: '17'
           cache: maven
 
-      - name: Build jar (mvn package)
-        # -B batch mode (no color), skipTests per velocita', skip javadoc (heavy)
+      - name: Build jar + test (mvn package)
+        # -B batch mode (no color), skip javadoc (heavy). I test JUnit (path critici:
+        # parser pacchetti, cap connessioni, istogramma metriche) girano QUI, sulla PR;
+        # prod-deploy resta -DskipTests perche' il gate e' gia' passato.
         working-directory: EMU
-        run: mvn -B -DskipTests -Dmaven.javadoc.skip=true package
+        run: mvn -B -Dmaven.javadoc.skip=true package
+
+      - name: SpotBugs + FindSecBugs (categoria SECURITY)
+        # Prima esecuzione in modalita' osservazione (continue-on-error): il report
+        # viene caricato come artifact per la triage. Quando la baseline e' pulita,
+        # togliere continue-on-error per renderlo bloccante.
+        working-directory: EMU
+        continue-on-error: true
+        run: mvn -B -Dmaven.javadoc.skip=true spotbugs:check
+
+      - name: Upload report SpotBugs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: spotbugs-report
+          path: EMU/target/spotbugsXml.xml
+          retention-days: 14
+          if-no-files-found: ignore
 
       - name: Upload artifact EMU jar
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

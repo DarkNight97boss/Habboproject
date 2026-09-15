@@ -156,7 +156,10 @@ shop.post('/webhook', async (c) =>
         return c.json({ error: 'invalid_signature', detail: e instanceof Error ? e.message : 'unknown' }, 400);
     }
 
-    if(event.type === 'checkout.session.completed')
+    // async_payment_succeeded: metodi a notifica differita (es. bonifico) completano la
+    // sessione con payment_status='unpaid' e Stripe invia QUESTO evento quando il
+    // pagamento è saldato. Passa dallo stesso path idempotente di consegna.
+    if(event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded')
     {
         // Inline shape: il SDK type per session è complesso. Usiamo unknown + cast manuale.
         const session = event.data.object as {
@@ -164,18 +167,35 @@ shop.post('/webhook', async (c) =>
             metadata?: { user_id?: string; item_id?: string };
             payment_intent?: string;
             amount_total?: number;
+            payment_status?: string;
         };
         const userId = Number(session.metadata?.user_id || 0);
         const itemId = Number(session.metadata?.item_id || 0);
 
-        // Mark order paid. amount_cents → importo EFFETTIVO pagato (session.amount_total):
-        // così con un codice promo (#7) l'ordine riflette il prezzo scontato reale per
-        // l'audit/economia, non il prezzo pieno pre-registrato. COALESCE: se Stripe non
-        // fornisce amount_total, mantiene il valore già registrato.
-        await dbExecute(
+        // Eroghiamo SOLO se il pagamento è effettivamente saldato. Con metodi a
+        // notifica differita `checkout.session.completed` arriva con
+        // payment_status='unpaid': non consegniamo ora, aspettiamo async_payment_succeeded.
+        if(session.payment_status && session.payment_status !== 'paid')
+        {
+            return c.json({ received: true, skipped: `payment_status_${session.payment_status}` });
+        }
+
+        // Mark order paid — IDEMPOTENTE (P1.1 security audit). Stripe consegna i webhook
+        // at-least-once e ritenta su timeout/5xx: prima si erogava incondizionatamente
+        // dopo l'UPDATE, quindi un retry/replay RI-ACCREDITAVA crediti/diamanti/badge.
+        // Ora consegniamo SOLO se questo UPDATE ha davvero fatto la transizione
+        // pending→paid (affectedRows=1); su retry la riga è già 'paid' → 0 righe →
+        // usciamo senza toccare l'economia. amount_cents = importo EFFETTIVO pagato
+        // (session.amount_total, COALESCE) per un audit corretto anche con codici promo.
+        const upd = await dbExecute(
             'UPDATE cms_v3_shop_orders SET status = ?, stripe_payment_intent = ?, amount_cents = COALESCE(?, amount_cents), paid_at = NOW() WHERE stripe_session_id = ? AND status = ?',
             ['paid', session.payment_intent || null, session.amount_total ?? null, session.id, 'pending']
         );
+        if(upd.affectedRows !== 1)
+        {
+            // Già processato (retry/replay) oppure sessione sconosciuta: nessuna consegna.
+            return c.json({ received: true, skipped: 'already_processed' });
+        }
 
         // Delivery: credita user via RCON
         const item = (await dbQuery<{ credits_amount: number; diamonds_amount: number; name: string; badge_code: string | null }>(

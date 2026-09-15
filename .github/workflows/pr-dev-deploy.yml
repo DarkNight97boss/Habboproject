@@ -197,6 +197,7 @@ jobs:
               - 'EMU/sqlupdates/**'
               - 'EMU/base database/**'
               - 'CMS-V3/apps/api/src/db/migrations/**'
+              - 'deploy/sql/**'
             nitro:
               - 'Nitro-V3/**'
               - 'CMS/react/**'
@@ -448,6 +449,7 @@ jobs:
             EMU/sqlupdates
             EMU/base database
             CMS-V3/apps/api/src/db/migrations
+            deploy/sql
           sparse-checkout-cone-mode: true
 
       - name: Rsync sorgenti SQL (solo se sql)
@@ -455,7 +457,7 @@ jobs:
         run: |
           cd sql-src
           rsync -aR -e "ssh -o StrictHostKeyChecking=yes" \
-            "EMU/sqlupdates" "EMU/base database" "CMS-V3/apps/api/src/db/migrations" \
+            "EMU/sqlupdates" "EMU/base database" "CMS-V3/apps/api/src/db/migrations" "deploy/sql" \
             "${VPS_USER}@${VPS_HOST}:/tmp/asteria-dev-${PR_SHA}/sql-repo/"
 
       - name: Rsync EMU jar (se presente)
@@ -482,25 +484,30 @@ jobs:
             /tmp/artifacts/cms-api-bundle/cms-api-bundle.tar.gz \
             "${VPS_USER}@${VPS_HOST}:/tmp/asteria-dev-${PR_SHA}/cms-api/"
 
-      - name: Garantisci apply-dev.sh sul VPS (genera/aggiorna alla versione del workflow)
-        # Il workflow e' la fonte di verita' dello script: se sul VPS manca o ha un
-        # marker di versione diverso, lo rigeneriamo (backup .bak-<ts> del precedente).
-        # Cosi' una fix qui arriva sul VPS senza interventi manuali.
+      - name: Garantisci apply-dev.sh + apply-sql.sh sul VPS (genera/aggiorna alla versione del workflow)
+        # Il workflow e' la fonte di verita' degli script dev: se sul VPS mancano o
+        # hanno un marker di versione diverso, li rigeneriamo (backup .bak-<ts> del
+        # precedente). Cosi' una fix qui arriva sul VPS senza interventi manuali.
         run: |
           ssh -o StrictHostKeyChecking=yes "${VPS_USER}@${VPS_HOST}" 'bash -s' <<'REMOTE_EOF'
           set -euo pipefail
-          SCRIPT=/opt/asteria-scripts/apply-dev.sh
-          WANT="v3"
-          if [ -x "$SCRIPT" ] && grep -q "^# apply-dev.sh version: ${WANT}\b" "$SCRIPT"; then
-            echo "[remote] apply-dev.sh ${WANT} gia' presente, skip generazione"
-            exit 0
-          fi
           sudo mkdir -p /opt/asteria-scripts
-          if [ -e "$SCRIPT" ]; then
-            BAK="${SCRIPT}.bak-$(date +%Y%m%d%H%M%S)"
-            sudo cp -a "$SCRIPT" "$BAK"
-            echo "[remote] apply-dev.sh presente ma non ${WANT}: backup in ${BAK}, rigenero"
-          fi
+          # needs_gen PATH NOME VERSIONE: 0 = va (ri)generato, 1 = gia' alla versione voluta.
+          # sudo perche' gli script sono root-owned (apply-sql.sh non e' leggibile da asteria).
+          needs_gen() {
+            if sudo test -x "$1" && sudo grep -q "^# $2 version: $3\b" "$1"; then
+              echo "[remote] $2 $3 gia' presente, skip generazione"; return 1
+            fi
+            if sudo test -e "$1"; then
+              local bak; bak="$1.bak-$(date +%Y%m%d%H%M%S)"; sudo cp -a "$1" "$bak"
+              echo "[remote] $2 presente ma non $3: backup in $bak, rigenero"
+            fi
+            return 0
+          }
+
+          # ================= apply-dev.sh (v3) =================
+          SCRIPT=/opt/asteria-scripts/apply-dev.sh
+          if needs_gen "$SCRIPT" apply-dev.sh v3; then
           sudo tee "$SCRIPT" > /dev/null <<'SCRIPT_EOF'
           #!/usr/bin/env bash
           # apply-dev.sh version: v3 (gestito da .github/workflows/pr-dev-deploy.yml:
@@ -606,6 +613,98 @@ jobs:
           sudo chmod 0755 "$SCRIPT"
           sudo chown root:root "$SCRIPT"
           echo "[remote] apply-dev.sh generato"
+          fi
+
+          # ================= apply-sql.sh (v2) =================
+          # Contratto invariato (DB_NAME DB_USER DB_PWD MODE REPO_PATH). Novita' v2:
+          # in RESET i file di EMU/sqlupdates elencati in deploy/sql/INCLUDED-IN-BASE.txt
+          # (update upstream 1.0->3.5.5, gia' dentro "BaseDB MS 3.5.5.sql") NON vengono
+          # ri-applicati (Duplicate entry) ma solo registrati in schema_migrations;
+          # checksum sha256 registrato; guardia "solo DB *_dev"; via il seed devstaff
+          # (hash bcrypt non valido = account inutilizzabile).
+          SCRIPT=/opt/asteria-scripts/apply-sql.sh
+          if needs_gen "$SCRIPT" apply-sql.sh v2; then
+          sudo tee "$SCRIPT" > /dev/null <<'SQLSCRIPT_EOF'
+          #!/bin/bash
+          # apply-sql.sh version: v2 (gestito da .github/workflows/pr-dev-deploy.yml:
+          # le modifiche locali vengono sovrascritte al prossimo deploy, backup .bak-*)
+          # Applica SQL a un DB target - SOLO ambiente dev (prod usa la logica inline
+          # di prod-deploy.yml, incrementale con tracker schema_migrations).
+          # Args: $1=DB_NAME $2=DB_USER $3=DB_PWD (non usato: auth root via socket)
+          #       $4=MODE(reset|tracked) $5=REPO_PATH (layout del repo: EMU/..., CMS-V3/..., deploy/sql)
+          # reset:   DROP+CREATE, import BaseDB, poi sqlupdates NON inclusi nella base
+          #          (manifest deploy/sql/INCLUDED-IN-BASE.txt: quelli solo registrati)
+          #          + migrations CMS; tutto registrato in schema_migrations.
+          # tracked: applica solo i file non ancora registrati in schema_migrations.
+          set -euo pipefail
+          DB_NAME="${1:?DB_NAME}"; DB_USER="${2:?DB_USER}"; DB_PWD="${3:-}"; MODE="${4:?MODE}"; REPO="${5:?REPO_PATH}"
+          case "$DB_NAME" in *_dev) ;; *) echo "[apply-sql] ERROR: solo DB *_dev (ricevuto '$DB_NAME')"; exit 1 ;; esac
+
+          mysql_cmd()  { mysql --protocol=socket -u root -D "$DB_NAME" "$@"; }
+          mysql_root() { mysql --protocol=socket -u root "$@"; }
+
+          BASEDB="$REPO/EMU/base database/BaseDB MS 3.5.5.sql"
+          MANIFEST="$REPO/deploy/sql/INCLUDED-IN-BASE.txt"
+          EMU_UPDATES_DIR="$REPO/EMU/sqlupdates"
+          CMS_MIG_DIR="$REPO/CMS-V3/apps/api/src/db/migrations"
+
+          ensure_tracker() {
+              mysql_cmd <<'SQL'
+          CREATE TABLE IF NOT EXISTS schema_migrations (
+              filename VARCHAR(255) PRIMARY KEY,
+              applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              checksum VARCHAR(64) NULL
+          );
+          SQL
+          }
+          sql_escape() { printf '%s' "$1" | sed "s/'/''/g"; }
+          record()  { mysql_cmd -e "INSERT IGNORE INTO schema_migrations (filename, checksum) VALUES ('$(sql_escape "$1")', '$2');"; }
+          already() { [[ "$(mysql_cmd -Nse "SELECT COUNT(*) FROM schema_migrations WHERE filename='$(sql_escape "$1")'")" != "0" ]]; }
+          in_base() { [[ -f "$MANIFEST" ]] && grep -v '^#' "$MANIFEST" | grep -Fxq -- "$1"; }
+
+          # apply_dir DIR SKIP_BASE(0|1): applica i .sql in ordine C-sort, registrando ogni file.
+          apply_dir() {
+              local d="$1" skip_base="$2" f fname ck
+              [[ -d "$d" ]] || { echo "[apply-sql] skip dir mancante $d"; return 0; }
+              while IFS= read -r f; do
+                  fname="$(basename "$f")"; ck="$(sha256sum "$f" | cut -d' ' -f1)"
+                  if [[ "$skip_base" == "1" ]] && in_base "$fname"; then
+                      echo "[apply-sql] in-base (solo registrato) $fname"; record "$fname" "$ck"; continue
+                  fi
+                  if already "$fname"; then echo "[apply-sql] skip $fname (gia' applicato)"; continue; fi
+                  echo "[apply-sql] apply $fname"
+                  mysql_cmd < "$f"
+                  record "$fname" "$ck"
+              done < <(find "$d" -maxdepth 1 -type f -name '*.sql' | LC_ALL=C sort)
+          }
+
+          if [[ "$MODE" == "reset" ]]; then
+              echo "[apply-sql] RESET $DB_NAME"
+              mysql_root -e "DROP DATABASE IF EXISTS \`$DB_NAME\`; CREATE DATABASE \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+              mysql_root -e "GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'localhost'; GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'127.0.0.1'; FLUSH PRIVILEGES;"
+              if [[ -f "$BASEDB" ]]; then
+                  echo "[apply-sql] import BaseDB"
+                  mysql_cmd < "$BASEDB"
+              else
+                  echo "[apply-sql] WARN BaseDB non trovato in $BASEDB"
+              fi
+              ensure_tracker
+              apply_dir "$EMU_UPDATES_DIR" 1
+              apply_dir "$CMS_MIG_DIR" 0
+          elif [[ "$MODE" == "tracked" ]]; then
+              echo "[apply-sql] TRACKED apply to $DB_NAME"
+              ensure_tracker
+              apply_dir "$EMU_UPDATES_DIR" 1
+              apply_dir "$CMS_MIG_DIR" 0
+          else
+              echo "[apply-sql] ERROR: MODE '$MODE' non valido (reset|tracked)"; exit 1
+          fi
+          echo "[apply-sql] done ($MODE $DB_NAME): $(mysql_cmd -Nse 'SELECT COUNT(*) FROM schema_migrations') file registrati"
+          SQLSCRIPT_EOF
+          sudo chmod 0755 "$SCRIPT"
+          sudo chown root:root "$SCRIPT"
+          echo "[remote] apply-sql.sh generato"
+          fi
           REMOTE_EOF
 
       - name: Esegui apply-dev.sh sul VPS

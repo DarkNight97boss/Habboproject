@@ -222,11 +222,11 @@ jobs:
             EMU
           sparse-checkout-cone-mode: false
 
-      - name: Setup JDK 17 Temurin + cache Maven
+      - name: Setup JDK 25 Temurin + cache Maven
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '25'
           cache: maven
 
       - name: Build jar + test (mvn package)

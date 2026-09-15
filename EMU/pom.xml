@@ -45,11 +45,12 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.15.0</version>
                 <configuration>
-                    <!-- Java 17 LTS (security audit): Java 8 e' del 2014 e fuori supporto
-                         pubblico; 17 porta fix di sicurezza, GC moderni e performance.
-                         La CI (prod-deploy e pr-dev) compila gia' con Temurin 17.
-                         PREREQUISITO VPS: JRE >= 17 (systemd ExecStart usa /usr/bin/java). -->
-                    <release>17</release>
+                    <!-- Java 25 LTS (security audit): Java 8 e' del 2014 e fuori supporto
+                         pubblico; 25 e' l'LTS corrente (09/2025) con fix di sicurezza,
+                         GC moderni (G1/ZGC generazionale) e performance. La CI compila
+                         con Temurin 25. PREREQUISITO VPS: JRE >= 25 (Temurin da Adoptium:
+                         non e' nei repo Ubuntu LTS; systemd ExecStart usa /usr/bin/java). -->
+                    <release>25</release>
                 </configuration>
             </plugin>
 

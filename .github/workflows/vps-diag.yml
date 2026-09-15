@@ -78,6 +78,11 @@ jobs:
           for u in habbo-emu habbo-emu-dev; do echo "--- $u"; systemctl cat "$u" 2>/dev/null | grep -vE '^\s*#|^\s*$' | grep -E 'ExecStart|^\s+-|NoNewPrivileges|Protect|Private|ReadWritePaths|Restrict|CapabilityBoundingSet|SystemCallFilter|LimitNOFILE|MemoryMax|OOM' | cut -c1-160; done
           sec "avvisi JVM all'avvio corrente (Unsafe / native access / restricted / WARNING)"
           for u in habbo-emu habbo-emu-dev; do echo "--- $u (invocazione corrente)"; INV=$(systemctl show -p InvocationID --value "$u" 2>/dev/null); sudo journalctl -u "$u" _SYSTEMD_INVOCATION_ID="$INV" --no-pager -o cat 2>/dev/null | head -60 | grep -iE 'unsafe|native access|restricted|warning|deprecat|jni|rejected|invalidclass|serialfilter|outofmemory|picked up' | head -10 | cut -c1-200; done
+          sec "nginx: conf attive vs deploy/nginx-prod.conf del repo (solo hash e righe di diff)"
+          REF_URL="https://raw.githubusercontent.com/DarkNight97boss/Habboproject/main/deploy/nginx-prod.conf"
+          REF_OLD="https://raw.githubusercontent.com/DarkNight97boss/Habboproject/2b99ab879/deploy/nginx-prod.conf"
+          curl -fsSL "$REF_URL" -o /tmp/nginx-repo.conf 2>/dev/null && curl -fsSL "$REF_OLD" -o /tmp/nginx-repo-old.conf 2>/dev/null || echo "(raw non raggiungibile)"
+          for f in /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*.conf; do [ -f "$f" ] || continue; printf '%s: %s righe, diff vs repo(main)=%s righe, diff vs repo(pre-#210)=%s righe\n' "$f" "$(wc -l < "$f")" "$(diff "$f" /tmp/nginx-repo.conf 2>/dev/null | grep -c '^[<>]')" "$(diff "$f" /tmp/nginx-repo-old.conf 2>/dev/null | grep -c '^[<>]')"; done
           sec "processi java in esecuzione"
           ps -o pid,user,etimes,rss,args -C java 2>/dev/null | cut -c1-170 || echo "nessun processo java"
           sec "memoria / disco"

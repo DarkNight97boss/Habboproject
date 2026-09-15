@@ -709,6 +709,21 @@ jobs:
           name: nitro-bundle-${{ needs.guard.outputs.deploy_sha }}
           path: artifacts/nitro
 
+      # Drop-in systemd dell'EMU: viaggia con gli artifact; il deploy lo installa
+      # su habbo-emu solo se cambiato (+ daemon-reload + restart con preavviso).
+      - name: Checkout deploy/systemd (drop-in EMU)
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
+        with:
+          ref: ${{ needs.guard.outputs.deploy_sha }}
+          path: systemd-src
+          sparse-checkout: |
+            deploy/systemd
+          sparse-checkout-cone-mode: true
+      - name: Aggiungi drop-in systemd agli artifact
+        run: |
+          mkdir -p artifacts/systemd
+          cp -r systemd-src/deploy/systemd/. artifacts/systemd/
+
       - name: Lista artifacts scaricati
         run: |
           set -euo pipefail
@@ -893,8 +908,23 @@ jobs:
           # 5) EMU: broadcast in-game pre-shutdown + restart
           #    Solo se emu==true. Diamo ai giocatori 30s di preavviso.
           # ===========================
-          if [ "${DEPLOY_EMU}" = "true" ] && [ -f "${STAGE}/emu/Habbo-3.5.5-jar-with-dependencies.jar" ] 2>/dev/null || ls "${STAGE}/emu/"Habbo-*-jar-with-dependencies.jar >/dev/null 2>&1; then
-            echo "[deploy] EMU: broadcast pre-shutdown + restart ..."
+          # Drop-in systemd Java 25: se il contenuto e' cambiato lo installiamo e
+          # riavviamo l'EMU (con lo stesso preavviso del deploy del jar).
+          DROPIN_CHANGED=false
+          DROPIN_SRC="${STAGE}/systemd/habbo-emu.service.d/java25-hardening.conf"
+          DROPIN_DST="/etc/systemd/system/habbo-emu.service.d/java25-hardening.conf"
+          if [ -f "${DROPIN_SRC}" ] && ! sudo cmp -s "${DROPIN_SRC}" "${DROPIN_DST}"; then
+            echo "[deploy] drop-in systemd Java 25 cambiato: install + daemon-reload (restart EMU)"
+            sudo install -D -m 0644 -o root -g root "${DROPIN_SRC}" "${DROPIN_DST}"
+            sudo systemctl daemon-reload
+            DROPIN_CHANGED=true
+          fi
+          EMU_JAR_OK=false
+          if [ "${DEPLOY_EMU}" = "true" ] && ls "${STAGE}/emu/"Habbo-*-jar-with-dependencies.jar >/dev/null 2>&1; then
+            EMU_JAR_OK=true
+          fi
+          if [ "${EMU_JAR_OK}" = "true" ] || [ "${DROPIN_CHANGED}" = "true" ]; then
+            echo "[deploy] EMU: broadcast pre-shutdown + restart (jar=${EMU_JAR_OK} dropin=${DROPIN_CHANGED}) ..."
 
             # Broadcast via DB (Arcturus emulator_texts/cmd_alert) - approccio
             # generico: inseriamo un messaggio in coda console-cmd MUS oppure
@@ -917,14 +947,16 @@ jobs:
             echo "[deploy] sleep 30s preavviso ..."
             sleep 30
 
-            # Swap jar atomico
-            JAR_DIR="${PROD_ROOT}/EMU/target"
-            sudo mkdir -p "${JAR_DIR}.prev"
-            if ls "${JAR_DIR}"/Habbo-*-jar-with-dependencies.jar >/dev/null 2>&1; then
-              sudo cp "${JAR_DIR}"/Habbo-*-jar-with-dependencies.jar "${JAR_DIR}.prev/"
+            # Swap jar atomico (solo se c'e' un jar nuovo)
+            if [ "${EMU_JAR_OK}" = "true" ]; then
+              JAR_DIR="${PROD_ROOT}/EMU/target"
+              sudo mkdir -p "${JAR_DIR}.prev"
+              if ls "${JAR_DIR}"/Habbo-*-jar-with-dependencies.jar >/dev/null 2>&1; then
+                sudo cp "${JAR_DIR}"/Habbo-*-jar-with-dependencies.jar "${JAR_DIR}.prev/"
+              fi
+              sudo cp "${STAGE}/emu/"Habbo-*-jar-with-dependencies.jar "${JAR_DIR}/"
+              sudo chown -R asteria:asteria "${JAR_DIR}"
             fi
-            sudo cp "${STAGE}/emu/"Habbo-*-jar-with-dependencies.jar "${JAR_DIR}/"
-            sudo chown -R asteria:asteria "${JAR_DIR}"
 
             echo "[deploy] systemctl restart habbo-emu.service ..."
             sudo systemctl restart habbo-emu.service

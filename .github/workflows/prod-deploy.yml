@@ -184,6 +184,7 @@ jobs:
               # I soli test non cambiano il jar in produzione: niente rebuild+restart
               # (ogni restart EMU disconnette i giocatori).
               - '!EMU/src/test/**'
+              - '!EMU/.gitignore'
             cms_web:
               - 'CMS-V3/apps/web/**'
               - 'CMS-V3/package.json'

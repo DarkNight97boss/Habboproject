@@ -15,3 +15,8 @@ config.ini
 *.zip
 .DS_Store
 
+
+# I test JUnit (EMU/src/test) NON vanno ignorati: la regola sopra li nascondeva
+# a git e la CI diceva "No tests to run" (security audit, 2026-09).
+!src/test/
+!src/test/**

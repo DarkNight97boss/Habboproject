@@ -98,6 +98,13 @@ public class BotSaveSettingsEvent extends MessageHandler {
                         if (chatSpeed < BotManager.MINIMUM_CHAT_SPEED) {
                             chatSpeed = BotManager.MINIMUM_CHAT_SPEED;
                         }
+                        // Bot.chatDelay e' uno short: senza clamp 40000 -> -25536 (bot che spamma).
+                        if (chatSpeed > BotManager.MAXIMUM_CHAT_SPEED) {
+                            chatSpeed = BotManager.MAXIMUM_CHAT_SPEED;
+                        }
+                        if (chatSpeed > Short.MAX_VALUE) {
+                            chatSpeed = Short.MAX_VALUE;
+                        }
                     } catch (Exception e) {
                         //Invalid chatspeed. Use 7.
                     }
@@ -110,7 +117,19 @@ public class BotSaveSettingsEvent extends MessageHandler {
 
                     bot.setChatAuto(chatEvent.autoChat);
                     bot.setChatRandom(chatEvent.randomChat);
-                    bot.setChatDelay((short) chatEvent.chatDelay);
+                    // Il valore puo' essere stato modificato da un plugin: il cast a short
+                    // avviene SOLO nel ramo in cui il confronto lo ha gia' limitato
+                    // (struttura riconosciuta da CodeQL java/tainted-numeric-cast).
+                    final int chatDelay = chatEvent.chatDelay;
+                    final short boundedDelay;
+                    if (chatDelay > Short.MAX_VALUE) {
+                        boundedDelay = Short.MAX_VALUE;
+                    } else if (chatDelay < BotManager.MINIMUM_CHAT_SPEED) {
+                        boundedDelay = (short) Math.min(BotManager.MINIMUM_CHAT_SPEED, Short.MAX_VALUE);
+                    } else {
+                        boundedDelay = (short) chatDelay;
+                    }
+                    bot.setChatDelay(boundedDelay);
                     bot.clearChat();
                     bot.addChatLines(chat);
                     bot.needsUpdate(true);

@@ -314,8 +314,8 @@ public class RoomLayout {
     short y = tile.y;
 
     for (int i = 0; i <= offset; i++) {
-      x += offsetX;
-      y += offsetY;
+      x = (short) (x + offsetX);
+      y = (short) (y + offsetY);
     }
 
     return this.getTile(x, y);

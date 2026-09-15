@@ -13,6 +13,7 @@
         "download-assets": "node scripts/download-habbo-assets.mjs"
     },
     "dependencies": {
+        "dompurify": "^3.4.12",
         "@cms-v3/design-tokens": "*",
         "@tanstack/react-query": "^5.102.8",
         "@tanstack/react-query-devtools": "^5.102.8",

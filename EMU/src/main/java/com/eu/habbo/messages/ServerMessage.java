@@ -121,6 +121,11 @@ public class ServerMessage {
     }
 
     public void appendShort(int obj) {
+        // Clamp esplicito: il protocollo codifica short a 16 bit; un valore fuori
+        // range (anche derivato da input del client) non deve fare wrap-around
+        // silenzioso (CodeQL java/tainted-numeric-cast).
+        if (obj > Short.MAX_VALUE) obj = Short.MAX_VALUE;
+        if (obj < Short.MIN_VALUE) obj = Short.MIN_VALUE;
         try {
             this.stream.writeShort((short) obj);
         } catch (IOException e) {

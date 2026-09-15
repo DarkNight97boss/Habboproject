@@ -394,9 +394,13 @@ public final class Emulator {
     }
 
     public static int timeStringToSeconds(String timeString) {
-        int totalSeconds = 0;
+        // Input da comandi staff/utente: lunghezza limitata e quantificatore finito
+        // (CodeQL java/polynomial-redos); somma in long con clamp per evitare
+        // overflow -> durate negative (es. 999999999 year).
+        if (timeString == null || timeString.length() > 128) return 0;
+        long totalSeconds = 0;
 
-        Matcher m = Pattern.compile("(([0-9]*) (second|minute|hour|day|week|month|year))").matcher(timeString);
+        Matcher m = Pattern.compile("(([0-9]{1,9}) (second|minute|hour|day|week|month|year))").matcher(timeString);
         Map<String,Integer> map = new HashMap<String,Integer>() {
             {
                 put("second", 1);
@@ -413,12 +417,13 @@ public final class Emulator {
             try {
                 int amount = Integer.parseInt(m.group(2));
                 String what = m.group(3);
-                totalSeconds += amount * map.get(what);
+                totalSeconds += (long) amount * map.get(what);
+                if (totalSeconds > Integer.MAX_VALUE) return Integer.MAX_VALUE;
             }
             catch (Exception ignored) { }
         }
 
-        return totalSeconds;
+        return (int) totalSeconds;
     }
 
     public static Date modifyDate(Date date, String timeString) {

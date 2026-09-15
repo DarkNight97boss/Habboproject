@@ -34,8 +34,9 @@ public class MoveWallItemEvent extends MessageHandler {
         // Charset whitelist: only ":wlrNN,NN,N" tokens. Anything else is
         // either a parse error from a buggy client or a hostile attempt to
         // inject control chars into the persisted column.
-        if (!wallPosition.matches("^:[wl]=?[0-9,. ]+(\\s+[lr])?$")
-                && !wallPosition.matches("^:[wl][0-9,. -]+$")) {
+        // Whitelist di caratteri senza quantificatori sovrapposti (CodeQL
+        // java/polynomial-redos); la lunghezza e' gia' limitata a 64 qui sopra.
+        if (!wallPosition.matches("^:[wl][0-9,.= lr-]+$")) {
             return;
         }
 

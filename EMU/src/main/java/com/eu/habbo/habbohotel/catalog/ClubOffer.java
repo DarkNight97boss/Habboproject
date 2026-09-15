@@ -110,11 +110,12 @@ public class ClubOffer implements ISerialize {
         message.appendBoolean(false); //giftable
         message.appendInt((int) seconds);
 
-        hcExpireTimestamp += secondsTotal;
+        // In long: int += long troncava implicitamente (CodeQL implicit-cast).
+        long expireAt = hcExpireTimestamp + secondsTotal;
 
         Calendar cal = Calendar.getInstance();
         cal.setTimeZone(TimeZone.getTimeZone("UTC"));
-        cal.setTimeInMillis(hcExpireTimestamp * 1000L);
+        cal.setTimeInMillis(expireAt * 1000L);
         message.appendInt(cal.get(Calendar.YEAR));
         message.appendInt(cal.get(Calendar.MONTH) + 1);
         message.appendInt(cal.get(Calendar.DAY_OF_MONTH));

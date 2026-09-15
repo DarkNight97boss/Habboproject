@@ -21,7 +21,8 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import DOMPurify from 'dompurify';
 import { Navigate, NavLink, useParams } from 'react-router';
 import { SkinPicker } from '../components/SkinPicker';
 import { SkinBuilder } from '../components/admin/SkinBuilder';
@@ -2060,6 +2061,11 @@ function NewsEditor({ newsId, onClose }: { newsId: number | null; onClose: () =>
     const [summary, setSummary] = useState(existing?.summary ?? '');
     const [bodyHtml, setBodyHtml] = useState(existing?.bodyHtml ?? '');
     const [image, setImage] = useState(existing?.image ?? '');
+    // Anteprima: l'HTML passa da DOMPurify anche lato client (il server lo
+    // sanifica al salvataggio con sanitizeNewsHtml) e l'immagine deve essere una
+    // URL http(s): il pannello non deve mai eseguire markup non filtrato.
+    const previewHtml = useMemo(() => DOMPurify.sanitize(bodyHtml, { USE_PROFILES: { html: true } }), [bodyHtml]);
+    const previewImage = /^https?:\/\/[^\s"'<>]+$/i.test(image) ? image : '';
     const [published, setPublished] = useState(existing?.published ?? true);
 
     // Se l'articolo arriva dopo (lista caricata in async), ripopola gli stati.
@@ -2180,12 +2186,12 @@ function NewsEditor({ newsId, onClose }: { newsId: number | null; onClose: () =>
                     </div>
                     <h1 style={{ margin: '8px 0 6px', fontSize: 22, color: '#0c3a65' }}>{title || '— titolo —'}</h1>
                     <p style={{ margin: '0 0 14px', color: '#4f6680', fontStyle: 'italic' }}>{summary || '— sommario —'}</p>
-                    {image && (
-                        <img src={image} alt="" style={{ maxWidth: '100%', borderRadius: 6, marginBottom: 14, display: 'block' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    {previewImage && (
+                        <img src={previewImage} alt="" style={{ maxWidth: '100%', borderRadius: 6, marginBottom: 14, display: 'block' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     )}
                     <div
                         style={{ color: '#11243a', lineHeight: 1.55 }}
-                        dangerouslySetInnerHTML={{ __html: bodyHtml || '<em style="color:#4f6680">— corpo articolo —</em>' }}
+                        dangerouslySetInnerHTML={{ __html: previewHtml || '<em style="color:#4f6680">— corpo articolo —</em>' }}
                     />
                 </div>
             </section>

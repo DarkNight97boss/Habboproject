@@ -138,12 +138,24 @@ jobs:
         env:
           INPUT_SHA: ${{ inputs.sha }}
           GITHUB_SHA_REF: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
           # Se workflow_dispatch ha specificato uno sha, usalo. Altrimenti HEAD.
           if [ -n "${INPUT_SHA}" ]; then
+            # Solo commit GIA' nella storia di main (passati da PR + branch protection):
+            # uno sha qualsiasi del repo (branch/PR non mergiata) verrebbe altrimenti
+            # buildato con i privilegi di main e potrebbe avvelenare le cache
+            # (CodeQL actions/cache-poisoning).
+            [[ "${INPUT_SHA}" =~ ^[0-9a-f]{7,40}$ ]] || { echo "ERRORE: sha '${INPUT_SHA}' non valido"; exit 1; }
+            CMP=$(gh api "repos/${GITHUB_REPOSITORY}/compare/${DEFAULT_BRANCH:-main}...${INPUT_SHA}" -q .status)
+            case "${CMP}" in
+              identical|behind) ;;
+              *) echo "ERRORE: lo sha ${INPUT_SHA} non e' nella storia di ${DEFAULT_BRANCH:-main} (status=${CMP}): si deploya solo codice gia' mergiato."; exit 1 ;;
+            esac
             DEPLOY_SHA="${INPUT_SHA}"
-            echo "Hotfix manuale: deploy sha=${DEPLOY_SHA}"
+            echo "Hotfix manuale: deploy sha=${DEPLOY_SHA} (verificato nella storia di ${DEFAULT_BRANCH:-main})"
           else
             DEPLOY_SHA="${GITHUB_SHA_REF}"
             echo "Deploy automatico: deploy sha=${DEPLOY_SHA}"

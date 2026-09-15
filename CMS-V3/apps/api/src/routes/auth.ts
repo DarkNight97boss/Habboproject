@@ -6,6 +6,7 @@ import { dbExecute, dbQuery } from '../db/pool.js';
 import { env } from '../env.js';
 import { makeRateLimit } from '../middleware/rate-limit.js';
 import { isArgon2Hash, isPasswordPwned, hashPassword, verifyPassword, timingSafeDummyVerify } from '../security/password.js';
+import { htmlAttr, jsStringLiteral } from '../security/html.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../security/jwt.js';
 import { emitActivity } from '../services/activity.js';
 
@@ -527,8 +528,8 @@ auth.get('/play', async c =>
     //    L'interceptor NitroConfig assegna il ticket SSO al primo set di
     //    window.NitroConfig fatto da bootstrap.js (timing-safe wrap).
     //    Usiamo JSON.stringify per escape pulito (no XSS via ticket).
-    const ticketJson = JSON.stringify(ticket);
-    const baseHref = `${CDN_BASE}/`;
+    const ticketJson = jsStringLiteral(ticket);
+    const baseHref = htmlAttr(`${CDN_BASE}/`);
 
     // 3b. (DEV-only) Override socket.url verso l'EMU dev.
     //
@@ -550,7 +551,7 @@ auth.get('/play', async c =>
     //   In PROD env.NITRO_SOCKET_URL è assente ⇒ overrideScript = '' ⇒ l'HTML
     //   iniettato è identico a prima ⇒ comportamento di produzione invariato.
     const overrideScript = env.NITRO_SOCKET_URL
-        ? `x['socket.url']=${JSON.stringify(env.NITRO_SOCKET_URL)};`
+        ? `x['socket.url']=${jsStringLiteral(env.NITRO_SOCKET_URL)};`
         : '';
 
     const inject = `<base href="${baseHref}"><script>(function(){var t=${ticketJson},v;Object.defineProperty(window,'NitroConfig',{get:function(){return v},set:function(x){v=x;if(x&&typeof x==='object'){x['sso.ticket']=t;${overrideScript}}},configurable:true})})();</script>`;

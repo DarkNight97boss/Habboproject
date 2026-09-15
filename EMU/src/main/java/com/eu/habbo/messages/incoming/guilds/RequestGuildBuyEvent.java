@@ -77,7 +77,7 @@ public class RequestGuildBuyEvent extends MessageHandler {
 
                         badge.append(id < 100 ? "0" : "").append(id < 10 ? "0" : "").append(id).append(color < 10 ? "0" : "").append(color).append(pos);
 
-                        base += 3;
+                        base = (byte) (base + 3);
                     }
 
                     // Deduct credits only now that all validations passed (no money-burn on failure).

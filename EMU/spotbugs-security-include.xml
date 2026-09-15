@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Filtro di inclusione SpotBugs per la CI (security audit).
+
+  Sul codebase legacy Arcturus l'analisi completa produrrebbe migliaia di
+  segnalazioni di stile/performance: partiamo dalla sola categoria SECURITY
+  (pattern di FindSecBugs: SQL injection, path traversal, crypto debole,
+  deserializzazione, ecc.), cosi' il check e' segnale e non rumore. Le altre
+  categorie si possono aggiungere gradualmente.
+-->
+<FindBugsFilter>
+    <Match>
+        <Bug category="SECURITY"/>
+    </Match>
+</FindBugsFilter>

@@ -121,7 +121,9 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.9.3.0</version>
+                <!-- >= 4.9.6: SpotBugs 4.9.3 non legge i class-file Java 25 (major 69):
+                     'Unsupported class file major version 69' = scan silenziosamente vuoto. -->
+                <version>4.9.6.0</version>
                 <configuration>
                     <effort>Max</effort>
                     <threshold>Medium</threshold>

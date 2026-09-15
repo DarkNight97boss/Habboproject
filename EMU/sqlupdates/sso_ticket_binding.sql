@@ -18,6 +18,10 @@
 SET NAMES utf8mb4;
 
 ALTER TABLE `users`
+    -- auth_ticket_issued_at nasce in sso_ticket_ttl.sql (che in ordine C-sort viene DOPO
+    -- questo file): la aggiungiamo anche qui, idempotente, cosi' il replay da zero
+    -- (reset dev / install pulita) non dipende dall'ordine di applicazione.
+    ADD COLUMN IF NOT EXISTS `auth_ticket_issued_at` INT NOT NULL DEFAULT 0,
     ADD COLUMN IF NOT EXISTS `auth_ticket_bound_ip` VARCHAR(45) NOT NULL DEFAULT '',
     ADD COLUMN IF NOT EXISTS `auth_ticket_ua_hash`  CHAR(64)    NOT NULL DEFAULT '' AFTER `auth_ticket_bound_ip`;
 

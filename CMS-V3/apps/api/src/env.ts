@@ -4,6 +4,19 @@ import { z } from 'zod';
 config();
 
 /**
+ * Un secret "reale": lunghezza minima E nessun placeholder/valore d'esempio E un
+ * minimo di varietà di caratteri. I placeholder di .env.example (REPLACE_ME_...)
+ * superano il solo min(32): un deploy con .env copiato e non completato partirebbe
+ * con una chiave di firma PUBBLICA (è nel repo) → JWT forgeabili da chiunque,
+ * rank incluso. Meglio fallire al boot (P1.3 del security audit).
+ */
+const PLACEHOLDER_RE = /replace[_-]?me|change[_-]?me|placeholder|your[_-]?secret|insert[_-]?here|dummy/i;
+const realSecret = (name: string) => z.string()
+    .min(32, `${name} deve essere ≥32 caratteri (64 bytes hex consigliato: openssl rand -hex 64)`)
+    .refine(v => !PLACEHOLDER_RE.test(v), `${name} contiene un placeholder: genera un secret reale (openssl rand -hex 64)`)
+    .refine(v => new Set(v).size >= 8, `${name} ha troppa poca varietà di caratteri: non sembra un secret casuale`);
+
+/**
  * Validazione env tramite Zod. Se manca un secret o un valore è invalido,
  * il server NON parte — meglio fail-fast che boot in stato insicuro.
  */
@@ -21,12 +34,12 @@ const envSchema = z.object({
     DB_POOL_MAX: z.coerce.number().int().positive().default(20),
     DB_CONNECT_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
 
-    JWT_SECRET: z.string().min(32, 'JWT_SECRET deve essere ≥32 caratteri (64 bytes hex consigliato)'),
+    JWT_SECRET: realSecret('JWT_SECRET'),
     JWT_ACCESS_TTL_SECONDS: z.coerce.number().int().positive().default(900),
     JWT_ISSUER: z.string().default('cms-v3'),
     JWT_AUDIENCE: z.string().default('cms-v3-web'),
 
-    REFRESH_TOKEN_SECRET: z.string().min(32),
+    REFRESH_TOKEN_SECRET: realSecret('REFRESH_TOKEN_SECRET'),
     REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(14),
 
     ARGON2_MEMORY_KB: z.coerce.number().int().min(8192).default(65536),

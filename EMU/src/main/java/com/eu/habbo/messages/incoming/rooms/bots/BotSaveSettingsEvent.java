@@ -117,11 +117,19 @@ public class BotSaveSettingsEvent extends MessageHandler {
 
                     bot.setChatAuto(chatEvent.autoChat);
                     bot.setChatRandom(chatEvent.randomChat);
-                    // Il valore puo' essere stato modificato da un plugin: ricontrollo prima del cast.
-                    int chatDelay = chatEvent.chatDelay;
-                    if (chatDelay > Short.MAX_VALUE) chatDelay = Short.MAX_VALUE;
-                    if (chatDelay < BotManager.MINIMUM_CHAT_SPEED) chatDelay = BotManager.MINIMUM_CHAT_SPEED;
-                    bot.setChatDelay((short) chatDelay);
+                    // Il valore puo' essere stato modificato da un plugin: il cast a short
+                    // avviene SOLO nel ramo in cui il confronto lo ha gia' limitato
+                    // (struttura riconosciuta da CodeQL java/tainted-numeric-cast).
+                    final int chatDelay = chatEvent.chatDelay;
+                    final short boundedDelay;
+                    if (chatDelay > Short.MAX_VALUE) {
+                        boundedDelay = Short.MAX_VALUE;
+                    } else if (chatDelay < BotManager.MINIMUM_CHAT_SPEED) {
+                        boundedDelay = (short) Math.min(BotManager.MINIMUM_CHAT_SPEED, Short.MAX_VALUE);
+                    } else {
+                        boundedDelay = (short) chatDelay;
+                    }
+                    bot.setChatDelay(boundedDelay);
                     bot.clearChat();
                     bot.addChatLines(chat);
                     bot.needsUpdate(true);

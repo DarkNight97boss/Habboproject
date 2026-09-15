@@ -50,12 +50,14 @@ export async function verifyAccessToken(token: string): Promise<AccessTokenPaylo
             audience: env.JWT_AUDIENCE,
             algorithms: ['HS256']
         });
-        return {
-            sub: payload.sub as string,
-            username: payload['username'] as string,
-            rank: payload['rank'] as number,
-            jti: payload.jti as string
-        };
+        // Validazione dei tipi dei claim (P2.1): un token firmato ma con claim
+        // malformati (rank null/stringa, sub mancante) viene rifiutato invece di
+        // essere propagato con cast ciechi fino a requireRank.
+        const rank = payload['rank'];
+        const username = payload['username'];
+        if(typeof payload.sub !== 'string' || typeof username !== 'string'
+            || typeof rank !== 'number' || !Number.isFinite(rank) || typeof payload.jti !== 'string') return null;
+        return { sub: payload.sub, username, rank, jti: payload.jti };
     }
     catch
     {

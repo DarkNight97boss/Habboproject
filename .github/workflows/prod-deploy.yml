@@ -48,6 +48,7 @@ on:
       - 'EMU/**'
       - 'CMS-V3/**'
       - 'Nitro-V3/**'
+      - 'deploy/systemd/**'
       - '.github/workflows/prod-deploy.yml'
 
   # ---------------------------------------------------------------------------
@@ -192,6 +193,7 @@ jobs:
           filters: |
             emu:
               - 'EMU/**'
+              - 'deploy/systemd/**'
               # NB: NIENTE pattern negati qui. dorny/paths-filter valuta ogni pattern con
               # picomatch e marca il filtro se QUALSIASI file matcha QUALSIASI pattern:
               # un pattern '!x' matcha tutti i file diversi da x -> non esclude nulla e

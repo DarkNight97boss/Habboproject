@@ -85,6 +85,11 @@ jobs:
           for f in /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*.conf; do [ -f "$f" ] || continue; printf '%s: %s righe, diff vs repo(main)=%s righe, diff vs repo(pre-#210)=%s righe\n' "$f" "$(wc -l < "$f")" "$(diff "$f" /tmp/nginx-repo.conf 2>/dev/null | grep -c '^[<>]')" "$(diff "$f" /tmp/nginx-repo-old.conf 2>/dev/null | grep -c '^[<>]')"; done
           sec "processi java in esecuzione"
           ps -o pid,user,etimes,rss,args -C java 2>/dev/null | cut -c1-170 || echo "nessun processo java"
+          sec "firewall / porte in ascolto (superficie esterna)"
+          echo "-- ufw:"; sudo ufw status verbose 2>/dev/null | head -20 || echo "ufw n/d"
+          echo "-- fail2ban:"; sudo fail2ban-client status 2>/dev/null | head -5 || echo "fail2ban n/d"
+          echo "-- socket in ascolto su 0.0.0.0/:: (NON solo loopback):"; sudo ss -ltnH 2>/dev/null | awk '$4 !~ /^127\.|^\[::1\]|^\[::ffff:127/ {print $4}' | sort -u | sed 's/^/  /'
+          echo "-- sshd: PasswordAuthentication/PermitRootLogin effettivi:"; sudo sshd -T 2>/dev/null | grep -iE '^(passwordauthentication|permitrootlogin|kbdinteractiveauthentication|allowusers|port) ' || echo "sshd -T n/d"
           sec "memoria / disco"
           free -m | head -2; df -h / | tail -1
           sec "release DEV (web/api): current -> ? e ultime release per mtime"

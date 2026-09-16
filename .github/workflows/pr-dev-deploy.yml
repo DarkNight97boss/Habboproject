@@ -521,10 +521,10 @@ jobs:
 
           # ================= apply-dev.sh (v3) =================
           SCRIPT=/opt/asteria-scripts/apply-dev.sh
-          if needs_gen "$SCRIPT" apply-dev.sh v6; then
+          if needs_gen "$SCRIPT" apply-dev.sh v7; then
           sudo tee "$SCRIPT" > /dev/null <<'SCRIPT_EOF'
           #!/usr/bin/env bash
-          # apply-dev.sh version: v6 (gestito da .github/workflows/pr-dev-deploy.yml:
+          # apply-dev.sh version: v7 (gestito da .github/workflows/pr-dev-deploy.yml:
           # le modifiche locali vengono sovrascritte al prossimo deploy, backup .bak-*)
           # =========================================================================
           # apply-dev.sh - Applica un nuovo deploy DEV (chiamato dal workflow GH)
@@ -587,6 +587,15 @@ jobs:
               sudo systemctl daemon-reload
               EMU_RESTART=true
             fi
+          done
+          # Pulizia: drop-in dev non piu' presenti nel repo vengono rimossi (la dir dev e' solo nostra).
+          WANTED=" $(for f in "${STAGING}"/systemd/habbo-emu.service.d/*.conf "${STAGING}"/systemd/habbo-emu-dev.service.d/*.conf; do [ -f "$f" ] && basename "$f"; done | tr '\n' ' ') "
+          for DST in /etc/systemd/system/habbo-emu-dev.service.d/*.conf; do
+            [ -f "$DST" ] || continue
+            case "$WANTED" in *" $(basename "$DST") "*) ;; *)
+              log "Drop-in systemd $(basename "$DST") non piu' nel repo: rimosso (restart EMU dev)"
+              sudo rm -f "$DST"; sudo systemctl daemon-reload; EMU_RESTART=true ;;
+            esac
           done
 
           # --- EMU jar -------------------------------------------------------------

@@ -521,10 +521,10 @@ jobs:
 
           # ================= apply-dev.sh (v3) =================
           SCRIPT=/opt/asteria-scripts/apply-dev.sh
-          if needs_gen "$SCRIPT" apply-dev.sh v5; then
+          if needs_gen "$SCRIPT" apply-dev.sh v6; then
           sudo tee "$SCRIPT" > /dev/null <<'SCRIPT_EOF'
           #!/usr/bin/env bash
-          # apply-dev.sh version: v5 (gestito da .github/workflows/pr-dev-deploy.yml:
+          # apply-dev.sh version: v6 (gestito da .github/workflows/pr-dev-deploy.yml:
           # le modifiche locali vengono sovrascritte al prossimo deploy, backup .bak-*)
           # =========================================================================
           # apply-dev.sh - Applica un nuovo deploy DEV (chiamato dal workflow GH)
@@ -576,14 +576,18 @@ jobs:
 
           # --- Drop-in systemd Java 25 (installa se cambiato -> restart) ---------------
           EMU_RESTART=false
-          DROPIN_SRC="${STAGING}/systemd/habbo-emu.service.d/java25-hardening.conf"
-          DROPIN_DST="/etc/systemd/system/habbo-emu-dev.service.d/java25-hardening.conf"
-          if [ -f "$DROPIN_SRC" ] && ! sudo cmp -s "$DROPIN_SRC" "$DROPIN_DST"; then
-            log "Drop-in systemd Java 25 cambiato: install + daemon-reload (restart EMU dev)"
-            sudo install -D -m 0644 -o root -g root "$DROPIN_SRC" "$DROPIN_DST"
-            sudo systemctl daemon-reload
-            EMU_RESTART=true
-          fi
+          # Drop-in comuni (habbo-emu.service.d/*.conf) + solo-dev (habbo-emu-dev.service.d/*.conf),
+          # tutti nella dir della unit dev; install solo se cambiati.
+          for SRC in "${STAGING}"/systemd/habbo-emu.service.d/*.conf "${STAGING}"/systemd/habbo-emu-dev.service.d/*.conf; do
+            [ -f "$SRC" ] || continue
+            DST="/etc/systemd/system/habbo-emu-dev.service.d/$(basename "$SRC")"
+            if ! sudo cmp -s "$SRC" "$DST"; then
+              log "Drop-in systemd $(basename "$SRC") cambiato: install + daemon-reload (restart EMU dev)"
+              sudo install -D -m 0644 -o root -g root "$SRC" "$DST"
+              sudo systemctl daemon-reload
+              EMU_RESTART=true
+            fi
+          done
 
           # --- EMU jar -------------------------------------------------------------
           if [ "$CH_EMU" = "true" ] && [ -f "${STAGING}/emu/Habbo-3.5.5-jar-with-dependencies.jar" ]; then

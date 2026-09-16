@@ -73,7 +73,19 @@ public class CommandHandler {
                         for (String s : command.keys) {
                             if (s.equalsIgnoreCase(parts[0])) {
                                 boolean succes = false;
-                                if (command.permission == null || gameClient.getHabbo().hasPermission(command.permission, gameClient.getHabbo().getHabboInfo().getCurrentRoom() != null && (gameClient.getHabbo().getHabboInfo().getCurrentRoom().hasRights(gameClient.getHabbo())) || gameClient.getHabbo().hasPermission(Permission.ACC_PLACEFURNI) || (gameClient.getHabbo().getHabboInfo().getCurrentRoom() != null && gameClient.getHabbo().getHabboInfo().getCurrentRoom().getGuildId() > 0 && gameClient.getHabbo().getHabboInfo().getCurrentRoom().getGuildRightLevel(gameClient.getHabbo()).isEqualOrGreaterThan(RoomRightLevels.GUILD_RIGHTS)))) {
+                                // Pentest 2026-09-16: il flag "isRoomOwner" passato a hasPermission per i
+                                // comandi ROOM_OWNER deve riflettere SOLO i diritti sulla stanza CORRENTE
+                                // (proprieta'/rights o guild-rights). Il vecchio OR con ACC_PLACEFURNI
+                                // (permesso GLOBALE) + la precedenza di && su || facevano scattare il flag
+                                // OVUNQUE: chiunque avesse ACC_PLACEFURNI poteva usare i comandi room-owner
+                                // (es. :pull/:push) nelle stanze altrui. Rimosso ACC_PLACEFURNI dal flag.
+                                final var cmdHabbo = gameClient.getHabbo();
+                                final var cmdRoom = cmdHabbo.getHabboInfo().getCurrentRoom();
+                                final boolean isRoomOwnerHere = cmdRoom != null
+                                        && (cmdRoom.hasRights(cmdHabbo)
+                                            || (cmdRoom.getGuildId() > 0
+                                                && cmdRoom.getGuildRightLevel(cmdHabbo).isEqualOrGreaterThan(RoomRightLevels.GUILD_RIGHTS)));
+                                if (command.permission == null || cmdHabbo.hasPermission(command.permission, isRoomOwnerHere)) {
                                     // Staff step-up MFA: block privileged (permission-gated) commands until verified.
                                     if (command.permission != null && gameClient.isStaffMfaLocked()) {
                                         gameClient.getHabbo().whisper(Emulator.getTexts().getValue("mfa.staff.locked", "Verifica il codice del tuo authenticator per sbloccare i poteri staff."), com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles.ALERT);

@@ -1,0 +1,19 @@
+# Riduce il build context per gli stack con context=root (loadtest/).
+# NB: i build con context=./EMU (docker-compose prod) leggono EMU/.dockerignore, non questo.
+.git
+**/node_modules
+**/dist
+**/target
+**/.vite
+**/.turbo
+tools
+strumenti
+CMS
+Nitro-V3
+Nitro-Default
+loadtest/.env
+docs
+*.log
+EMU/base database
+EMU/logging
+EMU/dumps

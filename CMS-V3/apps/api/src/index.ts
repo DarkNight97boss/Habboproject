@@ -13,6 +13,7 @@ import { env } from './env.js';
 import { populateAuth } from './middleware/auth.js';
 import { csrfGuard } from './middleware/csrf.js';
 import { makeRateLimit } from './middleware/rate-limit.js';
+import { makeConcurrencyLimit } from './middleware/concurrency.js';
 import { securityHeaders } from './middleware/security-headers.js';
 import authRoute from './routes/auth.js';
 import communityRoute from './routes/community.js';
@@ -40,6 +41,9 @@ const app = new Hono();
 
 // === Middleware globali ===
 app.use('*', securityHeaders);
+// Circuit-breaker (2026-09-20): sheds load PRIMA di bufferizzare body/toccare il
+// pool DB. Esente healthz/version così il probe di liveness risponde sempre.
+app.use('*', makeConcurrencyLimit(env.MAX_INFLIGHT_REQUESTS, p => p === '/healthz' || p === '/version' || p === '/readyz'));
 // DoS (pentest 2026-09-20): cap globale sul body. c.req.json()/text() bufferizza
 // tutto in heap e JSON.parse blocca l'event-loop mono-thread. 128KB copre ogni
 // endpoint (news bodyHtml max 50KB); oltre -> 413 senza toccare l'handler.

@@ -1,6 +1,7 @@
 import type { MiddlewareHandler } from 'hono';
 import { verifyAccessToken, type AccessTokenPayload } from '../security/jwt.js';
 import { dbQuery } from '../db/pool.js';
+import { isAccessTokenDenied } from '../security/redis.js';
 
 declare module 'hono'
 {
@@ -40,7 +41,10 @@ export const populateAuth: MiddlewareHandler = async (c, next) =>
     if(token)
     {
         const payload = await verifyAccessToken(token);
-        if(payload) c.set('user', payload);
+        // Deny-list (Redis): un access token revocato al logout NON popola l'utente,
+        // così non passa i requireAuth per la sua durata residua. Fail-open: se Redis
+        // è assente isAccessTokenDenied ritorna false e il comportamento è quello storico.
+        if(payload && !(await isAccessTokenDenied(payload.jti))) c.set('user', payload);
     }
 
     await next();

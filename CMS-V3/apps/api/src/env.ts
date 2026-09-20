@@ -49,6 +49,9 @@ const envSchema = z.object({
     RATE_LIMIT_LOGIN_PER_MIN: z.coerce.number().int().positive().default(5),
     RATE_LIMIT_REGISTER_PER_HOUR: z.coerce.number().int().positive().default(3),
     RATE_LIMIT_GENERIC_PER_MIN: z.coerce.number().int().positive().default(100),
+    // Circuit-breaker: richieste HTTP in volo oltre cui rispondere 503 immediato
+    // (protegge il pool DB dal congestion-collapse sotto flood). ~2.5x il pool.
+    MAX_INFLIGHT_REQUESTS: z.coerce.number().int().positive().default(250),
 
     CSRF_COOKIE_NAME: z.string().default('cms_v3_csrf'),
     CSRF_HEADER_NAME: z.string().default('x-csrf-token'),
@@ -64,6 +67,9 @@ const envSchema = z.object({
     HIBP_API_URL: z.string().url().default('https://api.pwnedpasswords.com/range'),
 
     // Bridge RCON/MUS verso EMU Arcturus (loopback only).
+    // Redis opzionale: se vuoto, rate-limit/lockout/deny-list restano in-memory
+    // (nessun cambiamento). redis://[:password@]host:port[/db]
+    REDIS_URL: z.string().default(''),
     RCON_HOST: z.string().default('127.0.0.1'),
     RCON_PORT: z.coerce.number().int().positive().default(3001),
     RCON_TOKEN: z.string().default(''),

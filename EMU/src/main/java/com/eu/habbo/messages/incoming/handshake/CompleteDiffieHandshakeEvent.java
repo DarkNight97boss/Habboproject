@@ -19,7 +19,15 @@ public class CompleteDiffieHandshakeEvent extends MessageHandler {
             return;
         }
 
-        byte[] sharedKey = this.client.getEncryption().getDiffie().getSharedKey(this.packet.readString());
+        // Pentest DoS 2026-09-20: il campo DH e' un singolo BigInteger; un input enorme
+        // costringerebbe RSA DoDecrypt a ciclare su molti blocchi (modPow con chiave
+        // privata) PRIMA dell'autenticazione. Cap generoso: un pubkey DH legittimo sta
+        // ampiamente sotto, l'attacco da ~200KB (centinaia di blocchi) e' neutralizzato.
+        String diffiePublicKey = this.packet.readString();
+        if (diffiePublicKey == null || diffiePublicKey.length() > 8192) {
+            return;
+        }
+        byte[] sharedKey = this.client.getEncryption().getDiffie().getSharedKey(diffiePublicKey);
 
         this.client.setHandshakeFinished(true);
         this.client.sendResponse(new CompleteDiffieHandshakeComposer(this.client.getEncryption().getDiffie().getPublicKey()));

@@ -47,7 +47,8 @@ public class RoomSettingsSaveEvent extends MessageHandler {
                     return;
                 }
 
-                RoomState state = RoomState.values()[this.packet.readInt() % RoomState.values().length];
+                // Pentest 2026-09-20: `% len` su int negativo del client dava indice negativo -> AIOOBE.
+                RoomState state = RoomState.values()[Math.floorMod(this.packet.readInt(), RoomState.values().length)];
 
                 String password = this.packet.readString();
                 if (state == RoomState.PASSWORD && password.isEmpty() && (room.getPassword() == null || room.getPassword().isEmpty())) {

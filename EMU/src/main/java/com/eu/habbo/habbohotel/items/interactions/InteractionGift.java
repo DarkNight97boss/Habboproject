@@ -96,6 +96,15 @@ public class InteractionGift extends HabboItem {
         if (data != null && data.length >= 5) {
             int count = Integer.parseInt(data[0]);
 
+            // Pentest 2026-09-20: count viene da extradata (parseInt); senza bound,
+            // new int[count] con count enorme = OutOfMemoryError (JVM intera), negativo
+            // = NegativeArraySizeException, e data[count+..] fuori range = AIOOBE.
+            // Limita e valida la lunghezza PRIMA di allocare/iterare.
+            if (count < 0 || count > 100 || data.length < count + 5) {
+                this.itemId = new int[0];
+                return;
+            }
+
             this.itemId = new int[count];
 
             for (int i = 0; i < count; i++) {

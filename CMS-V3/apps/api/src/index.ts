@@ -4,6 +4,7 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { bodyLimit } from 'hono/body-limit';
 import { logger } from 'hono/logger';
 import pino from 'pino';
 
@@ -39,6 +40,10 @@ const app = new Hono();
 
 // === Middleware globali ===
 app.use('*', securityHeaders);
+// DoS (pentest 2026-09-20): cap globale sul body. c.req.json()/text() bufferizza
+// tutto in heap e JSON.parse blocca l'event-loop mono-thread. 128KB copre ogni
+// endpoint (news bodyHtml max 50KB); oltre -> 413 senza toccare l'handler.
+app.use('*', bodyLimit({ maxSize: 128 * 1024, onError: c => c.json({ error: 'payload_too_large' }, 413) }));
 app.use('*', cors({
     origin: (origin) =>
     {

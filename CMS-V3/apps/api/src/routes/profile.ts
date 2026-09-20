@@ -1,16 +1,26 @@
 import { Hono } from 'hono';
 import { dbQuery } from '../db/pool.js';
+import { makeRateLimit } from '../middleware/rate-limit.js';
 
 const profile = new Hono();
+
+// Cache breve del profilo pubblico (pentest DoS 2026-09-20): /profile/:username
+// esegue ~13 query (incl. 6 COUNT). Cache 20s per username per assorbire i burst;
+// TTL corto = dati comunque freschi. Cap di dimensione per non crescere all'infinito.
+const profileCache = new Map<string, { at: number; body: unknown }>();
+const PROFILE_TTL_MS = 20_000;
 
 // =================================================================
 // GET /profile/:username — info pubbliche profilo + stanze + foto
 // =================================================================
 // Pubblico (no auth). Ritorna 404 se l'utente non esiste.
 
-profile.get('/:username', async c =>
+profile.get('/:username', makeRateLimit('profile', 30, 60_000), async c =>
 {
     const username = c.req.param('username');
+
+    const cached = profileCache.get(username);
+    if(cached && Date.now() - cached.at < PROFILE_TTL_MS) return c.json(cached.body as object);
 
     const userRows = await dbQuery<{
         id: number;
@@ -124,7 +134,7 @@ profile.get('/:username', async c =>
         [u.id, u.id, u.id, u.id, u.id, u.id, u.id]
     );
 
-    return c.json({
+    const payload = {
         user: {
             id: u.id,
             username: u.username,
@@ -154,7 +164,10 @@ profile.get('/:username', async c =>
         achievements,
         photos: photos.map(p => ({ id: p.id, timestamp: p.timestamp, url: p.url })),
         counts: counts[0] ?? { photos: 0, rooms: 0, friends: 0, groups: 0, badges: 0, achievements: 0 }
-    });
+    };
+    if(profileCache.size > 5000) profileCache.clear();
+    profileCache.set(username, { at: Date.now(), body: payload });
+    return c.json(payload);
 });
 
 export default profile;

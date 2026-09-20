@@ -1332,7 +1332,13 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
       }
 
       for (ICycleable task : this.roomSpecialTypes.getCycleTasks()) {
-        task.cycle(this);
+        // Pentest 2026-09-20: un furni il cui cycle() lancia (es. extradata malformata)
+        // non deve abortire i cycle-task rimanenti dello stesso tick (griefing).
+        try {
+          task.cycle(this);
+        } catch (Exception e) {
+          LOGGER.error("Errore nel cycle di un furni nella stanza {}", this.getId(), e);
+        }
       }
 
       if (Emulator.getConfig().getBoolean("hotel.rooms.deco_hosting")) {

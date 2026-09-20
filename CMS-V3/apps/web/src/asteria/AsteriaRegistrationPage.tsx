@@ -30,6 +30,7 @@ export function AsteriaRegistrationPage(): ReactNode
     const [confirm, setConfirm] = useState('');
     const [look, setLook] = useState<string>(DEFAULT_LOOKS[0]!);
     const [gender, setGender] = useState<'M' | 'F'>('M');
+    const [birthdate, setBirthdate] = useState('');
     const [terms, setTerms] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -46,6 +47,9 @@ export function AsteriaRegistrationPage(): ReactNode
         if(password !== confirm) { setError('Le password non coincidono.'); return; }
         if(passwordStrength.score < 2) { setError('Password troppo debole. Usa almeno 8 char con un numero e una maiuscola.'); return; }
         if(!terms) { setError('Devi accettare termini e privacy.'); return; }
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(birthdate)) { setError('Inserisci la tua data di nascita.'); return; }
+        const ageYears = (Date.now() - new Date(birthdate + 'T00:00:00Z').getTime()) / (365.25 * 24 * 3600 * 1000);
+        if(!(ageYears >= 16)) { setError('Devi avere almeno 16 anni per registrarti.'); return; }
         setLoading(true);
         try
         {
@@ -53,7 +57,7 @@ export function AsteriaRegistrationPage(): ReactNode
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, email, password, look, gender })
+                body: JSON.stringify({ username, email, password, look, gender, birthdate })
             });
             if(!r.ok)
             {
@@ -64,6 +68,9 @@ export function AsteriaRegistrationPage(): ReactNode
                     invalid_username: 'Username non valido (3-15 caratteri, lettere/numeri).',
                     invalid_email: 'Email non valida.',
                     password_pwned: 'Password compromessa in data breach noti. Usane un\'altra.',
+                    password_weak: 'Password troppo debole: almeno 6 caratteri, una lettera e un numero.',
+                    underage: 'Devi avere almeno 16 anni per registrarti.',
+                    birthdate_invalid: 'Data di nascita non valida.',
                     rate_limited: 'Troppe registrazioni. Riprova fra 1 ora.'
                 };
                 setError(map[j.error] || 'Errore registrazione. Riprova.');
@@ -120,6 +127,12 @@ export function AsteriaRegistrationPage(): ReactNode
                             <span>Email</span>
                             <input type="email" className="asteria-input" placeholder="email@example.com"
                                 value={email} onChange={e => setEmail(e.target.value)} required />
+                        </label>
+                        <label className="asteria-form__label">
+                            <span>Data di nascita</span>
+                            <input type="date" className="asteria-input"
+                                value={birthdate} onChange={e => setBirthdate(e.target.value)}
+                                max={new Date().toISOString().slice(0, 10)} required />
                         </label>
                         <label className="asteria-form__label">
                             <span>Password</span>

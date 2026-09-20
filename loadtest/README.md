@@ -52,10 +52,9 @@ API=http://localhost:18092 k6 run k6.js
 
 ```bash
 cd loadtest/emu
-EMU_WS=ws://localhost:13000 EMU_HEALTH=http://localhost:19090 \
-  node flood.mjs --conns 300 --seconds 30
+EMU_HOST=127.0.0.1 EMU_PORT=13000 node flood.mjs --conns 400 --seconds 15
 ```
-Apre N WebSocket concorrenti, invia frame piccoli e frame **oversize** (esercita
+Apre N connessioni TCP concorrenti, invia frame piccoli e frame **oversize** (esercita
 il cap di framing e il reaper pre-login), poi controlla `/readyz` prima/dopo e
 dice se l'EMU è **sopravvissuto**. È uno strumento di **resilienza**, non contiene
 exploit "armati": questo è un repo pubblico e il codice Arcturus è condiviso da

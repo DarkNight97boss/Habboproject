@@ -60,6 +60,15 @@ public class RequestGuildBuyEvent extends MessageHandler {
 
                     int count = this.packet.readInt();
 
+                    // Pentest DoS 2026-09-20 (CRITICO): senza cap, count >= 128 manda il
+                    // loop in ESECUZIONE INFINITA (base e' un byte: base < count sempre
+                    // vero per overflow) + StringBuilder che cresce fino a OutOfMemoryError
+                    // = kill dell'intera JVM per tutti i giocatori, da 1 solo packet.
+                    // Stesso limite del gemello GuildChangeBadgeEvent.
+                    if (count < 0 || count > 32) {
+                        return;
+                    }
+
                     StringBuilder badge = new StringBuilder();
 
                     byte base = 1;

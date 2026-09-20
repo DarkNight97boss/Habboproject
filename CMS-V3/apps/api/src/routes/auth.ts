@@ -8,7 +8,8 @@ import { env } from '../env.js';
 import { makeRateLimit } from '../middleware/rate-limit.js';
 import { isArgon2Hash, isPasswordPwned, hashPassword, verifyPassword, timingSafeDummyVerify } from '../security/password.js';
 import { htmlAttr, jsStringLiteral } from '../security/html.js';
-import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../security/jwt.js';
+import { signAccessToken, signRefreshToken, verifyRefreshToken, verifyAccessToken } from '../security/jwt.js';
+import { isAccountLocked, registerLoginFailure, clearLoginFailures, denylistAccessToken } from '../security/redis.js';
 import { emitActivity } from '../services/activity.js';
 
 const auth = new Hono();
@@ -109,6 +110,16 @@ auth.post(
         const ip = clientIP(c);
         const ua = c.req.header('user-agent') ?? '';
 
+        // Lockout per-account (Redis): dopo troppi fallimenti su QUESTO username
+        // blocchiamo PRIMA di toccare DB/bcrypt. Chiude l'attacco distribuito
+        // (molti IP, un solo account) che il rate-limit per-IP non intercetta.
+        // Fail-open: Redis assente => nessun blocco (comportamento storico).
+        if(await isAccountLocked(parsed.data.username))
+        {
+            await logAudit(null, 'auth.login.locked', ip, ua, { username: parsed.data.username });
+            return c.json({ error: 'account_locked', message: 'Troppi tentativi falliti. Riprova tra qualche minuto.' }, 429);
+        }
+
         // Cerca l'utente nella tabella `users` del vecchio CMS.
         const rows = await dbQuery<{ id: number; username: string; password: string; rank: number; mail: string }>(
             'SELECT id, username, password, rank, mail FROM users WHERE username = ? LIMIT 1',
@@ -118,6 +129,7 @@ auth.post(
         if(!u)
         {
             await logAudit(null, 'auth.login.failed.no_user', ip, ua, { username: parsed.data.username });
+            await registerLoginFailure(parsed.data.username);
             // Timing-safe: facciamo comunque un verify dummy per evitare timing oracle.
             await timingSafeDummyVerify(parsed.data.password);
             return c.json({ error: 'invalid_credentials' }, 401);
@@ -127,6 +139,7 @@ auth.post(
         if(!ok)
         {
             await logAudit(u.id, 'auth.login.failed.bad_password', ip, ua);
+            await registerLoginFailure(parsed.data.username);
             return c.json({ error: 'invalid_credentials' }, 401);
         }
 
@@ -170,6 +183,7 @@ auth.post(
         );
 
         await logAudit(u.id, 'auth.login.success', ip, ua);
+        await clearLoginFailures(parsed.data.username);
 
         // Set cookie httpOnly per refresh + cookie access (più breve).
         c.header('Set-Cookie', `cms_v3_access=${access.token}; ${cookieOpts(env.JWT_ACCESS_TTL_SECONDS)}`, { append: true });
@@ -434,6 +448,17 @@ auth.post('/logout', async c =>
             );
             await logAudit(Number(payload.sub), 'auth.logout', clientIP(c), c.req.header('user-agent') ?? '');
         }
+    }
+    // Deny-list dell'access token ancora vivo: senza questa, un access token
+    // rubato resta valido fino a ~15 min DOPO il logout. Con Redis lo revochiamo
+    // subito (TTL = durata residua massima). Fail-open se Redis è assente.
+    const am = cookies.match(/(?:^|;\s*)cms_v3_access=([^;]+)/);
+    if(am)
+    {
+        let accessRaw = '';
+        try { accessRaw = decodeURIComponent(am[1] ?? ''); } catch { accessRaw = ''; }
+        const ap = accessRaw ? await verifyAccessToken(accessRaw) : null;
+        if(ap?.jti) await denylistAccessToken(ap.jti, env.JWT_ACCESS_TTL_SECONDS);
     }
     c.header('Set-Cookie', `cms_v3_access=; ${cookieOpts(0)}`, { append: true });
     c.header('Set-Cookie', `cms_v3_refresh=; ${cookieOpts(0)}`, { append: true });

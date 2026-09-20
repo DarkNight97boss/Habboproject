@@ -1,9 +1,12 @@
 import type { MiddlewareHandler } from 'hono';
 import { clientIp } from '../security/client-ip.js';
+import { redis, REDIS_UNAVAILABLE } from '../security/redis.js';
 
 /**
- * Rate limiter sliding-window in-memory (no Redis per ora).
- * Per produzione multi-istanza serve Redis o un KV condiviso.
+ * Rate limiter. Se REDIS_URL è configurata usa un fixed-window counter CONDIVISO
+ * e PERSISTENTE su Redis (coerente tra richieste, non si azzera a ogni deploy,
+ * unico contatore per tutte le istanze). Se Redis non è disponibile fa fallback
+ * al contatore sliding-window IN-MEMORY per-processo (comportamento storico).
  */
 interface Bucket
 {
@@ -30,6 +33,22 @@ export function makeRateLimit(
     return async (c, next) =>
     {
         const key = getKey(c.req.raw, scope);
+
+        // Percorso Redis (condiviso). Se non disponibile -> fallback in-memory sotto.
+        if(redis.available)
+        {
+            const n = await redis.incrWindow(`rl:${key}`, Math.ceil(windowMs / 1000));
+            if(n !== REDIS_UNAVAILABLE)
+            {
+                if(typeof n === 'number' && n > limit)
+                {
+                    c.header('Retry-After', String(Math.ceil(windowMs / 1000)));
+                    return c.json({ error: 'rate_limited', message: 'Troppe richieste. Riprova più tardi.' }, 429);
+                }
+                return await next();
+            }
+        }
+
         const now = Date.now();
         const bucket = buckets.get(key) ?? { times: [], windowMs, limit };
         // Scarta gli hit fuori finestra.

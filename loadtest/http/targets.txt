@@ -1,0 +1,5 @@
+GET __API__/healthz
+GET __API__/api/v2/community/stats
+GET __API__/api/v2/community/rooms?limit=60&offset=0
+GET __API__/api/v2/community/rooms?limit=60&offset=5000000
+GET __API__/api/v2/profile/habbo

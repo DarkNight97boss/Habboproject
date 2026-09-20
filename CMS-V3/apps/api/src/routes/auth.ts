@@ -46,6 +46,11 @@ const registerSchema = z.object({
     username: z.string().regex(usernameRegex),
     password: z.string().min(6).max(256),
     birthdate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    // Campi del form Asteria (skin live): opzionali, validati e SALVATI.
+    // Prima venivano ignorati e la mail era hardcoded '' → dati persi.
+    email: z.string().email().max(254).optional(),
+    look: z.string().max(255).optional(),
+    gender: z.enum(['M', 'F']).optional(),
     profilePublic: z.boolean().optional(),
     newsletter: z.boolean().optional()
 });
@@ -255,18 +260,27 @@ auth.post(
         // NB: NON ci sono colonne `vip_points` o `diamonds` qui (l'Arcturus
         // base usa solo `points`; ricchezze extra → tabelle separate).
         const now = Math.floor(Date.now() / 1000);
-        const figure = 'hr-100-61.hd-180-1.ch-210-66.lg-270-82.sh-290-80'; // default look IT
+        const defaultFigure = 'hr-100-61.hd-180-1.ch-210-66.lg-270-82.sh-290-80'; // default look IT
+        // look: accettiamo solo il set di caratteri di una figure-string Habbo
+        // (lettere/cifre/`.`/`-`), così un valore ostile non può iniettare nell'URL
+        // dell'imager o nel client. Fallback al default.
+        const look = (parsed.data.look && /^[a-zA-Z0-9._-]{1,255}$/.test(parsed.data.look))
+            ? parsed.data.look
+            : defaultFigure;
+        const gender = parsed.data.gender === 'F' ? 'F' : 'M';
+        const mail = parsed.data.email ?? ''; // opzionale: registrazione username-only resta valida
         const result = await dbExecute(
             `INSERT INTO users (
-                username, password, mail, look, motto,
+                username, password, mail, look, gender, motto,
                 account_created, last_online, last_login,
                 ip_register, ip_current
-            ) VALUES (?, ?, ?, ?, 'Nuovo Habbo!', ?, ?, ?, ?, ?)`,
+            ) VALUES (?, ?, ?, ?, ?, 'Nuovo Habbo!', ?, ?, ?, ?, ?)`,
             [
                 parsed.data.username,
                 passwordHash,
-                '', // mail vuota (registrazione username-only)
-                figure,
+                mail,
+                look,
+                gender,
                 now, now, now,
                 ip.slice(0, 45), ip.slice(0, 45)
             ]

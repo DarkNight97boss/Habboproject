@@ -1,0 +1,75 @@
+# Stack di LOAD TEST isolato e usa-e-getta. Rete privata, volumi propri, porte
+# solo su 127.0.0.1. `docker compose down -v` cancella tutto.
+# NON è la produzione: DB seedato da zero con BaseDB + sqlupdates + migrations.
+name: asteria-loadtest
+
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?}
+      MARIADB_DATABASE: ${DB_NAME:-ms}
+      MARIADB_USER: ${DB_USER:-habbo}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?}
+    command: ["--max-connections=250", "--innodb-buffer-pool-size=1G"]
+    ports: ["127.0.0.1:13306:3306"]
+    volumes:
+      - ./db-init:/docker-entrypoint-initdb.d:ro
+      - ../EMU/base database:/seed/base:ro
+      - ../EMU/sqlupdates:/seed/emu:ro
+      - ../CMS-V3/apps/api/src/db/migrations:/seed/cms:ro
+      - ../deploy/sql:/seed/manifest:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 120s
+    networks: [lt]
+
+  api:
+    build:
+      context: ..
+      dockerfile: loadtest/api.Dockerfile
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      NODE_ENV: development
+      PORT: 8092
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: ${DB_USER:-habbo}
+      DB_PASSWORD: ${DB_PASSWORD:?}
+      DB_NAME: ${DB_NAME:-ms}
+      DB_POOL_MAX: 20
+      ALLOWED_ORIGINS: http://localhost:18092,http://localhost:5173
+      JWT_SECRET: ${JWT_SECRET:?}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:?}
+      COOKIE_SECURE: "false"
+    ports: ["127.0.0.1:18092:8092"]
+    networks: [lt]
+
+  emu:
+    build:
+      context: ..
+      dockerfile: loadtest/emu.Dockerfile
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      DB_HOSTNAME: db
+      DB_PORT: "3306"
+      DB_DATABASE: ${DB_NAME:-ms}
+      DB_USERNAME: ${DB_USER:-habbo}
+      DB_PASSWORD: ${DB_PASSWORD:?}
+      # heap piccolo: vogliamo trovare il limite in fretta su una macchina di test
+      JAVA_OPTS: "-Xms512m -Xmx1g -XX:+ExitOnOutOfMemoryError -Dio.netty.leakDetection.level=disabled"
+    volumes:
+      - ./emu-config.ini:/habbo/config.ini:ro
+    ports:
+      - "127.0.0.1:13000:3000"   # game socket (WebSocket)
+      - "127.0.0.1:19090:9090"   # health/metrics
+    networks: [lt]
+
+networks:
+  lt:
+    driver: bridge

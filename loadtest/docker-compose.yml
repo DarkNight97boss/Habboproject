@@ -14,11 +14,11 @@ services:
     command: ["--max-connections=250", "--innodb-buffer-pool-size=1G"]
     ports: ["127.0.0.1:13306:3306"]
     volumes:
-      - ./db-init:/docker-entrypoint-initdb.d:ro
-      - ../EMU/base database:/seed/base:ro
-      - ../EMU/sqlupdates:/seed/emu:ro
-      - ../CMS-V3/apps/api/src/db/migrations:/seed/cms:ro
-      - ../deploy/sql:/seed/manifest:ro
+      - "./db-init:/docker-entrypoint-initdb.d:ro"
+      - "../EMU/base database:/seed/base:ro"
+      - "../EMU/sqlupdates:/seed/emu:ro"
+      - "../CMS-V3/apps/api/src/db/migrations:/seed/cms:ro"
+      - "../deploy/sql:/seed/manifest:ro"
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
@@ -61,10 +61,16 @@ services:
       DB_DATABASE: ${DB_NAME:-ms}
       DB_USERNAME: ${DB_USER:-habbo}
       DB_PASSWORD: ${DB_PASSWORD:?}
+      # Game socket: l'EMU legge queste da env (EMU_HOST/EMU_PORT), non dal config.ini.
+      # 0.0.0.0 per il port-forward del container (loadtest isolato).
+      EMU_HOST: "0.0.0.0"
+      EMU_PORT: "3000"
+      RCON_HOST: "127.0.0.1"
+      RCON_PORT: "3001"
       # heap piccolo: vogliamo trovare il limite in fretta su una macchina di test
       JAVA_OPTS: "-Xms512m -Xmx1g -XX:+ExitOnOutOfMemoryError -Dio.netty.leakDetection.level=disabled"
     volumes:
-      - ./emu-config.ini:/habbo/config.ini:ro
+      - "./emu-config.ini:/habbo/config.ini:ro"
     ports:
       - "127.0.0.1:13000:3000"   # game socket (WebSocket)
       - "127.0.0.1:19090:9090"   # health/metrics

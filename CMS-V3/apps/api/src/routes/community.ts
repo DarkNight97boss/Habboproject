@@ -67,7 +67,7 @@ community.get('/stats', async c =>
 community.get('/rooms', async c =>
 {
     const limit = Math.min(Number(c.req.query('limit') ?? 60), 200);
-    const offset = Math.max(Number(c.req.query('offset') ?? 0), 0);
+    const offset = Math.min(Math.max(Number(c.req.query('offset') ?? 0), 0), 100_000); // cap: no deep-scan DoS
 
     const rows = await dbQuery<{
         id: number;
@@ -351,7 +351,7 @@ community.get('/photos/:id', async c =>
 community.get('/photos', async c =>
 {
     const limit = Math.min(Number(c.req.query('limit') ?? 48), 200);
-    const offset = Math.max(Number(c.req.query('offset') ?? 0), 0);
+    const offset = Math.min(Math.max(Number(c.req.query('offset') ?? 0), 0), 100_000); // cap: no deep-scan DoS
 
     const rows = await dbQuery<{
         id: number;

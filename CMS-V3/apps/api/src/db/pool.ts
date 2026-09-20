@@ -19,7 +19,10 @@ const poolOptions: PoolOptions = {
     waitForConnections: true,
     connectionLimit: env.DB_POOL_MAX,
     maxIdle: env.DB_POOL_MAX,
-    queueLimit: 0,
+    // DoS (pentest 2026-09-20): coda FINITA. Con 0 (illimitata) query lente
+    // accodavano richieste all'infinito -> heap + API non responsiva anche su
+    // /healthz. Oltre la coda: errore immediato (fail-fast) invece di hang.
+    queueLimit: 256,
     connectTimeout: env.DB_CONNECT_TIMEOUT_MS,
     charset: 'utf8mb4',
     multipleStatements: false,

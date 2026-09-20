@@ -231,7 +231,7 @@ auth.post(
         try
         {
             const pwned = await isPasswordPwned(parsed.data.password);
-            if(pwned.pwned && pwned.count > 5)
+            if(pwned.pwned && pwned.count > 0)
             {
                 await logAudit(null, 'auth.register.failed.password_pwned', ip, ua, { username: parsed.data.username, count: pwned.count });
                 return c.json({ error: 'password_pwned' }, 400);
@@ -350,9 +350,16 @@ auth.post('/refresh', async c =>
     if(!stored) return c.json({ error: 'invalid_token' }, 401);
     if(stored.revoked_at !== null) return c.json({ error: 'revoked' }, 401);
 
-    if(stored.used_at !== null)
+    // Claim ATOMICO (security review 2026-09-20): il vecchio check used_at===null +
+    // UPDATE separato era TOCTOU -> due /refresh concorrenti con lo stesso token
+    // passavano entrambi e la reuse-detection non scattava. Ora vince UN SOLO
+    // refresh; affectedRows!==1 => token già usato (reuse) o race persa -> revoca family.
+    const claim = await dbExecute(
+        'UPDATE cms_v3_refresh_tokens SET used_at = UNIX_TIMESTAMP() WHERE jti = ? AND used_at IS NULL',
+        [payload.jti]
+    );
+    if((claim as { affectedRows: number }).affectedRows !== 1)
     {
-        // 🚨 token già usato → potenziale furto. Revochiamo l'INTERA family.
         await dbExecute(
             'UPDATE cms_v3_refresh_tokens SET revoked_at = UNIX_TIMESTAMP() WHERE family = ? AND revoked_at IS NULL',
             [stored.family]
@@ -396,7 +403,7 @@ auth.post('/refresh', async c =>
         [u.id, stored.family, newRefresh.jti, newRefresh.exp, clientIP(c).slice(0, 45), (c.req.header('user-agent') ?? '').slice(0, 255)]
     );
     await dbExecute(
-        'UPDATE cms_v3_refresh_tokens SET used_at = UNIX_TIMESTAMP(), replaced_by_jti = ? WHERE jti = ?',
+        'UPDATE cms_v3_refresh_tokens SET replaced_by_jti = ? WHERE jti = ?',
         [newRefresh.jti, payload.jti]
     );
 
@@ -416,7 +423,9 @@ auth.post('/logout', async c =>
     const m = cookies.match(/(?:^|;\s*)cms_v3_refresh=([^;]+)/);
     if(m)
     {
-        const payload = await verifyRefreshToken(decodeURIComponent(m[1] ?? ''));
+        let refreshRaw = '';
+        try { refreshRaw = decodeURIComponent(m[1] ?? ''); } catch { refreshRaw = ''; }
+        const payload = await verifyRefreshToken(refreshRaw);
         if(payload)
         {
             await dbExecute(

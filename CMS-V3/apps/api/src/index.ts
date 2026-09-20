@@ -65,7 +65,7 @@ app.use('*', makeRateLimit('generic', env.RATE_LIMIT_GENERIC_PER_MIN, 60_000));
 
 // === Health check (per monitoring/uptime) ===
 app.get('/healthz', c => c.json({ ok: true, ts: Date.now() }));
-app.get('/version', c => c.json({ name: 'cms-v3-api', version: '0.1.0', env: env.NODE_ENV }));
+app.get('/version', c => c.json({ name: 'cms-v3-api', version: '0.1.0' }));
 // Readiness: 200 solo se il DB risponde, 503 altrimenti. Distingue "processo vivo"
 // (/healthz) da "dipendenze pronte", utile per load-balancer/monitoring. Read-only.
 app.get('/readyz', async c =>
@@ -139,5 +139,12 @@ const shutdown = (signal: string): void =>
     server.close(() => process.exit(0));
     setTimeout(() => process.exit(1), 10_000).unref();
 };
+// Crash-resistance (security review 2026-09-20): senza questi handler una singola
+// promise rejection non gestita o un errore del server TERMINA il processo Node =
+// API giu' per tutti. unhandledRejection: logga e CONTINUA. uncaughtException:
+// logga e chiude in modo controllato (systemd riavvia). server 'error': logga.
+process.on('unhandledRejection', (reason) => log.error({ reason }, 'unhandledRejection (ignorata)'));
+process.on('uncaughtException', (err) => { log.fatal({ err }, 'uncaughtException — shutdown'); shutdown('uncaughtException'); });
+server.on('error', (err) => log.error({ err }, 'server error'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));

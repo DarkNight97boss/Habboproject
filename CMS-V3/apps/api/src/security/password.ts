@@ -27,7 +27,9 @@ const BCRYPT_COST = 12;
  * via timing oracle). Pre-generato con bcrypt.hashSync(rand_str, 12).
  */
 // Dummy hash per timing-safe verify: NON è un credential reale.
-const TIMING_SAFE_DUMMY_HASH = '$2b$12$FH1ojtNyKLf2XHfyQA8hxukJzZL9TPsBSZetDTmasd5nFJSmto4L2'; // nosemgrep
+// cost 10 = stesso costo degli hash legacy Arcturus ($2y$10$) predominanti -> il
+// path 'utente inesistente' impiega lo stesso tempo di uno esistente (no oracle timing).
+const TIMING_SAFE_DUMMY_HASH = '$2b$10$Clvoylom.TkQVdHbY0OrKuVtd8SxrEb20ByhKRRhO5rO0Om2zS8Wy'; // nosemgrep
 
 export async function hashPassword(plain: string): Promise<string>
 {

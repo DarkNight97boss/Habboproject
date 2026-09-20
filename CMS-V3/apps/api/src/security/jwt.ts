@@ -77,6 +77,7 @@ export async function signRefreshToken(sub: string, family: string): Promise<{ t
     const token = await new SignJWT({ sub, family, jti })
         .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
         .setIssuer(env.JWT_ISSUER)
+        .setAudience(env.JWT_AUDIENCE)
         .setIssuedAt(now)
         .setExpirationTime(exp)
         .setJti(jti)
@@ -90,13 +91,12 @@ export async function verifyRefreshToken(token: string): Promise<RefreshTokenPay
     {
         const { payload } = await jwtVerify(token, REFRESH_KEY, {
             issuer: env.JWT_ISSUER,
-            algorithms: ['HS256']
+            audience: env.JWT_AUDIENCE,
+            algorithms: ['HS256'],
+            requiredClaims: ['exp', 'sub', 'jti']
         });
-        return {
-            sub: payload.sub as string,
-            family: payload['family'] as string,
-            jti: payload.jti as string
-        };
+        if(typeof payload.sub !== 'string' || typeof payload['family'] !== 'string' || typeof payload.jti !== 'string') return null;
+        return { sub: payload.sub, family: payload['family'], jti: payload.jti };
     }
     catch
     {

@@ -34,7 +34,7 @@ export const populateAuth: MiddlewareHandler = async (c, next) =>
         // Fallback su cookie httpOnly (vedi route /auth/login).
         const cookies = c.req.header('cookie') ?? '';
         const m = cookies.match(/(?:^|;\s*)cms_v3_access=([^;]+)/);
-        if(m) token = decodeURIComponent(m[1] ?? '');
+        if(m) { try { token = decodeURIComponent(m[1] ?? ''); } catch { token = ''; } }
     }
 
     if(token)

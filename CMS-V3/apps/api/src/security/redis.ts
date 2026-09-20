@@ -68,7 +68,7 @@ class MiniRedis
             if(this.password) void this.raw(['AUTH', this.password]).catch(() => {});
             if(this.db) void this.raw(['SELECT', String(this.db)]).catch(() => {});
         });
-        sock.on('data', (d) => this.onData(d));
+        sock.on('data', (d: Buffer | string) => this.onData(typeof d === 'string' ? Buffer.from(d) : d));
         sock.on('error', () => { /* gestito da 'close' */ });
         sock.on('close', () => this.onClose());
     }

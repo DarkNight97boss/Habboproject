@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import { dbExecute, dbQuery } from '../db/pool.js';
 import { env } from '../env.js';
@@ -48,7 +49,11 @@ activity.post('/ingest', async c =>
 {
     const secret = env.INTERNAL_API_SECRET;
     if(!secret) return c.json({ error: 'ingest_disabled' }, 503);
-    if(c.req.header('x-internal-secret') !== secret) return c.json({ error: 'unauthorized' }, 401);
+    // Confronto constant-time del secret interno (evita timing side-channel).
+    const provided = c.req.header('x-internal-secret') ?? '';
+    const a = Buffer.from(provided);
+    const b = Buffer.from(secret);
+    if(a.length !== b.length || !timingSafeEqual(a, b)) return c.json({ error: 'unauthorized' }, 401);
 
     const parsed = ingestSchema.safeParse(await c.req.json().catch(() => ({})));
     if(!parsed.success) return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400);

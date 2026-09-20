@@ -12,7 +12,10 @@ public class TestCommand extends Command {
 
     @Override
     public boolean handle(GameClient gameClient, String[] params) throws Exception {
-        if (gameClient.getHabbo() != null || !gameClient.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL) || !Emulator.debugging)
+        // Pentest 2026-09-20: la guardia era invertita (getHabbo()!=null): fail-closed
+        // ma logicamente sbagliata e con NPE potenziale. Deve NEGARE se non loggato,
+        // senza permesso o fuori debug.
+        if (gameClient.getHabbo() == null || !gameClient.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL) || !Emulator.debugging)
             return false;
 
         int header = Integer.parseInt(params[1]);

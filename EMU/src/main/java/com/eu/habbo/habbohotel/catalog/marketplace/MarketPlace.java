@@ -75,8 +75,17 @@ public class MarketPlace {
                             return;
                         }
 
-                        try (PreparedStatement statement = connection.prepareStatement("DELETE FROM marketplace_items WHERE id = ? AND state != 2")) {
+                        // Pentest 2026-09-20 (difesa in profondita'): l'offerta arriva
+                        // dall'inventario in-memory del chiamante, ma verifichiamo comunque
+                        // l'ownership lato DB e vincoliamo il DELETE a user_id del chiamante,
+                        // cosi' un futuro refactor con offerId grezzo non diventa IDOR.
+                        if (ownerSet.getInt("user_id") != habbo.getHabboInfo().getId()) {
+                            return;
+                        }
+
+                        try (PreparedStatement statement = connection.prepareStatement("DELETE FROM marketplace_items WHERE id = ? AND state != 2 AND user_id = ?")) {
                             statement.setInt(1, offer.getOfferId());
+                            statement.setInt(2, habbo.getHabboInfo().getId());
                             int count = statement.executeUpdate();
 
                             if (count != 0) {

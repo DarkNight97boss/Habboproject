@@ -352,8 +352,15 @@ public class RoomTrade {
     }
 
     protected void clearAccepted() {
+        // Pentest 2026-09-20: ogni modifica dell'offerta invalida ANCHE la conferma.
+        // Il flag confirmed era un latch permanente (mai rimesso a false): la vittima
+        // confermava l'insieme finale, l'attaccante rimuoveva un pezzo (-> clearAccepted)
+        // e completava il trade unilateralmente perche' il confirmed della vittima
+        // restava true (furto "last-second swap"). Azzerando confirmed, dopo OGNI cambio
+        // dell'offerta serve una nuova conferma di ENTRAMBE le parti.
         for (RoomTradeUser user : this.users) {
             user.setAccepted(false);
+            user.setConfirmed(false);
         }
     }
 

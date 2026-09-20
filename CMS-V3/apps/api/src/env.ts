@@ -89,6 +89,8 @@ const envSchema = z.object({
     // /api/v2/activity/ingest). Vuoto ⇒ endpoint disabilitato (503): nessun
     // rischio di ingest anonimo finché non viene configurato.
     INTERNAL_API_SECRET: z.string().default('')
+        .refine(v => v === '' || (v.length >= 32 && !PLACEHOLDER_RE.test(v)),
+            'INTERNAL_API_SECRET: lascialo vuoto (ingest disabilitato) oppure usa un secret reale >= 32 char (openssl rand -hex 32)')
 });
 
 const parsed = envSchema.safeParse(process.env);

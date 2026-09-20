@@ -115,6 +115,54 @@ referral.post('/redeem', async c =>
     if(!owner) return c.json({ error: 'code_not_found' }, 404);
     if(owner.user_id === userId) return c.json({ error: 'cannot_self_refer' }, 400);
 
+    // Anti-farming (pentest 2026-09-20): l'anti-abuso economico era solo
+    // osservazionale (allerta, non blocca). Un attaccante registrava N account
+    // usa-e-getta e riscattava il proprio codice → crediti reali a ripetizione.
+    // Blocchiamo i pattern da faucet a costo quasi zero, senza penalizzare i
+    // referral legittimi (amici su macchine/reti diverse):
+    //   a) stessa MACCHINA invitante/invitato (machine_id uguale) → quasi certo
+    //      auto-farming → blocco;
+    //   b) troppi inviti dalla stessa RETE dell'invitato nelle 24h (ip_register)
+    //      → cap (le famiglie condividono l'IP: si consente qualche invito, non
+    //      un faucet).
+    const nets = await dbQuery<{ id: number; ip_register: string | null; machine_id: string | null }>(
+        'SELECT id, ip_register, machine_id FROM users WHERE id IN (?, ?)',
+        [userId, owner.user_id],
+    );
+    const meNet = nets.find(x => x.id === userId);
+    const ownerNet = nets.find(x => x.id === owner.user_id);
+    const sameMachine = !!meNet?.machine_id && meNet.machine_id === ownerNet?.machine_id;
+    if(sameMachine)
+    {
+        void emitActivity({
+            type: 'economy.alert',
+            actorId: owner.user_id,
+            actorName: '',
+            payload: { source: 'referral', reason: 'same_machine', referredId: userId },
+            visibility: 'staff',
+        });
+        return c.json({ error: 'referral_same_network' }, 403);
+    }
+    if(meNet?.ip_register)
+    {
+        const fromNet = (await dbQuery<{ n: number }>(
+            `SELECT COUNT(*) AS n FROM cms_v3_referrals r JOIN users u ON u.id = r.referred_id
+             WHERE r.referrer_id = ? AND u.ip_register = ? AND r.created_at >= UNIX_TIMESTAMP() - 86400`,
+            [owner.user_id, meNet.ip_register],
+        ))[0];
+        if(Number(fromNet?.n ?? 0) >= 3)
+        {
+            void emitActivity({
+                type: 'economy.alert',
+                actorId: owner.user_id,
+                actorName: '',
+                payload: { source: 'referral', reason: 'same_ip_cap', referredId: userId },
+                visibility: 'staff',
+            });
+            return c.json({ error: 'referral_rate_limited' }, 429);
+        }
+    }
+
     // Registra il legame (PK referred_id → race-safe, una volta sola).
     try
     {

@@ -1,4 +1,5 @@
 import type { MiddlewareHandler } from 'hono';
+import { clientIp } from '../security/client-ip.js';
 
 /**
  * Rate limiter sliding-window in-memory (no Redis per ora).
@@ -15,9 +16,9 @@ const buckets = new Map<string, Bucket>();
 
 function getKey(req: Request, scope: string): string
 {
-    const xff = req.headers.get('x-forwarded-for');
-    const ip = (xff?.split(',')[0]?.trim()) ?? req.headers.get('x-real-ip') ?? 'unknown';
-    return `${scope}:${ip}`;
+    // IP canonico non falsificabile (CF-Connecting-IP): chiudeva il bypass del
+    // rate-limit via primo hop di X-Forwarded-For. Vedi security/client-ip.ts.
+    return `${scope}:${clientIp(req)}`;
 }
 
 export function makeRateLimit(

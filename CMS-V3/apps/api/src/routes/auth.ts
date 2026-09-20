@@ -3,6 +3,7 @@ import { getCookie } from 'hono/cookie';
 import { createHash, randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { dbExecute, dbQuery } from '../db/pool.js';
+import { clientIp } from '../security/client-ip.js';
 import { env } from '../env.js';
 import { makeRateLimit } from '../middleware/rate-limit.js';
 import { isArgon2Hash, isPasswordPwned, hashPassword, verifyPassword, timingSafeDummyVerify } from '../security/password.js';
@@ -80,8 +81,8 @@ async function logAudit(userId: number | null, action: string, ip: string, ua: s
 
 function clientIP(c: { req: { raw: Request } }): string
 {
-    const xff = c.req.raw.headers.get('x-forwarded-for');
-    return (xff?.split(',')[0]?.trim()) ?? c.req.raw.headers.get('x-real-ip') ?? 'unknown';
+    // IP canonico via CF-Connecting-IP (non spoofabile). Vedi security/client-ip.ts.
+    return clientIp(c.req.raw);
 }
 
 // =================================================================

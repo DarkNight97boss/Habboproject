@@ -40,7 +40,8 @@ export function getDbPool(): Pool
         _pool = mysql.createPool(poolOptions);
         // Crash-resistance: mysql2 emette 'error' sul pool; senza listener l'EventEmitter
         // rilancia -> crash del processo a ogni blip del DB. Logghiamo e proseguiamo.
-        _pool.on('error', () => { /* connessione persa: il pool la rimpiazza */ });
+        // mysql2 non tipizza l'evento 'error' sul Pool (esiste a runtime): cast strutturale.
+        (_pool as unknown as { on(e: string, l: (...a: unknown[]) => void): void }).on('error', () => { /* connessione persa: il pool la rimpiazza */ });
     }
     return _pool;
 }

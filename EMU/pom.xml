@@ -123,7 +123,7 @@
                 <artifactId>spotbugs-maven-plugin</artifactId>
                 <!-- >= 4.9.6: SpotBugs 4.9.3 non legge i class-file Java 25 (major 69):
                      'Unsupported class file major version 69' = scan silenziosamente vuoto. -->
-                <version>4.9.6.0</version>
+                <version>4.10.4.1</version>
                 <configuration>
                     <effort>Max</effort>
                     <threshold>Medium</threshold>
@@ -288,7 +288,7 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>6.1.2</version>
+            <version>6.1.3</version>
             <scope>test</scope>
         </dependency>
 

@@ -160,7 +160,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
-            <version>4.2.16.Final</version>
+            <version>4.2.18.Final</version>
         </dependency>
         <!--
             Native epoll transport. netty-all ships the Java side but the
@@ -174,7 +174,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport-native-epoll</artifactId>
-            <version>4.2.16.Final</version>
+            <version>4.2.18.Final</version>
             <classifier>linux-x86_64</classifier>
         </dependency>
 

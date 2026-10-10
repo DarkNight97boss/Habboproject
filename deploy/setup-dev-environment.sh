@@ -287,10 +287,11 @@ db.params=useUnicode=true&characterEncoding=utf8&autoReconnect=true&useSSL=false
 game.tcp.address=0.0.0.0
 game.tcp.port=${DEV_EMU_GAME_PORT}
 
-# WebSocket (nitro V3)
-websockets.enabled=true
-websockets.ports=${DEV_EMU_WS_PORT}
-websockets.whitelist=*
+# WebSocket (nitro V3) — chiavi lette dal plugin NitroWebsockets-3.1 (fix audit:
+# le vecchie websockets.* non erano lette da nessuno).
+ws.nitro.host=127.0.0.1
+ws.nitro.port=${DEV_EMU_WS_PORT}
+ws.nitro.ip.header=X-Real-IP
 
 # Webserver interno (RCON + asset bridge)
 webserver.enabled=true

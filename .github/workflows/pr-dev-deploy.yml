@@ -50,7 +50,9 @@ on:
 # anche i workflow_dispatch e PR ridenominate.
 # -----------------------------------------------------------------------------
 concurrency:
-  group: dev-deploy-${{ github.event.pull_request.number || inputs.pr_number }}
+  # Fix audit: gruppo GLOBALE — l'ambiente DEV è uno solo; PR diverse non devono
+  # deployare in parallelo sugli stessi path/unit.
+  group: dev-deploy
   cancel-in-progress: true
 
 # -----------------------------------------------------------------------------
@@ -801,11 +803,12 @@ jobs:
             head -c 500 /tmp/web.html || true
           fi
 
-      - name: Check API health (https://dev-api.asteriacore.online/health)
+      - name: Check API health (https://dev-api.asteriacore.online/healthz)
         id: api
         run: |
           set +e
-          body=$(curl -fsS --max-time 10 "https://${DEV_API_DOMAIN}/health")
+          # Fix audit: l'endpoint è /healthz (/health → 404 → check sempre falso)
+          body=$(curl -fsS --max-time 10 "https://${DEV_API_DOMAIN}/healthz")
           rc=$?
           if [ $rc -eq 0 ] && echo "$body" | jq -e '.ok == true' > /dev/null 2>&1; then
             echo "ok=true" >> "$GITHUB_OUTPUT"

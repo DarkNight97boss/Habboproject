@@ -174,11 +174,11 @@ jobs:
     needs: guard
     runs-on: ubuntu-latest
     outputs:
-      emu: ${{ steps.filter.outputs.emu || steps.force.outputs.emu }}
-      cms_web: ${{ steps.filter.outputs.cms_web || steps.force.outputs.cms_web }}
-      cms_api: ${{ steps.filter.outputs.cms_api || steps.force.outputs.cms_api }}
-      sql: ${{ steps.filter.outputs.sql || steps.force.outputs.sql }}
-      nitro: ${{ steps.filter.outputs.nitro || steps.force.outputs.nitro }}
+      emu: ${{ steps.force.outputs.emu == 'true' || steps.filter.outputs.emu == 'true' }}
+      cms_web: ${{ steps.force.outputs.cms_web == 'true' || steps.filter.outputs.cms_web == 'true' }}
+      cms_api: ${{ steps.force.outputs.cms_api == 'true' || steps.filter.outputs.cms_api == 'true' }}
+      sql: ${{ steps.force.outputs.sql == 'true' || steps.filter.outputs.sql == 'true' }}
+      nitro: ${{ steps.force.outputs.nitro == 'true' || steps.filter.outputs.nitro == 'true' }}
     steps:
       - name: Checkout (full history per diff path-filter)
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
@@ -408,10 +408,19 @@ jobs:
 
       # Includiamo anche package.json + yarn.lock per poter fare yarn install
       # --production sul VPS dentro al folder di staging (zero rebuild).
-      - name: Pack dist + package manifests
+      # Fix audit (H): l'artifact conteneva solo dist+package.json e sul VPS lo
+      # `yarn install` nello staged dir era un no-op garantito (niente lockfile,
+      # dir root-owned) → nuove dipendenze mai installate in prod. Ora le
+      # installiamo QUI (npm, prod-only, stessa piattaforma linux-x64) e le
+      # spediamo nel bundle; il deploy swappa apps/api/node_modules.
+      - name: Pack dist + package manifests + node_modules (prod)
         working-directory: CMS-V3/apps/api
         run: |
-          tar -czf cms-api-dist.tgz dist/ package.json
+          set -euo pipefail
+          rm -rf /tmp/api-prod && mkdir -p /tmp/api-prod
+          cp package.json /tmp/api-prod/
+          (cd /tmp/api-prod && npm install --omit=dev --no-package-lock --no-audit --no-fund 2>&1 | tail -5)
+          tar -czf cms-api-dist.tgz dist/ package.json -C /tmp/api-prod node_modules
           ls -la cms-api-dist.tgz
 
       - name: Upload artifact CMS api
@@ -860,6 +869,15 @@ jobs:
             fi
             sudo mv "${STAGED_API}/dist" "${API_DIST}"
             sudo chown -R asteria:asteria "${API_DIST}"
+            # Fix audit: node_modules prod-only costruiti in CI (vedi job build-cms-api).
+            if [ -d "${STAGED_API}/node_modules" ]; then
+              API_NM="${PROD_ROOT}/CMS-V3/apps/api/node_modules"
+              sudo rm -rf "${API_NM}.prev"
+              if [ -d "${API_NM}" ]; then sudo mv "${API_NM}" "${API_NM}.prev"; fi
+              sudo mv "${STAGED_API}/node_modules" "${API_NM}"
+              sudo chown -R asteria:asteria "${API_NM}"
+              echo "[deploy] CMS-V3 api: node_modules aggiornati dal bundle"
+            fi
             sudo rm -rf "${STAGED_API}"
 
             # Reload-or-restart: Hono ha graceful shutdown, downtime ~150ms
@@ -892,19 +910,9 @@ jobs:
             RESTARTED+=("nginx")
           fi
 
-          # ===========================
-          # 4) Nitro bundle
-          # ===========================
-          if [ "${DEPLOY_NITRO}" = "true" ] && [ -f "${STAGE}/nitro/nitro-bundle.tgz" ]; then
-            echo "[deploy] Nitro bundle: estrazione + sync ..."
-            STAGED_NITRO="${PROD_ROOT}/CMS-V3-staged-nitro-${DEPLOY_SHA}"
-            sudo rm -rf "${STAGED_NITRO}"
-            sudo mkdir -p "${STAGED_NITRO}"
-            sudo tar -xzf "${STAGE}/nitro/nitro-bundle.tgz" -C "${STAGED_NITRO}"
-
-            sudo rm -rf "${STAGED_NITRO}"
-            RESTARTED+=("nitro-bundle")
-          fi
+          # 4) Nitro bundle: RIMOSSO (fix audit) — era un no-op (estrai + rm) che
+          #    riportava 'nitro-bundle' tra i servizi aggiornati. Il client è
+          #    pubblicato da nitro-r2-sync.yml.
 
           # ===========================
           # 5) EMU: broadcast in-game pre-shutdown + restart
@@ -1081,8 +1089,10 @@ jobs:
   # ===========================================================================
   rollback:
     name: Rollback (smoke-test failed)
-    needs: [guard, pre-deploy-backup, deploy-prod, smoke-test-prod]
-    if: ${{ failure() && needs.deploy-prod.result == 'success' && needs.smoke-test-prod.result == 'failure' }}
+    needs: [guard, detect-changes, pre-deploy-backup, deploy-prod, smoke-test-prod]
+    # Fix audit: scatta anche se deploy-prod fallisce a metà (es. SQL parziale);
+    # il DB viene ripristinato SOLO se in questo deploy erano previste migrazioni.
+    if: ${{ failure() && needs.pre-deploy-backup.result == 'success' && (needs.smoke-test-prod.result == 'failure' || needs.deploy-prod.result == 'failure') }}
     runs-on: ubuntu-latest
     environment: production
     timeout-minutes: 15
@@ -1102,11 +1112,12 @@ jobs:
         env:
           BACKUP_PATH: ${{ needs.pre-deploy-backup.outputs.backup_path }}
           DEPLOY_SHA: ${{ needs.guard.outputs.deploy_sha }}
+          DEPLOY_SQL: ${{ needs.detect-changes.outputs.sql }}
         run: |
           set -euo pipefail
           ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
             ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
-            "BACKUP_PATH='${BACKUP_PATH}' DEPLOY_SHA='${DEPLOY_SHA}' bash -s" <<'REMOTE_SCRIPT'
+            "BACKUP_PATH='${BACKUP_PATH}' DEPLOY_SHA='${DEPLOY_SHA}' DEPLOY_SQL='${DEPLOY_SQL}' bash -s" <<'REMOTE_SCRIPT'
           set -euo pipefail
 
           # ---------------------------------------------------------------
@@ -1149,7 +1160,11 @@ jobs:
           # ATTENZIONE: questo OVERWRITE il DB ms con lo snapshot pre-deploy.
           # Eventuali nuovi dati arrivati DOPO il deploy fallito andranno persi
           # (raramente molti, viste le finestre brevi di smoke-test < 5min).
-          if [ -f "${STAGE}/ms.sql.gz" ]; then
+          # Fix audit: senza migrazioni in questo deploy NON si sovrascrive il DB
+          # (il dump è vecchio di minuti/ore: cancellerebbe acquisti/registrazioni reali).
+          if [ "${DEPLOY_SQL:-}" != "true" ]; then
+            echo "[rollback] nessuna migrazione SQL in questo deploy: DB NON ripristinato (dati preservati)"
+          elif [ -f "${STAGE}/ms.sql.gz" ]; then
             echo "[rollback] ripristino DB ms (overwrite) ..."
             sudo bash -c '
               set -euo pipefail

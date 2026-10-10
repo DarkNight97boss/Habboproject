@@ -66,7 +66,7 @@ public class ReportEvent extends MessageHandler {
 
                     Emulator.getGameEnvironment().getModToolManager().addTicket(issue);
                     Emulator.getGameEnvironment().getModToolManager().updateTicketToMods(issue);
-                    this.client.sendResponse(new ModToolReportReceivedAlertComposer(ModToolReportReceivedAlertComposer.REPORT_RECEIVED, cfhTopic.reply));
+                    this.client.sendResponse(new ModToolReportReceivedAlertComposer(ModToolReportReceivedAlertComposer.REPORT_RECEIVED, (cfhTopic != null ? cfhTopic.reply : "")));
 
                     if (cfhTopic != null) {
                         if (cfhTopic.action != CfhActionType.MODS) {
@@ -78,7 +78,7 @@ public class ReportEvent extends MessageHandler {
                                         }
                                     }
 
-                                    ReportEvent.this.client.sendResponse(new ModToolIssueHandledComposer(cfhTopic.reply).compose());
+                                    ReportEvent.this.client.sendResponse(new ModToolIssueHandledComposer((cfhTopic != null ? cfhTopic.reply : "")).compose());
                                     Emulator.getGameEnvironment().getModToolManager().closeTicketAsHandled(issue, null);
                                 }
                             }, 30 * 1000);
@@ -108,7 +108,7 @@ public class ReportEvent extends MessageHandler {
                                 }
                             }
 
-                            ReportEvent.this.client.sendResponse(new ModToolIssueHandledComposer(cfhTopic.reply).compose());
+                            ReportEvent.this.client.sendResponse(new ModToolIssueHandledComposer((cfhTopic != null ? cfhTopic.reply : "")).compose());
                             Emulator.getGameEnvironment().getModToolManager().closeTicketAsHandled(issue, null);
                         }
                     }, 30 * 1000);

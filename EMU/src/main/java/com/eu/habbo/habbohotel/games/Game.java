@@ -157,7 +157,7 @@ public abstract class Game implements Runnable {
 
                 Habbo winner = player.getHabbo();
                 if (winner != null) {
-                    AchievementManager.progressAchievement(roomOwner, Emulator.getGameEnvironment().getAchievementManager().getAchievement("GamePlayerExperience"));
+                    AchievementManager.progressAchievement(winner, // Fix audit: era roomOwner Emulator.getGameEnvironment().getAchievementManager().getAchievement("GamePlayerExperience"));
                 }
             }
 

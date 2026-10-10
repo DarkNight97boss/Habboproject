@@ -305,8 +305,8 @@ public class RoomManager {
             return null;
         }
 
-        if (this.activeRooms.containsKey(id)) {
-            room = this.activeRooms.get(id);
+        room = this.activeRooms.get(id); // Fix audit: containsKey+get non atomici → NPE
+        if (room != null) {
 
             if (loadData) {
                 if (room.isPreLoaded() && !room.isLoaded()) {
@@ -1579,7 +1579,7 @@ public class RoomManager {
 
         if (habbo != null) {
             if (habbo.getHabboInfo().getCurrentRoom() == room) {
-                room.removeHabbo(habbo, true);
+                this.leaveRoom(habbo, room, false); // Fix audit: removeHabbo lasciava currentRoom impostato (utente 'fantasma')
                 habbo.getClient().sendResponse(new RoomEnterErrorComposer(RoomEnterErrorComposer.ROOM_ERROR_BANNED));
             }
         }

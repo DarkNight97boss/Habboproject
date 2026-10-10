@@ -97,6 +97,11 @@ public class CatalogBuyItemEvent extends MessageHandler {
                     int roomCount = Emulator.getGameEnvironment().getRoomManager().getRoomsForHabbo(this.client.getHabbo()).size();
                     int maxRooms = this.client.getHabbo().getHabboStats().hasActiveClub() ? RoomManager.MAXIMUM_ROOMS_HC : RoomManager.MAXIMUM_ROOMS_USER;
 
+                    // Fix audit: il bundle saltava il check rank/enabled della pagina.
+                    if (!page.isEnabled() || page.getRank() > this.client.getHabbo().getHabboInfo().getRank().getId()) {
+                        this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
+                        return;
+                    }
                     if (roomCount >= maxRooms) { // checks if a user has the maximum rooms
                        this.client.sendResponse(new CanCreateRoomComposer(roomCount, maxRooms)); // if so throws the max room error.
                        this.client.sendResponse(new PurchaseOKComposer(null)); // Send this so the alert disappears, not sure if this is how it should be handled :S

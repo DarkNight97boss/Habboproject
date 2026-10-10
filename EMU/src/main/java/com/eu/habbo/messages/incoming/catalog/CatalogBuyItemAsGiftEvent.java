@@ -182,7 +182,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                         return;
                     }
 
-                    CatalogLimitedConfiguration limitedConfiguration;
+                    CatalogLimitedConfiguration limitedConfiguration = null;
                     int limitedStack = 0;
                     int limitedNumber = 0;
                     if (item.isLimited()) {

@@ -74,7 +74,7 @@ public class RCONServer extends Server {
         for (String addr : this.allowedAdresses) {
             String trimmed = addr == null ? "" : addr.trim();
             if (trimmed.isEmpty()) continue;
-            boolean isLoopback = trimmed.equals("127.0.0.1") || trimmed.equals("::1") || trimmed.equalsIgnoreCase("localhost");
+            boolean isLoopback = trimmed.startsWith("127.") || trimmed.equals("::1") || trimmed.startsWith("::ffff:127.") || trimmed.equalsIgnoreCase("localhost"); // Fix audit: tutto 127/8 è loopback
             boolean isWildcard = trimmed.equals("0.0.0.0") || trimmed.equals("*") || trimmed.equals("::");
             if (isWildcard && !publicOptIn) {
                 LOGGER.error("L'allow-list RCON contiene il wildcard {} — avvio rifiutato. Imposta rcon.allow.public=true SOLO se hai un motivo reale e un firewall davanti.", trimmed);

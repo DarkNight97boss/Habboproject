@@ -14,7 +14,7 @@ import java.util.ArrayList;
 public class ReportBullyEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
-        if (this.client.getHabbo().getHabboStats().allowTalk()) {
+        if (!this.client.getHabbo().getHabboStats().allowTalk()) { // Fix audit: condizione invertita (solo i MUTATI potevano segnalare)
             this.client.sendResponse(new HelperRequestDisabledComposer());
             return;
         }

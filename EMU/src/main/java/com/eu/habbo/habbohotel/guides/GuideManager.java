@@ -116,6 +116,7 @@ public class GuideManager {
     public void endSession(GuideTour tour) {
         synchronized (this.activeTours) {
             synchronized (this.activeHelpers) {
+                if (tour.isEnded()) return; // Fix audit: chiusura ripetuta rilanciava end()
                 tour.getNoob().getClient().sendResponse(new GuideSessionEndedComposer(GuideSessionEndedComposer.HELP_CASE_CLOSED));
                 tour.end();
 

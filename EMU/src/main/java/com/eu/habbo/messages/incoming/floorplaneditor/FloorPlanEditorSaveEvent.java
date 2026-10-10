@@ -96,7 +96,7 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
             int doorX = this.packet.readInt();
             int doorY = this.packet.readInt();
 
-            if (doorX < 0 || doorX > firstRowSize || doorY < 0 || doorY >= mapRows.length) {
+            if (doorX < 0 || doorX >= firstRowSize || doorY < 0 || doorY >= mapRows.length) { // Fix audit: off-by-one
                 errors.add("${notification.floorplan_editor.error.message.entry_tile_outside_map}");
             }
 

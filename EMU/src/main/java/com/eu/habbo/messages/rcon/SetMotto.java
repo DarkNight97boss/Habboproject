@@ -24,7 +24,9 @@ public class SetMotto extends RCONMessage<SetMotto.SetMottoJSON> {
 
         if (habbo != null) {
             habbo.getHabboInfo().setMotto(json.motto);
-            habbo.getHabboInfo().getCurrentRoom().sendComposer(new RoomUserDataComposer(habbo).compose());
+            com.eu.habbo.habbohotel.rooms.Room cur = habbo.getHabboInfo().getCurrentRoom();
+            if (cur != null) cur.sendComposer(new RoomUserDataComposer(habbo).compose()); // Fix audit: NPE fuori stanza
+            Emulator.getThreading().run(habbo.getHabboInfo()); // persisti subito
         } else {
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
                 try (PreparedStatement statement = connection.prepareStatement("UPDATE users SET motto = ? WHERE id = ? LIMIT 1")) {

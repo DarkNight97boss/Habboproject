@@ -34,7 +34,7 @@ public class MuteCommand extends Command {
                 return true;
             }
 
-            int duration = Integer.MAX_VALUE;
+            int duration = 3600; // Fix audit: MAX_VALUE andava in overflow → utente NON mutato
 
             if (params.length == 3) {
                 try {

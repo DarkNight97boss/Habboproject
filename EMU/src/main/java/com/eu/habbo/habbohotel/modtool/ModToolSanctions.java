@@ -131,6 +131,14 @@ public class ModToolSanctions {
         sanctionLevel++;
 
         ModToolSanctionLevelItem sanctionLevelItem = getSanctionLevelItem(sanctionLevel);
+        // Fix audit: oltre l'ultimo livello → NPE. Clamp all'ultimo configurato.
+        if (sanctionLevelItem == null) {
+            Integer max = this.sanctionLevelsHashmap.keySet().stream().max(Integer::compare).orElse(null);
+            if (max == null) return;
+            sanctionLevel = max;
+            sanctionLevelItem = getSanctionLevelItem(max);
+            if (sanctionLevelItem == null) return;
+        }
 
         insertSanction(habboId, sanctionLevel, buildProbationTimestamp(sanctionLevelItem), reason, tradeLockedUntil, isMuted, muteDuration);
 

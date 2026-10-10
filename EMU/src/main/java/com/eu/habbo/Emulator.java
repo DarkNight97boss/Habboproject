@@ -156,8 +156,8 @@ public final class Emulator {
             Emulator.config.loaded = true;
             Emulator.config.loadFromDatabase();
             Emulator.threading = new ThreadPooling(Emulator.getConfig().getInt("runtime.threads"));
-            Emulator.getDatabase().getDataSource().setMaximumPoolSize(Emulator.getConfig().getInt("runtime.threads") * 2);
-            Emulator.getDatabase().getDataSource().setMinimumIdle(10);
+            // Fix audit: non sovrascrivere la dimensione del pool Hikari configurata in DatabasePool
+            // (prima veniva forzata a runtime.threads*2, es. 16, ignorando db.pool.maxsize).
             Emulator.pluginManager = new PluginManager();
             Emulator.pluginManager.reload();
             Emulator.getPluginManager().fireEvent(new EmulatorConfigUpdatedEvent());

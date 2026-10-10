@@ -573,13 +573,19 @@ public class Pet implements ISerialize, Runnable {
 
 
     public void scratched(Habbo habbo) {
+        // Fix audit: decremento atomico PRIMA di dare rispetto/XP (TOCTOU → rispetto illimitato).
+        if (habbo != null) {
+            synchronized (habbo.getHabboStats()) {
+                if (habbo.getHabboStats().petRespectPointsToGive <= 0) return;
+                habbo.getHabboStats().petRespectPointsToGive--;
+            }
+        }
         this.addHappiness(10);
         this.addExperience(10);
         this.addRespect();
         this.needsUpdate = true;
 
         if (habbo != null) {
-            habbo.getHabboStats().petRespectPointsToGive--;
             habbo.getHabboInfo().getCurrentRoom().sendComposer(new RoomPetRespectComposer(this).compose());
 
             AchievementManager.progressAchievement(habbo, Emulator.getGameEnvironment().getAchievementManager().getAchievement("PetRespectGiver"));

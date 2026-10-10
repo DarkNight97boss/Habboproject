@@ -139,6 +139,7 @@ public class InteractionRentableSpace extends HabboItem {
         if (habbo.getHabboStats().getClubExpireTimestamp() < Emulator.getIntUnixTimestamp())
             return;
 
+        habbo.giveCredits(-this.rentCost()); // Fix audit: il costo era controllato ma mai scalato
         this.setRenterId(habbo.getHabboInfo().getId());
         this.setRenterName(habbo.getHabboInfo().getUsername());
         this.setEndTimestamp(Emulator.getIntUnixTimestamp() + (7 * 86400));
@@ -183,6 +184,8 @@ public class InteractionRentableSpace extends HabboItem {
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE users_settings SET rent_space_id = ?, rent_space_endtime = ? WHERE user_id = ? LIMIT 1")) {
                 statement.setInt(1, zero);
                 statement.setInt(2, zero);
+                statement.setInt(3, this.renterId);
+                statement.execute(); // Fix audit: l'UPDATE non veniva mai eseguito
             } catch (SQLException e) {
                 LOGGER.error("Eccezione SQL intercettata", e);
             }

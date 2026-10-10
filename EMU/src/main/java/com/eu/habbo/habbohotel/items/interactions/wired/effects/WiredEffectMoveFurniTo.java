@@ -56,7 +56,9 @@ public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
 
         int count = settings.getFurniIds().length;
         for (int i = 0; i < count; i++) {
-            this.items.add(room.getHabboItem(settings.getFurniIds()[i]));
+            com.eu.habbo.habbohotel.users.HabboItem it = room.getHabboItem(settings.getFurniIds()[i]);
+            if (it == null) throw new WiredSaveException("furni non valido"); // Fix audit: null in lista → NPE a runtime
+            this.items.add(it);
         }
 
         this.setDelay(settings.getDelay());

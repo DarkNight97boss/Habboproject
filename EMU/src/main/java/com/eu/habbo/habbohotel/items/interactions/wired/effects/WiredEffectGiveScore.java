@@ -55,7 +55,8 @@ public class WiredEffectGiveScore extends InteractionWiredEffect {
 
             int gameStartTime = game.getStartTime();
 
-            TObjectIntMap<Map.Entry<Integer, Integer>> dataClone = new TObjectIntHashMap<>(this.data);
+            // Fix audit: il contatore veniva incrementato su un CLONE → il limite per partita non valeva mai.
+            TObjectIntMap<Map.Entry<Integer, Integer>> dataClone = this.data;
 
             TObjectIntIterator<Map.Entry<Integer, Integer>> iterator = dataClone.iterator();
 

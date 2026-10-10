@@ -74,6 +74,7 @@ public final class IpRateLimiter {
     /** Record a failure. Returns true when this attempt JUST tripped the lockout. */
     public boolean onFailure(String ip) {
         if (ip == null || ip.isEmpty()) return false;
+        if (map.size() > 4096) prune(); // Fix audit: prune() non era mai invocato → mappa senza limite
         Bucket b = map.computeIfAbsent(ip, k -> new Bucket());
         long now = System.currentTimeMillis();
         long cutoff = now - windowSec * 1000L;

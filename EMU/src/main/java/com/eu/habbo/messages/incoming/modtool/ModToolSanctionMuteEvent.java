@@ -43,13 +43,13 @@ public class ModToolSanctionMuteEvent extends MessageHandler {
                         if (item.probationTimestamp > 0 && item.probationTimestamp >= Emulator.getIntUnixTimestamp()) {
                             ModToolSanctionLevelItem modToolSanctionLevelItem = modToolSanctions.getSanctionLevelItem(item.sanctionLevel);
 
-                            int muteDurationTimestamp = Math.toIntExact(new Date( System.currentTimeMillis() + ((long) modToolSanctionLevelItem.sanctionHourLength * 60 * 60)).getTime() / 1000);
+                            int muteDurationTimestamp = (int) Math.min(Integer.MAX_VALUE, Emulator.getIntUnixTimestamp() + (long) modToolSanctionLevelItem.sanctionHourLength * 3600L); // Fix audit: era ms+s (~3,6 giorni)
 
                             modToolSanctions.run(userId, this.client.getHabbo(), item.sanctionLevel, cfhTopic, message, 0, true, muteDurationTimestamp);
                         } else {
                             ModToolSanctionLevelItem modToolSanctionLevelItem = modToolSanctions.getSanctionLevelItem(item.sanctionLevel);
 
-                            int muteDurationTimestamp = Math.toIntExact(new Date( System.currentTimeMillis() + ((long) modToolSanctionLevelItem.sanctionHourLength * 60 * 60)).getTime() / 1000);
+                            int muteDurationTimestamp = (int) Math.min(Integer.MAX_VALUE, Emulator.getIntUnixTimestamp() + (long) modToolSanctionLevelItem.sanctionHourLength * 3600L); // Fix audit: era ms+s (~3,6 giorni)
 
                             modToolSanctions.run(userId, this.client.getHabbo(), item.sanctionLevel, cfhTopic, message, 0, true, muteDurationTimestamp);
                         }

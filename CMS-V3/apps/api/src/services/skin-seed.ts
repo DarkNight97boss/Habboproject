@@ -301,7 +301,73 @@ const ASTERIA_NEBULA: BuiltinSkin = {
     }
 };
 
-const BUILTIN_SKINS: BuiltinSkin[] = [ASTERIA_NEBULA, HABBO_CLASSICO_2008, HABBO_MODERN, HABBO_DARK_PRO];
+// ============================================================
+//   5. STUDIO NOVA — design 2026 condiviso con il client Nitro
+//      Chiaro, editoriale: spina laterale, isola dinamica, Stage.
+// ============================================================
+const STUDIO_NOVA: BuiltinSkin = {
+    slug: 'studio-nova',
+    name: 'Studio Nova',
+    description: 'Il design Asteria 2026, lo stesso del client: fondo chiaro, carte morbide, spina laterale, isola notifiche, Stage. Sora + Nunito Sans.',
+    manifest: {
+        version: 1,
+        meta: {
+            slug: 'studio-nova',
+            name: 'Studio Nova',
+            description: 'Chiaro, editoriale, coerente sito↔client. Spina laterale, isola dinamica, Stage.',
+            swatches: ['#EEF1F5', '#1F4FE0', '#1F2937', '#F59E0B']
+        },
+        tokens: {
+            colors: {
+                'page-bg':        '#EEF1F5',
+                'page-fg':        '#1F2937',
+                'header-bg':      '#FFFFFF',
+                'header-fg':      '#1F2937',
+                'navtop-bg':      '#FFFFFF',
+                'navtop-fg':      '#1F2937',
+                'navsub-bg':      '#F6F8FB',
+                'navsub-fg':      '#4B5565',
+                'card-bg':        '#FFFFFF',
+                'card-border':    '#E3E8F0',
+                'card-header-bg': '#F6F8FB',
+                'card-header-fg': '#1F2937',
+                'accent':         '#1F4FE0',
+                'accent-fg':      '#FFFFFF',
+                'accent-cyan':    '#0E9F6E',
+                'accent-pink':    '#D9480F',
+                'button-bg':      '#1F4FE0',
+                'button-fg':      '#FFFFFF',
+                'button-border':  '#1F4FE0',
+                'link':           '#1F4FE0',
+                'link-hover':     '#153CB0',
+                'text-muted':     '#6B7280',
+                'success':        '#0E9F6E',
+                'warning':        '#F59E0B',
+                'error':          '#DC2626'
+            },
+            typography: {
+                fontFamily: '"Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif',
+                fontFamilyHeading: '"Sora", "Nunito Sans", system-ui, sans-serif',
+                fontUrl: 'https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Nunito+Sans:wght@400;600;700&display=swap',
+                sizeScale: 1,
+                weightHeading: 800,
+                letterSpacingHeading: '-0.02em'
+            },
+            spacing: { unit: 8, densityScale: 1.1 },
+            radius:  { base: 16, button: 12, input: 12 },
+            shadow:  {
+                style: 'soft',
+                card:   '0 10px 30px rgba(31, 41, 55, 0.08)',
+                button: '0 6px 16px rgba(31, 79, 224, 0.25)'
+            },
+            animation: { speed: 'normal', easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+        },
+        layout: { variant: 'modern' },
+        background: { type: 'solid', value: '#EEF1F5' }
+    }
+};
+
+const BUILTIN_SKINS: BuiltinSkin[] = [ASTERIA_NEBULA, STUDIO_NOVA, HABBO_CLASSICO_2008, HABBO_MODERN, HABBO_DARK_PRO];
 
 /**
  * Idempotente: per ogni builtin INSERT se manca, UPDATE manifest se è

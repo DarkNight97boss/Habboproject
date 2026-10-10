@@ -2,6 +2,8 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { type AuthUser, avatarUrl, broadcastAuth, useAuth } from '../hooks/useAuth';
 import { CommandPalette } from './CommandPalette';
+import { useSkin } from '../hooks/useSkin';
+import { NovaShell } from './NovaShell';
 
 /**
  * Shell riusabile per tutte le pagine Asteria proprietarie.
@@ -19,6 +21,7 @@ export type AsteriaNavId = 'home' | 'community' | 'shop' | 'collezionabili' | 'g
 
 export function AsteriaShell({ activeNav, children, hideMarquee = false }: { activeNav: AsteriaNavId; children: ReactNode; hideMarquee?: boolean }): ReactNode
 {
+    const skin = useSkin();
     const { data: user } = useAuth();
     const [cmdOpen, setCmdOpen] = useState(false);
 
@@ -49,6 +52,9 @@ export function AsteriaShell({ activeNav, children, hideMarquee = false }: { act
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
     }, [cmdOpen]);
+
+    // Studio Nova: stessa API, shell diversa (spina laterale + isola + stage).
+    if(skin?.meta.slug === 'studio-nova') return <NovaShell activeNav={ activeNav } cmdOpen={ cmdOpen } setCmdOpen={ setCmdOpen }>{ children }</NovaShell>;
 
     return (
         <div className="asteria-root">

@@ -117,7 +117,7 @@ public class InteractionPetBreedingNest extends HabboItem {
         if (this.petOne != null) {
             habbo.getClient().sendResponse(new PetPackageNameValidationComposer(this.getId(), PetPackageNameValidationComposer.CLOSE_WIDGET, ""));
         }
-        if (this.petTwo.getUserId() != habbo.getHabboInfo().getId()) {
+        if (this.petTwo != null && this.petTwo.getUserId() != habbo.getHabboInfo().getId()) { // Fix audit: NPE
             Habbo owner = this.petTwo.getRoom().getHabbo(this.petTwo.getUserId());
             if (owner != null) {
                 owner.getClient().sendResponse(new PetPackageNameValidationComposer(this.getId(), PetPackageNameValidationComposer.CLOSE_WIDGET, ""));

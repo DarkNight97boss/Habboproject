@@ -131,6 +131,14 @@ public class ModToolSanctions {
         sanctionLevel++;
 
         ModToolSanctionLevelItem sanctionLevelItem = getSanctionLevelItem(sanctionLevel);
+        // Fix audit: oltre l'ultimo livello → NPE. Clamp all'ultimo configurato.
+        if (sanctionLevelItem == null) {
+            Integer max = this.sanctionLevelsHashmap.keySet().stream().max(Integer::compare).orElse(null);
+            if (max == null) return;
+            sanctionLevel = max;
+            sanctionLevelItem = getSanctionLevelItem(max);
+            if (sanctionLevelItem == null) return;
+        }
 
         insertSanction(habboId, sanctionLevel, buildProbationTimestamp(sanctionLevelItem), reason, tradeLockedUntil, isMuted, muteDuration);
 
@@ -160,7 +168,7 @@ public class ModToolSanctions {
 
         switch (sanctionLevelItem.sanctionType) {
             case "ALERT": habbo.alert(reason); break;
-            case "BAN": Emulator.getGameEnvironment().getModToolManager().ban(habboId, self, reason, sanctionLevelItem.sanctionHourLength, ModToolBanType.ACCOUNT, cfhTopic); break;
+            case "BAN": Emulator.getGameEnvironment().getModToolManager().ban(habboId, self, reason, sanctionLevelItem.sanctionHourLength * 3600, ModToolBanType.ACCOUNT, cfhTopic); break; // Fix audit (H9): ban() vuole SECONDI
             case "MUTE": habbo.mute(muteDurationSeconds == 0 ? 3600 : muteDurationSeconds, false); break;
             default: break;
         }

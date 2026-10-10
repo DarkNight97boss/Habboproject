@@ -15,6 +15,7 @@ public class MannequinSaveNameEvent extends MessageHandler {
         HabboItem item = room.getHabboItem(this.packet.readInt());
         if (item == null)
             return;
+        if (!(item instanceof com.eu.habbo.habbohotel.items.interactions.InteractionMannequin)) return; // Fix audit
 
         String[] data = item.getExtradata().split(":");
         String name = this.packet.readString();

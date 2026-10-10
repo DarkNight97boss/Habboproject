@@ -18,6 +18,7 @@ public class MannequinSaveLookEvent extends MessageHandler {
         HabboItem item = room.getHabboItem(this.packet.readInt());
         if (item == null)
             return;
+        if (!(item instanceof com.eu.habbo.habbohotel.items.interactions.InteractionMannequin)) return; // Fix audit
 
         String[] data = item.getExtradata().split(":");
         //TODO: Only clothing not whole body part.

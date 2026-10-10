@@ -33,7 +33,7 @@ public class UsernameEvent extends MessageHandler {
             long daysBetween = DAYS.between(new Date((long) this.client.getHabbo().getHabboInfo().getLastOnline() * 1000L).toInstant(), new Date().toInstant());
 
 
-            Date lastLogin = new Date(this.client.getHabbo().getHabboInfo().getLastOnline());
+            Date lastLogin = new Date(this.client.getHabbo().getHabboInfo().getLastOnline() * 1000L); // Fix audit: secondi → ms
             Calendar c1 = Calendar.getInstance();
             c1.add(Calendar.DAY_OF_YEAR, -1);
 
@@ -47,9 +47,10 @@ public class UsernameEvent extends MessageHandler {
                 this.client.getHabbo().getHabboStats().loginStreak++;
                 calendar = true;
             } else if (daysBetween >= 1) {
+                this.client.getHabbo().getHabboStats().loginStreak = 0; // Fix audit: pausa >= 2 giorni azzera lo streak
                 calendar = true;
             } else {
-                if (((lastLogin.getTime() / 1000) - Emulator.getIntUnixTimestamp()) > 86400) {
+                if ((Emulator.getIntUnixTimestamp() - (lastLogin.getTime() / 1000)) > 86400) {
                     this.client.getHabbo().getHabboStats().loginStreak = 0;
                 }
             }

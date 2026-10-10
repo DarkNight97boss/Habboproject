@@ -332,9 +332,12 @@ public class RoomTrade {
                 "items=" + itemsUserOne.size() + "/" + itemsUserTwo.size() + " credits=" + creditsForUserOne + "/" + creditsForUserTwo);
 
         // Cross-feature hook: battle-pass XP for both sides on a completed trade.
+        // Fix audit (H22): niente XP per trade vuoti (farm con scambi a zero item/crediti).
         try {
-            com.eu.habbo.core.BattlePass.grantTradeXp(userOne.getHabbo());
-            com.eu.habbo.core.BattlePass.grantTradeXp(userTwo.getHabbo());
+            if (!itemsUserOne.isEmpty() || !itemsUserTwo.isEmpty() || creditsForUserOne > 0 || creditsForUserTwo > 0) {
+                com.eu.habbo.core.BattlePass.grantTradeXp(userOne.getHabbo());
+                com.eu.habbo.core.BattlePass.grantTradeXp(userTwo.getHabbo());
+            }
         } catch (Exception ignored) {
         }
 

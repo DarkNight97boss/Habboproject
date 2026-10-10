@@ -34,8 +34,8 @@ public class GuildAcceptMembershipEvent extends MessageHandler {
             // (or a stranger) sent this packet against a guild they don't own —
             // effectively a per-handler crash primitive.
             int callerId = this.client.getHabbo().getHabboInfo().getId();
-            boolean isPriv = userId == callerId
-                    || guild.getOwnerId() == callerId
+            // Fix audit: `userId == callerId` permetteva di auto-accettarsi in gilde EXCLUSIVE.
+            boolean isPriv = guild.getOwnerId() == callerId
                     || (groupMember != null && (groupMember.getRank().equals(GuildRank.ADMIN) || groupMember.getRank().equals(GuildRank.OWNER)))
                     || this.client.getHabbo().hasPermission(Permission.ACC_GUILD_ADMIN);
             if (isPriv) {

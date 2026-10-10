@@ -132,6 +132,9 @@ public class CalendarManager {
             int random = rewards.get(rand);
             CalendarRewardObject object = campaign.getRewards().get(random);
             if (object == null) return;
+            // Fix audit (R1): `day` viene dal client; negativo o oltre i giorni della campagna
+            // superava i check e ogni valore era un claim nuovo → reward illimitati.
+            if (day < 0 || day >= campaign.getTotalDays()) return;
             int daysBetween = (int) DAYS.between(new Timestamp(campaign.getStartTimestamp() * 1000L).toInstant(), new Date().toInstant());
             if(daysBetween >= 0 && daysBetween <= campaign.getTotalDays()) {
                 int diff = (daysBetween - day);

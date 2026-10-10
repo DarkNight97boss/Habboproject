@@ -14,7 +14,8 @@ public class ToggleMonsterplantBreedableEvent extends MessageHandler {
         if (pet != null) {
             if (pet.getUserId() == this.client.getHabbo().getHabboInfo().getId()) {
                 if (pet instanceof MonsterplantPet) {
-                    ((MonsterplantPet) pet).setPubliclyBreedable(((MonsterplantPet) pet).isPubliclyBreedable());
+                    ((MonsterplantPet) pet).setPubliclyBreedable(!((MonsterplantPet) pet).isPubliclyBreedable()); // Fix audit: non invertiva
+                    pet.needsUpdate = true;
                 }
             }
         }

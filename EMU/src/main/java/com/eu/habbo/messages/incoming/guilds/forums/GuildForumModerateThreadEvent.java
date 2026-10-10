@@ -45,6 +45,12 @@ public class GuildForumModerateThreadEvent extends MessageHandler {
             return;
         }
 
+        // Fix audit (IDOR): il thread deve appartenere alla gilda su cui si valutano i permessi.
+        if (thread.getGuildId() != guildId) {
+            this.client.sendResponse(new ConnectionErrorComposer(404));
+            return;
+        }
+
         boolean isGuildAdmin = (guild.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || (member != null && member.getRank().equals(GuildRank.ADMIN)));
 
         if (!isGuildAdmin && !hasStaffPerms) {

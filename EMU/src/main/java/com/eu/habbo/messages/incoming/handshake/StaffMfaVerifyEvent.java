@@ -41,11 +41,12 @@ public class StaffMfaVerifyEvent extends MessageHandler {
         int userId = this.client.getHabbo().getHabboInfo().getId();
         String username = this.client.getHabbo().getHabboInfo().getUsername();
 
-        boolean ok = StaffMfa.verify(userId, code);
+        // Fix audit: discrimina per formato, così un recovery code non conta come fallimento TOTP.
+        boolean isTotp = code != null && code.matches("\\d{6}");
+        boolean ok = isTotp && StaffMfa.verify(userId, code);
         boolean usedRecoveryCode = false;
-        // Fallback: se il TOTP non matcha, prova il codice come recovery monouso
-        // (per chi ha perso l'autenticatore). Audit-trail separato in entrambi i casi.
-        if (!ok && StaffMfa.verifyRecoveryCode(userId, code)) {
+        // Fallback: codice non-TOTP → recovery monouso (per chi ha perso l'autenticatore).
+        if (!ok && !isTotp && StaffMfa.verifyRecoveryCode(userId, code)) {
             ok = true;
             usedRecoveryCode = true;
         }

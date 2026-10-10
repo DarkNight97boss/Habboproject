@@ -32,7 +32,10 @@ public class RoomUserMuteEvent extends MessageHandler {
                     // Same rank-target guard as ModToolSanctionMuteEvent / MuteCommand:
                     // a junior staff member must not be able to mute a higher-rank user
                     // via the per-user mute button.
-                    if (habbo.getHabboInfo().getRank().getId() >= this.client.getHabbo().getHabboInfo().getRank().getId()) {
+                    // Fix audit: il guard bloccava anche owner vs utente normale di pari rank (1);
+                    // vale solo se il target ha un rank sopra quello base.
+                    int targetRank = habbo.getHabboInfo().getRank().getId();
+                    if (targetRank > 1 && targetRank >= this.client.getHabbo().getHabboInfo().getRank().getId()) {
                         return;
                     }
                     room.muteHabbo(habbo, minutes);

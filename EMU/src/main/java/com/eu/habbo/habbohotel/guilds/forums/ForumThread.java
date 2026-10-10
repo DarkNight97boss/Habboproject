@@ -141,8 +141,7 @@ public class ForumThread implements Runnable, ISerialize {
                 "WHERE `id` IN (" +
                 "SELECT MAX(id) " +
                 "FROM `guilds_forums_comments` B " +
-                "GROUP BY `thread_id` AND B.`id` " +
-                "ORDER BY B.`id` " +
+                "GROUP BY `thread_id` " + // Fix audit: 'GROUP BY x AND y' è booleano → una sola riga
                 ") " +
                 "ORDER BY `id` DESC " +
                 ") B ON A.`id` = B.`thread_id` " +

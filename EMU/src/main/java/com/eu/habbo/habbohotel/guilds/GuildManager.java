@@ -160,6 +160,12 @@ public class GuildManager {
                 statement.execute();
             }
 
+            // Fix audit: la stanza restava legata a una gilda inesistente.
+            try (PreparedStatement statement = connection.prepareStatement("UPDATE rooms SET guild_id = 0 WHERE guild_id = ?")) {
+                statement.setInt(1, guild.getId());
+                statement.execute();
+            }
+
             try (PreparedStatement statement = connection.prepareStatement("DELETE FROM guilds WHERE id = ?")) {
                 statement.setInt(1, guild.getId());
                 statement.execute();

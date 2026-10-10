@@ -828,12 +828,15 @@ public class CatalogManager {
     public void purchaseItem(CatalogPage page, CatalogItem item, Habbo habbo, int amount, String extradata, boolean free) {
         Item cBaseItem = null;
 
-        if (item == null || habbo.getHabboStats().isPurchasingFurniture) {
-            habbo.getClient().sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
-            return;
+        // Fix audit (H3): con handler multithread check e set del flag non erano atomici
+        // → due acquisti paralleli passavano entrambi il controllo crediti (double-spend).
+        synchronized (habbo.getHabboStats()) {
+            if (item == null || habbo.getHabboStats().isPurchasingFurniture) {
+                habbo.getClient().sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
+                return;
+            }
+            habbo.getHabboStats().isPurchasingFurniture = true;
         }
-
-        habbo.getHabboStats().isPurchasingFurniture = true;
 
         try {
             if (item.isClubOnly() && !habbo.getClient().getHabbo().getHabboStats().hasActiveClub()) {

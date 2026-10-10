@@ -103,7 +103,7 @@ public class WiredHighscoreManager {
                 .filter(entry -> this.timeMatchesEntry(entry, clearType) && (scoreType != WiredHighscoreScoreType.MOSTWIN || entry.isWin()))
                 .map(entry -> new WiredHighscoreRow(
                         entry.getUserIds().stream()
-                                .map(id -> Emulator.getGameEnvironment().getHabboManager().getHabboInfo(id).getUsername())
+                                .map(id -> { com.eu.habbo.habbohotel.users.HabboInfo hi = Emulator.getGameEnvironment().getHabboManager().getHabboInfo(id); return hi != null ? hi.getUsername() : "?"; }) // Fix audit: utente cancellato → NPE
                                 .collect(Collectors.toList()),
                         entry.getScore()
                 ));

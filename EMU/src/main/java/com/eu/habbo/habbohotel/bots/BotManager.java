@@ -184,8 +184,11 @@ public class BotManager {
                     return;
                 }
 
-                bot.onPickUp(habbo, receiverInfo.getCurrentRoom());
-                receiverInfo.getCurrentRoom().removeBot(bot);
+                // Fix audit: owner offline/fuori stanza → NPE. Usa la stanza del bot.
+                if (receiverInfo == null) return;
+                com.eu.habbo.habbohotel.rooms.Room botRoom = bot.getRoom();
+                bot.onPickUp(habbo, botRoom);
+                if (botRoom != null) botRoom.removeBot(bot);
                 bot.stopFollowingHabbo();
                 bot.setOwnerId(receiverInfo.getId());
                 bot.setOwnerName(receiverInfo.getUsername());

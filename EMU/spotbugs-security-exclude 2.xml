@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Esclusioni SpotBugs/FindSecBugs (categoria SECURITY) - baseline triagiata il 2026-09-15.
+  Ogni gruppo ha la motivazione: se aggiungi una classe qui, spiega perche'.
+  I finding REALI della baseline sono stati corretti nel codice, non esclusi
+  (DH/RSA/machine-id -> SecureRandom, MD5 -> SHA-256, markup injection -> TextSanitizer,
+  query da DB/config -> SqlGuard, nomi parte distintivi -> whitelist).
+-->
+<FindBugsFilter>
+
+    <!-- CRLF_INJECTION_LOGS: Mitigato al sink: tutti i pattern di logback.xml passano %msg da %replace(...){'[\r\n]+',' '}, quindi nessun valore loggato puo' iniettare righe. -->
+    <Match>
+        <Bug pattern="CRLF_INJECTION_LOGS"/>
+    </Match>
+
+    <!-- HARD_CODE_PASSWORD: E' il NOME della variabile d'ambiente da cui leggere la password, non un segreto. -->
+    <Match>
+        <Class name="com.eu.habbo.core.ConfigurationManager"/>
+        <Bug pattern="HARD_CODE_PASSWORD"/>
+    </Match>
+
+    <!-- INFORMATION_EXPOSURE_THROUGH_AN_ERROR_MESSAGE: Lo stacktrace viene salvato nella tabella emulator_errors, mai inviato al client. -->
+    <Match>
+        <Class name="com.eu.habbo.core.ErrorLog"/>
+        <Bug pattern="INFORMATION_EXPOSURE_THROUGH_AN_ERROR_MESSAGE"/>
+    </Match>
+
+    <!-- PATH_TRAVERSAL_IN: Percorsi da config.ini (imager.location.badgeparts, config.ini stesso) o dal proprio jar (CodeSource); i nomi parte dei distintivi dal DB sono filtrati con ^[A-Za-z0-9_]+$. -->
+    <Match>
+        <Class name="com.eu.habbo.Emulator"/>
+        <Bug pattern="PATH_TRAVERSAL_IN"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.core.ConfigurationManager"/>
+        <Bug pattern="PATH_TRAVERSAL_IN"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.util.imager.badges.BadgeImager"/>
+        <Bug pattern="PATH_TRAVERSAL_IN"/>
+    </Match>
+
+    <!-- POTENTIAL_XML_INJECTION: Testo per alert del client: i valori controllati dagli utenti (nomi bot, vecchi username, motivo ban, username staff) passano da TextSanitizer.noMarkup; il resto sono costanti di emulator_texts. -->
+    <Match>
+        <Class name="com.eu.habbo.habbohotel.commands.BotsCommand"/>
+        <Bug pattern="POTENTIAL_XML_INJECTION"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.habbohotel.commands.HotelAlertLinkCommand"/>
+        <Bug pattern="POTENTIAL_XML_INJECTION"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.habbohotel.commands.UserInfoCommand"/>
+        <Bug pattern="POTENTIAL_XML_INJECTION"/>
+    </Match>
+
+    <!-- PREDICTABLE_RANDOM: RNG di logica di gioco (eventi hotel, tile casuale, rarita' pet, amico mostrato nel profilo): non protegge nulla. La crittografia (DH, RSA, machine-id) usa SecureRandom. -->
+    <Match>
+        <Class name="com.eu.habbo.Emulator"/>
+        <Bug pattern="PREDICTABLE_RANDOM"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.core.HotelEvents"/>
+        <Bug pattern="PREDICTABLE_RANDOM"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.habbohotel.pets.PetManager"/>
+        <Bug pattern="PREDICTABLE_RANDOM"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.habbohotel.rooms.Room"/>
+        <Bug pattern="PREDICTABLE_RANDOM"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.messages.outgoing.users.ProfileFriendsComposer"/>
+        <Bug pattern="PREDICTABLE_RANDOM"/>
+    </Match>
+
+    <!-- SQL_INJECTION_JDBC: Frammenti SQL concatenati da int/costanti/whitelist (LIMIT, timestamp, switch di letterali, colonne da ALLOWED_COLUMNS) o da DB/config passati da SqlGuard (RoomManager.findRooms, HallOfFame): nessun input del client finisce nel testo della query. -->
+    <Match>
+        <Class name="com.eu.habbo.core.CleanerThread"/>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.core.DatabaseLogger"/>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.core.DbCleanup"/>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.database.Database"/>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.habbohotel.catalog.marketplace.MarketPlace"/>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.habbohotel.guilds.GuildManager"/>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.habbohotel.hotelview.HallOfFame"/>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.habbohotel.messenger.Messenger"/>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.habbohotel.modtool.ModToolManager"/>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.habbohotel.rooms.RoomManager"/>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.messages.incoming.furnieditor.FurniEditorSearchEvent"/>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.messages.incoming.furnieditor.FurniEditorUpdateEvent"/>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.messages.rcon.UpdateUser"/>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+    </Match>
+
+    <!-- SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING: Stesse query del gruppo precedente: colonne da whitelist o SELECT da DB validata da SqlGuard. -->
+    <Match>
+        <Class name="com.eu.habbo.habbohotel.rooms.RoomManager"/>
+        <Bug pattern="SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.messages.incoming.furnieditor.FurniEditorUpdateEvent"/>
+        <Bug pattern="SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING"/>
+    </Match>
+
+    <!-- UNENCRYPTED_SOCKET: Sonda sintetica verso 127.0.0.1 (loopback, stesso host): TLS non ha senso. -->
+    <Match>
+        <Class name="com.eu.habbo.core.SyntheticProbe"/>
+        <Bug pattern="UNENCRYPTED_SOCKET"/>
+    </Match>
+
+    <!-- URLCONNECTION_SSRF_FD: URL da config.ini (webhook alert, cms.events.url, cms.flags.url) o host fisso youtube.googleapis.com con parametri URL-encoded. -->
+    <Match>
+        <Class name="com.eu.habbo.core.AlertSink"/>
+        <Bug pattern="URLCONNECTION_SSRF_FD"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.core.CmsEventPublisher"/>
+        <Bug pattern="URLCONNECTION_SSRF_FD"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.core.CmsFlags"/>
+        <Bug pattern="URLCONNECTION_SSRF_FD"/>
+    </Match>
+    <Match>
+        <Class name="com.eu.habbo.habbohotel.items.YoutubeManager"/>
+        <Bug pattern="URLCONNECTION_SSRF_FD"/>
+    </Match>
+</FindBugsFilter>

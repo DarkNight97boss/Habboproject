@@ -27,6 +27,10 @@ public class OpenRecycleBoxEvent extends MessageHandler {
             // Atomically claim the item from the room map BEFORE any reward logic.
             // Two parallel opens (e.g. double click / duplicated socket) would
             // otherwise both pass getHabboItem != null and both INSERT a reward.
+            // Fix audit: verifica proprietà PRIMA di rimuovere dalla stanza (altrimenti un non-owner
+            // faceva sparire l'item dalla mappa senza aprirlo).
+            HabboItem peek = room.getHabboItem(itemId);
+            if (peek == null || peek.getUserId() != this.client.getHabbo().getHabboInfo().getId()) return;
             HabboItem item = room.removeHabboItemIfPresent(itemId);
 
             if (item == null) return;

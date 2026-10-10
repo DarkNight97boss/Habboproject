@@ -82,6 +82,11 @@ public class GuildForumPostThreadEvent extends MessageHandler {
             return;
         }
 
+        // Fix audit: niente risposte su thread bloccati o nascosti (salvo staff).
+        if ((thread.isLocked() || thread.getState() != com.eu.habbo.habbohotel.guilds.forums.ForumThreadState.OPEN) && !isStaff) {
+            this.client.sendResponse(new ConnectionErrorComposer(403));
+            return;
+        }
 
         if (!((guild.canPostMessages().state == 0)
                 || (guild.canPostMessages().state == 1 && member != null)

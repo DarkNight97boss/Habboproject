@@ -47,7 +47,7 @@ class HopperActionThree implements Runnable {
 
         targetTeleport.setExtradata("2");
         targetRoom.updateItem(targetTeleport);
-        this.client.getHabbo().getRoomUnit().setLocation(this.room.getLayout().getTile(targetTeleport.getX(), targetTeleport.getY()));
+        this.client.getHabbo().getRoomUnit().setLocation(targetRoom.getLayout().getTile(targetTeleport.getX(), targetTeleport.getY())); // Fix audit: era il layout della stanza di ORIGINE
         this.client.getHabbo().getRoomUnit().setPreviousLocationZ(targetTeleport.getZ());
         this.client.getHabbo().getRoomUnit().setZ(targetTeleport.getZ());
         this.client.getHabbo().getRoomUnit().setRotation(RoomUserRotation.values()[targetTeleport.getRotation() % 8]);

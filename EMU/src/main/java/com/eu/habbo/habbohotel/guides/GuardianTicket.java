@@ -178,6 +178,9 @@ public class GuardianTicket {
         total += countBadly;
 
 
+        // Fix audit: il verdetto ignorava i voti.
+        if (countAcceptably >= countBadly && countAcceptably >= countAwfully) return GuardianVoteType.ACCEPTABLY;
+        if (countAwfully > countBadly) return GuardianVoteType.AWFULLY;
         return GuardianVoteType.BADLY;
     }
 

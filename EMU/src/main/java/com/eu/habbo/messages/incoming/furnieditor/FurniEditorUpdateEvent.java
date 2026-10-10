@@ -202,6 +202,23 @@ public class FurniEditorUpdateEvent extends MessageHandler {
             // safe default to 's' on unknown — UI shouldn't ever send anything else.
             return (s.equals("s") || s.equals("i") || s.equals("e")) ? s : "s";
         }
+        // Fix audit (H25): liste numeriche salvate verbatim → Item.load lanciava su token
+        // non numerici e TUTTI i furni di quel tipo sparivano. Teniamo solo i token validi.
+        if (col.equals("vending_ids") || col.equals("multiheight")) {
+            String raw = v.isJsonPrimitive() ? v.getAsString() : "";
+            String sep = col.equals("vending_ids") ? "," : ";";
+            StringBuilder ok = new StringBuilder();
+            for (String tok : raw.split("[,;]")) {
+                String t = tok.trim();
+                if (t.isEmpty()) continue;
+                try {
+                    if (col.equals("vending_ids")) Integer.parseInt(t); else Double.parseDouble(t);
+                    if (ok.length() > 0) ok.append(sep);
+                    ok.append(t);
+                } catch (NumberFormatException ignored) { /* token scartato */ }
+            }
+            return ok.toString();
+        }
         // remaining columns are TEXT/VARCHAR
         if (v.isJsonPrimitive()) return v.getAsString();
         return null;

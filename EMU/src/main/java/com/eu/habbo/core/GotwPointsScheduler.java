@@ -30,8 +30,7 @@ public class GotwPointsScheduler extends Scheduler {
             GOTW_POINTS_NAME =  Emulator.getConfig().getValue("hotel.auto.gotwpoints.name");
 
             if (this.disposed) {
-                this.disposed = false;
-                this.run();
+                this.restart(); // Fix audit: niente payout immediato né catene duplicate
             }
         } else {
             this.disposed = true;
@@ -41,6 +40,7 @@ public class GotwPointsScheduler extends Scheduler {
     @Override
     public void run() {
         super.run();
+        if (this.disposed) return; // Fix audit: Scheduler.run() esce ma il payout sotto proseguiva
 
         Habbo habbo;
         for (Map.Entry<Integer, Habbo> map : Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos().entrySet()) {

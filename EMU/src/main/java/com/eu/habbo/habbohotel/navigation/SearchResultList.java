@@ -45,21 +45,16 @@ public class SearchResultList implements ISerialize, Comparable<SearchResultList
         message.appendInt(this.mode.type); //Display Mode (0 (List), 1 (Thumbnails), 2 (Thumbnail no choice))
 
         synchronized (this.rooms) {
+            // Fix audit: non mutare la lista CONDIVISA (NavigatorPublicCategory.rooms).
+            List<Room> visible = new ArrayList<>(this.rooms);
             if (!this.showInvisible) {
-                List<Room> toRemove = new ArrayList<>();
-                for (Room room : this.rooms) {
-                    if (room.getState() == RoomState.INVISIBLE) {
-                        toRemove.add(room);
-                    }
-                }
-
-                this.rooms.removeAll(toRemove);
+                visible.removeIf(room -> room.getState() == RoomState.INVISIBLE);
             }
 
-            message.appendInt(this.rooms.size());
+            message.appendInt(visible.size());
 
-            Collections.sort(this.rooms);
-            for (Room room : this.rooms) {
+            Collections.sort(visible);
+            for (Room room : visible) {
                 room.serialize(message);
             }
         }

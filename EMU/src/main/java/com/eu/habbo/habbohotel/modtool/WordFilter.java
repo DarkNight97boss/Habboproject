@@ -150,7 +150,8 @@ public class WordFilter {
                     if (Emulator.getPluginManager().fireEvent(new UserTriggerWordFilterEvent(habbo, word)).isCancelled())
                         continue;
                 }
-                filteredMessage = filteredMessage.replace("(?i)" + word.key, word.replacement);
+                // Fix audit: replace() è letterale, "(?i)" non è una regex → non sostituiva mai.
+                filteredMessage = java.util.regex.Pattern.compile(java.util.regex.Pattern.quote(word.key), java.util.regex.Pattern.CASE_INSENSITIVE).matcher(filteredMessage).replaceAll(java.util.regex.Matcher.quoteReplacement(word.replacement));
                 foundShit = true;
 
                 if (habbo != null && word.muteTime > 0) {

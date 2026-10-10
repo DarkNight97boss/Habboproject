@@ -471,3 +471,35 @@ html[data-skin="studio-nova"] ::-webkit-scrollbar-thumb:hover { background: #b8c
     html[data-skin="studio-nova"] .asteria-news__card,
     html[data-skin="studio-nova"] .asteria-shop__card { transition: none; }
 }
+
+/* ============================================================
+   RITOCCHI POST-PROD (10 ott): bento senza sovrapposizione, hero /me chiaro
+   ============================================================ */
+/* Bento news: nel Nebula il corpo sale sopra la cover (testo bianco su gradiente
+   scuro). Nel Nova il corpo è bianco: niente sovrapposizione, immagine pulita. */
+html[data-skin="studio-nova"] .asteria-bento__body,
+html[data-skin="studio-nova"] .asteria-bento__card--feat .asteria-bento__body { margin-top: 0; padding: 18px 20px 20px; }
+html[data-skin="studio-nova"] .asteria-bento__cover::after,
+html[data-skin="studio-nova"] .asteria-news__cover::after { content: none; }
+html[data-skin="studio-nova"] .asteria-bento__cover { border-radius: 0; }
+html[data-skin="studio-nova"] .asteria-bento__card { overflow: hidden; }
+html[data-skin="studio-nova"] .asteria-bento__title,
+html[data-skin="studio-nova"] .asteria-news__title { color: var(--nova-ink); font-family: var(--nova-font-head); font-weight: 800; }
+html[data-skin="studio-nova"] .asteria-bento__category,
+html[data-skin="studio-nova"] .asteria-news__cat {
+    position: absolute; top: 12px; left: 12px; z-index: 3;
+    background: rgba(255, 255, 255, 0.92); color: var(--nova-accent);
+    border: 1px solid var(--nova-line); border-radius: 999px; padding: 4px 10px;
+    font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+}
+html[data-skin="studio-nova"] .asteria-bento__meta { color: var(--nova-muted); }
+
+/* Hero /me: cornice avatar chiara, testo inchiostro, badge come chip */
+html[data-skin="studio-nova"] .asteria-me__avatar-frame {
+    background: var(--nova-surface-2); border: 1px solid var(--nova-line); border-radius: var(--nova-radius);
+}
+html[data-skin="studio-nova"] .asteria-me__info { color: var(--nova-ink); }
+html[data-skin="studio-nova"] .asteria-me__badge--rank { background: var(--nova-accent-soft); color: var(--nova-accent); border-color: transparent; }
+html[data-skin="studio-nova"] .asteria-me__badge--staff { background: rgba(245, 158, 11, 0.15); color: #B45309; border-color: transparent; }
+html[data-skin="studio-nova"] .asteria-stat::before,
+html[data-skin="studio-nova"] .asteria-stat::after { content: none; }

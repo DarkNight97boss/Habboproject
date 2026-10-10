@@ -85,7 +85,10 @@ export async function rconSend(cmd: RconCommandShape): Promise<RconResult>
             const trimmed = response.trim();
             // L'EMU risponde "OK" su successo, "ERROR" se non autorizzato
             // o se il comando non esiste. Habbo_not_found = utente offline.
-            finish(trimmed !== '' && trimmed !== 'ERROR', undefined);
+            // Fix audit (M1): l'EMU risponde JSON {status:N,...}; solo status 0 è OK.
+            let ok = trimmed !== '' && trimmed !== 'ERROR';
+            try { const j = JSON.parse(trimmed) as { status?: unknown }; if(typeof j?.status === 'number') ok = j.status === 0; } catch { /* non-JSON: regola legacy */ }
+            finish(ok, ok ? undefined : `rcon_status: ${trimmed.slice(0, 120)}`);
         });
 
         sock.connect(PORT, HOST, () =>
@@ -118,11 +121,16 @@ export const rcon = {
 
     /** +diamanti (points in Arcturus). */
     giveDiamonds: (userId: number, points: number) =>
-        rconSend({ key: 'givepoints', data: { user_id: userId, points } }),
+        // Fix audit (H2): senza `type` l'EMU usa 0 (= duckets). 5 = diamanti.
+        rconSend({ key: 'givepoints', data: { user_id: userId, points, type: 5 } }),
 
     /** Assegna un badge. */
     giveBadge: (userId: number, badgeCode: string) =>
         rconSend({ key: 'givebadge', data: { user_id: userId, badge: badgeCode } }),
+
+    /** Abbonamento (HABBO_CLUB): aggiunge `seconds` di durata. */
+    modifySubscription: (userId: number, type: string, seconds: number) =>
+        rconSend({ key: 'modifysubscription', data: { user_id: userId, type, action: 'add', duration: seconds } }),
 
     /** Imposta il rank dell'utente. */
     setRank: (userId: number, rank: number) =>
@@ -134,7 +142,9 @@ export const rcon = {
 
     /** Mute temporaneo (in minuti). */
     muteUser: (userId: number, minutes: number) =>
-        rconSend({ key: 'muteuser', data: { user_id: userId, minutes } }),
+        // Fix audit (H11): l'EMU legge `duration` in SECONDI; `minutes` veniva ignorato
+        // → duration=0 → l'EMU SMUTAVA.
+        rconSend({ key: 'muteuser', data: { user_id: userId, duration: Math.max(1, Math.floor(minutes)) * 60 } }),
 
     /** Refresh catalogo (l'EMU rilegge catalog_pages, catalog_items). */
     updateCatalog: () =>
@@ -153,6 +163,6 @@ export const rcon = {
         rconSend({ key: 'setmotto', data: { user_id: userId, motto } }),
 
     /** Re-load dei dati dell'utente dal DB (es. dopo UPDATE diretto). */
-    updateUser: (userId: number) =>
-        rconSend({ key: 'updateuser', data: { user_id: userId } })
+    updateUser: (userId: number, look?: string) =>
+        rconSend({ key: 'updateuser', data: { user_id: userId, ...(look ? { look } : {}) } })
 };

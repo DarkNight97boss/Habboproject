@@ -87,7 +87,8 @@ const manifestSchema = z.object({
         typography: z.object({
             fontFamily: cssSafe(200),
             fontFamilyHeading: cssSafe(200).optional(),
-            fontUrl: httpUrl.optional(),
+            // Fix audit: un CSS esterno arbitrario iniettato a tutti i visitatori. Solo host font noti.
+            fontUrl: httpUrl.refine(u => /^https:\/\/fonts\.(googleapis\.com|bunny\.net)\//.test(u), 'font host non consentito').optional(),
             sizeScale: z.number().min(0.5).max(2),
             weightHeading: z.number().int().min(100).max(900),
             letterSpacingHeading: cssSafe(20).optional()
@@ -178,7 +179,7 @@ skinSiteRoutes.put('/skin', requireAuth, requireRank(5), async (c) =>
     await dbExecute(
         "INSERT INTO cms_v3_site_settings (`key`, `value`, `updated_by`) VALUES ('active_skin_slug', ?, ?) " +
         "ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `updated_by` = VALUES(`updated_by`)",
-        [parsed.data.slug, (c.get('user') as { id?: number } | undefined)?.id ?? null]
+        [parsed.data.slug, (c.get('user') ? Number(c.get('user')!.sub) : null)]
     );
 
     return c.json({ ok: true, manifest: parseManifest(exists), slug: exists.slug, name: exists.name });
@@ -225,7 +226,7 @@ skinsListRoute.post('/', requireAuth, requireRank(5), async (c) =>
     const m = parsed.data;
     const slug = await uniqueSlug(slugify(m.meta.name));
     m.meta.slug = slug;
-    const uid = (c.get('user') as { id?: number } | undefined)?.id ?? null;
+    const uid = (c.get('user') ? Number(c.get('user')!.sub) : null);
 
     const res = await dbExecute(
         'INSERT INTO cms_v3_skins (slug, name, description, manifest_json, is_builtin, is_custom, created_by, created_at, updated_at) ' +
@@ -261,7 +262,7 @@ skinsListRoute.patch('/:id', requireAuth, requireRank(5), async (c) =>
 
     const m = parsed.data;
     m.meta.slug = existing.slug; // slug immutabile in edit
-    const uid = (c.get('user') as { id?: number } | undefined)?.id ?? null;
+    const uid = (c.get('user') ? Number(c.get('user')!.sub) : null);
 
     await dbExecute(
         'UPDATE cms_v3_skins SET name = ?, description = ?, manifest_json = ?, updated_at = NOW() WHERE id = ? AND is_builtin = 0',
@@ -298,7 +299,7 @@ skinsListRoute.delete('/:id', requireAuth, requireRank(5), async (c) =>
     }
 
     await dbExecute('DELETE FROM cms_v3_skins WHERE id = ? AND is_builtin = 0', [id]);
-    const uid = (c.get('user') as { id?: number } | undefined)?.id ?? null;
+    const uid = (c.get('user') ? Number(c.get('user')!.sub) : null);
     await audit(c, uid, 'skin.delete', { id, slug: existing.slug });
 
     return c.json({ ok: true });

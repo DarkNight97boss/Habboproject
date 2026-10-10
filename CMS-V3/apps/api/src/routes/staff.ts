@@ -248,7 +248,7 @@ staff.get('/user/:username', async c =>
         machine_id: string | null; mail_verified: string;
     }>(
         `SELECT id, username, mail, motto, look, gender, rank, credits,
-                vip_points, activity_points,
+                points AS vip_points, pixels AS activity_points,
                 account_created, last_login, last_online, online,
                 ip_current, ip_register, machine_id, mail_verified
          FROM users WHERE username = ? LIMIT 1`,
@@ -293,6 +293,10 @@ staff.patch('/user/:userId', async c =>
     // Constraint sicurezza: non si modifica sé stessi tramite questo endpoint
     // (eviterebbe lock-out: uno staff abbassa la propria rank e perde accesso).
     if(userId === Number(actor.sub)) return c.json({ error: 'cannot_edit_self' }, 403);
+    // Fix audit (C3): rank ATTUALE del target — non si tocca chi è pari o superiore.
+    const targetRank = (await dbQuery<{ rank: number }>('SELECT rank FROM users WHERE id = ? LIMIT 1', [userId]))[0];
+    if(!targetRank) return c.json({ error: 'not_found' }, 404);
+    if(Number(targetRank.rank) >= Number(actor.rank ?? 0)) return c.json({ error: 'target_rank_too_high' }, 403);
 
     // Constraint: non si può promuovere un utente a rank >= della propria.
     const myRank = actor.rank ?? 0;
@@ -313,11 +317,12 @@ staff.patch('/user/:userId', async c =>
     vals.push(userId);
     await dbExecute(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, vals);
 
-    // RCON reload motto se cambiato (push real-time se l'utente è online).
-    if(parsed.data.motto !== undefined)
-    {
-        await rcon.setMotto(userId, parsed.data.motto);
-    }
+    // RCON push real-time se l'utente è online.
+    if(parsed.data.motto !== undefined) await rcon.setMotto(userId, parsed.data.motto);
+    // Fix audit (H4): senza setRank la sessione online tiene il vecchio rank in
+    // memoria e HabboInfo.run() lo RISCRIVE a DB al salvataggio (demozione annullata).
+    if(parsed.data.rank !== undefined) await rcon.setRank(userId, parsed.data.rank);
+    if(parsed.data.look !== undefined) await rcon.updateUser(userId, parsed.data.look);
 
     await logRconAudit(Number(actor.sub), 'user.update', clientIp(c), c.req.header('user-agent') ?? '',
         auditDetails({ target: userId, changes: parsed.data }));
@@ -331,6 +336,10 @@ staff.post('/user/:userId/reset-password', async c =>
     const userId = Number(c.req.param('userId'));
     if(!Number.isFinite(userId) || userId <= 0) return c.json({ error: 'bad_request' }, 400);
     if(userId === Number(actor.sub)) return c.json({ error: 'cannot_reset_self' }, 403);
+    // Fix audit (C3): niente reset password su utenti di rank pari o superiore.
+    const targetRank = (await dbQuery<{ rank: number }>('SELECT rank FROM users WHERE id = ? LIMIT 1', [userId]))[0];
+    if(!targetRank) return c.json({ error: 'not_found' }, 404);
+    if(Number(targetRank.rank) >= Number(actor.rank ?? 0)) return c.json({ error: 'target_rank_too_high' }, 403);
 
     const body = await c.req.json().catch(() => null);
     const parsed = z.object({ newPassword: z.string().min(8).max(255) }).safeParse(body);
@@ -461,6 +470,15 @@ staff.post('/bans', async c =>
     const target = rows[0];
     if(!target) return c.json({ error: 'user_not_found' }, 404);
 
+    // Fix audit (staff.ts:478): dietro nginx ip_current è spesso 127.0.0.1 → un ban
+    // 'ip'/'super' con quell'IP bannerebbe TUTTO l'hotel. Rifiuta IP inutilizzabili.
+    if(parsed.data.type === 'ip' || parsed.data.type === 'super')
+    {
+        const ipc = (target.ip_current ?? '').trim();
+        if(ipc === '' || /^(127\.|::1$|::ffff:127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(ipc))
+            return c.json({ error: 'ip_unknown', message: 'IP del target non affidabile (loopback/privato): usa un ban account o machine.' }, 409);
+    }
+
     // Constraint: non si banna nessuno con rank >= della propria.
     if(target.rank >= (actor.rank ?? 0))
     {
@@ -499,6 +517,15 @@ staff.delete('/bans/:id', async c =>
     const actor = c.var.user!;
     const id = Number(c.req.param('id'));
     if(!Number.isFinite(id) || id <= 0) return c.json({ error: 'bad_request' }, 400);
+    // Fix audit: non si rimuovono sanzioni su target di rank >= del proprio né
+    // emesse da staff di rank superiore.
+    const ban = (await dbQuery<{ trank: number | null; srank: number | null }>(
+        `SELECT t.rank AS trank, s.rank AS srank FROM bans b
+           LEFT JOIN users t ON t.id = b.user_id LEFT JOIN users s ON s.id = b.user_staff_id
+          WHERE b.id = ? LIMIT 1`, [id]))[0];
+    if(!ban) return c.json({ error: 'not_found' }, 404);
+    const myRank = Number(actor.rank ?? 0);
+    if(Number(ban.trank ?? 0) >= myRank || Number(ban.srank ?? 0) > myRank) return c.json({ error: 'rank_too_low' }, 403);
     await dbExecute('DELETE FROM bans WHERE id = ? LIMIT 1', [id]);
     await logRconAudit(Number(actor.sub), 'ban.remove', clientIp(c), c.req.header('user-agent') ?? '',
         { banId: id });
@@ -791,7 +818,7 @@ staff.post('/wordfilter', async c =>
 staff.delete('/wordfilter/:word', async c =>
 {
     const actor = c.var.user!;
-    const word = decodeURIComponent(c.req.param('word'));
+    const word = c.req.param('word');
     await dbExecute('DELETE FROM wordfilter WHERE `key` = ? LIMIT 1', [word]);
     await rcon.updateWordfilter();
     await logRconAudit(Number(actor.sub), 'wordfilter.delete', clientIp(c), c.req.header('user-agent') ?? '',

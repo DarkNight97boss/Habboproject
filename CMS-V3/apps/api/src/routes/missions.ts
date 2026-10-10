@@ -118,9 +118,11 @@ missions.post('/claim/:id', async c =>
             [userId, m.id, m.reward]
         );
     }
-    catch
+    catch (e)
     {
-        return c.json({ error: 'already_claimed' }, 409);
+        // Fix audit: 409 SOLO per duplicato; altri errori DB non vanno mascherati.
+        if((e as { code?: string }).code === 'ER_DUP_ENTRY') return c.json({ error: 'already_claimed' }, 409);
+        throw e;
     }
 
     const res = await rcon.giveCredits(userId, m.reward).catch(() => ({ ok: false }));

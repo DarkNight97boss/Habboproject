@@ -166,13 +166,20 @@ referral.post('/redeem', async c =>
     // Registra il legame (PK referred_id → race-safe, una volta sola).
     try
     {
-        await dbExecute(
-            'INSERT INTO cms_v3_referrals (referred_id, referrer_id, code, reward_credits, created_at) VALUES (?, ?, ?, ?, UNIX_TIMESTAMP())',
-            [userId, owner.user_id, code, REWARD_REFERRED]
+        // Fix audit (H23): il cap per IP era check-then-insert (TOCTOU). Ora il
+        // conteggio è dentro l'INSERT...SELECT, valutato atomicamente dal DB.
+        const ins = await dbExecute(
+            `INSERT INTO cms_v3_referrals (referred_id, referrer_id, code, reward_credits, created_at)
+             SELECT ?, ?, ?, ?, UNIX_TIMESTAMP() FROM DUAL
+              WHERE (? IS NULL OR (SELECT COUNT(*) FROM cms_v3_referrals r JOIN users u ON u.id = r.referred_id
+                                    WHERE r.referrer_id = ? AND u.ip_register = ? AND r.created_at >= UNIX_TIMESTAMP() - 86400) < 3)`,
+            [userId, owner.user_id, code, REWARD_REFERRED, meNet?.ip_register ?? null, owner.user_id, meNet?.ip_register ?? null]
         );
+        if(ins.affectedRows !== 1) return c.json({ error: 'referral_rate_limited' }, 429);
     }
-    catch
+    catch (e)
     {
+        if((e as { code?: string }).code !== 'ER_DUP_ENTRY') throw e;
         return c.json({ error: 'already_redeemed' }, 409);
     }
 

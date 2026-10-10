@@ -65,7 +65,7 @@ export function AsteriaRegistrationPage(): ReactNode
                 const map: Record<string, string> = {
                     username_taken: 'Username già in uso.',
                     email_taken: 'Email già registrata.',
-                    invalid_username: 'Username non valido (3-15 caratteri, lettere/numeri).',
+                    username_invalid: 'Username non valido (3-15 caratteri: lettere, numeri, _ e -).',
                     invalid_email: 'Email non valida.',
                     password_pwned: 'Password compromessa in data breach noti. Usane un\'altra.',
                     password_weak: 'Password troppo debole: almeno 6 caratteri, una lettera e un numero.',
@@ -121,7 +121,7 @@ export function AsteriaRegistrationPage(): ReactNode
                             <span>Username</span>
                             <input type="text" className="asteria-input" placeholder="es. tuo_nome"
                                 value={username} onChange={e => setUsername(e.target.value)}
-                                pattern="[a-zA-Z0-9_.-]{3,15}" minLength={3} maxLength={15} required autoFocus />
+                                pattern="[a-zA-Z0-9_-]{3,15}" minLength={3} maxLength={15} required autoFocus />
                         </label>
                         <label className="asteria-form__label">
                             <span>Email</span>

@@ -122,6 +122,17 @@ me.patch('/motto', async c =>
 });
 
 // =================================================================
+// GET /me/privacy — stato attuale dei flag (Fix audit: il form partiva da false
+// e sovrascriveva le preferenze salvate).
+me.get('/privacy', async c =>
+{
+    const user = c.var.user;
+    if(!user) return c.json({ error: 'unauthorized' }, 401);
+    const row = (await dbQuery<{ hidden: number; cms_currency_private: number }>(
+        'SELECT hidden, cms_currency_private FROM users WHERE id = ? LIMIT 1', [Number(user.sub)]))[0];
+    return c.json({ profileHidden: row?.hidden === 1, currencyPrivate: row?.cms_currency_private === 1 });
+});
+
 // PATCH /me/privacy — visibilità profilo (cms_currency_private)
 // =================================================================
 me.patch('/privacy', async c =>

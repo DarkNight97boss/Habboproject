@@ -11,7 +11,7 @@ interface Photo { id: number; userId: number; username: string; userLook: string
 export function AsteriaPhotosPage(): ReactNode
 {
     const { data, isLoading, error } = useQuery<Photo[]>({
-        queryKey: ['community', 'photos'],
+        queryKey: ['community', 'photos', 'asteria'], // Fix audit: chiave distinta dalla pagina classic (shape diversa)
         queryFn: async ({ signal }) =>
         {
             const r = await fetch('/api/v2/community/photos?limit=48', { credentials: 'include', signal });

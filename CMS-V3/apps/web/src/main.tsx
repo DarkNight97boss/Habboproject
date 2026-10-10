@@ -39,7 +39,7 @@ import { AsteriaPhotoDetailPage } from './asteria/AsteriaPhotoDetailPage';
 import { AsteriaPurchasesPage } from './asteria/AsteriaPurchasesPage';
 import { AsteriaGuidePage, AsteriaHelpPage, AsteriaCollectiblesPage, AsteriaStaticInfoPage, AsteriaMessagingPage, AsteriaForumPage, AsteriaPrepaidPage } from './asteria/AsteriaContentPages';
 import { hydrateSkin } from './lib/skin';
-import { useSkin } from './hooks/useSkin';
+import { useSkin, useSkinPending } from './hooks/useSkin';
 import { RouteTitle } from './components/RouteTitle';
 import { type ReactNode } from 'react';
 import './styles/skin-engine.css';
@@ -81,6 +81,10 @@ function ThemeApplier(): ReactNode
 function SkinAware({ asteria, classic }: { asteria: ReactNode; classic: ReactNode }): ReactNode
 {
     const skin = useSkin();
+    const pending = useSkinPending();
+    // Fix audit: con skin ancora ignoto (primo load senza cache) non decidere il
+    // ramo — il classic di /login,/me,/leaderboard faceva redirect a '/'.
+    if(pending && !skin) return null;
     return skin?.meta.slug === 'asteria-nebula' ? asteria : classic;
 }
 

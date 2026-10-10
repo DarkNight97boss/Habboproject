@@ -25,7 +25,7 @@ export function AsteriaHomePage(): ReactNode
         <AsteriaShell activeNav="home">
             {isAuthed ? <AuthedHero user={user} /> : <AnonHero />}
             <StatsStrip />
-            {isAuthed && <QuickActions />}
+            {isAuthed && user && <QuickActions username={user.username} />}
             <AsteriaNewsBento />
             <CommunityFeed />
             <SpotlightCTA isAuthed={!!isAuthed} />
@@ -235,10 +235,10 @@ function StatsStrip(): ReactNode
 // ============================================================
 //   QUICK ACTIONS
 // ============================================================
-function QuickActions(): ReactNode
+function QuickActions({ username }: { username: string }): ReactNode
 {
     const actions = [
-        { icon: '◉', label: 'Profilo', href: '/profile' },
+        { icon: '◉', label: 'Profilo', href: `/profile/${encodeURIComponent(username)}` }, // Fix audit: /profile non esiste
         { icon: '⌂', label: 'Stanze', href: '/community/rooms' },
         { icon: '⊕', label: 'Shop', href: '/shop' },
         { icon: '✉', label: 'Messaggi', href: '/messaging' }

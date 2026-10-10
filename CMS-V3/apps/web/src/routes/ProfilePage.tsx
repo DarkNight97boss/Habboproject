@@ -52,6 +52,7 @@ export function ProfilePage(): ReactNode
     });
 
     if(authLoading || profileQuery.isLoading) return null;
+    if(profileQuery.isError) return <p style={{ padding: 24 }}>Errore nel caricamento del profilo. <button type="button" onClick={() => void profileQuery.refetch()}>Riprova</button></p>;
     if(profileQuery.data === null) return <NotFoundPage />;
     if(!profileQuery.data) return null;
 

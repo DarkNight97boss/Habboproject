@@ -1,5 +1,5 @@
 import { type ReactNode, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, useParams } from 'react-router';
 import { AsteriaShell } from './AsteriaShell';
 import { useAuth, type AuthUser } from '../hooks/useAuth';
@@ -91,8 +91,15 @@ function Feedback({ m }: { m: ReturnType<typeof usePatch> }): ReactNode
 function PrivacyForm(): ReactNode
 {
     const m = usePatch('privacy');
-    const [profileHidden, setHidden] = useState(false);
-    const [currencyPrivate, setCurrency] = useState(false);
+    // Fix audit: parte dai valori salvati (null = non ancora toccato dall'utente).
+    const q = useQuery<{ profileHidden: boolean; currencyPrivate: boolean }>({
+        queryKey: ['me', 'privacy'],
+        queryFn: async () => { const r = await fetch('/api/v2/me/privacy', { credentials: 'include' }); if(!r.ok) throw new Error('privacy_' + r.status); return r.json(); }
+    });
+    const [hiddenTouched, setHidden] = useState<boolean | null>(null);
+    const [currencyTouched, setCurrency] = useState<boolean | null>(null);
+    const profileHidden = hiddenTouched ?? q.data?.profileHidden ?? false;
+    const currencyPrivate = currencyTouched ?? q.data?.currencyPrivate ?? false;
     return (
         <form className="asteria-login" style={{ margin: 0, maxWidth: 'none' }} onSubmit={e => { e.preventDefault(); m.mutate({ profileHidden, currencyPrivate }); }}>
             <h2 className="asteria-settings__title">Privacy</h2>
@@ -105,7 +112,7 @@ function PrivacyForm(): ReactNode
                 <span>Nascondi le mie valute (crediti/diamanti)</span>
             </label>
             <div className="asteria-settings__actions">
-                <button type="submit" className="asteria-btn" disabled={m.isPending}>Salva</button>
+                <button type="submit" className="asteria-btn" disabled={m.isPending || q.isLoading}>Salva</button>
                 <Feedback m={m} />
             </div>
         </form>
@@ -136,10 +143,13 @@ function EmailForm({ user }: { user: AuthUser }): ReactNode
 {
     const m = usePatch('email');
     const [email, setEmail] = useState(user.mail || '');
+    const [curPw, setCurPw] = useState('');
+    // Fix audit: il server richiede currentPassword (prima il form non lo inviava → sempre 400).
     return (
-        <form className="asteria-login" style={{ margin: 0, maxWidth: 'none' }} onSubmit={e => { e.preventDefault(); m.mutate({ email }); }}>
+        <form className="asteria-login" style={{ margin: 0, maxWidth: 'none' }} onSubmit={e => { e.preventDefault(); m.mutate({ email, currentPassword: curPw }); }}>
             <h2 className="asteria-settings__title">Email</h2>
             <input className="asteria-input" type="email" placeholder="La tua email" value={email} onChange={e => setEmail(e.target.value)} required />
+            <input className="asteria-input" type="password" placeholder="Password attuale (per conferma)" value={curPw} onChange={e => setCurPw(e.target.value)} required autoComplete="current-password" />
             <div className="asteria-settings__actions">
                 <button type="submit" className="asteria-btn" disabled={m.isPending}>Salva email</button>
                 <Feedback m={m} />

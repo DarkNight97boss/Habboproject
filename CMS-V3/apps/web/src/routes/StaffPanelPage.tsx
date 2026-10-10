@@ -1222,15 +1222,15 @@ function UsersSection(): ReactNode
                         </div>
                     </section>
 
-                    <UserEditCard user={user} onUpdate={(changes) => updateMut.mutate({ userId: user.id, changes })} isPending={updateMut.isPending} feedback={updateMut.data ? { ok: true, msg: 'Utente aggiornato.' } : updateMut.error ? { ok: false, msg: updateMut.error.message } : null} />
+                    <UserEditCard key={user.id} user={user} onUpdate={(changes) => updateMut.mutate({ userId: user.id, changes })} isPending={updateMut.isPending} feedback={updateMut.data ? { ok: true, msg: 'Utente aggiornato.' } : updateMut.error ? { ok: false, msg: updateMut.error.message } : null} />
 
-                    <UserPasswordCard
+                    <UserPasswordCard key={user.id}
                         onReset={(pwd) => passwordMut.mutate({ userId: user.id, newPassword: pwd })}
                         isPending={passwordMut.isPending}
                         feedback={passwordMut.data ? { ok: true, msg: 'Password resettata.' } : passwordMut.error ? { ok: false, msg: passwordMut.error.message } : null}
                     />
 
-                    <UserStrikeCard
+                    <UserStrikeCard key={user.id}
                         onStrike={(reason) => strikeMut.mutate({ userId: user.id, reason })}
                         isPending={strikeMut.isPending}
                         feedback={strikeMut.data ? { ok: true, msg: 'Strike registrato.' } : strikeMut.error ? { ok: false, msg: strikeMut.error.message } : null}
@@ -2072,7 +2072,6 @@ function NewsEditor({ newsId, onClose }: { newsId: number | null; onClose: () =>
     // Trick: usiamo un effect — qui niente useEffect import perché preferisco
     // mantenere il file leggero; basta una key sul componente.
     // → l'unica via pulita resta: condiziona il rendering finché 'existing' non è disponibile.
-    if(!isNew && !existing) return <div style={{ padding: 20 }}>Caricamento articolo…</div>;
 
     const saveMut = useMutation<{ ok: boolean; id?: number; error?: string }, Error, void>({
         mutationFn: () =>
@@ -2107,6 +2106,8 @@ function NewsEditor({ newsId, onClose }: { newsId: number | null; onClose: () =>
 
     const cat = NEWS_CATEGORIES.find(c => c.value === category) ?? NEWS_CATEGORIES[0]!;
 
+    // Fix audit: early-return DOPO tutti gli hook (Rules of Hooks).
+    if(!isNew && !existing) return <div style={{ padding: 20 }}>Caricamento articolo…</div>;
     return (
         <>
             <section className="admin-card">

@@ -11,6 +11,19 @@ import { type SkinManifest, applySkin, fetchActiveSkin, fetchAvailableSkins, rea
  * Anti-FOUC: usa readCachedSkin() come placeholder → primo render ha già
  * uno skin "verosimile" applicato (vedi hydrateSkin() in main.tsx).
  */
+/** Fix audit: true solo durante il PRIMO fetch senza cache (skin ancora ignoto). */
+export function useSkinPending(): boolean
+{
+    const { isPending, data } = useQuery<SkinManifest>({
+        queryKey: ['site', 'skin'],
+        queryFn: ({ signal }) => fetchActiveSkin(signal),
+        placeholderData: readCachedSkin() ?? undefined,
+        staleTime: 30_000,
+        retry: 1
+    });
+    return isPending && !data;
+}
+
 export function useSkin(): SkinManifest | null
 {
     const { data } = useQuery<SkinManifest>({

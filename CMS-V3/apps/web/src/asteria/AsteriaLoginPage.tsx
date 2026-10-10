@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, type ReactNode, useState } from 'react';
-import { Navigate } from 'react-router';
+import { Navigate, useSearchParams } from 'react-router';
 import { broadcastAuth, useAuth } from '../hooks/useAuth';
 import { AsteriaShell } from './AsteriaShell';
 import './asteria.css';
@@ -20,8 +20,12 @@ export function AsteriaLoginPage(): ReactNode
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const qc = useQueryClient();
+    // Fix audit: onora ?next= (solo path interni: inizia con '/' e non con '//').
+    const [sp] = useSearchParams();
+    const rawNext = sp.get('next') ?? '';
+    const next = /^\/(?!\/)/.test(rawNext) ? rawNext : '/me';
 
-    if(!isLoading && user) return <Navigate to="/me" replace />;
+    if(!isLoading && user) return <Navigate to={next} replace />;
 
     async function login(ev: FormEvent<HTMLFormElement>): Promise<void>
     {

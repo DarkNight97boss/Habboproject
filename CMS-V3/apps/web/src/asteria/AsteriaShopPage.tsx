@@ -41,7 +41,7 @@ const CATEGORIES: { id: ShopItem['category'] | 'all'; label: string; icon: strin
 
 export function AsteriaShopPage(): ReactNode
 {
-    const { data: user } = useAuth();
+    const { data: user, isLoading: authLoading } = useAuth();
     const [filter, setFilter] = useState<ShopItem['category'] | 'all'>('all');
     const { data, isLoading } = useQuery<{ items: ShopItem[] }>({
         queryKey: ['shop', 'items'],
@@ -74,6 +74,7 @@ export function AsteriaShopPage(): ReactNode
 
     function buy(slug: string): void
     {
+        if(authLoading) return; // Fix audit: non mandare al login chi è ancora in verifica
         if(!user) { window.location.href = `/login?next=/shop`; return; }
         checkout.mutate(slug);
     }

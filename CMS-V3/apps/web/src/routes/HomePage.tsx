@@ -3,6 +3,7 @@ import { type FormEvent, type MouseEvent, type ReactNode, useState } from 'react
 import { AsteriaHomePage } from '../asteria/AsteriaHomePage';
 import { type AuthUser, avatarUrl, broadcastAuth, useAuth } from '../hooks/useAuth';
 import { useSkin } from '../hooks/useSkin';
+import { isAsteriaFamily } from '../lib/skin';
 
 /**
  * Homepage habbo.it — replica usando le classi del CSS UFFICIALE
@@ -22,7 +23,7 @@ export function HomePage(): ReactNode
     // cambiava al cambio skin → crash/pagina bianca).
     const { data: user, isLoading } = useAuth();
     const skin = useSkin();
-    if(skin?.meta.slug === 'asteria-nebula') return <AsteriaHomePage />;
+    if(isAsteriaFamily(skin?.meta.slug)) return <AsteriaHomePage />;
 
     // Layout main + sidebar: replica esatta dell'ufficiale.
     // <section> contiene: h1, .main.main--fixed (col sinistra news), e due

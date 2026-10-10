@@ -40,6 +40,7 @@ import { AsteriaPurchasesPage } from './asteria/AsteriaPurchasesPage';
 import { AsteriaGuidePage, AsteriaHelpPage, AsteriaCollectiblesPage, AsteriaStaticInfoPage, AsteriaMessagingPage, AsteriaForumPage, AsteriaPrepaidPage } from './asteria/AsteriaContentPages';
 import { hydrateSkin } from './lib/skin';
 import { useSkin, useSkinPending } from './hooks/useSkin';
+import { isAsteriaFamily } from './lib/skin';
 import { RouteTitle } from './components/RouteTitle';
 import { type ReactNode } from 'react';
 import './styles/skin-engine.css';
@@ -85,7 +86,7 @@ function SkinAware({ asteria, classic }: { asteria: ReactNode; classic: ReactNod
     // Fix audit: con skin ancora ignoto (primo load senza cache) non decidere il
     // ramo — il classic di /login,/me,/leaderboard faceva redirect a '/'.
     if(pending && !skin) return null;
-    return skin?.meta.slug === 'asteria-nebula' ? asteria : classic;
+    return isAsteriaFamily(skin?.meta.slug) ? asteria : classic;
 }
 
 /** Redirect helper per pagine che non hanno controparte classic. */

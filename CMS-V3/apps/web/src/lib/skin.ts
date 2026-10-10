@@ -142,6 +142,9 @@ export function applySkin(manifest: SkinManifest): void
 
     // 1) Identifier su <html> per CSS selectors mirati [data-skin="..."]
     root.setAttribute('data-skin', manifest.meta.slug);
+    // Famiglia 'asteria' (layout proprietario React) vs classic (DOM habbo.it):
+    // le regole CSS strutturali usano [data-family], quelle estetiche [data-skin].
+    root.setAttribute('data-family', isAsteriaFamily(manifest.meta.slug) ? 'asteria' : 'classic');
 
     // 2) Layout variant (Fase 3 usa questo per swap grid)
     root.setAttribute('data-layout', manifest.layout?.variant ?? 'classic');
@@ -313,4 +316,11 @@ export async function setActiveSkin(slug: string): Promise<SkinManifest>
     writeCachedSkin(data.manifest);
     applySkin(data.manifest);
     return data.manifest;
+}
+
+/** Skin che usano le pagine React proprietarie (AsteriaShell) invece del DOM habbo.it. */
+export const ASTERIA_FAMILY: ReadonlySet<string> = new Set([ 'asteria-nebula', 'studio-nova' ]);
+export function isAsteriaFamily(slug: string | null | undefined): boolean
+{
+    return !!slug && ASTERIA_FAMILY.has(slug);
 }

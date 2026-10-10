@@ -128,10 +128,6 @@ export const rcon = {
     giveBadge: (userId: number, badgeCode: string) =>
         rconSend({ key: 'givebadge', data: { user_id: userId, badge: badgeCode } }),
 
-    /** Aggiorna look (e ricarica) dell'utente online. */
-    updateUser: (userId: number, look: string) =>
-        rconSend({ key: 'updateuser', data: { user_id: userId, look } }),
-
     /** Abbonamento (HABBO_CLUB): aggiunge `seconds` di durata. */
     modifySubscription: (userId: number, type: string, seconds: number) =>
         rconSend({ key: 'modifysubscription', data: { user_id: userId, type, action: 'add', duration: seconds } }),
@@ -167,6 +163,6 @@ export const rcon = {
         rconSend({ key: 'setmotto', data: { user_id: userId, motto } }),
 
     /** Re-load dei dati dell'utente dal DB (es. dopo UPDATE diretto). */
-    updateUser: (userId: number) =>
-        rconSend({ key: 'updateuser', data: { user_id: userId } })
+    updateUser: (userId: number, look?: string) =>
+        rconSend({ key: 'updateuser', data: { user_id: userId, ...(look ? { look } : {}) } })
 };

@@ -235,7 +235,8 @@ shop.post('/webhook', async (c) =>
         {
             if(item.credits_amount > 0) await deliver(`+${item.credits_amount} crediti`, () => rcon.giveCredits(userId, item.credits_amount));
             if(item.diamonds_amount > 0) await deliver(`+${item.diamonds_amount} diamanti`, () => rcon.giveDiamonds(userId, item.diamonds_amount));
-            if(item.badge_code) await deliver(`+ badge ${item.badge_code}`, () => rcon.giveBadge(userId, item.badge_code));
+            const badge = item.badge_code;
+            if(badge) await deliver(`+ badge ${badge}`, () => rcon.giveBadge(userId, badge));
             // Fix audit (H19): 'subscription' (HC 1 mese) veniva venduto ma mai consegnato.
             if(item.category === 'subscription') await deliver('+ HC 30 giorni', () => rcon.modifySubscription(userId, 'HABBO_CLUB', 30 * 86400));
         }

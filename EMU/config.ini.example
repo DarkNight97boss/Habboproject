@@ -193,3 +193,19 @@ alerts.webhook.secret=
 #  plugins.allowed=NitroWebsockets-3.1.jar=<sha256>,Altro.jar=<sha256>
 plugins.enforce_allowlist=false
 plugins.allowed=
+# ============================================================
+# WebSocket NATIVO (sostituisce il plugin NitroWebsockets-3.1.jar)
+# ------------------------------------------------------------
+# Stesse chiavi anche in emulator_settings (sqlupdates/ws_native.sql).
+# OFF di default: per attivarlo (1) rimuovi il jar da ./plugins,
+# (2) ws.enabled=1, (3) riavvia. Non abilitare con il plugin ancora
+# caricato: entrambi bindano la stessa porta.
+# ws.ip.header: header da cui leggere l'IP reale. FIDATO solo perché il
+# listener è su 127.0.0.1 e ci arriva solo nginx (che lo sovrascrive dal
+# CF-Connecting-IP). Mai bindare 0.0.0.0 con un header fidato.
+# ws.whitelist: Origin ammessi (virgola; '*' e '*.dominio' ok).
+ws.enabled=0
+ws.host=127.0.0.1
+ws.port=2096
+ws.ip.header=X-Real-IP
+ws.whitelist=asteriacore.online,*.asteriacore.online,localhost

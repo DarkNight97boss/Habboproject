@@ -137,6 +137,13 @@ public class Habbo implements Runnable {
             }
         }
 
+        // WebSocket nativo: IP reale dall'header fidato (nginx), vedi WebSocketHttpHandler.
+        String wsIp = this.client.getChannel().attr(com.eu.habbo.networking.gameserver.GameServerAttributes.WS_IP).get();
+        if (wsIp != null && !wsIp.isEmpty()) {
+            ip = wsIp;
+            ProxyIP = "- websocket (ws.ip.header)";
+        }
+
         if (Emulator.getPluginManager().isRegistered(UserGetIPAddressEvent.class, true)) {
             UserGetIPAddressEvent event = Emulator.getPluginManager().fireEvent(new UserGetIPAddressEvent(this, ip));
             if (event.hasChangedIP()) {

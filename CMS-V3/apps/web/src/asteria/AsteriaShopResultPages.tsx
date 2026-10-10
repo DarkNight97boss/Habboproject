@@ -39,8 +39,10 @@ export function AsteriaShopSuccessPage(): ReactNode
         // Polling fino a quando paid (webhook arriva in qualche secondo)
         refetchInterval: (q) =>
         {
+            // Fix audit: stop polling anche su errore di verifica e su refunded.
+            if(q.state.status === 'error') return false;
             const status = q.state.data?.order?.status;
-            return status === 'paid' || status === 'failed' ? false : 2000;
+            return status === 'paid' || status === 'failed' || status === 'refunded' ? false : 2000;
         },
         retry: 5
     });

@@ -16,10 +16,12 @@ export function AsteriaArticlesPage(): ReactNode
     const params = useParams<{ category: string }>();
     const active = params.category ?? 'all';
     const { data: all, isLoading, error } = useNewsList();
+    // Fix audit: filtro server-side (la lista 'all' è limitata a 50 → categorie vuote).
+    const { data: filtered } = useNewsList(active === 'all' ? undefined : active);
 
     const list = all ?? [];
     const categories = buildCategories(list);
-    const items = active === 'all' ? list : list.filter(n => n.category === active);
+    const items = active === 'all' ? list : (filtered ?? list.filter(n => n.category === active));
 
     return (
         <AsteriaShell activeNav="community">

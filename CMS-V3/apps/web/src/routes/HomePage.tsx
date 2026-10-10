@@ -18,6 +18,9 @@ export function HomePage(): ReactNode
     // della HomePage proprietaria (no DOM habbo.it). Per tutti gli altri skin
     // (compresi habbo-classico/modern/dark-pro) resta il render habbo-style
     // sotto, che usa il CSS habbo.it ufficiale.
+    // Fix audit: useAuth PRIMA dell'early return (Rules of Hooks: l'ordine degli hook
+    // cambiava al cambio skin → crash/pagina bianca).
+    const { data: user, isLoading } = useAuth();
     const skin = useSkin();
     if(skin?.meta.slug === 'asteria-nebula') return <AsteriaHomePage />;
 
@@ -25,8 +28,6 @@ export function HomePage(): ReactNode
     // <section> contiene: h1, .main.main--fixed (col sinistra news), e due
     // <habbo-web-pages> sidebar (col destra, float:right + clear:right).
     // Il .news__navigation ("Più News") sta DENTRO .main--fixed, dopo le news.
-    const { data: user, isLoading } = useAuth();
-
     // Durante il fetch iniziale di /me, mostra header anonimo (evita flash).
     // Una volta noto lo stato (user || null), renderizza la variante giusta:
     //  - ANONYMOUS: habbo-header-large (hero + login form)

@@ -88,8 +88,10 @@ streak.post('/claim', async c =>
     // (streak+1) vs reset (1) è decisa DB-side sul "ieri".
     const upd = await dbExecute(
         `UPDATE cms_v3_user_streaks
-         SET current_streak = IF(last_claim_date = (CURDATE() - INTERVAL 1 DAY), current_streak + 1, 1),
-             longest_streak = GREATEST(longest_streak, IF(last_claim_date = (CURDATE() - INTERVAL 1 DAY), current_streak + 1, 1)),
+         -- Fix audit: longest PRIMA di current (MariaDB valuta i SET da sinistra con i
+         -- valori già aggiornati → prima era off-by-one).
+         SET longest_streak = GREATEST(longest_streak, IF(last_claim_date = (CURDATE() - INTERVAL 1 DAY), current_streak + 1, 1)),
+             current_streak = IF(last_claim_date = (CURDATE() - INTERVAL 1 DAY), current_streak + 1, 1),
              last_claim_date = CURDATE(),
              total_claims    = total_claims + 1
          WHERE user_id = ? AND (last_claim_date IS NULL OR last_claim_date < CURDATE())`,
@@ -114,7 +116,7 @@ streak.post('/claim', async c =>
     // come la consegna dello shop). Se fallisce NON annulliamo il claim
     // (rollback racy): lo streak resta, segnaliamo rewardDelivered=false.
     const res = await rcon.giveCredits(userId, reward);
-    void logGrant(userId, reward, 'streak');
+    if(res.ok) void logGrant(userId, reward, 'streak'); // Fix audit: niente grant fantasma nel log
 
     const nameRow = (await dbQuery<{ username: string }>(
         'SELECT username FROM users WHERE id = ?', [userId]

@@ -70,8 +70,11 @@ shop.post('/checkout', requireAuth, async (c) =>
     const item = items[0];
     if(!item) return c.json({ error: 'item_not_found' }, 404);
 
-    const user = c.get('user') as { id: number; username: string; mail: string } | undefined;
+    const user = c.get('user');
     if(!user) return c.json({ error: 'unauthorized' }, 401);
+    // Fix audit (C2): il JWT espone solo `sub` (string), non `id`/`mail`.
+    const userId = Number(user.sub);
+    const userMail = (await dbQuery<{ mail: string | null }>('SELECT mail FROM users WHERE id = ? LIMIT 1', [userId]))[0]?.mail ?? '';
 
     // Allowed origin per success/cancel — prendi dal primo ALLOWED_ORIGINS
     const origin = env.ALLOWED_ORIGINS[0] || 'https://dev.asteriacore.online';
@@ -98,10 +101,10 @@ shop.post('/checkout', requireAuth, async (c) =>
         const session = await stripe.checkout.sessions.create({
             mode: 'payment',
             line_items: [lineItem],
-            client_reference_id: String(user.id),
-            ...(user.mail ? { customer_email: user.mail } : {}),
+            client_reference_id: String(userId),
+            ...(userMail ? { customer_email: userMail } : {}),
             metadata: {
-                user_id: String(user.id),
+                user_id: String(userId),
                 username: user.username,
                 item_id: String(item.id),
                 item_slug: item.slug
@@ -121,7 +124,7 @@ shop.post('/checkout', requireAuth, async (c) =>
         // Pre-record pending order (per audit anche se l'utente abbandona)
         await dbExecute(
             'INSERT INTO cms_v3_shop_orders (user_id, item_id, status, amount_cents, currency, stripe_session_id) VALUES (?, ?, ?, ?, ?, ?)',
-            [user.id, item.id, 'pending', item.price_cents, item.currency, session.id]
+            [userId, item.id, 'pending', item.price_cents, item.currency, session.id]
         );
 
         return c.json({ url: session.url, sessionId: session.id });
@@ -189,64 +192,63 @@ shop.post('/webhook', async (c) =>
         // pending→paid (affectedRows=1); su retry la riga è già 'paid' → 0 righe →
         // usciamo senza toccare l'economia. amount_cents = importo EFFETTIVO pagato
         // (session.amount_total, COALESCE) per un audit corretto anche con codici promo.
+        // Fix audit (H13): il claim NON è più 'pending→paid' irreversibile. È un lock
+        // atomico "da consegnare" che copre anche i RETRY di Stripe: status in
+        // (pending,paid), delivered_at NULL, delivery_lock scaduto (>120s). Se una
+        // consegna precedente è morta a metà (DB blip, EMU giù, crash) il prossimo
+        // webhook la ritenta invece di rispondere 'already_processed' per sempre.
         const upd = await dbExecute(
-            'UPDATE cms_v3_shop_orders SET status = ?, stripe_payment_intent = ?, amount_cents = COALESCE(?, amount_cents), paid_at = NOW() WHERE stripe_session_id = ? AND status = ?',
-            ['paid', session.payment_intent || null, session.amount_total ?? null, session.id, 'pending']
+            `UPDATE cms_v3_shop_orders
+                SET status = 'paid', stripe_payment_intent = COALESCE(?, stripe_payment_intent),
+                    amount_cents = COALESCE(?, amount_cents), paid_at = COALESCE(paid_at, NOW()),
+                    delivery_lock = UNIX_TIMESTAMP()
+              WHERE stripe_session_id = ? AND status IN ('pending', 'paid') AND delivered_at IS NULL
+                AND (delivery_lock IS NULL OR delivery_lock < UNIX_TIMESTAMP() - 120)`,
+            [session.payment_intent || null, session.amount_total ?? null, session.id]
         );
         if(upd.affectedRows !== 1)
         {
-            // Già processato (retry/replay) oppure sessione sconosciuta: nessuna consegna.
+            // Già consegnato, consegna in corso (lock), o sessione sconosciuta: nessuna erogazione.
             return c.json({ received: true, skipped: 'already_processed' });
         }
 
         // Delivery: credita user via RCON
-        const item = (await dbQuery<{ credits_amount: number; diamonds_amount: number; name: string; badge_code: string | null }>(
-            'SELECT credits_amount, diamonds_amount, name, badge_code FROM cms_v3_shop_items WHERE id = ? LIMIT 1',
+        const item = (await dbQuery<{ credits_amount: number; diamonds_amount: number; name: string; badge_code: string | null; category: string }>(
+            'SELECT credits_amount, diamonds_amount, name, badge_code, category FROM cms_v3_shop_items WHERE id = ? LIMIT 1',
             [itemId]
         ))[0];
 
         const logLines: string[] = [];
+        // Fix audit (H14): rconSend non rigetta mai, risolve {ok:false} su timeout/EMU
+        // giù/ERROR. Prima i try/catch erano irraggiungibili e l'ordine finiva
+        // 'delivered' senza aver erogato nulla. Ora delivered_at viene scritto SOLO
+        // se ogni erogazione ha ok=true; altrimenti log + 500 → Stripe ritenta.
+        let allOk = true;
+        const deliver = async (label: string, fn: () => Promise<{ ok: boolean; errorMessage?: string; response: string }>): Promise<void> =>
+        {
+            const r = await fn();
+            if(r.ok) logLines.push(label);
+            else { allOk = false; logLines.push(`ERR ${label}: ${r.errorMessage ?? r.response.slice(0, 80)}`); }
+        };
 
         if(item && userId)
         {
-            if(item.credits_amount > 0)
-            {
-                try
-                {
-                    await rcon.giveCredits(userId, item.credits_amount);
-                    logLines.push(`+${item.credits_amount} crediti`);
-                }
-                catch (e)
-                {
-                    logLines.push(`ERR crediti: ${e instanceof Error ? e.message : 'unknown'}`);
-                }
-            }
-            if(item.diamonds_amount > 0)
-            {
-                try
-                {
-                    await rcon.giveDiamonds(userId, item.diamonds_amount);
-                    logLines.push(`+${item.diamonds_amount} diamanti`);
-                }
-                catch (e)
-                {
-                    logLines.push(`ERR diamanti: ${e instanceof Error ? e.message : 'unknown'}`);
-                }
-            }
-            if(item.badge_code)
-            {
-                try
-                {
-                    await rcon.giveBadge(userId, item.badge_code);
-                    logLines.push(`+ badge ${item.badge_code}`);
-                }
-                catch (e)
-                {
-                    logLines.push(`ERR badge: ${e instanceof Error ? e.message : 'unknown'}`);
-                }
-            }
+            if(item.credits_amount > 0) await deliver(`+${item.credits_amount} crediti`, () => rcon.giveCredits(userId, item.credits_amount));
+            if(item.diamonds_amount > 0) await deliver(`+${item.diamonds_amount} diamanti`, () => rcon.giveDiamonds(userId, item.diamonds_amount));
+            if(item.badge_code) await deliver(`+ badge ${item.badge_code}`, () => rcon.giveBadge(userId, item.badge_code));
+            // Fix audit (H19): 'subscription' (HC 1 mese) veniva venduto ma mai consegnato.
+            if(item.category === 'subscription') await deliver('+ HC 30 giorni', () => rcon.modifySubscription(userId, 'HABBO_CLUB', 30 * 86400));
         }
+        else { allOk = false; logLines.push('ERR item/user mancante'); }
 
+        if(!allOk)
+        {
+            await dbExecute(
+                'UPDATE cms_v3_shop_orders SET delivery_log = ? WHERE stripe_session_id = ?',
+                [logLines.join('; ').substring(0, 500), session.id]
+            );
+            return c.json({ error: 'delivery_failed', log: logLines }, 500);
+        }
         await dbExecute(
             'UPDATE cms_v3_shop_orders SET delivered_at = NOW(), delivery_log = ? WHERE stripe_session_id = ?',
             [logLines.join('; ').substring(0, 500), session.id]
@@ -266,11 +268,11 @@ shop.post('/webhook', async (c) =>
 
 shop.get('/orders', requireAuth, async (c) =>
 {
-    const user = c.get('user') as { id: number } | undefined;
+    const user = c.get('user');
     if(!user) return c.json({ error: 'unauthorized' }, 401);
     const orders = await dbQuery(
         'SELECT o.id, o.status, o.amount_cents, o.currency, o.created_at, o.paid_at, o.delivered_at, o.delivery_log, i.name AS item_name, i.image_gradient FROM cms_v3_shop_orders o JOIN cms_v3_shop_items i ON i.id = o.item_id WHERE o.user_id = ? ORDER BY o.created_at DESC LIMIT 50',
-        [user.id]
+        [Number(user.sub)]
     );
     return c.json({ orders });
 });
@@ -278,11 +280,11 @@ shop.get('/orders', requireAuth, async (c) =>
 shop.get('/verify/:sessionId', requireAuth, async (c) =>
 {
     const sessionId = c.req.param('sessionId');
-    const user = c.get('user') as { id: number } | undefined;
+    const user = c.get('user');
     if(!user) return c.json({ error: 'unauthorized' }, 401);
     const orders = await dbQuery(
         'SELECT o.id, o.status, o.amount_cents, o.currency, o.delivered_at, o.delivery_log, i.name AS item_name, i.credits_amount, i.diamonds_amount, i.badge_code FROM cms_v3_shop_orders o JOIN cms_v3_shop_items i ON i.id = o.item_id WHERE o.stripe_session_id = ? AND o.user_id = ? LIMIT 1',
-        [sessionId, user.id]
+        [sessionId, Number(user.sub)]
     );
     if(!orders.length) return c.json({ error: 'order_not_found' }, 404);
     return c.json({ order: orders[0] });

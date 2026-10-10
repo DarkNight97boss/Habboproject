@@ -45,7 +45,7 @@ function passwordIsAcceptable(pw: string): { ok: boolean; reason?: string }
 
 const registerSchema = z.object({
     username: z.string().regex(usernameRegex),
-    password: z.string().min(6).max(256),
+    password: z.string().min(6).max(72), // bcrypt: max 72 byte (oltre → hashPassword lancia → 500)
     birthdate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     // Campi del form Asteria (skin live): opzionali, validati e SALVATI.
     // Prima venivano ignorati e la mail era hardcoded '' → dati persi.
@@ -135,11 +135,18 @@ auth.post(
             return c.json({ error: 'invalid_credentials' }, 401);
         }
 
+        // Fix audit: il lockout usa lo username CANONICO dal DB, così varianti
+        // equivalenti per collation (case/accenti) non lo aggirano.
+        if(u.username !== parsed.data.username && await isAccountLocked(u.username))
+        {
+            await logAudit(u.id, 'auth.login.locked', ip, ua);
+            return c.json({ error: 'account_locked', message: 'Troppi tentativi falliti. Riprova tra qualche minuto.' }, 429);
+        }
         const ok = await verifyPassword(u.password, parsed.data.password);
         if(!ok)
         {
             await logAudit(u.id, 'auth.login.failed.bad_password', ip, ua);
-            await registerLoginFailure(parsed.data.username);
+            await registerLoginFailure(u.username); // canonico (collation-insensitive)
             return c.json({ error: 'invalid_credentials' }, 401);
         }
 
@@ -183,7 +190,7 @@ auth.post(
         );
 
         await logAudit(u.id, 'auth.login.success', ip, ua);
-        await clearLoginFailures(parsed.data.username);
+        await clearLoginFailures(u.username);
 
         // Set cookie httpOnly per refresh + cookie access (più breve).
         c.header('Set-Cookie', `cms_v3_access=${access.token}; ${cookieOpts(env.JWT_ACCESS_TTL_SECONDS)}`, { append: true });
@@ -369,7 +376,7 @@ auth.post('/refresh', async c =>
     // passavano entrambi e la reuse-detection non scattava. Ora vince UN SOLO
     // refresh; affectedRows!==1 => token già usato (reuse) o race persa -> revoca family.
     const claim = await dbExecute(
-        'UPDATE cms_v3_refresh_tokens SET used_at = UNIX_TIMESTAMP() WHERE jti = ? AND used_at IS NULL',
+        'UPDATE cms_v3_refresh_tokens SET used_at = UNIX_TIMESTAMP() WHERE jti = ? AND used_at IS NULL AND revoked_at IS NULL',
         [payload.jti]
     );
     if((claim as { affectedRows: number }).affectedRows !== 1)
@@ -412,10 +419,20 @@ auth.post('/refresh', async c =>
     const access = await signAccessToken({ sub: String(u.id), username: u.username, rank: Number(u.rank) || 0 });
     const newRefresh = await signRefreshToken(String(u.id), stored.family);
 
-    await dbExecute(
-        'INSERT INTO cms_v3_refresh_tokens (user_id, family, jti, created_at, expires_at, ip, user_agent) VALUES (?, ?, ?, UNIX_TIMESTAMP(), ?, ?, ?)',
-        [u.id, stored.family, newRefresh.jti, newRefresh.exp, clientIP(c).slice(0, 45), (c.req.header('user-agent') ?? '').slice(0, 255)]
-    );
+    try
+    {
+        await dbExecute(
+            'INSERT INTO cms_v3_refresh_tokens (user_id, family, jti, created_at, expires_at, ip, user_agent) VALUES (?, ?, ?, UNIX_TIMESTAMP(), ?, ?, ?)',
+            [u.id, stored.family, newRefresh.jti, newRefresh.exp, clientIP(c).slice(0, 45), (c.req.header('user-agent') ?? '').slice(0, 255)]
+        );
+    }
+    catch (e)
+    {
+        // Fix audit: errore DB transiente dopo il claim → restituiamo il token
+        // vecchio (used_at=NULL) invece di bruciare la sessione.
+        await dbExecute('UPDATE cms_v3_refresh_tokens SET used_at = NULL WHERE jti = ?', [payload.jti]).catch(() => {});
+        throw e;
+    }
     await dbExecute(
         'UPDATE cms_v3_refresh_tokens SET replaced_by_jti = ? WHERE jti = ?',
         [newRefresh.jti, payload.jti]
@@ -543,6 +560,7 @@ auth.get('/play', async c =>
             auth_ticket = ?,
             auth_ticket_issued_at = UNIX_TIMESTAMP(),
             auth_ticket_bound_ip = ?,
+            auth_ticket_bound_ip_alt = NULL,
             auth_ticket_ua_hash = ?
          WHERE id = ?`,
         [ticket, ip.slice(0, 45), uaHash, Number(user.sub)]

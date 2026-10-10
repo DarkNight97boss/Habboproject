@@ -103,6 +103,8 @@ me.patch('/password', async c =>
 
     const newHash = await hashPassword(parsed.data.newPassword);
     await dbExecute('UPDATE users SET password = ? WHERE id = ?', [newHash, Number(user.sub)]);
+    // Fix audit: cambio password = invalidare le altre sessioni (refresh token).
+    await dbExecute('UPDATE cms_v3_refresh_tokens SET revoked_at = UNIX_TIMESTAMP() WHERE user_id = ? AND revoked_at IS NULL', [Number(user.sub)]);
     return c.json({ ok: true });
 });
 

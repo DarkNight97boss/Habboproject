@@ -153,7 +153,10 @@ class MiniRedis
         try
         {
             const n = Number(await this.raw(['INCR', key]));
-            if(n === 1) void this.raw(['EXPIRE', key, String(windowSec)]).catch(() => {});
+            // Fix audit: EXPIRE attesa (non fire-and-forget) + self-heal periodico se il
+            // primo EXPIRE è andato perso (altrimenti il contatore resta per sempre).
+            if(n === 1) { try { await this.raw(['EXPIRE', key, String(windowSec)]); } catch { /* self-heal sotto */ } }
+            else if(n % 25 === 0) void this.raw(['TTL', key]).then(t => { if(Number(t) < 0) void this.raw(['EXPIRE', key, String(windowSec)]).catch(() => {}); }).catch(() => {});
             return n;
         }
         catch { return REDIS_UNAVAILABLE; }

@@ -41,10 +41,13 @@ async function seasonXp(userId: number): Promise<number>
     const cases = Object.entries(XP_WEIGHTS)
         .map(([type, w]) => `WHEN ${escapeSqlString(type)} THEN ${Number(w)}`)
         .join(' ');
+    // Fix audit: XP farmabile (crea/cancella stanza, foto) → cap 3 eventi per tipo
+    // per giorno, applicato DB-side.
     const row = (await dbQuery<{ xp: number }>(
-        `SELECT COALESCE(SUM(CASE type ${cases} ELSE 0 END), 0) AS xp
-           FROM cms_v3_activity_events
-          WHERE actor_id = ? AND created_at >= FROM_UNIXTIME(?)`,
+        `SELECT COALESCE(SUM((CASE type ${cases} ELSE 0 END) * LEAST(n, 3)), 0) AS xp
+           FROM (SELECT type, COUNT(*) AS n FROM cms_v3_activity_events
+                  WHERE actor_id = ? AND created_at >= FROM_UNIXTIME(?)
+                  GROUP BY type, DATE(created_at)) t`,
         [userId, SEASON.startTs]
     ))[0];
     return Number(row?.xp ?? 0);

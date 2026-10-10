@@ -166,7 +166,9 @@ profile.get('/:username', makeRateLimit('profile', 30, 60_000), async c =>
         counts: counts[0] ?? { photos: 0, rooms: 0, friends: 0, groups: 0, badges: 0, achievements: 0 }
     };
     if(profileCache.size > 5000) profileCache.clear();
-    profileCache.set(username, { at: Date.now(), body: payload });
+    // Fix audit (H5): un profilo nascosto non va in cache, altrimenti il payload
+    // completo visto dal proprietario/staff viene servito a chiunque per 20s.
+    if(u.hidden !== 1) profileCache.set(username, { at: Date.now(), body: payload });
     return c.json(payload);
 });
 

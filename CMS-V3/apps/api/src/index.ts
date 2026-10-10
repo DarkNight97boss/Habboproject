@@ -137,10 +137,11 @@ const server = serve({
 });
 
 // Graceful shutdown
-const shutdown = (signal: string): void =>
+// Fix audit (H24): exit code 1 su crash, così systemd Restart=on-failure riavvia.
+const shutdown = (signal: string, code = 0): void =>
 {
     log.info(`Received ${signal}, shutting down…`);
-    server.close(() => process.exit(0));
+    server.close(() => process.exit(code));
     setTimeout(() => process.exit(1), 10_000).unref();
 };
 // Crash-resistance (security review 2026-09-20): senza questi handler una singola
@@ -148,7 +149,7 @@ const shutdown = (signal: string): void =>
 // API giu' per tutti. unhandledRejection: logga e CONTINUA. uncaughtException:
 // logga e chiude in modo controllato (systemd riavvia). server 'error': logga.
 process.on('unhandledRejection', (reason) => log.error({ reason }, 'unhandledRejection (ignorata)'));
-process.on('uncaughtException', (err) => { log.fatal({ err }, 'uncaughtException — shutdown'); shutdown('uncaughtException'); });
+process.on('uncaughtException', (err) => { log.fatal({ err }, 'uncaughtException — shutdown'); shutdown('uncaughtException', 1); });
 server.on('error', (err) => log.error({ err }, 'server error'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));

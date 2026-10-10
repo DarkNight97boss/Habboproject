@@ -66,8 +66,10 @@ community.get('/stats', async c =>
 
 community.get('/rooms', async c =>
 {
-    const limit = Math.min(Number(c.req.query('limit') ?? 60), 200);
-    const offset = Math.min(Math.max(Number(c.req.query('offset') ?? 0), 0), 100_000); // cap: no deep-scan DoS
+    // Fix audit: NaN/negativi finivano in LIMIT/OFFSET → errore SQL.
+    const qLimit = Number(c.req.query('limit') ?? 60), qOffset = Number(c.req.query('offset') ?? 0);
+    const limit = Number.isFinite(qLimit) ? Math.min(Math.max(Math.floor(qLimit), 1), 200) : 60;
+    const offset = Number.isFinite(qOffset) ? Math.min(Math.max(Math.floor(qOffset), 0), 100_000) : 0; // cap: no deep-scan DoS
 
     const rows = await dbQuery<{
         id: number;

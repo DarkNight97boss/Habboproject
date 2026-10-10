@@ -258,7 +258,10 @@ html[data-skin="studio-nova"] .asteria-photo-detail__meta,
 html[data-skin="studio-nova"] .asteria-streak__meta,
 html[data-skin="studio-nova"] .asteria-referral__label,
 html[data-skin="studio-nova"] .asteria-spotlight-cta__sub { color: var(--nova-muted); }
-html[data-skin="studio-nova"] .asteria-root a:not([class]) { color: var(--nova-accent); }
+html[data-skin="studio-nova"] .asteria-root a:not(.asteria-btn):not(.nova-btn):not([class*="nova-"]):not(.asteria-pill):not(.asteria-chip) { color: var(--nova-accent); }
+html[data-skin="studio-nova"] .asteria-root a:not(.asteria-btn):not(.nova-btn):not([class*="nova-"]):hover { color: #153CB0; }
+html[data-skin="studio-nova"] .asteria-toggle,
+html[data-skin="studio-nova"] .asteria-root label { color: var(--nova-ink); }
 
 /* Superfici (carte, pannelli, righe) */
 html[data-skin="studio-nova"] .asteria-news__card,
@@ -447,7 +450,9 @@ html[data-skin="studio-nova"] ::-webkit-scrollbar-thumb:hover { background: #b8c
     html[data-skin="studio-nova"] .nova-spine__ring svg { width: 32px; height: 32px; }
     html[data-skin="studio-nova"] .nova-spine__nav,
     html[data-skin="studio-nova"] .nova-spine__bottom { flex-direction: row; width: auto; margin: 0; gap: 0; }
-    html[data-skin="studio-nova"] .nova-spine__item { width: 56px; height: 54px; font-size: 9px; }
+    html[data-skin="studio-nova"] .nova-spine__item { width: 46px; min-width: 0; height: 54px; font-size: 8.5px; gap: 2px; }
+    html[data-skin="studio-nova"] .nova-spine__item svg { width: 20px; height: 20px; }
+    html[data-skin="studio-nova"] .nova-spine__nav { flex: 1; justify-content: space-evenly; }
     html[data-skin="studio-nova"] .nova-island { position: static; border-radius: 18px; padding: 8px; gap: 8px; }
     html[data-skin="studio-nova"] .nova-island__where { display: none; }
     html[data-skin="studio-nova"] .nova-island__search span { display: none; }
@@ -455,6 +460,10 @@ html[data-skin="studio-nova"] ::-webkit-scrollbar-thumb:hover { background: #b8c
     html[data-skin="studio-nova"] .nova-island__search kbd { display: none; }
     html[data-skin="studio-nova"] .nova-island__user { margin-left: auto; }
     html[data-skin="studio-nova"] .nova-footer { padding: 14px 16px; }
+}
+@media (max-width: 400px) {
+    html[data-skin="studio-nova"] .nova-spine__item span { display: none; }
+    html[data-skin="studio-nova"] .nova-spine__item { width: 42px; }
 }
 @media (prefers-reduced-motion: reduce) {
     html[data-skin="studio-nova"] .nova-btn,

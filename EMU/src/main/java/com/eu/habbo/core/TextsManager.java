@@ -57,6 +57,7 @@ public class TextsManager {
     }
 
     public boolean getBoolean(String key, Boolean defaultValue) {
+        if (!this.texts.containsKey(key)) return defaultValue; // Fix audit
         try {
             return (this.getValue(key, "0").equals("1")) || (this.getValue(key, "false").equals("true"));
         } catch (Exception e) {

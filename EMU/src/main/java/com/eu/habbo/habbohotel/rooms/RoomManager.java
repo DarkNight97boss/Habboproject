@@ -1544,6 +1544,10 @@ public class RoomManager {
         if (rights != null && !room.hasRights(rights))
             return;
 
+        // Fix audit (H8): il proprietario non può essere bannato dalla propria stanza.
+        if (userId == room.getOwnerId())
+            return;
+
         String name = "";
 
         Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);

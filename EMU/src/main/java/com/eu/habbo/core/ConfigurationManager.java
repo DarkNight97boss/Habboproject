@@ -206,6 +206,9 @@ public class ConfigurationManager {
     public boolean getBoolean(String key, boolean defaultValue) {
         if (this.isLoading)
             return defaultValue;
+        // Fix audit: chiave assente → defaultValue (prima ritornava sempre false).
+        if (!this.properties.containsKey(key))
+            return defaultValue;
 
         try {
             return (this.getValue(key, "0").equals("1")) || (this.getValue(key, "false").equals("true"));

@@ -16,6 +16,7 @@ import com.eu.habbo.threading.runnables.ShutdownEmulator;
 import gnu.trove.set.hash.THashSet;
 
 public class RecycleEvent extends MessageHandler {
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(RecycleEvent.class);
     @Override
     public void handle() throws Exception {
         if (ShutdownEmulator.timestamp > 0) {
@@ -49,15 +50,26 @@ public class RecycleEvent extends MessageHandler {
                 items.add(item);
             }
 
+            // Fix audit (H12): calcola il premio PRIMA di cancellare gli 8 item; se manca
+            // (livello senza premi → NPE/null) restituisce gli item invece di perderli.
+            HabboItem reward = null;
+            try {
+                reward = Emulator.getGameEnvironment().getItemManager().handleRecycle(this.client.getHabbo(), Emulator.getGameEnvironment().getCatalogManager().getRandomRecyclerPrize().getId() + "");
+            } catch (Exception e) {
+                LOGGER.error("Recycler: premio non calcolabile", e);
+            }
+            if (reward == null) {
+                for (HabboItem item : items) {
+                    this.client.getHabbo().getInventory().getItemsComponent().addItem(item);
+                }
+                this.client.sendResponse(new InventoryRefreshComposer());
+                this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                return;
+            }
+
             for (HabboItem item : items) {
                 this.client.sendResponse(new RemoveHabboItemComposer(item.getGiftAdjustedId()));
                 Emulator.getThreading().run(new QueryDeleteHabboItem(item.getId()));
-            }
-
-            HabboItem reward = Emulator.getGameEnvironment().getItemManager().handleRecycle(this.client.getHabbo(), Emulator.getGameEnvironment().getCatalogManager().getRandomRecyclerPrize().getId() + "");
-            if (reward == null) {
-                this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
-                return;
             }
 
             this.client.sendResponse(new AddHabboItemComposer(reward));

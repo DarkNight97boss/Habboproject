@@ -52,10 +52,12 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                 return;
             }
 
-            if (this.client.getHabbo().getHabboStats().isPurchasingFurniture) {
-                this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
-                return;
-            } else {
+            // Fix audit (H3): check-and-set atomico del flag (double-spend con handler multithread).
+            synchronized (this.client.getHabbo().getHabboStats()) {
+                if (this.client.getHabbo().getHabboStats().isPurchasingFurniture) {
+                    this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
+                    return;
+                }
                 this.client.getHabbo().getHabboStats().isPurchasingFurniture = true;
             }
 
@@ -343,6 +345,11 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
 
                     if (item.isLimited()) {
                         item.sellRare(); // consume limited stock now that the gift is created and the purchase commits
+                    }
+                    // Fix audit (H15): marca il serial LTD come venduto (catalog_items_limited.user_id),
+                    // altrimenti al riavvio il numero torna disponibile → LTD duplicati.
+                    if (item.isLimited() && limitedConfiguration != null) {
+                        limitedConfiguration.limitedSold(item.getId(), this.client.getHabbo(), gift);
                     }
 
                     if (this.client.getHabbo().getHabboInfo().getId() != userId) {

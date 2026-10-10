@@ -236,6 +236,16 @@ public class PacketManager {
                     return;
                 }
 
+                // Fix audit (H17): gate MFA staff centrale — tutti gli handler modtool/furnieditor/
+                // ambassadors richiedono TOTP, non solo i 9 con blockIfLocked manuale.
+                if (client.getHabbo() != null && client.isStaffMfaLocked()) {
+                    String pkg = handlerClass.getPackageName();
+                    if (pkg.contains(".incoming.modtool") || pkg.contains(".incoming.furnieditor") || pkg.contains(".incoming.ambassadors")) {
+                        com.eu.habbo.core.StaffMfa.blockIfLocked(client);
+                        return;
+                    }
+                }
+
                 final MessageHandler handler = newHandler(handlerClass);
 
                 // Effective ratelimit = explicit override OR config-gated default

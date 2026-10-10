@@ -26,11 +26,25 @@ public class Scheduler implements Runnable {
         this.interval = interval;
     }
 
+    // Fix audit (R5): ogni (ri)avvio incrementa la generazione; i tick della catena
+    // precedente (già accodati nell'executor) si accorgono di essere stantii ed escono,
+    // così enable→disable→enable non crea catene duplicate che pagano doppio.
+    protected volatile int generation = 0;
+
+    /** Riavvia la catena senza eseguire subito il payout. */
+    public void restart() {
+        this.disposed = false;
+        this.generation++;
+        final int gen = this.generation;
+        Emulator.getThreading().run(() -> { if (gen == this.generation && !this.disposed) this.run(); }, this.interval * 1000L);
+    }
+
     @Override
     public void run() {
         if (this.disposed)
             return;
 
-        Emulator.getThreading().run(this, this.interval * 1000L);
+        final int gen = this.generation;
+        Emulator.getThreading().run(() -> { if (gen == this.generation && !this.disposed) this.run(); }, this.interval * 1000L);
     }
 }

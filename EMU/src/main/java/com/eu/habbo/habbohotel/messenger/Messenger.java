@@ -353,9 +353,23 @@ public class Messenger {
         return 0;
     }
 
+    /** Fix audit: cancella SOLO la richiesta diretta userFrom→userTo (prima la DELETE era
+     *  simmetrica e chi inviava la richiesta poteva accettarla da solo). */
+    public int deleteDirectedFriendRequest(int userFrom, int userTo) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("DELETE FROM messenger_friendrequests WHERE user_from_id = ? AND user_to_id = ?")) {
+            statement.setInt(1, userFrom);
+            statement.setInt(2, userTo);
+            return statement.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.error("Eccezione SQL intercettata", e);
+        }
+        return 0;
+    }
+
     //TODO Needs redesign. userFrom is redundant.
     public void acceptFriendRequest(int userFrom, int userTo) {
-        int count = this.deleteFriendRequests(userFrom, userTo);
+        int count = this.deleteDirectedFriendRequest(userFrom, userTo);
+        if (count > 0) this.deleteFriendRequests(userFrom, userTo); // pulisce l'eventuale richiesta inversa
 
         if (count > 0) {
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO messenger_friendships (user_one_id, user_two_id, friends_since) VALUES (?, ?, ?)")) {

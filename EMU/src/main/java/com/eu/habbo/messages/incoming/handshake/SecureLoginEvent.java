@@ -118,6 +118,11 @@ public class SecureLoginEvent extends MessageHandler {
                 if (peerIp == null && this.client.getChannel().remoteAddress() instanceof java.net.InetSocketAddress) {
                     peerIp = ((java.net.InetSocketAddress) this.client.getChannel().remoteAddress()).getAddress().getHostAddress();
                 }
+                // Fix audit (R32): senza WS_IP il peer è il loopback di nginx, condiviso da TUTTI:
+                // 10 ticket falsi bloccavano il login dell'intero hotel. Niente chiave condivisa.
+                if (peerIp != null && (peerIp.equals("127.0.0.1") || peerIp.equals("::1") || peerIp.startsWith("::ffff:127."))) {
+                    peerIp = null;
+                }
             }
         } catch (Exception ignored) {
         }

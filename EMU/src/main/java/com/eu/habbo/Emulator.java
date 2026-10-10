@@ -390,7 +390,9 @@ public final class Emulator {
     }
 
     public static void prepareShutdown() {
-        System.exit(0);
+        // Fix audit (R6): usato solo su fallimento (DB non raggiungibile): exit 1 così
+        // systemd Restart=on-failure riavvia invece di lasciare l'hotel giù.
+        System.exit(1);
     }
 
     public static int timeStringToSeconds(String timeString) {

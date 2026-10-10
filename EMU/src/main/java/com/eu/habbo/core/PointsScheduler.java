@@ -27,8 +27,7 @@ public class PointsScheduler extends Scheduler {
             IGNORE_IDLED = Emulator.getConfig().getBoolean("hotel.auto.points.ignore.idled");
             HC_MODIFIER = Emulator.getConfig().getDouble("hotel.auto.points.hc_modifier", 1.0);
             if (this.disposed) {
-                this.disposed = false;
-                this.run();
+                this.restart(); // Fix audit: niente payout immediato né catene duplicate
             }
         } else {
             this.disposed = true;
@@ -38,6 +37,7 @@ public class PointsScheduler extends Scheduler {
     @Override
     public void run() {
         super.run();
+        if (this.disposed) return; // Fix audit: Scheduler.run() esce ma il payout sotto proseguiva
 
         Habbo habbo;
         for (Map.Entry<Integer, Habbo> map : Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos().entrySet()) {

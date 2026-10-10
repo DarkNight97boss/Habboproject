@@ -248,6 +248,17 @@ public class MarketPlace {
 
 
     public static void buyItem(int offerId, GameClient client) {
+        // Fix audit (H3): serializza gli acquisti per utente (stesso flag del catalogo):
+        // check saldo e addebito non erano atomici → acquisti concorrenti pagavano una volta.
+        com.eu.habbo.habbohotel.users.HabboStats stats = client.getHabbo().getHabboStats();
+        synchronized (stats) {
+            if (stats.isPurchasingFurniture) {
+                client.sendResponse(new MarketplaceBuyErrorComposer(MarketplaceBuyErrorComposer.UPDATES, 0, offerId, 0));
+                return;
+            }
+            stats.isPurchasingFurniture = true;
+        }
+        try {
         RequestOffersEvent.cachedResults.clear();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM marketplace_items WHERE id = ? LIMIT 1")) {
@@ -314,7 +325,10 @@ public class MarketPlace {
         } catch (SQLException e) {
             LOGGER.error("Eccezione SQL intercettata", e);
         }
-    }
+            } finally {
+            stats.isPurchasingFurniture = false;
+        }
+}
 
 
     public static void sendErrorMessage(GameClient client, int baseItemId, int offerId) {
@@ -415,6 +429,10 @@ public class MarketPlace {
 
 
     public static int calculateCommision(int price) {
-        return price + (int) Math.ceil(price / 100.0);
+        // Fix audit (C1): price + 1% in int andava in overflow negativo a ~2.1G → il
+        // compratore veniva ACCREDITATO. Aritmetica long + clamp a MAX_VALUE (= non affordabile).
+        if (price <= 0) return 0;
+        long r = (long) price + (long) Math.ceil(price / 100.0);
+        return r > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) r;
     }
 }

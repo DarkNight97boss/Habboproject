@@ -17,7 +17,9 @@ public class GameByteDecoder extends ByteToMessageDecoder {
         // handler chain does NOT release the ClientMessage body buffer — switching
         // would silently pin frame buffers forever. Keep the safe copy until a
         // holistic release-on-finish refactor is done.
-        ByteBuf body = Unpooled.copiedBuffer(in.readBytes(in.readableBytes()));
+        // Fix audit (H21): in.readBytes(n) allocava un ByteBuf POOLED intermedio mai rilasciato.
+        ByteBuf body = Unpooled.copiedBuffer(in);
+        in.skipBytes(in.readableBytes());
 
         out.add(new ClientMessage(header, body));
     }

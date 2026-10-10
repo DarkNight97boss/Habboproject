@@ -134,7 +134,11 @@ public class GameServer extends Server {
     private io.netty.channel.Channel webSocketChannel;
 
     private void initializeWebSocketServer() {
-        if (!Emulator.getConfig().getBoolean("ws.enabled", false)) {
+        org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GameServer.class);
+        String raw = Emulator.getConfig().getValue("ws.enabled", "<assente>");
+        boolean enabled = Emulator.getConfig().getBoolean("ws.enabled", false);
+        log.info("WebSocket nativo: ws.enabled={} (valore letto: '{}')", enabled, raw);
+        if (!enabled) {
             return;
         }
         String wsHost = Emulator.getConfig().getValue("ws.host", "127.0.0.1");

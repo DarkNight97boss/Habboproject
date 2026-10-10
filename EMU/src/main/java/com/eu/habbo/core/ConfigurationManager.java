@@ -207,8 +207,10 @@ public class ConfigurationManager {
         if (this.isLoading)
             return defaultValue;
         // Fix audit: chiave assente → defaultValue (prima ritornava sempre false).
-        if (!this.properties.containsKey(key))
+        if (!this.properties.containsKey(key)) {
+            LOGGER.error("Chiave di configurazione non trovata {} (default={})", key, defaultValue);
             return defaultValue;
+        }
 
         try {
             return (this.getValue(key, "0").equals("1")) || (this.getValue(key, "false").equals("true"));

@@ -39,15 +39,25 @@ html[data-skin="studio-nova"] {
    FONDO: chiaro, piatto. Spegne aurora/stelle/noise di Nebula
    (skin-engine.css usa !important → serve !important anche qui).
    ============================================================ */
-html[data-skin="studio-nova"],
-html[data-skin="studio-nova"] body,
-html[data-skin="studio-nova"] body.habbo-header-small-on {
+/* Specificità > skin-engine.css (html[data-family="asteria"] body … !important):
+   entrambe hanno !important, quindi decide la specificità, non l'ordine di bundle. */
+html[data-skin="studio-nova"][data-family],
+html[data-skin="studio-nova"][data-family] body,
+html[data-skin="studio-nova"][data-family] body.habbo-header-small-on,
+html[data-skin="studio-nova"] body[class],
+html[data-skin="studio-nova"] body:not(.x) {
     background: var(--nova-bg) !important;
+    background-image: none !important;
     color: var(--nova-ink) !important;
 }
-html[data-skin="studio-nova"] body::before,
-html[data-skin="studio-nova"] body::after,
-html[data-skin="studio-nova"] .asteria-root::after { content: none !important; }
+html[data-skin="studio-nova"][data-family] body::before,
+html[data-skin="studio-nova"][data-family] body::after,
+html[data-skin="studio-nova"] body:not(.x)::before,
+html[data-skin="studio-nova"] body:not(.x)::after,
+html[data-skin="studio-nova"] .asteria-root::after { content: none !important; display: none !important; }
+html[data-skin="studio-nova"][data-family] #root,
+html[data-skin="studio-nova"][data-family] main,
+html[data-skin="studio-nova"][data-family] section { background: transparent; }
 html[data-skin="studio-nova"] .asteria-orb,
 html[data-skin="studio-nova"] .asteria-particles,
 html[data-skin="studio-nova"] .asteria-particle,

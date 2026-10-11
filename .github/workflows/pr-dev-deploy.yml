@@ -153,7 +153,7 @@ jobs:
       nitro: ${{ steps.filter.outputs.nitro || steps.force.outputs.nitro }}
     steps:
       - name: Checkout (shallow, serve solo per il filter)
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4.1.0
         with:
           fetch-depth: 2
 
@@ -226,7 +226,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sparse (solo EMU/)
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4.1.0
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           sparse-checkout: |
@@ -281,7 +281,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sparse (solo CMS-V3/)
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4.1.0
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           sparse-checkout: |
@@ -328,7 +328,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sparse (solo CMS-V3/)
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4.1.0
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           sparse-checkout: |
@@ -440,7 +440,7 @@ jobs:
       # mandiamo i sorgenti della PR in staging con lo stesso layout del repo.
       - name: Checkout sorgenti SQL (solo se sql)
         if: needs.detect-changes.outputs.sql == 'true'
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4.1.0
         with:
           ref: ${{ env.PR_SHA }}
           path: sql-src
@@ -462,7 +462,7 @@ jobs:
       # Drop-in systemd dell'EMU (deploy/systemd/habbo-emu.service.d): la pipeline lo
       # installa su habbo-emu-dev se cambia (poi restart). Sempre, e' un file.
       - name: Checkout deploy/systemd
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4.1.0
         with:
           ref: ${{ env.PR_SHA }}
           path: systemd-src

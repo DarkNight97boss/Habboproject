@@ -16,7 +16,7 @@
         "@node-rs/argon2": "^2.2.1",
         "bcryptjs": "^3.0.3",
         "dotenv": "^17.4.2",
-        "hono": "^4.13.7",
+        "hono": "^4.13.11",
         "isomorphic-dompurify": "^4.2.0",
         "jose": "^6.2.12",
         "mysql2": "^3.24.4",

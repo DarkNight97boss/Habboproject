@@ -9,19 +9,15 @@
 #    usarlo (asteria-gamedata contiene anche i ~23K asset gamedata!).
 #  - `dest_prefix` permette di puntare a una sottocartella del bucket invece
 #    della root, per non mischiare app-build e gamedata.
-#  - Le chiavi R2 sono account-scoped (stesso pair per dev e prod): qui usiamo
-#    i secret repo R2_DEV_*; il bucket cambia in base a `target`.
+#  - Le chiavi R2 sono account-scoped: qui usiamo i secret repo R2_DEV_*
+#    (nome storico, stesso pair). Il bucket di destinazione e' sempre
+#    asteria-gamedata (prod): l'ambiente dev e' stato dismesso.
 
 name: Nitro → R2 Sync
 
 on:
   workflow_dispatch:
     inputs:
-      target:
-        description: 'Bucket R2 di destinazione'
-        type: choice
-        options: [ dev, prod ]
-        default: dev
       source_path:
         description: 'Directory locale da caricare'
         type: string
@@ -44,7 +40,7 @@ permissions:
 
 jobs:
   sync:
-    name: Sync ${{ inputs.source_path }} → R2 (${{ inputs.target }})
+    name: Sync ${{ inputs.source_path }} → R2 (asteria-gamedata)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -77,11 +73,7 @@ jobs:
       - name: Risolvi bucket
         id: r2
         run: |
-          if [ "${{ inputs.target }}" = "prod" ]; then
-            echo "bucket=asteria-gamedata" >> "$GITHUB_OUTPUT"
-          else
-            echo "bucket=asteria-gamedata-dev" >> "$GITHUB_OUTPUT"
-          fi
+          echo "bucket=asteria-gamedata" >> "$GITHUB_OUTPUT"
 
       - name: Sync su R2 (S3 API)
         env:

@@ -77,7 +77,7 @@ shop.post('/checkout', requireAuth, async (c) =>
     const userMail = (await dbQuery<{ mail: string | null }>('SELECT mail FROM users WHERE id = ? LIMIT 1', [userId]))[0]?.mail ?? '';
 
     // Allowed origin per success/cancel — prendi dal primo ALLOWED_ORIGINS
-    const origin = env.ALLOWED_ORIGINS[0] || 'https://dev.asteriacore.online';
+    const origin = env.ALLOWED_ORIGINS[0] || 'https://asteriacore.online';
 
     try
     {

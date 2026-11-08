@@ -88,7 +88,7 @@ const envSchema = z.object({
     // all'EMU di PRODUZIONE (wss://hotel.asteriacore.online); senza override il
     // client dev si connetterebbe all'EMU prod con un ticket dev → "session
     // expired". In PROD questa var NON va settata: assente ⇒ /play non inietta
-    // nulla ⇒ comportamento invariato. Es. dev: wss://dev-hotel.asteriacore.online/websockets
+    // nulla ⇒ comportamento invariato. Es.: wss://hotel.asteriacore.online/websockets
     NITRO_SOCKET_URL: z.string().optional(),
 
     // Secret condiviso per l'ingest interno dell'event-bus (EMU→CMS via POST

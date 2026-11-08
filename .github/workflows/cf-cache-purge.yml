@@ -1,10 +1,9 @@
 # Cloudflare cache purge — automatico dopo un deploy andato a buon fine.
 #
-# Si attiva via `workflow_run` quando "PR - Deploy DEV" o "Production Deploy"
-# completano con conclusion=success, e purga la cache Cloudflare degli
-# entrypoint HTML degli hostname dell'ambiente. Gli asset hashati da Vite sono
-# immutabili (cambiano nome a ogni build) → basta purgare la shell HTML, NON
-# serve purge_everything (che colpirebbe anche prod durante un deploy dev).
+# Si attiva via `workflow_run` quando "Production Deploy" completa con
+# conclusion=success, e purga la cache Cloudflare degli entrypoint HTML degli
+# hostname prod. Gli asset hashati da Vite sono immutabili (cambiano nome a
+# ogni build) → basta purgare la shell HTML, NON serve purge_everything.
 #
 # Purge "by files" funziona su tutti i piani Cloudflare (no Enterprise).
 # Usa il token scoped CF_API_TOKEN (Cache Purge + Zone Read).
@@ -16,16 +15,9 @@ name: CF Cache Purge
 on:
   workflow_run:
     workflows:
-      - "PR - Deploy DEV (dev.asteriacore.online)"
       - "Production Deploy"
     types: [ completed ]
   workflow_dispatch:
-    inputs:
-      target:
-        description: 'Ambiente di cui purgare la cache'
-        type: choice
-        options: [ dev, prod ]
-        default: dev
 
 permissions:
   contents: read
@@ -41,18 +33,8 @@ jobs:
       - name: Risolvi ambiente e hostname
         id: t
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TARGET="${{ inputs.target }}"
-          elif [ "${{ github.event.workflow_run.name }}" = "Production Deploy" ]; then
-            TARGET="prod"
-          else
-            TARGET="dev"
-          fi
-          if [ "$TARGET" = "prod" ]; then
-            HOSTS="asteriacore.online api.asteriacore.online hotel.asteriacore.online"
-          else
-            HOSTS="dev.asteriacore.online dev-api.asteriacore.online dev-hotel.asteriacore.online"
-          fi
+          TARGET="prod"
+          HOSTS="asteriacore.online api.asteriacore.online hotel.asteriacore.online"
           echo "target=$TARGET" >> "$GITHUB_OUTPUT"
           echo "hosts=$HOSTS"   >> "$GITHUB_OUTPUT"
           echo "Purging cache per ambiente: $TARGET"

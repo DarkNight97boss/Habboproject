@@ -15,11 +15,10 @@
 
 - [ ] `yarn typecheck` e `yarn build` passano in locale (CMS-V3)
 - [ ] Nessun secret/credenziale committato (gitleaks verde)
-- [ ] Se tocca `*.sql` / migrations: testato su `ms_dev`
+- [ ] Se tocca `*.sql` / migrations: testato su un DB locale (import BaseDB + sqlupdates + migrations)
 - [ ] Se tocca config DB dell'EMU: usato il pattern **STOP → UPDATE DB → START**
 - [ ] Documentazione aggiornata se necessario
 
 ## Note
 
-<!-- Aperta da un autore in allowlist, questa PR fa partire un deploy automatico
-     su https://dev.asteriacore.online (reset ms_dev). -->
+<!-- Al merge su main parte prod-deploy.yml (asteriacore.online). -->

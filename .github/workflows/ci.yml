@@ -2,9 +2,8 @@
 #
 # Gira su OGNI PR verso main (nessun path-filter: e' un required status check)
 # e su push a main che toccano CMS-V3/**.
-# Oggi l'unico "check" prima del deploy DEV era che il build non esplodesse:
-# questo workflow aggiunge typecheck TypeScript, lint e test PRIMA del deploy,
-# così codice rotto viene bloccato in PR e non arriva mai su dev.asteriacore.online.
+# Questo workflow esegue typecheck TypeScript, lint e test PRIMA del deploy,
+# così codice rotto viene bloccato in PR e non arriva mai in produzione.
 #
 # Note:
 #  - Monorepo yarn workspaces (apps/web + apps/api). `yarn <script>` alla root
